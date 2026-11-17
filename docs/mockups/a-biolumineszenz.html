@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IdleSwarm – Mockup A: Biolumineszenz</title>
+<style>
+:root{
+  --bg0:#02080f; --bg1:#061a2b; --panel:rgba(10,38,58,.55); --panel-hi:rgba(20,60,85,.6);
+  --border:rgba(95,242,230,.16); --cyan:#5ff2e6; --cyan-dim:#2a8f99; --magenta:#ff5fa8;
+  --amber:#ffc65f; --violet:#a98bff; --text:#d4f3f5; --muted:#6f9aa6; --danger:#ff6b6b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--text);min-height:100vh;
+  background:radial-gradient(ellipse at 50% 35%,#0d3048 0%,var(--bg1) 38%,var(--bg0) 85%);overflow-x:hidden;font-size:14px}
+.plankton{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.plankton span{position:absolute;bottom:-10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:drift linear infinite}
+@keyframes drift{to{transform:translate(var(--dx),-115vh)}}
+.app{position:relative;z-index:1;display:grid;grid-template-columns:300px 1fr 340px;grid-template-rows:auto 1fr auto;gap:16px;padding:16px;min-height:100vh;max-width:1500px;margin:0 auto}
+
+/* Top bar */
+header{grid-column:1/-1;display:flex;align-items:center;gap:20px;padding:10px 18px;border-radius:18px;background:var(--panel);border:1px solid var(--border);backdrop-filter:blur(6px)}
+.logo{font-size:20px;font-weight:300;letter-spacing:.18em;color:var(--cyan);text-shadow:0 0 12px var(--cyan)}
+.logo b{font-weight:700}
+.era{font-size:12px;color:var(--muted);border-left:1px solid var(--border);padding-left:16px;line-height:1.3}
+.era strong{display:block;color:var(--text);font-size:13px}
+.res{display:flex;gap:10px;margin-left:auto}
+.chip{display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid var(--border)}
+.chip .dot{width:10px;height:10px;border-radius:50%}
+.chip .v{font-weight:600;font-variant-numeric:tabular-nums}
+.chip .r{font-size:11px;color:var(--muted)}
+
+/* Panels */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:16px;backdrop-filter:blur(6px)}
+.panel h2{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan-dim);margin-bottom:12px;display:flex;justify-content:space-between}
+.col{display:flex;flex-direction:column;gap:16px}
+
+/* Units */
+.unit{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(0,0,0,.18);margin-bottom:8px}
+.unit .icon{width:42px;height:42px}
+.unit .name{font-weight:600}
+.unit .count{font-size:22px;font-weight:300;font-variant-numeric:tabular-nums}
+.unit .meta{font-size:11px;color:var(--muted)}
+.btn{font:inherit;cursor:pointer;border:1px solid var(--cyan-dim);color:var(--cyan);background:rgba(95,242,230,.07);border-radius:999px;padding:6px 12px;font-size:12px;transition:.15s;white-space:nowrap}
+.btn:hover{background:rgba(95,242,230,.18);box-shadow:0 0 12px rgba(95,242,230,.35)}
+.btn small{display:block;font-size:10px;color:var(--muted)}
+.btn.primary{background:linear-gradient(135deg,rgba(95,242,230,.25),rgba(169,139,255,.25));border-color:var(--cyan);font-weight:600;padding:10px 18px;font-size:14px}
+.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.cap{margin-top:6px;font-size:11px;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;border-radius:3px}
+
+/* Pheromones */
+.pher-row{display:grid;grid-template-columns:70px 1fr auto;align-items:center;gap:8px;margin-bottom:10px}
+.pips{display:flex;gap:4px}
+.pip{width:14px;height:14px;border-radius:50%;border:1px solid var(--border)}
+.pip.on{box-shadow:0 0 8px currentColor}
+.pm{display:flex;gap:4px}
+.pm button{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:rgba(0,0,0,.25);color:var(--text);cursor:pointer}
+.ratio{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0 4px}
+.legend{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+
+/* Center */
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;padding:20px}
+.source-name{font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted)}
+.source-title{font-size:28px;font-weight:300;margin:4px 0 2px}
+.source-tags{display:flex;gap:8px;margin-bottom:10px}
+.tag{font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
+.tag.ok{color:var(--cyan);border-color:var(--cyan-dim)}
+.food-wrap{position:relative;width:420px;height:420px;cursor:pointer;user-select:none}
+.food-wrap svg{width:100%;height:100%;overflow:visible}
+.blob{animation:wobble 9s ease-in-out infinite;transform-origin:210px 210px}
+@keyframes wobble{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.04) rotate(6deg)}}
+.orbit{transform-origin:210px 210px;animation:spin linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.food-wrap:active .blob{transform:scale(.96)}
+.float{position:absolute;pointer-events:none;color:var(--amber);font-weight:700;font-size:18px;text-shadow:0 0 10px var(--amber);animation:up 1s ease-out forwards}
+@keyframes up{to{transform:translateY(-70px);opacity:0}}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.stock{width:420px;margin-top:14px}
+.stock .legend span:first-child{color:var(--text)}
+
+/* Upgrades */
+.upg{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(0,0,0,.18);margin-bottom:8px;border:1px solid transparent}
+.upg:hover{border-color:var(--border)}
+.upg .ico{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:18px;background:rgba(169,139,255,.12);border:1px solid rgba(169,139,255,.3)}
+.upg .t{font-weight:600;font-size:13px}
+.upg .d{font-size:11px;color:var(--muted)}
+.upg.locked{opacity:.45}
+.upg.rare .ico{background:rgba(255,198,95,.12);border-color:rgba(255,198,95,.4)}
+
+/* Targets */
+.strategy{display:flex;gap:4px;margin-bottom:12px;background:rgba(0,0,0,.25);padding:4px;border-radius:999px}
+.strategy button{flex:1;font:inherit;font-size:11px;border:0;background:none;color:var(--muted);padding:6px;border-radius:999px;cursor:pointer}
+.strategy button.on{background:var(--panel-hi);color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan-dim)}
+.target{padding:12px;border-radius:14px;background:rgba(0,0,0,.18);margin-bottom:8px;border:1px solid transparent;cursor:pointer}
+.target.sel{border-color:var(--cyan);box-shadow:0 0 16px rgba(95,242,230,.15)}
+.target.bad{opacity:.55}
+.target .top{display:flex;justify-content:space-between;align-items:baseline}
+.target .n{font-weight:600}
+.target .dna{font-size:12px;color:var(--violet)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.verdict{font-size:11px;margin-top:6px}
+.verdict.ok{color:var(--cyan)} .verdict.no{color:var(--danger)}
+
+/* Footer */
+footer{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.track{display:flex;align-items:center;justify-content:space-between;position:relative;padding:4px 10px}
+.track::before{content:"";position:absolute;left:30px;right:30px;top:15px;height:2px;background:linear-gradient(90deg,var(--cyan) 0%,var(--cyan) 6%,rgba(255,255,255,.08) 6%)}
+.step{position:relative;text-align:center;font-size:11px;color:var(--muted);width:80px}
+.step .c{width:22px;height:22px;border-radius:50%;margin:0 auto 6px;background:var(--bg1);border:2px solid rgba(255,255,255,.12)}
+.step.now .c{border-color:var(--cyan);background:var(--cyan);box-shadow:0 0 14px var(--cyan)}
+.step.now{color:var(--cyan)}
+.log{font-size:12px;line-height:1.7;max-height:96px;overflow:hidden;mask-image:linear-gradient(#000 60%,transparent)}
+.log .t{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:8px}
+.log .hl{color:var(--amber)}
+.log .dn{color:var(--violet)}
+</style>
+</head>
+<body>
+<div class="plankton" id="plankton"></div>
+
+<div class="app">
+  <header>
+    <div class="logo">IDLE<b>SWARM</b></div>
+    <div class="era"><strong>Ära I · Ursuppe</strong>Meeresgrund · Futterstelle 7</div>
+    <div class="res">
+      <div class="chip"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span><span class="v" id="food">1.284</span><span class="r">+42,6/s</span></div>
+      <div class="chip"><span class="dot" style="background:var(--violet);box-shadow:0 0 8px var(--violet)"></span><span class="v">37</span><span class="r">DNA</span></div>
+      <div class="chip"><span class="dot" style="background:var(--magenta);box-shadow:0 0 8px var(--magenta)"></span><span class="v">12</span><span class="r">Pheromone</span></div>
+      <div class="chip"><span class="dot" style="background:#fff;box-shadow:0 0 8px #fff"></span><span class="v">3,2</span><span class="r">Eier/min</span></div>
+    </div>
+  </header>
+
+  <!-- Left -->
+  <div class="col">
+    <section class="panel">
+      <h2>Schwarm <span>87 / 100 Platz</span></h2>
+      <div class="unit">
+        <svg class="icon" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15" fill="none" stroke="#ffc65f" stroke-width="2"/><circle cx="21" cy="21" r="7" fill="#ffc65f" opacity=".8"/><circle cx="21" cy="21" r="18" fill="none" stroke="#ffc65f" opacity=".2" stroke-width="6"/></svg>
+        <div><div class="name">Königinnen</div><div class="meta">je 25 Platz · 0,8 Eier/min</div></div>
+        <div style="text-align:right"><div class="count">4</div><button class="btn">+1 <small>600 N</small></button></div>
+      </div>
+      <div class="unit">
+        <svg class="icon" viewBox="0 0 42 42"><circle cx="21" cy="21" r="9" fill="none" stroke="#5ff2e6" stroke-width="2"/><circle cx="21" cy="21" r="3" fill="#5ff2e6"/><path d="M8 21h4M30 21h4M21 8v4M21 30v4" stroke="#5ff2e6" stroke-width="1.5" opacity=".6"/></svg>
+        <div><div class="name">Drohnen</div><div class="meta">0,6 N/s · Platz 1</div></div>
+        <div style="text-align:right"><div class="count">58</div><button class="btn">+1 <small>40 N · 1 Ei</small></button></div>
+      </div>
+      <div class="unit">
+        <svg class="icon" viewBox="0 0 42 42"><path d="M21 7 L33 28 L21 35 L9 28 Z" fill="none" stroke="#ff5fa8" stroke-width="2"/><circle cx="21" cy="24" r="4" fill="#ff5fa8"/></svg>
+        <div><div class="name">Soldaten</div><div class="meta">Angriff 3 · Platz 1</div></div>
+        <div style="text-align:right"><div class="count">25</div><button class="btn">+1 <small>65 N · 1 Ei</small></button></div>
+      </div>
+      <div class="cap">Transportkapazität</div>
+      <div class="bar"><i style="width:87%;background:linear-gradient(90deg,var(--cyan),var(--amber))"></i></div>
+      <div style="display:flex;gap:6px;margin-top:12px">
+        <button class="btn" style="flex:1">Drohnen opfern <small>−10 → 280 N</small></button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Pheromone <span>12 Punkte</span></h2>
+      <div class="pher-row">
+        <span>Drohnen</span>
+        <div class="pips" style="color:var(--cyan)">
+          <i class="pip on" style="background:var(--cyan)"></i><i class="pip on" style="background:var(--cyan)"></i><i class="pip on" style="background:var(--cyan)"></i><i class="pip on" style="background:var(--cyan)"></i><i class="pip on" style="background:var(--cyan)"></i><i class="pip on" style="background:var(--cyan)"></i><i class="pip on" style="background:var(--cyan)"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i>
+        </div>
+        <div class="pm"><button>−</button><button>+</button></div>
+      </div>
+      <div class="pher-row">
+        <span>Soldaten</span>
+        <div class="pips" style="color:var(--magenta)">
+          <i class="pip on" style="background:var(--magenta)"></i><i class="pip on" style="background:var(--magenta)"></i><i class="pip on" style="background:var(--magenta)"></i><i class="pip on" style="background:var(--magenta)"></i><i class="pip on" style="background:var(--magenta)"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i>
+        </div>
+        <div class="pm"><button>−</button><button>+</button></div>
+      </div>
+      <div class="ratio"><i style="width:58%;background:var(--cyan)"></i><i style="width:42%;background:var(--magenta)"></i></div>
+      <div class="legend"><span>58 % Drohnen</span><span>42 % Soldaten</span></div>
+      <button class="btn" style="width:100%;margin-top:12px">Pheromon-Drüse stärken <small>+1 Punkt · 900 N</small></button>
+    </section>
+  </div>
+
+  <!-- Center -->
+  <main class="panel stage">
+    <div class="source-name">Aktuelle Futterstelle</div>
+    <div class="source-title">Hydrothermaler Schlot</div>
+    <div class="source-tags"><span class="tag">Größe L</span><span class="tag ok">✓ eingenommen</span><span class="tag">Fund: 1 / ?</span></div>
+    <div class="food-wrap" id="food-wrap">
+      <svg viewBox="0 0 420 420">
+        <defs>
+          <radialGradient id="g1" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/><stop offset=".35" stop-color="#ff8a5f" stop-opacity=".55"/><stop offset=".7" stop-color="#5ff2e6" stop-opacity=".12"/><stop offset="1" stop-color="#5ff2e6" stop-opacity="0"/></radialGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <circle cx="210" cy="210" r="200" fill="url(#g1)"/>
+        <g class="blob">
+          <path d="M210 120 C260 118 300 160 296 210 C292 262 258 300 210 298 C158 296 122 262 124 212 C126 160 160 122 210 120Z" fill="none" stroke="#ffc65f" stroke-width="2" opacity=".8" filter="url(#glow)"/>
+          <path d="M210 150 C245 150 268 178 266 210 C264 245 240 270 210 268 C176 266 154 242 156 210 C158 176 180 150 210 150Z" fill="#ffc65f" opacity=".25"/>
+          <path d="M196 200 q8 -30 14 -60 q6 30 14 60" stroke="#fff3d0" stroke-width="2" fill="none" opacity=".7"/>
+        </g>
+        <g class="orbit" style="animation-duration:38s" id="drones"></g>
+        <g class="orbit" style="animation-duration:60s;animation-direction:reverse" id="soldiers"></g>
+        <g class="orbit" style="animation-duration:90s" id="queens"></g>
+      </svg>
+    </div>
+    <div class="hint">Klicken zum Sammeln · +12 Nahrung pro Klick</div>
+    <div class="stock">
+      <div class="legend"><span>Vorrat 18.400 / 29.000</span><span>leer in ~4 min</span></div>
+      <div class="bar" style="height:8px"><i style="width:63%;background:linear-gradient(90deg,#ff8a5f,var(--amber))"></i></div>
+    </div>
+  </main>
+
+  <!-- Right -->
+  <div class="col">
+    <section class="panel">
+      <h2>Genetische Adaption <span>37 DNA</span></h2>
+      <div class="upg"><div class="ico">〰</div><div><div class="t">Cilien-Schlag II</div><div class="d">Drohnen sammeln +15 %</div></div><button class="btn">12 DNA</button></div>
+      <div class="upg"><div class="ico">◈</div><div><div class="t">Säurevakuole</div><div class="d">Soldaten-Angriff +20 %</div></div><button class="btn">20 DNA</button></div>
+      <div class="upg rare"><div class="ico">✦</div><div><div class="t">Thermosynthese</div><div class="d">Einzigartig · am Schlot gefunden</div></div><button class="btn" style="color:var(--amber);border-color:var(--amber)">aktiv</button></div>
+      <div class="upg locked"><div class="ico">⟲</div><div><div class="t">Autophagie</div><div class="d">Gefallene Soldaten → Nahrung</div></div><button class="btn" disabled>45 DNA</button></div>
+    </section>
+
+    <section class="panel" style="flex:1">
+      <h2>Weiterziehen <span>Reichweite 5</span></h2>
+      <div class="strategy"><button>Geringster Widerstand</button><button class="on">Ausgewogen</button><button>Kampfgehärtet</button></div>
+      <div class="target sel">
+        <div class="top"><span class="n">Walsturz</span><span class="dna">+28 DNA</span></div>
+        <div class="stats">
+          <div>Größe<div class="bar"><i style="width:90%;background:var(--amber)"></i></div></div>
+          <div>Distanz<div class="bar"><i style="width:80%;background:var(--cyan)"></i></div></div>
+          <div>Abwehr<div class="bar"><i style="width:65%;background:var(--magenta)"></i></div></div>
+        </div>
+        <div class="verdict ok">✓ einnehmbar · 75 / 60 Angriff · ~22 Soldaten Verlust</div>
+      </div>
+      <div class="target">
+        <div class="top"><span class="n">Algenmatte</span><span class="dna">+0 DNA</span></div>
+        <div class="stats">
+          <div>Größe<div class="bar"><i style="width:45%;background:var(--amber)"></i></div></div>
+          <div>Distanz<div class="bar"><i style="width:20%;background:var(--cyan)"></i></div></div>
+          <div>Abwehr<div class="bar"><i style="width:0%;background:var(--magenta)"></i></div></div>
+        </div>
+        <div class="verdict ok">✓ frei zugänglich</div>
+      </div>
+      <div class="target bad">
+        <div class="top"><span class="n">Bakterienrasen</span><span class="dna">+55 DNA</span></div>
+        <div class="stats">
+          <div>Größe<div class="bar"><i style="width:60%;background:var(--amber)"></i></div></div>
+          <div>Distanz<div class="bar"><i style="width:40%;background:var(--cyan)"></i></div></div>
+          <div>Abwehr<div class="bar"><i style="width:100%;background:var(--magenta)"></i></div></div>
+        </div>
+        <div class="verdict no">✗ zu stark · 75 / 140 Angriff</div>
+      </div>
+      <button class="btn primary" style="width:100%;margin-top:6px">Zum Walsturz aufbrechen →</button>
+    </section>
+  </div>
+
+  <footer>
+    <section class="panel">
+      <h2>Evolution</h2>
+      <div class="track">
+        <div class="step now"><div class="c"></div>Ursuppe</div>
+        <div class="step"><div class="c"></div>Urmeer</div>
+        <div class="step"><div class="c"></div>Land</div>
+        <div class="step"><div class="c"></div>Zivilisation</div>
+        <div class="step"><div class="c"></div>Weltraum</div>
+        <div class="step"><div class="c"></div>???</div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Schwarmgedächtnis</h2>
+      <div class="log">
+        <div><span class="t">00:14</span>Eine Königin hat <b>3 Drohnen</b> ausgebrütet.</div>
+        <div><span class="t">00:12</span><span class="hl">Fund!</span> Collectible „Schwefelperle“ (2 / 5) entdeckt.</div>
+        <div><span class="t">00:09</span><span class="dn">+12 DNA</span> durch Einnahme des Schlots.</div>
+        <div><span class="t">00:09</span>14 Soldaten sind beim Angriff gefallen.</div>
+      </div>
+    </section>
+  </footer>
+</div>
+
+<script>
+// Plankton-Hintergrund
+const pl=document.getElementById('plankton');
+for(let i=0;i<45;i++){const s=document.createElement('span');const z=Math.random()*3+1;
+  s.style.cssText=`left:${Math.random()*100}%;width:${z}px;height:${z}px;opacity:${Math.random()*.5+.1};animation-duration:${20+Math.random()*40}s;animation-delay:-${Math.random()*60}s;--dx:${(Math.random()-.5)*120}px`;pl.appendChild(s);}
+// Schwarm um die Futterstelle
+const ns='http://www.w3.org/2000/svg';
+function ring(id,n,rMin,rMax,draw){const g=document.getElementById(id);for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,r=rMin+Math.random()*(rMax-rMin);g.appendChild(draw(210+Math.cos(a)*r,210+Math.sin(a)*r));}}
+ring('drones',58,120,175,(x,y)=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',2.5);c.setAttribute('fill','#5ff2e6');c.setAttribute('opacity',.85);return c;});
+ring('soldiers',25,150,195,(x,y)=>{const p=document.createElementNS(ns,'path');p.setAttribute('d',`M${x} ${y-4}l4 7h-8z`);p.setAttribute('fill','#ff5fa8');return p;});
+ring('queens',4,180,200,(x,y)=>{const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',6);c.setAttribute('fill','none');c.setAttribute('stroke','#ffc65f');c.setAttribute('stroke-width',2);return c;});
+// Klicken + Idle-Tick
+let food=1284;const el=document.getElementById('food');const fmt=n=>Math.floor(n).toLocaleString('de-DE');
+const wrap=document.getElementById('food-wrap');
+wrap.addEventListener('click',e=>{food+=12;el.textContent=fmt(food);const f=document.createElement('div');f.className='float';f.textContent='+12';const r=wrap.getBoundingClientRect();f.style.left=(e.clientX-r.left-12)+'px';f.style.top=(e.clientY-r.top-20)+'px';wrap.appendChild(f);setTimeout(()=>f.remove(),1000);});
+setInterval(()=>{food+=4.26;el.textContent=fmt(food);},100);
+document.querySelectorAll('.target').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.target').forEach(x=>x.classList.remove('sel'));t.classList.add('sel');}));
+document.querySelectorAll('.strategy button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.strategy button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}));
+</script>
+</body>
+</html>

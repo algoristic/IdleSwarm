@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>IdleSwarm – UI-Mockups</title>
+<style>
+body{font-family:"Segoe UI",system-ui,sans-serif;background:#14161b;color:#e6e6e6;max-width:1000px;margin:40px auto;padding:0 20px}
+h1{font-weight:300;letter-spacing:.1em}
+p.lead{color:#9aa0aa}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:28px}
+a.card{display:block;text-decoration:none;color:inherit;border-radius:12px;overflow:hidden;border:1px solid #2a2e36;transition:.15s}
+a.card:hover{transform:translateY(-3px);border-color:#555}
+.sw{height:120px;display:grid;place-items:center;font-size:22px}
+.body{padding:14px 16px;background:#1b1e24;font-size:13px;line-height:1.5}
+.body h2{font-size:16px;margin:0 0 6px}
+.body ul{margin:8px 0 0;padding-left:18px;color:#9aa0aa}
+</style>
+</head>
+<body>
+<h1>IdleSwarm · UI-Mockups</h1>
+<p class="lead">Drei Stilrichtungen, alle mit demselben Spielzustand (Ära I, Hydrothermaler Schlot), damit sie direkt vergleichbar sind. Die Futterstelle ist jeweils klickbar, Nahrung tickt idle hoch, Ziele sind auswählbar. Alles andere ist statisch.</p>
+<div class="grid">
+  <a class="card" href="a-biolumineszenz.html">
+    <div class="sw" style="background:radial-gradient(circle,#0d3048,#02080f);color:#5ff2e6;text-shadow:0 0 12px #5ff2e6">◉ Biolumineszenz</div>
+    <div class="body"><h2>A · Biolumineszenz</h2>Dunkle Tiefsee, leuchtende Organismen, weiche runde Panels. Der Schwarm kreist sichtbar um die Futterstelle.
+      <ul><li>sehr atmosphärisch, passt zur Ursuppe</li><li>Farbpalette lässt sich pro Ära wechseln (Meer → Land → All)</li><li>am meisten Grafikaufwand</li></ul></div>
+  </a>
+  <a class="card" href="b-laborjournal.html">
+    <div class="sw" style="background:#f3eee2;color:#1f2a44;font-family:Georgia,serif;font-style:italic">Versuchsprotokoll</div>
+    <div class="body"><h2>B · Laborjournal</h2>Karopapier, Petrischale, handschriftliche Notizen, Proben-Karteikarten mit Stempeln.
+      <ul><li>eigenständig und mit Humor („wir beobachten den Schwarm“)</li><li>Mischung aus Grafik und Tabellen</li><li>bei späteren Ären muss die Metapher mitwachsen (Feldnotizen, Sternkarten …)</li></ul></div>
+  </a>
+  <a class="card" href="c-terminal.html">
+    <div class="sw" style="background:#0b0a07;color:#ffb347;font-family:Consolas,monospace;text-shadow:0 0 6px #ffb347">&gt; SWARM_</div>
+    <div class="body"><h2>C · Schwarm-Terminal</h2>Bernstein-Monochrom, ASCII-Grafik, Textbefehle. Der klassische, minimalistische Idle-Game-Stil.
+      <ul><li>am schnellsten umzusetzen</li><li>skaliert gut auf viele Zahlen und Ressourcen</li><li>weniger Gefühl von „lebendigem Schwarm“</li></ul></div>
+  </a>
+</div>
+</body>
+</html>
