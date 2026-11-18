@@ -56,12 +56,12 @@ Ein vollständiges, ausbalanciertes Spiel für Ära I: Der Schwarm sammelt Nahru
 | MS | Name | Ergebnis (Abnahmekriterium) | Aufwand |
 |---|---|---|---|
 | M1.0 | Fundament | Leeres Angular-Projekt läuft auf GitHub Pages; CI grün; Spielzustand tickt, wird gespeichert und geladen | 6,5–9,5 PT |
-| M1.1 | Kernschleife & Modell | Grundertrag statt Klick, Einheiten kaufen, Drohnen sammeln, Königinnen brüten; Modell-Seite zeigt die Kurven dazu | 10,5–15 PT |
+| M1.1 | Kernschleife & Modell | Grundertrag statt Klick, Einheiten kaufen, Drohnen sammeln, Königinnen brüten; Modell-Seite zeigt die Kurven dazu; Code folgt der Zielarchitektur (ADR-009 bis 011) | 12,5–18 PT |
 | M1.2 | Weiterziehen & Kampf | Schwarm zieht über die Sonar-Karte von Futterstelle zu Futterstelle, manuell und automatisch; Kampf und Verluste funktionieren | 9,5–13,5 PT |
 | M1.3 | Progression | Genom, Pheromone und Funde vollständig; Modell-Seite zeigt Upgrade-Wirkung und Pacing-Zielband | 8,5–12 PT |
 | M1.4 | K2-Präsentation & Mobile | Oberfläche entspricht Mockup K2 inkl. Zoom-Übergängen; auf Smartphone voll bedienbar | 9–13,5 PT |
 | M1.5 | Idle, Balancing & Release 1.0 | Offline-Fortschritt, Onboarding, PWA; Balancing innerhalb der Zielbänder; Release 1.0 veröffentlicht | 9–13,5 PT |
-| | **Summe AS1** | | **53–77 PT** (+ ~15 % Puffer) |
+| | **Summe AS1** | | **55–80 PT** (+ ~15 % Puffer) |
 
 Die Meilensteine sind so geschnitten, dass zuerst die Mechanik steht (M1.0–M1.3) und danach die Präsentation (M1.4). Die Sonar-Karte (M1.2) und das Genom (M1.3) werden trotzdem schon im K2-Stil gebaut. M1.4 fügt sie zur Zoom-Welt zusammen und macht sie mobiltauglich.
 
@@ -100,6 +100,7 @@ flowchart TB
         ap117["1.1.7 Headless-Runner & Bots"]
         ap118["1.1.8 Modell-Seite v1"]
         ap119["1.1.9 Klick-Ausbau & Grundertrag"]
+        ap1110["1.1.10 Architektur-Umbau"]
     end
     subgraph M1_2["M1.2 · Weiterziehen & Kampf"]
         ap121["1.2.1 Futterstellen-Generator"]
@@ -158,7 +159,8 @@ flowchart TB
     ap117 --> ap118
     ap116 --> ap119
     ap118 --> ap119
-    ap119 --> ap121
+    ap119 --> ap1110
+    ap1110 --> ap121
     ap121 --> ap122
     ap121 --> ap123
     ap113 --> ap124
@@ -238,6 +240,7 @@ flowchart TB
 | 1.1.7 | Headless-Runner & Bots | Simulation ohne Oberfläche im Zeitraffer; Bots „Aktiv“ und „Idle“ | 1,5–2 | US-10.01, 10.04 |
 | 1.1.8 | Modell-Seite v1 | Route `/modell`: Ressourcen, Einheiten und Raten über die Zeit (log), Zeit bis zum nächsten Kauf, Parameter-Panel | 2–3 | US-10.02, 10.03, 10.05 |
 | 1.1.9 | Klick-Ausbau & Grundertrag | Klick aus Core, Bots, HUD, Modell-Seite und Tests entfernen; Grundertrag einführen und anzeigen; Spielstand prüfen; Pacing neu messen, [Game-Design §6](game-design.md#6-messwerte-v1) sowie ADR-003 und ADR-004 aktualisieren | 1–1,5 | US-01.01, 01.02, 10.04 |
+| 1.1.10 | Architektur-Umbau | Bestand auf die Zielarchitektur aus [`CLAUDE.md`](../CLAUDE.md) umstellen: Domänen und Schichten ([ADR-009](adr/009-domaenen-schichten-facade.md)), Facades mit Viewmodels, `BuyButton`/`FeedingSite` präsentational; Tailwind v4 mit `--sw-*`-Tokens für HUD und Modell-Seite ([ADR-010](adr/010-tailwind-tokens.md)); `$localize` statt `TEXTS_DE`/`MODEL_TEXTS`/`fillText` ([ADR-011](adr/011-i18n-localize.md)); `ModelForm` auf Signal Forms; ESLint: Schichten je Domäne, Determinismus, `import/order`, Klassensuffixe; Alias `@app/*`; `.npmrc` mit `save-exact` und exakte Versionen; Regeldateien in `.claude/rules/`. Verhalten, Spielstand-Format und Tests bleiben fachlich gleich | 2–3 | – |
 
 #### M1.2 · Weiterziehen & Kampf
 
@@ -431,5 +434,5 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 ## 6. Vorgehen
 
 - **Iterativ je Meilenstein:** Am Meilenstein-Ende stehen ein spielbarer Stand auf GitHub Pages, ein kurzer Spieltest und ein Blick auf die Modell-Seite.
-- **Definition of Done (AP):** Code mit Tests im Core, CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen).
+- **Definition of Done (AP):** Code folgt den Regeln aus [`CLAUDE.md`](../CLAUDE.md), Tests für die `domain`-Schichten, CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen), Umsetzungsstand in ADRs, technischem Konzept und Regeldateien nachgezogen.
 - **Planung späterer Stufen:** Vor jeder neuen Ausbaustufe wird dieser Plan um die Detaillierung der Stufe ergänzt, nachdem der Konzept-Meilenstein abgeschlossen ist.

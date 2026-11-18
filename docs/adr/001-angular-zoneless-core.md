@@ -1,6 +1,6 @@
 # ADR-001: Angular (zoneless, Signals) mit Angular-freiem `core/`
 
-**Status:** Angenommen
+**Status:** Angenommen, Schichtentabelle ersetzt durch [ADR-009](009-domaenen-schichten-facade.md)
 **Datum:** 2026-11-18
 
 ## Kontext
@@ -13,7 +13,10 @@ Angular ist dem Entwickler vertraut. Der Code bleibt für ihn dadurch gut nachvo
 
 - Framework ist **Angular** mit standalone Components, **zoneless** und **Signals**.
 - Die gesamte Spiellogik liegt in `core/`, reinem TypeScript ohne Angular-Abhängigkeit.
-- Abhängigkeiten zeigen nur nach unten ([Konzept §3.1](../technisches-konzept.md#31-schichten)). [`eslint.config.js`](../../eslint.config.js) erzwingt das mit `no-restricted-imports`:
+- Abhängigkeiten zeigen nur nach unten ([Konzept §3.1](../technisches-konzept.md#31-schichten)). [`eslint.config.js`](../../eslint.config.js) erzwingt das mit `no-restricted-imports`.
+
+> **Ersetzt durch [ADR-009](009-domaenen-schichten-facade.md):** Die folgende Schichtentabelle gilt nur noch bis zum Umbau in AP 1.1.10. Danach ist der Code nach Domäne und Schicht geordnet; die Angular-freie Logik liegt in den `domain`- und `util`-Schichten. Angular, zoneless, Signals und die Angular-freie Spiellogik bleiben gültig.
+
 
 | Schicht | Darf nicht importieren |
 |---|---|

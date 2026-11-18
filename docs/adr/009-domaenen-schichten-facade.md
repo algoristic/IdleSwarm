@@ -1,0 +1,46 @@
+# ADR-009: Domänen mit Schichten, Signal-Store mit Facades
+
+**Status:** Angenommen
+**Datum:** 2026-11-18
+**Ersetzt:** die Schichtentabelle aus [ADR-001](001-angular-zoneless-core.md)
+
+## Kontext
+
+Bisher ist der Code nach technischen Schichten geordnet: `core/` (reines TypeScript), `game/` (Angular-Services), `ui/` und `model/` ([Konzept §3](../technisches-konzept.md#3-architektur)). Das reicht für M1.1, skaliert aber schlecht:
+
+- Ab M1.2 kommen Futterstellen-Generator, Kampf, Weiterziehen, Sonar, Genom, Pheromone und Funde hinzu. `core/` würde zu einem großen Ordner ohne fachliche Grenzen.
+- Ab AS3 arbeitet der Schwarm an mehreren Standorten, ab AS4 an Fronten. Fachliche Grenzen machen solche Erweiterungen überschaubar.
+- Komponenten wie `BuyButton` injizieren heute den `GameStoreService` direkt und rechnen ihre Anzeige selbst aus. Präsentation und Zustandszugriff sind vermischt.
+
+Als Vorbild dient die Architektur aus PortfoliGo (Domäne × Schicht, Facades, NgRx). Dort hält NgRx nur gedrosselte Projektionen einer Engine, die im Web Worker läuft.
+
+## Entscheidung
+
+- Code wird **nach Domäne, dann nach Schicht** gruppiert: `src/app/<domain>/<feature|ui|data-access|domain|util>/…`. Die Abhängigkeitsregeln je Schicht stehen in [`CLAUDE.md` §1](../../CLAUDE.md#1-architektur-domänen-und-schichten); ESLint erzwingt sie.
+- `domain` und `util` bleiben Angular-frei und deterministisch (Kern von ADR-001 und ADR-003).
+- **Fachdomänen plus Engine:** Jede Fachdomäne (`swarm`, `site`, später `sonar`, `genome`, `finds` …) definiert ihren Teil des Zustands und ihre Regeln. `engine/domain` setzt `GameState`, `apply` und `step` daraus zusammen. `balance/domain` bleibt die einzige Quelle für Formeln und Konstanten (ADR-007).
+- **State bleibt ein Signal-Store** (`GameStore` in `engine/data-access`). Es gibt **kein NgRx**.
+- **Signals statt RxJS:** Eigene Logik und eigener Zustand verwenden nur Signals. RxJS kommt nur an Angular-Schnittstellen vor, die Observables liefern, und wird dort per `toSignal()` umgewandelt. In `domain` und `util` ist RxJS ganz verboten.
+- **Facades** sind der einzige Zugang für Komponenten. Sie stellen Viewmodels als `computed` bereit und bieten Befehle an, die Kommandos absetzen.
+- `ui`-Komponenten sind rein präsentational (Inputs/Outputs).
+
+### Umsetzungsstand
+
+**Geplant:** Umbau des Bestands in [AP 1.1.10](../projektplan.md#m11--kernschleife--modell), dazu ESLint-Regeln je Schicht und Domäne, Pfad-Alias `@app/*` und `import/order`.
+
+## Konsequenzen
+
+- Fachliche Grenzen sind im Ordnerbaum sichtbar; neue Mechaniken bekommen eine eigene Domäne statt eines weiteren Ordners in `core/`.
+- Präsentationskomponenten lassen sich ohne Spielzustand testen und auf der Modell-Seite oder in späteren Ären wiederverwenden.
+- Viewmodels sind reine Funktionen und damit ohne Angular testbar.
+- Negativ: mehr Dateien und Ordner je Feature (Facade, Providers, Viewmodel).
+- Negativ: Querimporte zwischen Fachdomänen in `domain` sind unvermeidbar (z. B. Kampf braucht Einheiten und Futterstelle). Sie laufen über den Alias und bleiben dadurch sichtbar; Zyklen werden aufgelöst, indem gemeinsame Teile nach `engine/domain` oder `balance/domain` wandern.
+- Negativ: Der Umbau kostet einmalig 2–3 PT.
+
+## Verworfene Alternativen
+
+- **NgRx wie in PortfoliGo:** Der Spielzustand ändert sich 10× pro Sekunde (ADR-003). Ohne Engine im Worker würde jeder Tick eine Action auslösen, alle Selektoren neu berechnen und die DevTools fluten. Ohne Backend gibt es kaum asynchrone Abläufe, für die Effects ihren Nutzen hätten. NgRx brächte viel Boilerplate ohne Gewinn.
+- **NgRx nur für App-Zustand (Einstellungen, Navigation):** zwei State-Konzepte nebeneinander für sehr wenig Zustand.
+- **Engine im Web Worker wie PortfoliGo:** erst sinnvoll, wenn die Simulation den Haupt-Thread messbar belastet (Risiko ab AS3, Projektplan §5). Die Angular-freie `domain`-Schicht hält diesen Weg offen.
+- **Grobe Domänen** (alle Regeln in `game/domain`): weniger Querimporte, aber `game/domain` wüchse wie heute `core/`.
+- **Schichten beibehalten:** behebt die Vermischung in den Komponenten nicht und skaliert schlecht über die Ären.

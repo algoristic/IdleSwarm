@@ -10,7 +10,7 @@
 | Backend | **keines**: Logik, Speicherung und Offline-Fortschritt laufen vollständig im Client |
 | Plattformen | Desktop-Browser und Mobile (aktuelle Chrome-, Safari-, Firefox- und Edge-Versionen), Hoch- und Querformat |
 | Hosting | statisch über GitHub Pages (`algoristic/IdleSwarm`) |
-| Sprache | Deutsch; Texte zentral in Datendateien, damit eine spätere Übersetzung möglich bleibt |
+| Sprache | Deutsch; Texte über `@angular/localize` mit festen IDs, damit eine spätere Übersetzung möglich bleibt ([ADR-011](adr/011-i18n-localize.md)) |
 
 ## 2. Technologie-Stack
 
@@ -22,12 +22,18 @@
 | Rendering Szene | **Canvas 2D** | Wie im Mockup; ausreichend für einige hundert Sprites mit Glow |
 | Rendering Karte & Genom | **SVG** in Angular-Templates | Interaktive Knoten, Klickflächen und Styling über CSS; im Mockup erprobt |
 | Übergänge | **CSS** (transform, clip-path, filter, opacity) | `@angular/animations` ist veraltet; die K2-Übergänge sind ohnehin CSS-Übergänge |
+| Styling | **Tailwind CSS v4** mit semantischen `--sw-*`-Tokens; K2-Ebenen und Kamera in Komponenten-CSS ([ADR-010](adr/010-tailwind-tokens.md)) | Viele HUD-Teile, Schubladen und Breakpoints ab M1.4; Farben zentral, Ära-Paletten als Token-Werte |
+| State | **Signal-Store** (`GameStore`) mit **Facades** je Feature, kein NgRx ([ADR-009](adr/009-domaenen-schichten-facade.md)) | 10-Hz-Tick, kein Backend; Facades trennen Präsentation und Zustandszugriff |
+| Texte | **`@angular/localize`** mit festen IDs, Quellsprache Deutsch; Übersetzung später ([ADR-011](adr/011-i18n-localize.md)) | Logik liefert nur IDs und Codes; spätere Übersetzung ohne zweite Migration |
+| Formulare | **Signal Forms** (`@angular/forms/signals`) | Passt zu Signals; Validierung deklarativ im Schema |
 | Diagramme (Modell-Seite) | **Apache ECharts**, über eine eigene dünne Wrapper-Komponente | Log-Achsen, Zoom, Markierungen, viele Datenpunkte; kein Versionszwang durch Drittanbieter-Wrapper |
 | Unit-Tests | **Vitest** | Standard-Testrunner im aktuellen Angular-CLI, schnell, gut für reine TS-Logik |
 | E2E-Tests | **Playwright** | Desktop- und Mobile-Viewports, Touch-Emulation |
 | Code-Qualität | ESLint (angular-eslint), Prettier | |
 | CI/CD | GitHub Actions → GitHub Pages | Lint, Test, Build bei jedem Push; Deploy von `main` |
 | PWA | `@angular/pwa` (Service Worker, Manifest) | Installierbar und offline startbar (AP 1.5.6) |
+
+Jede neue Laufzeitabhängigkeit braucht eine ADR. Versionen in `package.json` sind exakt angegeben, ohne `^` oder `~`.
 
 ### Angular: Vor- und Nachteile
 
@@ -38,74 +44,75 @@
 | Signals: feingranulare Updates des HUD ohne manuelles DOM-Management | Der Canvas-Loop darf keine Change Detection auslösen. **Gelöst** durch zoneless und Rendering außerhalb des Template-Systems |
 | Lazy Routes: Modell-Seite belastet das Spiel-Bundle nicht | Animationsmodul veraltet. **Kein Problem**, K2 nutzt CSS-Übergänge |
 
-Es gibt keinen Grund, der gegen Angular spricht. Entscheidend ist die Trennung: Die gesamte Spiellogik liegt in `core/` und kennt Angular nicht. Sie ist damit testbar, auf der Modell-Seite wiederverwendbar und bei Bedarf portierbar.
+Es gibt keinen Grund, der gegen Angular spricht. Entscheidend ist die Trennung: Die gesamte Spiellogik liegt in den `domain`-Schichten und kennt Angular nicht. Sie ist damit testbar, auf der Modell-Seite wiederverwendbar und bei Bedarf portierbar.
 
 ## 3. Architektur
 
-### 3.1 Schichten
+> **Zielarchitektur** nach [ADR-009](adr/009-domaenen-schichten-facade.md). Der Bestand (`core/`, `game/`, `ui/`, `model/`) wird in AP 1.1.10 umgebaut. Die Regeln im Detail stehen in [`CLAUDE.md`](../CLAUDE.md).
+
+### 3.1 Domänen und Schichten
+
+Code wird zuerst nach Domäne, dann nach Schicht gruppiert: `src/app/<domain>/<layer>/`.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ ui/        Angular-Komponenten (HUD, Zoom, Szene, Sonar, Genom)│
-│ model/     Modell-Seite (lazy Route /modell)                  │
+│ feature/      Seiten, Smart Components, Facades, Routen, Guards│
+│ ui/           Präsentationskomponenten (Inputs/Outputs), Pipes │
 ├──────────────────────────────────────────────────────────────┤
-│ game/      Angular-Services: GameStore (Signals), GameLoop,   │
-│            Persistence, Input, Settings                       │
+│ data-access/  GameStore, GameLoop, Persistenz, Worker-Clients  │
 ├──────────────────────────────────────────────────────────────┤
-│ core/      reines TypeScript, KEINE Angular-Abhängigkeit       │
-│   state/   GameState-Typen                                    │
-│   rules/   Kommandos: (state, cmd) → state                    │
-│   sim/     step(state, dt), Offline-Catch-up, Headless-Runner │
-│   balance/ alle Formeln und Konstanten                        │
-│   data/    Definitionen: Einheiten, Genom, Futterstellen, Funde│
-│   save/    Serialisierung, Versionen, Migrationen             │
-│   num/     Num-Typ (Decimal-Wrapper), Formatierung            │
-│   rng/     seeded RNG                                         │
+│ domain/       reines TypeScript, KEINE Angular-Abhängigkeit:   │
+│               Modelle, Spieldaten, Regeln, Formeln             │
+│ util/         Num, RNG, Formatierung                           │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Regel:** Abhängigkeiten zeigen nur nach unten. `core/` importiert nichts aus `game/`, `ui/` oder `model/`. Eine ESLint-Regel (`no-restricted-imports`) erzwingt das.
+| Schicht | darf abhängen von |
+|---|---|
+| `feature` | feature, ui, data-access, domain, util |
+| `ui` | ui, domain, util |
+| `data-access` | data-access, domain, util |
+| `domain` | domain, util |
+| `util` | util |
 
-### 3.2 Ordnerstruktur
+**Regeln:** Abhängigkeiten zeigen nur nach unten. `domain` und `util` importieren weder `@angular/*` noch `rxjs` und sind deterministisch (kein `Math.random`, `Date`, `crypto`). Komponenten greifen nur über Facades auf den Zustand zu. ESLint (`no-restricted-imports`) erzwingt die Schichten.
+
+### 3.2 Ordnerstruktur (Zielschnitt)
 
 ```
 src/app/
-  core/
-    state/game-state.ts
-    rules/commands.ts           # Kommando-Typen + apply()
-    rules/units.ts, site.ts
-    rules/migrate.ts, combat.ts, genome.ts, pheromones.ts, finds.ts  # geplant
-    sim/step.ts, collect.ts, brood.ts, runner.ts
-    sim/bots/bot.ts, active.ts, idle.ts
-    sim/catch-up.ts             # geplant
-    balance/constants.ts, formulas.ts
-    data/units.ts, sites-era1.ts, texts.de.ts
-    data/genome-era1.ts, finds-era1.ts  # geplant
-    save/serialize.ts, slots.ts, migrations/
-    num/num.ts, format.ts
-    rng/rng.ts
-  game/
-    game-store.service.ts
-    game-loop.service.ts
-    persistence.service.ts
-    input.service.ts
-    settings.service.ts
-  ui/
-    shell/                      # Ebenen-Layout, Modus/Kamera
-    scene/                      # Canvas-Renderer
-    sonar/                      # SVG-Karte + Detailpanel
-    genome/                     # SVG-Genom + Detailpanel
-    hud/                        # Prototyp-HUD: hud-page, feeding-site, buy-button, hud-meter, hud-format
-                                # geplant: Titel, Zoom-Leiste, Log, Ära
-    drawers/                    # Pheromone, Funde
-    dialogs/                    # Rückkehr-Zusammenfassung, Einstellungen, Export
+  shared/
+    util/num.ts, format.ts, rng.ts
+    ui/pipes/                   # formatNum, formatRate …
+  balance/
+    domain/constants.ts, formulas.ts, targets.ts (geplant)
+  engine/
+    domain/game-state.ts        # Zusammensetzung aus den Fachdomänen
+    domain/commands.ts          # Kommando-Typen + apply()
+    domain/step.ts, runner.ts, catch-up.ts (geplant)
+    data-access/game-store.service.ts, game-loop.service.ts
+  swarm/
+    domain/units.data.ts, units-logic.ts, brood-logic.ts
+  site/
+    domain/sites-era1.data.ts, site-logic.ts, collect-logic.ts
+  persistence/
+    domain/serialize.ts, slots.ts, migrations/
+    data-access/persistence.service.ts   # inkl. KEY_VALUE_STORE
+  hud/
+    feature/hud/hud.page.ts, feature/state/hud.facade.ts
+    ui/buy-button/, feeding-site/, hud-meter/
   model/                        # Modell-Seite (lazy)
-    model-page.ts, model-route.guard.ts, model-form.ts, model-format.ts, model-texts.de.ts
-    metrics.ts, params.ts, wait-share.ts
-    charts/echart.ts, chart-options.ts, chart-theme.ts
-    sim/sim.worker.ts, sim-client.ts, sim-core.ts, sim-protocol.ts, reduce-result.ts
-    ui/model-params.ts, model-charts.ts, model-metrics.ts
+    feature/model/model.page.ts, feature/model.routes.ts, feature/state/
+    ui/model-params/, model-charts/, model-metrics/, echart/
+    data-access/sim-client/, sim.worker.ts
+    domain/bots/, metrics.ts, params.ts, wait-share.ts, reduce-result.ts
+  # geplant
+  shell/                        # Ebenen-Layout, Modus/Kamera (K2)
+  scene/                        # Canvas-Renderer
+  sonar/, genome/, finds/, settings/
 ```
+
+Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `apply` und `step` daraus zusammen. Der Schnitt wird in AP 1.1.10 endgültig festgelegt.
 
 ### 3.3 Datenfluss
 
@@ -113,21 +120,21 @@ src/app/
 Eingabe (Kauf, Zielwahl, Taste, Pinch)
    │
    ▼
-GameStore.dispatch(cmd) ──► core/rules: apply(state, cmd) ──► neuer State
-                                                                │
-GameLoop (fester Takt) ──► core/sim: step(state, dt) ───────────┤
-                                                                ▼
-                                       GameStore.state = signal(State)
-                                                                │
-                              computed()-Signals (Raten, Preise, Status)
-                                                                │
-                                     ┌──────────────────────────┴───────────┐
-                                     ▼                                      ▼
-                         HUD/Sonar/Genom (Templates)          Szene (Canvas liest State im rAF)
+Facade.buy(…) ──► GameStore.dispatch(cmd) ──► engine: apply(state, cmd) ──► neuer State
+                                                                               │
+GameLoop (fester Takt) ──► GameStore.tick(dt) ──► engine: step(state, dt) ─────┤
+                                                                               ▼
+                                                      GameStore.state = signal(State)
+                                                                               │
+                                     Facades: computed()-Viewmodels (Raten, Preise, Status)
+                                                                               │
+                                              ┌────────────────────────────────┴──────────┐
+                                              ▼                                           ▼
+                           HUD/Sonar/Genom (Templates, ui-Komponenten)   Szene (Canvas liest State im rAF)
 ```
 
 - **Unveränderlicher Zustand:** `apply` und `step` liefern neue Objekte (flache Kopien der geänderten Teile). Das passt zu Signals und macht Tests einfach.
-- **Abgeleitete Werte** (Raten, Preise, Einnehmbarkeit) werden nicht im State gespeichert. Sie entstehen über reine Funktionen in `core/balance` und werden in `computed()` gekapselt.
+- **Abgeleitete Werte** (Raten, Preise, Einnehmbarkeit) werden nicht im State gespeichert. Sie entstehen über reine Funktionen in `balance/domain` und werden in den Facades als `computed()`-Viewmodels gekapselt. Komponenten lesen nur diese Viewmodels.
 - **Ereignisse** (Einheit gefallen, Fund, Ankunft) gibt `step` als Liste zurück. Das Log, Effekte und die Rückkehr-Zusammenfassung lesen sie.
 
 ### 3.4 Zustandsmodell (Entwurf)
@@ -173,7 +180,7 @@ IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil*
 
 ### 5.1 Grundsatz
 
-Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `core/balance`. Spiel, Offline-Catch-up, Headless-Runner und Modell-Seite rufen dieselben Funktionen auf. Die Modell-Seite enthält keine Kopie der Spiellogik.
+Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `balance/domain`. Spiel, Offline-Catch-up, Headless-Runner und Modell-Seite rufen dieselben Funktionen auf. Die Modell-Seite enthält keine Kopie der Spiellogik.
 
 ### 5.2 Modellgrößen (Entwurf für spätere Größen)
 
@@ -210,7 +217,7 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 - `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Käufe liegen also exakt auf ihrer Zeit.
 - Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten, die Futterstellen werden zusammengefasst.
 - Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Ab M1.2: **Drohnen-lastig**, **Soldaten-lastig**.
-- `params` überschreibt Konstanten aus `core/balance`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
+- `params` überschreibt Konstanten aus `balance/domain`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
 
 ### 5.4 Kennzahlen
 
@@ -242,7 +249,7 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 - **Reiter in M1.1:** Ressourcen (Nahrung, Vorrat, Einheiten), Raten (Nahrung/s, Netto/s, Eier/min) und Entscheidungen (Zeit bis zum nächsten Kauf je Einheit und gesamt). Zyklen folgen ab AP 1.2.9, Upgrades ab AP 1.3.7.
 - **Kennzahlen je Bot:** erster Kauf, Kauflücken und längste Wartezeit der ersten 30 min, erste Futterstelle, Anzahl und Median der Futterstellen, längste Strecke ohne Kauf, Verdopplungszeit, Anteil Wartezeit, Käufe gesamt und Rechendauer.
 - **Vergleich:** Ein gespeicherter Basislauf und der aktuelle Lauf liegen übereinander.
-- **Zielbänder (ab AP 1.3.7):** Die Pacing-Ziele aus dem [Projektplan](projektplan.md#35-pacing-ziele-vorläufig) liegen dann als Konfiguration in `core/balance/targets.ts` und werden als Flächen angezeigt. Verletzungen landen in einer Warnliste.
+- **Zielbänder (ab AP 1.3.7):** Die Pacing-Ziele aus dem [Projektplan](projektplan.md#35-pacing-ziele-vorläufig) liegen dann als Konfiguration in `balance/domain/targets.ts` und werden als Flächen angezeigt. Verletzungen landen in einer Warnliste.
 
 ### 5.6 Balancing als Test
 
@@ -250,7 +257,7 @@ Feste Bot-Läufe (Seed, Dauer) laufen in Vitest. Ihre Kennzahlen werden als Snap
 
 ## 6. Spieldaten
 
-- **Data-driven** als typisierte TS-Dateien in `core/data/`. Es gibt keine externe Tabelle (anders als Swarm Simulator mit Google Sheets). Typprüfung und Refactoring bleiben so möglich.
+- **Data-driven** als typisierte TS-Dateien in der `domain`-Schicht der jeweiligen Fachdomäne (z. B. `swarm/domain/units.data.ts`). Es gibt keine externe Tabelle (anders als Swarm Simulator mit Google Sheets). Typprüfung und Refactoring bleiben so möglich.
 - Beispiel:
 
 ```ts
@@ -264,8 +271,8 @@ export const GENOME_ERA1: GenomeNode[] = [
 ];
 ```
 
-- Texte liegen getrennt in `texts.de.ts` und sind über die ID verknüpft.
-- Die Positionen im radialen Genom (Winkel, Radius) gehören zu den UI-Daten in `ui/genome`, nicht in `core`.
+- Spieldaten enthalten keine Texte. Texte entstehen in `feature` bzw. `ui` über `$localize` und sind über die stabile ID verknüpft ([ADR-011](adr/011-i18n-localize.md)).
+- Die Positionen im radialen Genom (Winkel, Radius) gehören zu den UI-Daten in `genome/ui`, nicht in `genome/domain`.
 
 ## 7. Persistenz
 
@@ -327,7 +334,7 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 
 ## 9. Zahlenformatierung
 
-- `Num`-Formatierung in `core/num/format.ts`, deutsch:
+- `Num`-Formatierung in `shared/util/format.ts`, deutsch (Templates nutzen sie über Pipes):
   - unter 1 Mio.: ganze Zahlen mit Tausenderpunkt (`1.284`), Raten mit einer Nachkommastelle (`3,2`)
   - ab 1 Mio.: Kurzformen `Mio.`, `Mrd.`, `Bio.`, `Brd.`, `Trio.`, `Trd.` (< 1e24)
   - danach wissenschaftliche Notation (`1,23e45`)
@@ -336,9 +343,12 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 
 ## 10. Qualitätssicherung
 
+Dieser Testansatz bleibt bis Ausbaustufe 5 unverändert. Strengere Testregeln (z. B. aus PortfoliGo: Oracle-Regel, Mutationstests, Seiten-Tests je Akzeptanzkriterium) werden frühestens im Konzept-Meilenstein M5.0 neu bewertet; bis dahin sind viele Mechaniken noch offen.
+
+
 | Ebene | Maßnahme |
 |---|---|
-| Core | Unit-Tests mit Vitest für alle Regeln und Formeln; Ziel ≥ 85 % Abdeckung in `core/` |
+| Core | Unit-Tests mit Vitest für alle Regeln und Formeln; Ziel ≥ 85 % Abdeckung in den `domain`- und `util`-Schichten |
 | Determinismus | Test: gleicher Seed + gleiche Kommandos ⇒ identischer State |
 | Offline-Catch-up | Test: Catch-up vs. Echtzeit-Simulation innerhalb einer Toleranz |
 | Saves | Test je Migration mit eingefrorenen Beispiel-Spielständen |
@@ -360,7 +370,7 @@ Die Entscheidungen sind als einzelne Dateien in [`docs/adr/`](adr/README.md) fes
 
 | Nr | Entscheidung |
 |---|---|
-| ADR-001 | Angular (zoneless, Signals) als Framework; Spiellogik in Angular-freiem `core/` |
+| ADR-001 | Angular (zoneless, Signals) als Framework; Spiellogik Angular-frei (Schichtentabelle ersetzt durch ADR-009) |
 | ADR-002 | `break_infinity.js` hinter eigenem `Num`-Typ |
 | ADR-003 | Fester Logik-Takt 10 Hz, getrennt vom Rendering; seeded RNG |
 | ADR-004 | Unveränderlicher State, Kommandos als reine Funktionen |
@@ -368,3 +378,6 @@ Die Entscheidungen sind als einzelne Dateien in [`docs/adr/`](adr/README.md) fes
 | ADR-006 | Canvas 2D für die Szene, SVG für Karte und Genom, CSS-Übergänge für K2 |
 | ADR-007 | Modell-Seite mit ECharts nutzt dieselbe Logik wie das Spiel; Balancing-Snapshots als Tests |
 | ADR-008 | Kein Backend; Hosting auf GitHub Pages |
+| ADR-009 | Domänen mit Schichten; Signal-Store mit Facades, kein NgRx |
+| ADR-010 | Tailwind CSS v4 mit semantischen Tokens; K2-Ebenen in Komponenten-CSS |
+| ADR-011 | Texte über `@angular/localize`; Übersetzung später |
