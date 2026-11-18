@@ -1,17 +1,22 @@
-import { TICK_MS } from '../balance/constants';
+import { DEFAULT_BALANCE, TICK_MS } from '../balance/constants';
+import { UNIT_TYPES } from '../data/units';
 import { nextRandom, drawRandom } from '../rng/rng';
 import { apply } from '../rules/commands';
-import { createInitialState } from '../state/game-state';
+import { createInitialState, GameState } from '../state/game-state';
 import { step } from './step';
 
 const NOW = 1_700_000_000_000;
 
-/** Feste Abfolge aus Kommandos, Ticks und RNG-Ziehungen. */
-function play(seed: string): { json: string; values: number[] } {
-  let state = createInitialState({ seed, now: NOW });
+/** Feste Abfolge aus Kommandos, Käufen, Ticks und RNG-Ziehungen. */
+function play(seed: string): { json: string; values: number[]; state: GameState } {
+  // Genug Startnahrung, damit auch Königinnen und Soldaten gekauft werden.
+  let state = createInitialState({ seed, now: NOW }, { ...DEFAULT_BALANCE, startFood: 1000 });
   const values: number[] = [];
   for (let i = 0; i < 1000; i++) {
     state = apply(state, { type: i % 2 === 0 ? 'click' : 'newSite' });
+    if (i % 5 === 0) {
+      state = apply(state, { type: 'buy', unit: UNIT_TYPES[i % UNIT_TYPES.length] });
+    }
     state = step(state, TICK_MS).state;
     if (i % 3 === 0) {
       const result = drawRandom(state);
@@ -19,7 +24,7 @@ function play(seed: string): { json: string; values: number[] } {
       state = result.state;
     }
   }
-  return { json: JSON.stringify(state), values };
+  return { json: JSON.stringify(state), values, state };
 }
 
 describe('Determinismus', () => {
@@ -32,6 +37,13 @@ describe('Determinismus', () => {
     const second = play('idleswarm');
     expect(second.json).toBe(first.json);
     expect(second.values).toEqual(first.values);
+  });
+
+  it('enthält in der Abfolge Käufe jedes Einheitentyps', () => {
+    const { bought } = play('idleswarm').state;
+    for (const unit of UNIT_TYPES) {
+      expect(bought[unit].gt(0)).toBe(true);
+    }
   });
 
   it('liefert bei anderem Seed einen anderen Verlauf', () => {

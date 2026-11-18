@@ -1,6 +1,8 @@
 import { BalanceParams, DEFAULT_BALANCE } from '../balance/constants';
+import type { UnitType } from '../data/units';
 import type { GameState } from '../state/game-state';
 import { clickSite, renewSite } from './site';
+import { buyUnit } from './units';
 
 /** Kommando ohne Wirkung. */
 export interface NoopCommand {
@@ -17,8 +19,14 @@ export interface NewSiteCommand {
   readonly type: 'newSite';
 }
 
+/** Kauft eine Einheit des angegebenen Typs. */
+export interface BuyCommand {
+  readonly type: 'buy';
+  readonly unit: UnitType;
+}
+
 /** Alle Kommandos; neue Varianten hier ergänzen und in {@link apply} behandeln. */
-export type Command = NoopCommand | ClickCommand | NewSiteCommand;
+export type Command = NoopCommand | ClickCommand | NewSiteCommand | BuyCommand;
 
 /** Fehlt in {@link apply} ein Fall, schlägt der Aufruf hier beim Kompilieren fehl. */
 function assertNever(type: never): never {
@@ -42,6 +50,8 @@ export function apply(
       return clickSite(state, params);
     case 'newSite':
       return renewSite(state);
+    case 'buy':
+      return buyUnit(state, cmd.unit, params);
     default:
       return assertNever(type);
   }
