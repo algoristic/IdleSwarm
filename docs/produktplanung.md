@@ -342,7 +342,7 @@ Als Game-Designer möchte ich verschiedene Spielweisen simulieren und vergleiche
 
 **US-10.05 · Parameter verstellen** · Must · M1.1
 Als Game-Designer möchte ich Konstanten (Kosten, Raten, Wachstumsfaktoren) direkt verändern und das Ergebnis mit dem Basislauf vergleichen, damit ich schnell iteriere.
-- AK: Parameter-Panel mit allen Konstanten aus `core/balance`; Änderung startet eine neue Simulation.
+- AK: Parameter-Panel mit allen Konstanten aus `balance/domain`; Änderung startet eine neue Simulation.
 - AK: Geänderte Werte lassen sich als JSON exportieren und in den Code übernehmen.
 
 **US-10.06 · Zyklen & Stillstand** · Must · M1.2

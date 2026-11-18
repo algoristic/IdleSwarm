@@ -7,8 +7,8 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcovonly'],
       thresholds: {
-        // Ziel laut technischem Konzept §10; gilt nur für die Spiellogik in core/.
-        'src/app/core/**/*.ts': {
+        // Ziel laut technischem Konzept §10; gilt für die Angular-freien Schichten domain und util.
+        'src/app/*/{domain,util}/**/*.ts': {
           statements: 85,
           branches: 85,
           functions: 85,

@@ -25,11 +25,11 @@
 | Styling | **Tailwind CSS v4** mit semantischen `--sw-*`-Tokens; K2-Ebenen und Kamera in Komponenten-CSS ([ADR-010](adr/010-tailwind-tokens.md)) | Viele HUD-Teile, Schubladen und Breakpoints ab M1.4; Farben zentral, Ära-Paletten als Token-Werte |
 | State | **Signal-Store** (`GameStore`) mit **Facades** je Feature, kein NgRx ([ADR-009](adr/009-domaenen-schichten-facade.md)) | 10-Hz-Tick, kein Backend; Facades trennen Präsentation und Zustandszugriff |
 | Texte | **`@angular/localize`** mit festen IDs, Quellsprache Deutsch; Übersetzung später ([ADR-011](adr/011-i18n-localize.md)) | Logik liefert nur IDs und Codes; spätere Übersetzung ohne zweite Migration |
-| Formulare | **Signal Forms** (`@angular/forms/signals`) | Passt zu Signals; Validierung deklarativ im Schema |
+| Formulare | **Signal Forms** (`@angular/forms/signals`, [ADR-012](adr/012-signal-forms.md)) | Passt zu Signals; Validierung deklarativ im Schema |
 | Diagramme (Modell-Seite) | **Apache ECharts**, über eine eigene dünne Wrapper-Komponente | Log-Achsen, Zoom, Markierungen, viele Datenpunkte; kein Versionszwang durch Drittanbieter-Wrapper |
 | Unit-Tests | **Vitest** | Standard-Testrunner im aktuellen Angular-CLI, schnell, gut für reine TS-Logik |
 | E2E-Tests | **Playwright** | Desktop- und Mobile-Viewports, Touch-Emulation |
-| Code-Qualität | ESLint (angular-eslint), Prettier | |
+| Code-Qualität | ESLint (angular-eslint, `eslint-plugin-import-x`), Prettier | Schichtregeln je Domäne, Determinismus in `domain`/`util`, Importreihenfolge |
 | CI/CD | GitHub Actions → GitHub Pages | Lint, Test, Build bei jedem Push; Deploy von `main` |
 | PWA | `@angular/pwa` (Service Worker, Manifest) | Installierbar und offline startbar (AP 1.5.6) |
 
@@ -48,7 +48,7 @@ Es gibt keinen Grund, der gegen Angular spricht. Entscheidend ist die Trennung: 
 
 ## 3. Architektur
 
-> **Zielarchitektur** nach [ADR-009](adr/009-domaenen-schichten-facade.md). Der Bestand (`core/`, `game/`, `ui/`, `model/`) wird in AP 1.1.10 umgebaut. Die Regeln im Detail stehen in [`CLAUDE.md`](../CLAUDE.md).
+> Architektur nach [ADR-009](adr/009-domaenen-schichten-facade.md), umgesetzt in AP 1.1.10. Die Regeln im Detail stehen in [`CLAUDE.md`](../CLAUDE.md), die Besonderheiten je Bereich in den Regeldateien unter `.claude/rules/`.
 
 ### 3.1 Domänen und Schichten
 
@@ -77,42 +77,43 @@ Code wird zuerst nach Domäne, dann nach Schicht gruppiert: `src/app/<domain>/<l
 
 **Regeln:** Abhängigkeiten zeigen nur nach unten. `domain` und `util` importieren weder `@angular/*` noch `rxjs` und sind deterministisch (kein `Math.random`, `Date`, `crypto`). Komponenten greifen nur über Facades auf den Zustand zu. ESLint (`no-restricted-imports`) erzwingt die Schichten.
 
-### 3.2 Ordnerstruktur (Zielschnitt)
+### 3.2 Ordnerstruktur
 
 ```
 src/app/
   shared/
-    util/num.ts, format.ts, rng.ts
-    ui/pipes/                   # formatNum, formatRate …
+    util/num/, format/, rng/    # Num, Formatierung (Zahlen, Dauer, Datum), seeded RNG
+    ui/pipes/                   # formatNum, formatRate, formatDown, formatDuration …
+    data-access/platform/       # CLOCK, ANIMATION_FRAME
   balance/
     domain/constants.ts, formulas.ts, targets.ts (geplant)
   engine/
-    domain/game-state.ts        # Zusammensetzung aus den Fachdomänen
-    domain/commands.ts          # Kommando-Typen + apply()
-    domain/step.ts, runner.ts, catch-up.ts (geplant)
-    data-access/game-store.service.ts, game-loop.service.ts
+    domain/models/game-state.model.ts   # Zusammensetzung aus den Fachdomänen
+    domain/game-state-logic.ts, commands-logic.ts, step-logic.ts, random-logic.ts
+    domain/runner-logic.ts, bot-logic.ts, catch-up (geplant)
+    data-access/game-store/, game-loop/, game-core/   # provideGameCore()
   swarm/
-    domain/units.data.ts, units-logic.ts, brood-logic.ts
+    domain/models/units.model.ts, units-logic.ts, brood-logic.ts
   site/
-    domain/sites-era1.data.ts, site-logic.ts, collect-logic.ts
+    domain/models/site.model.ts, data/sites-era1.data.ts, site-logic.ts, collect-logic.ts
   persistence/
-    domain/serialize.ts, slots.ts, migrations/
-    data-access/persistence.service.ts   # inkl. KEY_VALUE_STORE
+    domain/serialize-logic.ts, slots-logic.ts, migrations/
+    data-access/persistence/    # PersistenceService, KEY_VALUE_STORE
   hud/
-    feature/hud/hud.page.ts, feature/state/hud.facade.ts
+    feature/hud.routes.ts, hud/hud.page.ts, state/hud.facade.ts, state/hud.utils.ts
     ui/buy-button/, feeding-site/, hud-meter/
   model/                        # Modell-Seite (lazy)
-    feature/model/model.page.ts, feature/model.routes.ts, feature/state/
-    ui/model-params/, model-charts/, model-metrics/, echart/
-    data-access/sim-client/, sim.worker.ts
-    domain/bots/, metrics.ts, params.ts, wait-share.ts, reduce-result.ts
+    feature/model.routes.ts, model/model.page.ts, state/model.facade.ts, state/model.guards.ts
+    ui/form-model-params/, model-charts/, model-metrics/, echart/, bot-labels/
+    data-access/sim/            # SimService, sim.worker.ts, Protokoll
+    domain/bots/, models/, params-logic.ts, model-params-logic.ts, reduce-result-logic.ts …
   # geplant
   shell/                        # Ebenen-Layout, Modus/Kamera (K2)
   scene/                        # Canvas-Renderer
   sonar/, genome/, finds/, settings/
 ```
 
-Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `apply` und `step` daraus zusammen. Der Schnitt wird in AP 1.1.10 endgültig festgelegt.
+Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `apply` und `step` daraus zusammen.
 
 ### 3.3 Datenfluss
 
@@ -381,3 +382,4 @@ Die Entscheidungen sind als einzelne Dateien in [`docs/adr/`](adr/README.md) fes
 | ADR-009 | Domänen mit Schichten; Signal-Store mit Facades, kein NgRx |
 | ADR-010 | Tailwind CSS v4 mit semantischen Tokens; K2-Ebenen in Komponenten-CSS |
 | ADR-011 | Texte über `@angular/localize`; Übersetzung später |
+| ADR-012 | Formulare mit Signal Forms (`@angular/forms/signals`) |

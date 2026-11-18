@@ -15,18 +15,18 @@ Das Spielergebnis darf nicht von der Framerate abhängen. Gleichzeitig braucht d
 - Kommandos (Kauf, Neue Futterstelle) werden sofort angewendet, nicht erst im nächsten Tick.
 - Zufall kommt nur aus dem seeded RNG (**Mulberry32**). Sein Zustand liegt als `rngState` (uint32) im `GameState`; der Seed wird mit **FNV-1a** über die UTF-16-Codeeinheiten darauf abgebildet.
 - Gleicher Seed und gleiche Abfolge von Kommandos und Schritten ergeben denselben Zustand.
-- `core/` liest die Uhr nicht selbst; Zeitpunkte und `dt` werden übergeben.
+- Die Schichten `domain` und `util` lesen die Uhr nicht selbst; Zeitpunkte und `dt` werden übergeben.
 - Ab AP 1.5.1 werden Offline-Zeit und große Zeitsprünge im Hintergrund-Tab in adaptiven Schritten nachgeholt, die an Ereignisgrenzen verkürzt werden.
 
 ### Umsetzungsstand
 
 **Umgesetzt:**
 
-- `TICKS_PER_SECOND` und `TICK_MS` in [`core/balance/constants.ts`](../../src/app/core/balance/constants.ts)
-- Mulberry32 und Seed-Hash in [`core/rng/rng.ts`](../../src/app/core/rng/rng.ts)
-- `rngState` in [`core/state/game-state.ts`](../../src/app/core/state/game-state.ts)
-- `step(state, dtMs)` und `syncClock(state, nowMs)` in [`core/sim/step.ts`](../../src/app/core/sim/step.ts); `step` führt Grundertrag, Sammeln und Brut aus und schreibt die Zeit fort
-- Logik- und Render-Takt in [`game/game-loop.service.ts`](../../src/app/game/game-loop.service.ts)
+- `TICKS_PER_SECOND` und `TICK_MS` in [`balance/domain/constants.ts`](../../src/app/balance/domain/constants.ts)
+- Mulberry32 und Seed-Hash in [`shared/util/rng/rng.ts`](../../src/app/shared/util/rng/rng.ts)
+- `rngState` in [`engine/domain/models/game-state.model.ts`](../../src/app/engine/domain/models/game-state.model.ts)
+- `step(state, dtMs)` und `syncClock(state, nowMs)` in [`engine/domain/step-logic.ts`](../../src/app/engine/domain/step-logic.ts); `step` führt Grundertrag, Sammeln und Brut aus und schreibt die Zeit fort
+- Logik- und Render-Takt in [`engine/data-access/game-loop/game-loop.service.ts`](../../src/app/engine/data-access/game-loop/game-loop.service.ts)
 
 **Geplant:**
 

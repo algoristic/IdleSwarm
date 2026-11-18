@@ -26,7 +26,13 @@ Als Vorbild dient die Architektur aus PortfoliGo (Domäne × Schicht, Facades, N
 
 ### Umsetzungsstand
 
-**Geplant:** Umbau des Bestands in [AP 1.1.10](../projektplan.md#m11--kernschleife--modell), dazu ESLint-Regeln je Schicht und Domäne, Pfad-Alias `@app/*` und `import/order`.
+**Umgesetzt** in [AP 1.1.10](../projektplan.md#m11--kernschleife--modell):
+
+- Domänen `shared`, `balance`, `engine`, `swarm`, `site`, `persistence`, `hud` und `model` unter [`src/app/`](../../src/app/). Die Typen `Units` und `Site` liegen in `swarm/domain` bzw. `site/domain`, `engine/domain` setzt daraus `GameState` zusammen.
+- [`GameStore`](../../src/app/engine/data-access/game-store/game-store.service.ts), [`GameLoop`](../../src/app/engine/data-access/game-loop/game-loop.service.ts) und [`PersistenceService`](../../src/app/persistence/data-access/persistence/persistence.service.ts) stellt [`provideGameCore()`](../../src/app/engine/data-access/game-core/game-core.providers.ts) einmal bereit. Uhr und `requestAnimationFrame` liegen hinter den Tokens `CLOCK` und `ANIMATION_FRAME` ([`shared/data-access`](../../src/app/shared/data-access/platform/platform.tokens.ts)).
+- [`HudFacade`](../../src/app/hud/feature/state/hud.facade.ts) mit dem reinen Viewmodel `toHudView`; `BuyButtonComponent`, `FeedingSiteComponent` und `HudMeterComponent` sind präsentational.
+- [`ModelFacade`](../../src/app/model/feature/state/model.facade.ts) mit `SimService`, Basislauf, Zoom und entprelltem Auto-Lauf; der Worker endet mit der Seite.
+- [`eslint.config.js`](../../eslint.config.js): Schichtregeln je Domäne, Fremd-Domänen nur über `@app/…`, Determinismus in `domain`/`util`, `import-x/order` und Klassensuffixe `Page`/`Component`.
 
 ## Konsequenzen
 

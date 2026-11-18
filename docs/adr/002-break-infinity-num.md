@@ -17,7 +17,7 @@ Idle-Zahlen sprengen spätestens ab AS2 den Bereich von `number` (~1,8·10³⁰�
 
 ### Umsetzungsstand
 
-**Umgesetzt:** [`core/num/num.ts`](../../src/app/core/num/num.ts) ist die einzige Datei unter `src/`, die `break_infinity.js` importiert. Die deutsche Formatierung liegt in [`core/num/format.ts`](../../src/app/core/num/format.ts) und nutzt nur `Num`.
+**Umgesetzt:** [`shared/util/num/num.ts`](../../src/app/shared/util/num/num.ts) ist die einzige Datei unter `src/`, die `break_infinity.js` importiert. Die deutsche Formatierung liegt in [`shared/util/format/format.ts`](../../src/app/shared/util/format/format.ts) und nutzt nur `Num`.
 
 **Geplant:** Die technische Notation folgt in AP 1.5.3.
 

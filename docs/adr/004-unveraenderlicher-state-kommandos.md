@@ -12,17 +12,17 @@ Eingaben und der Logik-Takt ändern denselben Spielzustand. Die Oberfläche beob
 - Das Spielgeschehen ändert sich nur über zwei Funktionen: `apply(state, cmd)` für Kommandos und `step(state, dt)` für den Zeitfortschritt.
 - Beide verändern ihre Eingabe nicht und liefern neue Objekte, als flache Kopien der geänderten Teile.
 - `syncClock(state, nowMs)` führt nur `time.now` nach, ohne dass Spielzeit vergeht. Nach Laden und Speichern ersetzt der GameStore den Zustand als Ganzes.
-- Abgeleitete Werte (Raten, Preise, Einnehmbarkeit) stehen nicht im State. Sie entstehen über reine Funktionen in `core/balance` und werden in `computed()` gekapselt.
+- Abgeleitete Werte (Raten, Preise, Einnehmbarkeit) stehen nicht im State. Sie entstehen über reine Funktionen in `balance/domain` und werden in `computed()` gekapselt.
 - `step` gibt Ereignisse als Liste zurück. Log, Effekte und Rückkehr-Zusammenfassung lesen sie.
 
 ### Umsetzungsstand
 
 **Umgesetzt:**
 
-- [`core/rules/commands.ts`](../../src/app/core/rules/commands.ts): Typ `Command` und `apply` mit `noop`, `newSite` und `buy`; fehlt ein Fall in `apply`, schlägt das Kompilieren fehl.
-- [`core/sim/step.ts`](../../src/app/core/sim/step.ts): `step` führt Grundertrag, Sammeln und Brut aus und liefert `{ state, events }`. Die Ereignisliste ist noch leer.
-- [`core/state/game-state.ts`](../../src/app/core/state/game-state.ts): alle Felder sind `readonly`.
-- [`game/game-store.service.ts`](../../src/app/game/game-store.service.ts): `dispatch` wendet Kommandos sofort an, `tick` ruft `step` auf; der Zustand ist nach außen nur lesbar.
+- [`engine/domain/commands-logic.ts`](../../src/app/engine/domain/commands-logic.ts): Typ `Command` und `apply` mit `noop`, `newSite` und `buy`; fehlt ein Fall in `apply`, schlägt das Kompilieren fehl.
+- [`engine/domain/step-logic.ts`](../../src/app/engine/domain/step-logic.ts): `step` führt Grundertrag, Sammeln und Brut aus und liefert `{ state, events }`. Die Ereignisliste ist noch leer.
+- [`engine/domain/models/game-state.model.ts`](../../src/app/engine/domain/models/game-state.model.ts): alle Felder sind `readonly`.
+- [`engine/data-access/game-store/game-store.service.ts`](../../src/app/engine/data-access/game-store/game-store.service.ts): `dispatch` wendet Kommandos sofort an, `tick` ruft `step` auf; der Zustand ist nach außen nur lesbar.
 
 **Geplant:** Weitere Kommandos und die Ereignisse von `step` folgen mit den Mechaniken ab M1.2.
 

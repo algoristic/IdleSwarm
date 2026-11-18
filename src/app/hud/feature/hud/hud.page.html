@@ -1,0 +1,131 @@
+@let hud = facade.hud();
+@let spaceText = (hud.space.used | formatDown) + ' / ' + (hud.space.available | formatDown);
+
+<main class="mx-auto grid max-w-240 gap-3 p-4 wrap-anywhere md:grid-cols-2">
+  <h1 class="text-2xl font-semibold md:col-span-full" i18n="@@featureHud-hud-title">IdleSwarm</h1>
+
+  <section
+    class="min-w-0 rounded-lg border border-border bg-glass p-3 md:col-span-full"
+    aria-labelledby="resources-title"
+  >
+    <h2 id="resources-title" class="text-lg font-semibold" i18n="@@featureHud-hud-resources-title">
+      Ressourcen
+    </h2>
+    <dl class="mt-2 grid grid-cols-stats gap-x-4 gap-y-2">
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-food">Nahrung</dt>
+        <dd class="text-xl tabular-nums" data-testid="hud.resources.food">
+          {{ hud.food | formatDown }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-foodRate">Nahrung/s</dt>
+        <dd class="text-xl tabular-nums" data-testid="hud.resources.food-rate">
+          {{ hud.foodRate | formatRate }}
+        </dd>
+      </div>
+      <!-- Aufschlüsselung der Nahrung/s (US-01.02): kleiner als die Hauptwerte. -->
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-baseRate">
+          davon Grundertrag
+        </dt>
+        <dd class="tabular-nums" data-testid="hud.resources.base-rate">
+          {{ hud.baseRate | formatRate }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-droneRate">
+          davon Drohnen
+        </dt>
+        <dd class="tabular-nums" data-testid="hud.resources.drone-rate">
+          {{ hud.droneRate | formatRate }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-eggs">Eier/min</dt>
+        <dd class="text-xl tabular-nums" data-testid="hud.resources.eggs">
+          {{ hud.eggsPerMinute | formatRate }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-attack">
+          Gesamtangriff
+        </dt>
+        <dd class="text-xl tabular-nums" data-testid="hud.resources.attack">
+          {{ hud.attack | formatDown }}
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <app-feeding-site
+    class="min-w-0 rounded-lg border border-border bg-glass p-3"
+    [site]="hud.site"
+    (clickedRenew)="facade.renewSite()"
+  />
+
+  <section
+    class="min-w-0 rounded-lg border border-border bg-glass p-3"
+    aria-labelledby="space-title"
+  >
+    <div class="mb-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 tabular-nums">
+      <h2 id="space-title" class="text-lg font-semibold">{{ spaceLabel }}</h2>
+      <span
+        class="data-warning:text-warning"
+        data-testid="hud.space.value"
+        [attr.data-warning]="hud.space.warning ? '' : null"
+      >
+        {{ spaceText }}
+        @if (hud.space.usagePercent; as percent) {
+          ({{ percent | formatDown }} %)
+        }
+      </span>
+    </div>
+    <app-hud-meter
+      [percent]="hud.space.barPercent"
+      [label]="spaceLabel"
+      [valueText]="spaceText"
+      [warning]="hud.space.warning"
+    />
+    @if (hud.space.warning) {
+      <p
+        class="mt-1 text-warning"
+        data-testid="hud.space.warning"
+        i18n="@@featureHud-hud-space-warning"
+      >
+        Der Platz wird knapp.
+      </p>
+    }
+  </section>
+
+  <section
+    class="min-w-0 rounded-lg border border-border bg-glass p-3 md:col-span-full"
+    aria-labelledby="units-title"
+  >
+    <h2 id="units-title" class="text-lg font-semibold" i18n="@@featureHud-hud-units-title">
+      Schwarm
+    </h2>
+    <div class="mt-2 grid grid-cols-actions gap-2">
+      @for (unit of hud.units; track unit.id) {
+        <app-buy-button [unit]="unit" (clickedBuy)="facade.buy($event)" />
+      }
+    </div>
+  </section>
+
+  <footer class="text-sm text-fg-muted md:col-span-full">
+    <p data-testid="hud.status.last-saved">
+      <ng-container i18n="@@featureHud-hud-lastSaved">Zuletzt gespeichert</ng-container>:
+      @if (hud.lastSavedAt; as savedAt) {
+        <time [attr.datetime]="savedAt | formatIsoDateTime">{{ savedAt | formatDateTime }}</time>
+      } @else {
+        <ng-container i18n="@@featureHud-hud-neverSaved">Noch nicht gespeichert</ng-container>
+      }
+    </p>
+    <!-- Die Live-Region steht von Anfang an im DOM, damit neue Hinweise angesagt werden. -->
+    <div role="status" data-testid="hud.status.notices">
+      @for (notice of hud.notices; track notice) {
+        <p class="mt-1 text-warning">{{ noticeTexts[notice] }}</p>
+      }
+    </div>
+  </footer>
+</main>

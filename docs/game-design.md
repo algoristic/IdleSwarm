@@ -4,7 +4,7 @@
 
 ## 1. Geltung
 
-Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für Meilenstein **M1.1 · Kernschleife & Modell** fest. Sie ist die fachliche Vorlage für die Umsetzung in `core/balance`. Für M1.1 hat sie Vorrang vor dem Entwurf im [Technischen Konzept §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen).
+Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für Meilenstein **M1.1 · Kernschleife & Modell** fest. Sie ist die fachliche Vorlage für die Umsetzung in `balance/domain`. Für M1.1 hat sie Vorrang vor dem Entwurf im [Technischen Konzept §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen).
 
 - **Zahlenwerte sind „v1“:** Sie dürfen während M1.1 nachjustiert werden, bis die Bots die [Pacing-Ziele](projektplan.md#35-pacing-ziele-vorläufig) treffen. Formeln und Zielbänder bleiben dabei unverändert.
 - **Alle Konstanten sind über Parameter überschreibbar** ([ADR-007](adr/007-modell-seite-echarts-balancing.md)). So testet die Modell-Seite Varianten ohne Codeänderung.

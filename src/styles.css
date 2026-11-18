@@ -1,18 +1,92 @@
+/* Nur `src/` nach Klassennamen durchsuchen; im Repository liegen auch Docs und Mockups. */
+@import 'tailwindcss' source('.');
+
+/* Modus der K2-Shell (`data-mode` am Shell-Container, ab M1.4). */
+@custom-variant mode-map (&:where([data-mode='map'] *));
+@custom-variant mode-scene (&:where([data-mode='scene'] *));
+@custom-variant mode-gen (&:where([data-mode='gen'] *));
+/* Aktueller Eintrag in Navigation und Listen (`aria-current`). */
+@custom-variant current (&[aria-current]:not([aria-current='false']));
+
+/*
+ * K2-Palette (docs/mockups/k2-zoom.html). Nur diese Tokens gibt es als Farben; Komponenten-CSS und
+ * der Canvas lesen sie als `var(--sw-*)`. Textfarben haben auf `--sw-bg` und `--sw-surface`
+ * mindestens 4,5:1 Kontrast.
+ */
 :root {
   color-scheme: dark;
-  --hud-surface: #141d25;
-  --hud-surface-raised: #1c2832;
-  --hud-border: #5c6b78;
-  --hud-muted: #a9b6c2;
-  --hud-accent: #3fb68b;
-  --hud-warning: #f2a33a;
-  --hud-focus: #7cc4ff;
+  --sw-bg: #02070d;
+  --sw-bg-deep: #061a2b;
+  --sw-bg-glow: #0b2a40;
+  --sw-glass: rgb(8 30 46 / 0.55);
+  --sw-surface: #06192a;
+  --sw-surface-raised: #0a2438;
+  --sw-border: rgb(95 242 230 / 0.18);
+  --sw-border-control: #2a8f99;
+  --sw-fg: #d4f3f5;
+  --sw-fg-muted: #6f9aa6;
+  --sw-accent: #5ff2e6;
+  --sw-on-accent: #02070d;
+  --sw-warning: #ffc65f;
+  --sw-danger: #ff6b6b;
+  --sw-violet: #a98bff;
+  --sw-magenta: #ff5fa8;
+
+  /* Diagramme der Modell-Seite: feste Reihenfolge, geprüft auf Kontrast und Farbsehschwäche. */
+  --sw-chart-1: #3987e5;
+  --sw-chart-2: #d95926;
+  --sw-chart-3: #199e70;
+  --sw-chart-4: #c98500;
+  --sw-chart-5: #d55181;
+
+  --sw-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-body {
-  margin: 0;
-  background: #0b1116;
-  color: #e6edf3;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
+@theme {
+  --color-*: initial;
+  /* Kennzahlen und Kaufknöpfe des HUD: so viele Spalten, wie mit Mindestbreite passen. */
+  --grid-template-columns-stats: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  --grid-template-columns-actions: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  /* Modell-Seite: Parameter-Panel neben den Ergebnissen; Zeilen aus Name, Eingabe und Zurücksetzen. */
+  --grid-template-columns-model: 22rem minmax(0, 1fr);
+  --grid-template-columns-field: 4rem minmax(0, 1fr);
+  --grid-template-columns-param: minmax(0, 1fr) 5.5rem 1.75rem;
+}
+
+/* `inline` setzt `var(--sw-*)` direkt in die Utilities ein. */
+@theme inline {
+  --color-bg: var(--sw-bg);
+  --color-bg-deep: var(--sw-bg-deep);
+  --color-glass: var(--sw-glass);
+  --color-surface: var(--sw-surface);
+  --color-surface-raised: var(--sw-surface-raised);
+  --color-border: var(--sw-border);
+  --color-border-control: var(--sw-border-control);
+  --color-fg: var(--sw-fg);
+  --color-fg-muted: var(--sw-fg-muted);
+  --color-accent: var(--sw-accent);
+  --color-on-accent: var(--sw-on-accent);
+  --color-warning: var(--sw-warning);
+  --color-danger: var(--sw-danger);
+  --color-violet: var(--sw-violet);
+  --color-magenta: var(--sw-magenta);
+  --ease-sw: var(--sw-ease);
+}
+
+@layer base {
+  body {
+    @apply bg-bg font-sans text-fg;
+    background-image: radial-gradient(
+      ellipse at 50% 0%,
+      var(--sw-bg-glow) 0%,
+      var(--sw-bg-deep) 40%,
+      var(--sw-bg) 85%
+    );
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
 }

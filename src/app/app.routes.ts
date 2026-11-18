@@ -1,14 +1,16 @@
 import { Routes } from '@angular/router';
 
-import { modelRouteGuard } from './model/model-route.guard';
-import { HudPage } from './ui/hud/hud-page';
+import { modelRouteGuard } from '@app/model/feature/state/model.guards';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', component: HudPage },
   {
     path: 'modell',
     canMatch: [modelRouteGuard],
-    loadComponent: () => import('./model/model-page').then((module) => module.ModelPage),
+    loadChildren: async () => (await import('@app/model/feature/model.routes')).modelRoutes,
+  },
+  {
+    path: '',
+    loadChildren: async () => (await import('@app/hud/feature/hud.routes')).hudRoutes,
   },
   { path: '**', redirectTo: '' },
 ];

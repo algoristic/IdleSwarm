@@ -15,7 +15,7 @@ Angular ist dem Entwickler vertraut. Der Code bleibt für ihn dadurch gut nachvo
 - Die gesamte Spiellogik liegt in `core/`, reinem TypeScript ohne Angular-Abhängigkeit.
 - Abhängigkeiten zeigen nur nach unten ([Konzept §3.1](../technisches-konzept.md#31-schichten)). [`eslint.config.js`](../../eslint.config.js) erzwingt das mit `no-restricted-imports`.
 
-> **Ersetzt durch [ADR-009](009-domaenen-schichten-facade.md):** Die folgende Schichtentabelle gilt nur noch bis zum Umbau in AP 1.1.10. Danach ist der Code nach Domäne und Schicht geordnet; die Angular-freie Logik liegt in den `domain`- und `util`-Schichten. Angular, zoneless, Signals und die Angular-freie Spiellogik bleiben gültig.
+> **Ersetzt durch [ADR-009](009-domaenen-schichten-facade.md):** Die folgende Schichtentabelle galt bis zum Umbau in AP 1.1.10. Seitdem ist der Code nach Domäne und Schicht geordnet; die Angular-freie Logik liegt in den `domain`- und `util`-Schichten. Angular, zoneless, Signals und die Angular-freie Spiellogik bleiben gültig.
 
 
 | Schicht | Darf nicht importieren |
@@ -30,14 +30,14 @@ Angular ist dem Entwickler vertraut. Der Code bleibt für ihn dadurch gut nachvo
 **Umgesetzt:**
 
 - Angular 22 ([`package.json`](../../package.json)), Node 24.15.0 ([`.nvmrc`](../../.nvmrc)).
-- Standalone: [`App`](../../src/app/app.ts) bindet seine Abhängigkeiten über `imports` ein, es gibt kein `NgModule`.
+- Standalone: [`AppComponent`](../../src/app/app.component.ts) bindet seine Abhängigkeiten über `imports` ein, es gibt kein `NgModule`.
 - Zoneless: `zone.js` ist weder Abhängigkeit noch Polyfill.
-- Signals: [`GameStoreService`](../../src/app/game/game-store.service.ts) hält den Zustand in einem Signal, das [HUD](../../src/app/ui/hud/hud-page.ts) leitet seine Anzeige über `computed()` ab.
-- Die Schichtenregel ist aktiv, `core/` enthält nur reines TypeScript.
+- Signals: [`GameStore`](../../src/app/engine/data-access/game-store/game-store.service.ts) hält den Zustand in einem Signal, die [`HudFacade`](../../src/app/hud/feature/state/hud.facade.ts) leitet das Viewmodel des [HUD](../../src/app/hud/feature/hud/hud.page.ts) über `computed()` ab.
+- Die Schichtenregel ist aktiv: `domain` und `util` enthalten nur reines TypeScript (seit AP 1.1.10 nach [ADR-009](009-domaenen-schichten-facade.md)).
 
 ## Konsequenzen
 
-- `core/` ist ohne Angular testbar, auf der Modell-Seite wiederverwendbar und bei Bedarf portierbar.
+- Die Spiellogik ist ohne Angular testbar, auf der Modell-Seite wiederverwendbar und bei Bedarf portierbar.
 - Signals erlauben feingranulare HUD-Updates ohne manuelles DOM-Management.
 - Lazy Routes halten die Modell-Seite aus dem Spiel-Bundle heraus.
 - Negativ: Das Bundle ist rund 100 KB gzip größer als z. B. mit Preact. Das Konzept bewertet das als unkritisch, weil das Spiel einmal geladen wird und dann gecacht ist.

@@ -18,7 +18,13 @@ Die Texte liegen damit in der Logikschicht, obwohl die Logik nur IDs und Codes b
 
 ### Umsetzungsstand
 
-**Geplant:** Einführung und Auflösung von `TEXTS_DE`, `MODEL_TEXTS` und `fillText` in [AP 1.1.10](../projektplan.md#m11--kernschleife--modell).
+**Umgesetzt** in [AP 1.1.10](../projektplan.md#m11--kernschleife--modell):
+
+- `@angular/localize` 22.2.6 als Polyfill (`angular.json`, `sourceLocale: "de"`), Typen in `tsconfig.app.json` und `tsconfig.spec.json`.
+- `TEXTS_DE`, `MODEL_TEXTS` und `fillText` sind aufgelöst. Texte stehen mit expliziten IDs in Templates und Komponenten (z. B. `@@featureHud-hud-title`, `@@uiModel-modelCharts-tab-rates`).
+- Die Logik liefert Codes: `RestoreNotice` und `save-failed` im HUD, `SimError` (`run-failed`, `worker-crashed`, `worker-unreadable`) auf der Modell-Seite.
+
+**Offen:** Extraktion, XLF und englische Texte mit dem Querschnittsthema „Englische Übersetzung“.
 
 ## Konsequenzen
 

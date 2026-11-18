@@ -23,11 +23,7 @@
 - Nach dem AP: Umsetzungsstand in den betroffenen ADRs und im TK nachziehen, ebenso die Regeldateien der berührten Bereiche. Weicht die Umsetzung von der Spezifikation ab, wird die Spezifikation angepasst.
 - Jede neue Laufzeitabhängigkeit braucht eine ADR.
 
-**Zielarchitektur:** Die Regeln unten beschreiben die Zielarchitektur ([ADR-009](docs/adr/009-domaenen-schichten-facade.md), [ADR-010](docs/adr/010-tailwind-tokens.md), [ADR-011](docs/adr/011-i18n-localize.md)). Der Bestandscode (`core/`, `game/`, `ui/`, `model/`) wird in **AP 1.1.10** umgebaut. Bis dahin gilt:
-
-- Neuer Code folgt den Regeln, soweit die Infrastruktur dafür schon existiert.
-- Bestandscode wird nicht nebenbei umgebaut.
-- Regeln, die Werkzeuge voraussetzen (Tailwind, `$localize`, Signal Forms, ESLint-Regeln, Pfad-Alias), gelten ab AP 1.1.10.
+**Architektur:** Die Regeln unten beruhen auf [ADR-009](docs/adr/009-domaenen-schichten-facade.md) (Domänen, Facades), [ADR-010](docs/adr/010-tailwind-tokens.md) (Tailwind), [ADR-011](docs/adr/011-i18n-localize.md) (`$localize`) und [ADR-012](docs/adr/012-signal-forms.md) (Signal Forms); der Code folgt ihnen seit AP 1.1.10.
 
 **Regeldateien:** Was im Code existiert, wird je Bereich in pfadbezogenen Regeldateien `.claude/rules/<bereich>.md` beschrieben (Frontmatter `paths`). Claude Code lädt eine Regeldatei automatisch, sobald eine passende Datei gelesen oder bearbeitet wird.
 
@@ -37,7 +33,11 @@
 
 | Bereich (Regeldatei) | Pfade | Inhalt |
 | --- | --- | --- |
-| _entsteht in AP 1.1.10_ | | |
+| [`simulation`](.claude/rules/simulation.md) | `src/app/{balance,engine,swarm,site}/**` | Formeln, `GameState`, Kommandos, `step`, Runner, GameStore und GameLoop |
+| [`persistence`](.claude/rules/persistence.md) | `src/app/persistence/**` | Spielstand-Format, Slots, Migrationen, Autosave |
+| [`hud`](.claude/rules/hud.md) | `src/app/hud/**` | Prototyp-HUD: Facade, Viewmodel, Kaufknopf, Futterstelle |
+| [`model`](.claude/rules/model.md) | `src/app/model/**` | Modell-Seite: Bots, Worker, Parameterformular, Diagramme, Kennzahlen |
+| [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
 
 **Regeln, die überall gelten:**
 
@@ -54,8 +54,8 @@
 
 - Präfix für Komponenten und Direktiven ist `app`.
 - Prettier mit `printWidth` 100; `docs/`, `CLAUDE.md` und `.claude/` werden nicht formatiert.
-- Pfad-Alias `@app/*` → `src/app/*` (ab AP 1.1.10).
-- **Exakte Versionen:** Jede Version in `package.json` ist exakt (`"4.3.5"`), nie `^`, `~`, `>=` oder `*`. Die `.npmrc` setzt `save-exact=true` (ab AP 1.1.10); nach `npm i` trotzdem `package.json` prüfen. Updates sind bewusste Versionssprünge.
+- Pfad-Alias `@app/*` → `src/app/*`.
+- **Exakte Versionen:** Jede Version in `package.json` ist exakt (`"4.3.5"`), nie `^`, `~`, `>=` oder `*`. Die `.npmrc` setzt `save-exact=true`; nach `npm i` trotzdem `package.json` prüfen. Updates sind bewusste Versionssprünge.
 - Node per `nvm use` (`.nvmrc`).
 - CI (`.github/workflows/ci.yml`) prüft Lint, Format, Unit-Tests mit Abdeckung und Build bei jedem Push; ein Push auf `main` deployt auf GitHub Pages (Base-Href `/IdleSwarm/`).
 - Die Modell-Seite (`/modell`) ist im Produktiv-Build nur mit `?dev` erreichbar (`DEV_BUILD`, `modelRouteGuard`).
@@ -63,7 +63,7 @@
 ## 0. Umgang mit dieser Datei
 
 - Beim Bearbeiten bestehender Dateien bleibt die Datei in sich einheitlich. Keine Stile mischen, nichts Unbeteiligtes umbauen, außer es ist gewünscht.
-- Widersprechen sich diese Datei und der umgebende Code, nachfragen statt raten (Ausnahme: Bestandscode vor AP 1.1.10, siehe oben).
+- Widersprechen sich diese Datei und der umgebende Code, nachfragen statt raten.
 - Vorhandene Dienste, Tokens, Pipes und Helfer wiederverwenden, bevor neue entstehen.
 
 ## 1. Architektur: Domänen und Schichten
@@ -78,29 +78,29 @@ Code wird zuerst nach Domäne, dann nach Schicht gruppiert: `src/app/<domain>/<l
 | `domain` | Modelle (Interfaces, `as const`-Listen), Spieldaten, reine Regeln und Formeln | domain, util |
 | `util` | generische Helfer ohne Fachwissen (`Num`, RNG, Formatierung) | util |
 
-ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.config.js`, ab AP 1.1.10; Specs sind ausgenommen). Passt eine Abhängigkeit nicht, wandert der Code in die richtige Schicht, statt quer zu importieren oder die Regel abzuschalten.
+ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.config.js`; Specs sind ausgenommen). Passt eine Abhängigkeit nicht, wandert der Code in die richtige Schicht, statt quer zu importieren oder die Regel abzuschalten.
 
 - **Angular-freie Schichten:** `domain` und `util` importieren nichts aus `@angular/*` oder `rxjs`. So läuft der Code in Vitest unter Node, im Web Worker der Modell-Seite und im Headless-Runner.
-- **Determinismus:** `domain` und `util` verwenden kein `Math.random`, `Date`, `Date.now`, `performance.now` und kein `crypto`. Zeit kommt als Parameter herein, Zufall nur über den seeded RNG. Eine ESLint-Regel erzwingt das ab AP 1.1.10; Ausnahmen nur mit begründetem `eslint-disable`. `Math.exp`/`Math.log`/`**` sind erlaubt, weil kein Bit-Gleichstand zwischen Browsern verlangt ist.
+- **Determinismus:** `domain` und `util` verwenden kein `Math.random`, `Date`, `Date.now`, `performance.now` und kein `crypto`. Zeit kommt als Parameter herein, Zufall nur über den seeded RNG. Eine ESLint-Regel erzwingt das; Ausnahmen nur mit begründetem `eslint-disable`. `Math.exp`/`Math.log`/`**` sind erlaubt, weil kein Bit-Gleichstand zwischen Browsern verlangt ist.
 - **Smart und präsentational:** `feature` enthält Seiten und Komponenten, die eine Facade injizieren. Alles Präsentationale liegt in `ui`, auch wenn nur eine Seite es nutzt.
 - **Texte und Zugriff:** Texte für Spieler gibt es nur in Angular (§5). Die Logik liefert IDs und Codes (z. B. `RestoreNotice`), die `feature` oder `ui` auf `$localize`-Texte abbilden. Komponenten greifen nie direkt auf GameStore, localStorage oder Worker zu, nur über Facades.
 - **Worker:** Worker importieren nur `domain` und `util` und erzeugen keinen Angular-Injector.
 
-**Domänen (Zielschnitt; endgültig in AP 1.1.10):**
+**Domänen:**
 
 | Domäne | Inhalt |
 | --- | --- |
-| `shared` | `util`: `Num`, RNG, Formatierung; `ui`: allgemeine Bausteine und Pipes |
+| `shared` | `util`: `Num`, RNG, Formatierung; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`) |
 | `balance` | `domain`: Konstanten, Formeln, später Zielbänder (`targets`) |
-| `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner; `data-access`: GameStore, GameLoop |
+| `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
 | `swarm` | Einheiten, Brut, später Pheromone |
 | `site` | Futterstellen, Sammeln, später Generator und Weiterziehen |
 | `persistence` | `domain`: Serialisierung, Slots, Migrationen; `data-access`: `PersistenceService`, `KEY_VALUE_STORE` |
 | `hud` | Prototyp-HUD (`feature`, `ui`) |
-| `model` | Modell-Seite: Bots, Kennzahlen, Parameter (`domain`), Sim-Worker und `SimClient` (`data-access`), Diagramme (`ui`), Seite (`feature`) |
+| `model` | Modell-Seite: Bots, Parameter, Laufauswertung (`domain`), Sim-Worker und `SimService` (`data-access`), Parameterformular, Diagramme, Kennzahlen (`ui`), Seite und `ModelFacade` (`feature`) |
 | später | `shell` (K2-Ebenen, Modus, Kamera), `scene` (Canvas), `sonar`, `genome`, `finds`, `settings` |
 
-Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `UnitsState`, `SiteState`) und ihre Regeln. `engine/domain` setzt daraus `GameState`, `apply` und `step` zusammen. Zusätzliche Standorte ab AS3 bleiben damit eine Sache von `site` und `engine`.
+Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `Units` in `swarm/domain/models`, `Site` in `site/domain/models`) und ihre Regeln. `engine/domain` setzt daraus `GameState`, `apply` und `step` zusammen. Zusätzliche Standorte ab AS3 bleiben damit eine Sache von `site` und `engine`.
 
 ## 2. Ordnerstruktur je Schicht
 
@@ -136,7 +136,7 @@ Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `UnitsState`, `SiteSta
 
 ### Namen und Metadaten
 
-- Geroutete Seiten heißen `<name>.page.{ts,html}` mit Klasse `<Name>Page` und Selektor `app-<name>-page`. Alle anderen Komponenten heißen `<name>.component.{ts,html}` mit Klasse `<Name>Component` und Selektor `app-<name>`. ESLint erzwingt die Suffixe ab AP 1.1.10.
+- Geroutete Seiten heißen `<name>.page.{ts,html}` mit Klasse `<Name>Page` und Selektor `app-<name>-page`. Alle anderen Komponenten heißen `<name>.component.{ts,html}` mit Klasse `<Name>Component` und Selektor `app-<name>`. ESLint erzwingt die Suffixe.
 - Direktiven heißen `<name>.directive.ts` mit Klasse `<Name>Directive` und Attributselektor `app<Name>`.
 - Namen beschreiben, was eine Komponente zeigt. Ob sie smart oder präsentational ist, folgt aus ihrer Schicht. Nur zwei Rollen-Präfixe: `dialog-` und `form-`.
 - Standalone ist implizit, also kein `standalone: true`, keine NgModules.
@@ -177,7 +177,7 @@ export class UnitListComponent {
 - Sichtbarkeit:
   - Member, die das Template nutzt, haben keinen Modifier. Kein `protected`.
   - Member, die nur die Klasse nutzt, sind ECMAScript-private Felder: `readonly #router = inject(Router)`, `#formatLabel(…)`. Kein `private` und kein `_`-Präfix.
-- Nur Signal-APIs: `input()`, `input.required()`, `output()`, `model()` (nur für eigene Formular-Controls), `computed()`, `linkedSignal()`, `viewChild()`. Nie `@Input()`, `@Output()`, `EventEmitter` oder `@ViewChild`. Kein `readonly` davor.
+- Nur Signal-APIs: `input()`, `input.required()`, `output()`, `model()` (nur für eigene Formular-Controls und Formular-Komponenten, siehe Formulare), `computed()`, `linkedSignal()`, `viewChild()`. Nie `@Input()`, `@Output()`, `EventEmitter` oder `@ViewChild`. Kein `readonly` davor.
 - Outputs heißen wie Ereignisse in der Vergangenheitsform: `clickedBuy`, `selectedUnit`, `submittedParams`.
 - Template-Handler heißen `onX(...)`. Formular- und Dialogaktionen sind einfache Verben (`submit()`, `confirm()`).
 - Reihenfolge der Member:
@@ -216,17 +216,18 @@ export class UnitListComponent {
 
 ### Formulare
 
-Neue Formulare verwenden **Signal Forms** (`@angular/forms/signals`). Keine Reactive Forms (`FormGroup`, `FormControl`), keine template-getriebenen Formulare, kein `ngModel`. `ModelForm` auf der Modell-Seite wird in AP 1.1.10 umgestellt.
+Neue Formulare verwenden **Signal Forms** (`@angular/forms/signals`). Keine Reactive Forms (`FormGroup`, `FormControl`), keine template-getriebenen Formulare, kein `ngModel`.
 
 - **Modell:** ein beschreibbares Signal mit genau den Werten, die die Controls bearbeiten (z. B. Strings für Zahleneingaben mit deutschem Komma). Sein Typ steht in der `*.model.ts` der Komponente. Das Paar heißt `<name>Model` und `<name>Form`.
   - Leere Formulare starten mit `signal({...})`.
   - Aus einem Input befüllte Formulare nutzen `linkedSignal(() => …)`. Formulare nie in `computed()` bauen.
   - Liefert der Input für dieselbe Sache neue Referenzen, während der Spieler editiert (das passiert bei jedem Tick!), nur bei Identitätswechsel zurücksetzen: `linkedSignal({ source: this.#id, computation: () => ({ … untracked(this.x) … }) })` mit `#id = computed(() => this.x().id)`.
+  - Hält der `feature`-Layer das Modell, weil Änderungen dort sofort wirken (Auto-Lauf der Modell-Seite), bekommt die Formular-Komponente es über `model()` und der Aufrufer bindet zweiseitig (`[(paramsModel)]="facade.params"`). Der Typ liegt dann in `domain/models`, weil auch die Ableitung in `domain` ihn braucht. Vorbild: `FormModelParamsComponent`.
 - **Schema:** Validierung und Feldzustand (`disabled`, `hidden`, `readonly`) stehen in der Schema-Funktion, reaktiv über `when`, nie imperativ aus Effects. `$localize`-Meldungen stehen inline im Schema (`message:`).
   - Wiederverwendbare Regelsätze sind `schema<T>(…)`-Konstanten in der `ui`-Schicht. Die reinen Prüf- und Formatierungsfunktionen dahinter liegen in `domain` oder `util`.
 - **Bindung:** `FormField` und `FormRoot` aus `@angular/forms/signals` importieren, jedes Control mit `[formField]` binden. Eigene Controls implementieren `FormValueControl` (`value = model<T>()`), nicht `ControlValueAccessor`.
 - **Absenden:** `submission.action` in den `form()`-Optionen, `<form [formRoot]="xForm">`. Eine Formular-Komponente gibt ein typisiertes Ergebnis über einen Output aus (`submittedParams`). Was damit passiert, entscheidet der `feature`-Layer.
-- Fehler nur für berührte Felder anzeigen (`xForm.name().touched()`, `.invalid()`, `.errors()`).
+- Fehler nur für berührte oder bearbeitete Felder anzeigen (`xForm.name().touched()` bzw. `.dirty()`, dazu `.invalid()`, `.errors()`).
 
 ### Dialoge
 
@@ -243,7 +244,7 @@ Neue Formulare verwenden **Signal Forms** (`@angular/forms/signals`). Keine Reac
 
 ## 4. Styling
 
-Styling verwendet **Tailwind CSS v4** mit semantischen Tokens ([ADR-010](docs/adr/010-tailwind-tokens.md), ab AP 1.1.10). `src/styles.css` ist das einzige globale Stylesheet:
+Styling verwendet **Tailwind CSS v4** mit semantischen Tokens ([ADR-010](docs/adr/010-tailwind-tokens.md)). `src/styles.css` ist das einzige globale Stylesheet:
 
 - Es importiert Tailwind und definiert die `--sw-*`-Tokens aus der K2-Palette ([Mockup K2](docs/mockups/k2-zoom.html)).
 - Es bildet die Tokens über `@theme inline` auf Tailwind-Farben ab. Die Standardpalette ist abgeschaltet.
@@ -273,7 +274,7 @@ Das Spiel hat nur ein dunkles Thema; ein helles ist nicht geplant.
 
 ## 5. i18n
 
-Die Quellsprache ist **Deutsch** ([ADR-011](docs/adr/011-i18n-localize.md), ab AP 1.1.10). Texte entstehen mit `@angular/localize`. Eine englische Übersetzung (XLF, Extraktion, Prüfung) kommt erst mit dem Querschnittsthema „Englische Übersetzung“. Bis dahin gibt es keine XLF-Dateien.
+Die Quellsprache ist **Deutsch** ([ADR-011](docs/adr/011-i18n-localize.md)). Texte entstehen mit `@angular/localize`. Eine englische Übersetzung (XLF, Extraktion, Prüfung) kommt erst mit dem Querschnittsthema „Englische Übersetzung“. Bis dahin gibt es keine XLF-Dateien.
 
 - Jeder Text für Spieler bekommt eine **explizite ID**, ohne Meaning und Description.
 - ID-Schema: `@@<layer><Domain>-<componentOrClass>-<key>`.
@@ -341,7 +342,7 @@ export class PersistenceService {
 ```
 
 - Services sind `@Injectable()` ohne `providedIn` und werden über `provide<Name>Service()` bereitgestellt; die `provide<Domain>State()`, die einen Service nutzt, schließt ihn ein (Ausnahme Spielkern, §6).
-- **Plattformzugriffe** (localStorage, Worker, `requestAnimationFrame`, `Date.now`, `performance.now`) liegen hinter Injection-Tokens mit Root-Default, damit Tests sie ersetzen können. Vorbilder: `KEY_VALUE_STORE` (`game/persistence.service.ts`), `SIM_WORKER_FACTORY` (`model/sim/sim-client.ts`), `DEV_BUILD` (`model/model-route.guard.ts`).
+- **Plattformzugriffe** (localStorage, Worker, `requestAnimationFrame`, `Date.now`, `performance.now`) liegen hinter Injection-Tokens mit Root-Default, damit Tests sie ersetzen können. Vorbilder: `CLOCK` und `ANIMATION_FRAME` (`shared/data-access/platform/platform.tokens.ts`), `KEY_VALUE_STORE` (`persistence/data-access/persistence/persistence-service.tokens.ts`), `SIM_WORKER_FACTORY` (`model/data-access/sim/sim-service.tokens.ts`), `DEV_BUILD` (`model/feature/state/model.guards.ts`).
 - Methoden liefern typisierte Domänenwerte oder Signals. Fehler werden als Codes (z. B. `SaveError`) zurückgegeben oder als Signal bereitgestellt, nicht als Text.
 - Worker-Protokolle (Request/Response-Typen, Type Guards) liegen in `<name>-service.model.ts` bzw. `<name>-service.utils.ts`.
 - Kein `HttpClient`: Es gibt kein Backend (ADR-008).
@@ -376,7 +377,7 @@ export class PersistenceService {
 - Der Code kompiliert unter `strict` und `strictTemplates`. `unknown` statt `any`, keine Non-Null-Assertions, um echte Nullbarkeit zu verdecken.
 - Unbenutzte Parameter und Variablen bekommen ein `_`-Präfix. Unbenutzte Importe sind ein Lint-Fehler.
 - Importe innerhalb einer Domäne sind relativ (`./`, `../`). Importe aus anderen Domänen und von der App-Wurzel verwenden den Alias `@app/<domain>/<layer>/…`, nie relative Pfade in fremde Domänen. So sind Querabhängigkeiten auf einen Blick sichtbar.
-- Importe sortiert ESLint (`import/order`, alphabetisch, Gruppen durch Leerzeilen getrennt). `npm run lint -- --fix` statt von Hand sortieren.
+- Importe sortiert ESLint (`import-x/order`, alphabetisch, Gruppen durch Leerzeilen getrennt). `npm run lint -- --fix` statt von Hand sortieren.
 - Formatieren macht Prettier (`.prettierrc`), nicht die Hand.
 - **Bezeichner sind Englisch, Kommentare Deutsch.** Texte für Spieler sind deutsche i18n-Quelltexte.
 - Sparsam kommentieren: kein JSDoc an offensichtlichen Membern, keine Abschnittsbanner. Nur nicht offensichtliche Entscheidungen kommentieren (z. B. warum eine Rundung so gewählt ist).

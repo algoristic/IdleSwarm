@@ -1,0 +1,84 @@
+@let button =
+  'cursor-pointer rounded border border-border-control bg-surface-raised px-2.5 py-1 aria-selected:border-accent aria-selected:text-accent';
+
+<section
+  class="grid gap-2 rounded-lg border border-border bg-glass p-3"
+  [attr.aria-label]="chartsLabel"
+>
+  <div class="flex flex-wrap items-center gap-1" role="tablist">
+    @for (entry of tabs; track entry.id) {
+      <button
+        type="button"
+        role="tab"
+        [class]="button"
+        [id]="'tab-' + entry.id"
+        [attr.data-testid]="'model.charts.tab-' + entry.id"
+        [attr.aria-selected]="tab() === entry.id"
+        aria-controls="chart-panel"
+        (click)="tab.set(entry.id)"
+      >
+        {{ entry.label }}
+      </button>
+    }
+  </div>
+
+  <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+    <label class="inline-flex items-center gap-1">
+      <input
+        type="checkbox"
+        data-testid="model.charts.log"
+        [checked]="logScale()"
+        (change)="logScale.set(!logScale())"
+      />
+      <ng-container i18n="@@uiModel-modelCharts-logScale">Logarithmische Achse</ng-container>
+    </label>
+    <button
+      type="button"
+      [class]="button"
+      data-testid="model.charts.reset-zoom"
+      i18n="@@uiModel-modelCharts-resetZoom"
+      (click)="onResetZoom()"
+    >
+      Zoom zurücksetzen
+    </button>
+    @if (logScale()) {
+      <small class="text-xs text-fg-muted" i18n="@@uiModel-modelCharts-logHint"
+        >Werte ≤ 0 und „nie“ werden hier nicht gezeichnet.</small
+      >
+    }
+  </div>
+
+  <div
+    class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm"
+    role="group"
+    [attr.aria-label]="markersLabel"
+  >
+    @for (marker of markerRows(); track marker.type) {
+      <label class="inline-flex flex-wrap items-center gap-1">
+        <input
+          type="checkbox"
+          [attr.data-testid]="'model.charts.marker-' + marker.type"
+          [checked]="markers().has(marker.type)"
+          (change)="onToggleMarker(marker.type)"
+        />
+        <span aria-hidden="true" [class]="marker.colorClass">{{ marker.glyph }}</span>
+        {{ marker.label }}
+        <small
+          class="text-xs text-fg-muted tabular-nums"
+          [attr.data-testid]="'model.charts.marker-count-' + marker.type"
+          i18n="@@uiModel-modelCharts-markerCount"
+          >({{ marker.shown | formatNum }} von {{ marker.total | formatNum }})</small
+        >
+      </label>
+    }
+  </div>
+
+  <div
+    class="h-104 min-w-0"
+    id="chart-panel"
+    role="tabpanel"
+    [attr.aria-labelledby]="'tab-' + tab()"
+  >
+    <app-echart [option]="option()" (changedZoom)="changedZoom.emit($event)" />
+  </div>
+</section>

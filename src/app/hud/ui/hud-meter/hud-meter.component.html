@@ -1,0 +1,16 @@
+<div
+  class="h-3 overflow-hidden rounded-md border border-border-control bg-surface-raised"
+  role="progressbar"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  [attr.aria-valuenow]="wholePercent()"
+  [attr.aria-valuetext]="valueText()"
+  [attr.aria-label]="label()"
+>
+  <div
+    class="h-full bg-accent data-warning:bg-warning"
+    data-testid="hud.meter.fill"
+    [attr.data-warning]="warning() ? '' : null"
+    [style.width.%]="percent()"
+  ></div>
+</div>

@@ -1,0 +1,25 @@
+@let _unit = unit();
+
+<button
+  type="button"
+  class="flex size-full min-h-11 cursor-pointer touch-manipulation flex-col gap-0.5 rounded-md border border-accent bg-surface-raised p-3 text-left tabular-nums wrap-anywhere hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:bg-surface disabled:text-fg-muted"
+  [disabled]="!_unit.affordable"
+  [attr.data-testid]="'hud.units.' + _unit.id + '.buy'"
+  (click)="onClick()"
+>
+  <span class="font-semibold">{{ name() }}</span>
+  <span [attr.data-testid]="'hud.units.' + _unit.id + '.count'" i18n="@@uiHud-buyButton-count"
+    >Anzahl: {{ _unit.count | formatDown }}</span
+  >
+  <span [attr.data-testid]="'hud.units.' + _unit.id + '.price'" i18n="@@uiHud-buyButton-price"
+    >Preis: {{ _unit.price | formatNum }} Nahrung</span
+  >
+  @if (_unit.queenEffect; as effect) {
+    <span
+      class="text-sm text-fg-muted"
+      [attr.data-testid]="'hud.units.' + _unit.id + '.effect'"
+      i18n="@@uiHud-buyButton-queenEffect"
+      >+{{ effect.eggsPerMin | formatRate }} Eier/min, +{{ effect.space | formatNum }} Platz</span
+    >
+  }
+</button>
