@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, Test, Build
+    runs-on: ubuntu-latest
+    # Das Ereignis gehört zur Gruppe, damit ein manueller Lauf auf main keinen Push-Lauf verdrängt.
+    concurrency:
+      group: ci-${{ github.event_name }}-${{ github.ref }}
+      cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Node einrichten
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci --ignore-scripts
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formatierung prüfen
+        run: npm run format:check
+
+      - name: Unit-Tests mit Abdeckung
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build -- --base-href /IdleSwarm/
+
+      # GitHub Pages liefert für unbekannte Pfade 404.html aus; so greift das Angular-Routing.
+      - name: SPA-Fallback anlegen
+        run: cp dist/idle-swarm/browser/index.html dist/idle-swarm/browser/404.html
+
+      - name: Pages-Artefakt hochladen
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/idle-swarm/browser
+
+  deploy:
+    name: Deployment auf GitHub Pages
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Auf GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v5
