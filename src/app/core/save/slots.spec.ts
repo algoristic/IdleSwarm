@@ -178,6 +178,49 @@ describe('saveGame', () => {
     expect(store.snapshot()).toEqual(before);
   });
 
+  it('legt ein unlesbares Backup beiseite, bevor es ersetzt wird', () => {
+    const store = new MemoryStore({ [SAVE_KEY]: CURRENT, [BACKUP_KEY]: CORRUPT });
+    expect(saveGame(store, NEXT_STATE, NOW).ok).toBe(true);
+    expect(store.items.get(UNREADABLE_KEY)).toBe(CORRUPT);
+    expect(store.items.get(BACKUP_KEY)).toBe(CURRENT);
+    expect(foodOf(store.items.get(SAVE_KEY))).toBe(3);
+  });
+
+  it('erhält alles, wenn das Beiseitelegen des Backups scheitert', () => {
+    const store = new MemoryStore({ [SAVE_KEY]: CURRENT, [BACKUP_KEY]: CORRUPT });
+    store.failSetAt = new Set([1]);
+    const before = store.snapshot();
+    expectError(saveGame(store, NEXT_STATE, NOW), 'storage');
+    expect(store.snapshot()).toEqual(before);
+  });
+
+  it('schreibt nichts, wenn der Slot für Unlesbares nicht lesbar ist', () => {
+    const store = new MemoryStore({ [SAVE_KEY]: CURRENT, [BACKUP_KEY]: CORRUPT });
+    store.failGet = new Set([UNREADABLE_KEY]);
+    expectError(saveGame(store, NEXT_STATE, NOW), 'storage');
+    expect(store.writes).toBe(0);
+  });
+
+  it('behält einen belegten Slot und ersetzt das unlesbare Backup', () => {
+    const store = new MemoryStore({
+      [SAVE_KEY]: CURRENT,
+      [BACKUP_KEY]: CORRUPT,
+      [UNREADABLE_KEY]: FUTURE,
+    });
+    expect(saveGame(store, NEXT_STATE, NOW).ok).toBe(true);
+    expect(store.items.get(UNREADABLE_KEY)).toBe(FUTURE);
+    expect(store.items.get(BACKUP_KEY)).toBe(CURRENT);
+  });
+
+  it('verliert das unlesbare Backup nicht, wenn das Schreiben des Primär-Stands scheitert', () => {
+    const store = new MemoryStore({ [SAVE_KEY]: CURRENT, [BACKUP_KEY]: CORRUPT });
+    store.failSetAt = new Set([3]);
+    expectError(saveGame(store, NEXT_STATE, NOW), 'storage');
+    expect(store.items.get(SAVE_KEY)).toBe(CURRENT);
+    expect(store.items.get(BACKUP_KEY)).toBe(CORRUPT);
+    expect(store.items.get(UNREADABLE_KEY)).toBe(CORRUPT);
+  });
+
   it('meldet einen Fehler beim ersten Schreiben in den leeren Speicher', () => {
     const store = new MemoryStore();
     store.failSetAt = new Set([1]);
@@ -280,9 +323,26 @@ describe('loadGame', () => {
     expect(result.status).toBe('failed');
     expect(result.status === 'failed' && result.error.code).toBe('storage');
   });
+
+  it('meldet den Speicherfehler des Backups auch bei beschädigtem Primär-Stand', () => {
+    const store = new MemoryStore({ [SAVE_KEY]: CORRUPT, [BACKUP_KEY]: OLD });
+    store.failGet = new Set([BACKUP_KEY]);
+    const result = loadGame(store);
+    expect(result.status).toBe('failed');
+    expect(result.status === 'failed' && result.error.code).toBe('storage');
+  });
 });
 
 describe('Speichern und Laden im Zusammenspiel', () => {
+  it('erhält ein allein vorhandenes unlesbares Backup über mehrere Speicherungen', () => {
+    const store = new MemoryStore({ [BACKUP_KEY]: CORRUPT });
+    expect(loadGame(store).status).toBe('failed');
+    saveGame(store, stateWithFood(2), NOW);
+    saveGame(store, stateWithFood(3), NOW);
+    expect(store.items.get(UNREADABLE_KEY)).toBe(CORRUPT);
+    expect(foodOf(store.items.get(BACKUP_KEY))).toBe(2);
+  });
+
   it('hält nach mehreren Speicherungen den vorletzten Stand als Backup', () => {
     const store = new MemoryStore();
     saveGame(store, stateWithFood(1), NOW);

@@ -67,6 +67,13 @@ function restoreSlot(store: KeyValueStore, key: string, value: string | null): v
   }
 }
 
+/** Legt ein unlesbares Backup beiseite, bevor es ersetzt wird; ein belegter Slot bleibt bestehen. */
+function keepUnreadableBackup(store: KeyValueStore, backup: string): void {
+  if (!isReadable(backup) && store.getItem(UNREADABLE_KEY) === null) {
+    store.setItem(UNREADABLE_KEY, backup);
+  }
+}
+
 /**
  * Sichert erst den bisherigen Primär-Stand und schreibt danach den neuen. Scheitert das Schreiben,
  * bleibt der Primär-Stand erhalten und der Sicherungs-Slot bekommt seinen alten Wert zurück.
@@ -74,6 +81,9 @@ function restoreSlot(store: KeyValueStore, key: string, value: string | null): v
 function replacePrimary(store: KeyValueStore, previous: string, text: string): void {
   const slot = isReadable(previous) ? BACKUP_KEY : UNREADABLE_KEY;
   const displaced = store.getItem(slot);
+  if (slot === BACKUP_KEY && displaced !== null) {
+    keepUnreadableBackup(store, displaced);
+  }
   store.setItem(slot, previous);
   try {
     store.setItem(SAVE_KEY, text);
@@ -117,7 +127,9 @@ export function loadGame(store: KeyValueStore): LoadResult {
   if (backup.status === 'readable') {
     return { status: 'restored-from-backup', state: backup.state, error: primaryError };
   }
-  const error =
-    primary.status === 'absent' && backup.status === 'unreadable' ? backup.error : primaryError;
-  return { status: 'failed', error };
+  // Ein Speicherfehler geht vor: Er bedeutet, dass noch ein lesbarer Stand vorhanden sein kann.
+  const preferBackupError =
+    backup.status === 'unreadable' &&
+    (primary.status === 'absent' || backup.error.code === 'storage');
+  return { status: 'failed', error: preferBackupError ? backup.error : primaryError };
 }
