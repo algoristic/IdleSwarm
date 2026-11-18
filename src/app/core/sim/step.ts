@@ -1,6 +1,7 @@
 import { BalanceParams, DEFAULT_BALANCE } from '../balance/constants';
 import type { GameState } from '../state/game-state';
 import { applyBrood } from './brood';
+import { applyCollect } from './collect';
 
 /** Ereignisse eines Schritts; noch leer, neue Varianten werden hier ergänzt. */
 export type GameEvent = never;
@@ -28,8 +29,8 @@ export function step(
   if (dtMs === 0) {
     return { state, events: NO_EVENTS };
   }
-  // Reihenfolge nach Game-Design §4.3: Sammeln (folgt mit AP 1.1.5) läuft vor der Brut.
-  const next = applyBrood(state, dtMs, params);
+  // Reihenfolge nach Game-Design §4.3: Frisch gesammelte Nahrung steht der Brut sofort zur Verfügung.
+  const next = applyBrood(applyCollect(state, dtMs, params), dtMs, params);
   const { time } = next;
   return {
     state: {

@@ -6,6 +6,7 @@ import type { BalanceParams } from './constants';
 /** Ab diesem Anteil des verfügbaren Platzes wird gewarnt (Game-Design §4.5, US-02.04). */
 const SPACE_WARNING_SHARE = 0.9;
 
+const MS_PER_SECOND = 1000;
 const MS_PER_MINUTE = 60_000;
 
 /** Parameter der Kostenkurve je Einheitentyp (Game-Design §2.3). */
@@ -40,6 +41,34 @@ export function clickGain(stock: Num, params: BalanceParams): Num {
 export function unitPrice(type: UnitType, bought: Units, params: BalanceParams): Num {
   const { cost, growth } = COST_CURVES[type];
   return Num.from(params[growth]).pow(bought[type]).mul(params[cost]);
+}
+
+/** Nahrung/s der Drohnen: `D · r_d · M_sammeln` mit `M_sammeln = 1` bis M1.3, ohne Vorratsgrenze. */
+function droneCollectRate(units: Units, params: BalanceParams): Num {
+  return units.drones.mul(params.droneCollectRate);
+}
+
+/** Angezeigte Nahrung/s der Drohnen; bei leerem Vorrat 0 (Game-Design §4.5). */
+export function droneFoodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
+  return stock.isZero() ? Num.ZERO : droneCollectRate(units, params);
+}
+
+/** Sammelmenge eines Schritts: `F_d = min(D · r_d · M_sammeln · dt, V)` (Game-Design §4.3). */
+export function collectGain(units: Units, stock: Num, dtMs: number, params: BalanceParams): Num {
+  if (units.drones.isZero() || stock.isZero()) {
+    return Num.ZERO;
+  }
+  // Rate und Dauer als `number` zusammenfassen spart eine `Num`-Multiplikation je Schritt.
+  return units.drones.mul(params.droneCollectRate * (dtMs / MS_PER_SECOND)).min(stock);
+}
+
+/**
+ * Restzeit der Futterstelle in Sekunden: `V / (D · r_d · M_sammeln)` (Game-Design §4.5).
+ * Ohne Sammelrate gibt es keine Schätzung, auch nicht bei leerem Vorrat; Klicks zählen nicht mit.
+ */
+export function siteSecondsLeft(units: Units, stock: Num, params: BalanceParams): Num | null {
+  const rate = droneCollectRate(units, params);
+  return rate.gt(Num.ZERO) ? stock.div(rate) : null;
 }
 
 /** Eier/min: `Q · e_q · M_brut` mit `M_brut = 1` bis M1.3 (Game-Design §4.5). */

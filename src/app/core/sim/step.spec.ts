@@ -1,5 +1,6 @@
 import { DEFAULT_BALANCE, TICK_MS, TICKS_PER_SECOND } from '../balance/constants';
 import { Num } from '../num/num';
+import { apply } from '../rules/commands';
 import { createInitialState, GameState } from '../state/game-state';
 import { step, syncClock } from './step';
 
@@ -57,19 +58,74 @@ describe('step', () => {
     expect(state.res.food.eq(5)).toBe(true);
   });
 
-  it('hängt bei genug Nahrung kaum von der Schrittweite ab', () => {
-    const input = deepFreeze(
-      createInitialState({ seed: 'step', now: NOW }, { ...DEFAULT_BALANCE, startFood: 1000 }),
-    );
+  it('hängt die Brut bei genug Nahrung kaum von der Schrittweite ab', () => {
+    // Ohne Sammeln: Im feinen Raster sammeln frisch geschlüpfte Drohnen sonst schon mit.
+    const params = { ...DEFAULT_BALANCE, startFood: 1000, droneCollectRate: 0 };
+    const input = deepFreeze(createInitialState({ seed: 'step', now: NOW }, params));
     let fine = input;
     for (let i = 0; i < 10; i++) {
-      fine = step(fine, TICK_MS).state;
+      fine = step(fine, TICK_MS, params).state;
     }
-    const coarse = step(input, 10 * TICK_MS).state;
+    const coarse = step(input, 10 * TICK_MS, params).state;
     expect(fine.time).toEqual(coarse.time);
     expect(fine.units.drones.toNumber()).toBeCloseTo(coarse.units.drones.toNumber(), 10);
     expect(fine.units.soldiers.toNumber()).toBeCloseTo(coarse.units.soldiers.toNumber(), 10);
     expect(fine.res.food.toNumber()).toBeCloseTo(coarse.res.food.toNumber(), 10);
+  });
+
+  describe('mit Sammeln', () => {
+    const swarm = (queens: number, drones: number, food: number, stock: number): GameState => {
+      const base = createState();
+      return deepFreeze({
+        ...base,
+        res: { ...base.res, food: Num.from(food) },
+        units: { queens: Num.from(queens), drones: Num.from(drones), soldiers: Num.ZERO },
+        site: { ...base.site, stock: Num.from(stock) },
+      });
+    };
+
+    it('rechnet Beispiel 1 aus Game-Design §4.3 vollständig', () => {
+      const { res, site, units } = step(swarm(1, 10, 5, 1000), TICK_MS).state;
+      expect(res.food.toNumber()).toBeCloseTo(5.0625, 10);
+      expect(site.stock.toNumber()).toBeCloseTo(999.8, 10);
+      expect(units.drones.toNumber()).toBeCloseTo(10.0075, 10);
+      expect(units.soldiers.toNumber()).toBeCloseTo(0.0025, 10);
+    });
+
+    it('sammelt vor der Brut, frische Nahrung reicht im selben Schritt', () => {
+      const { res, units } = step(swarm(1, 10, 0, 1000), TICK_MS).state;
+      expect(units.soldiers.toNumber()).toBeCloseTo(0.0025, 10);
+      expect(res.food.toNumber()).toBeCloseTo(0.0625, 10);
+    });
+
+    it('sammelt mit den Drohnen vom Anfang des Schritts', () => {
+      const { site } = step(swarm(100, 10, 1000, 1000), 1000).state;
+      expect(site.stock.toNumber()).toBeCloseTo(998, 10);
+    });
+
+    it('reicht die Parameter an das Sammeln weiter', () => {
+      const params = { ...DEFAULT_BALANCE, droneCollectRate: 1 };
+      const { res, site } = step(swarm(0, 10, 0, 1000), 1000, params).state;
+      expect(res.food.eq(10)).toBe(true);
+      expect(site.stock.eq(990)).toBe(true);
+    });
+
+    it('lässt die Brut bei leerem Vorrat weiterlaufen', () => {
+      const input = swarm(1, 10, 5, 0);
+      const { state } = step(input, TICK_MS);
+      expect(state.site).toBe(input.site);
+      expect(state.res.food.toNumber()).toBeCloseTo(4.8625, 10);
+      expect(state.units.drones.toNumber()).toBeCloseTo(10.0075, 10);
+    });
+
+    it('macht die Futterstelle nach dem Leeren wieder nutzbar', () => {
+      const emptied = step(swarm(0, 10, 0, 0.2), TICK_MS).state;
+      expect(emptied.site.stock).toBe(Num.ZERO);
+      const renewed = apply(emptied, { type: 'newSite' });
+      expect(renewed.site.stock.eq(renewed.site.size)).toBe(true);
+      expect(renewed.res.food.eq(0.2)).toBe(true);
+      expect(renewed.units).toBe(emptied.units);
+    });
   });
 
   it('liefert bei gleicher Eingabe dasselbe Ergebnis', () => {

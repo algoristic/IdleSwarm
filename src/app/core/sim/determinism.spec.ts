@@ -1,5 +1,6 @@
 import { DEFAULT_BALANCE, TICK_MS } from '../balance/constants';
 import { UNIT_TYPES } from '../data/units';
+import { Num } from '../num/num';
 import { nextRandom, drawRandom } from '../rng/rng';
 import { apply } from '../rules/commands';
 import { createInitialState, GameState } from '../state/game-state';
@@ -27,6 +28,21 @@ function play(seed: string): { json: string; values: number[]; state: GameState 
   return { json: JSON.stringify(state), values, state };
 }
 
+/** Drohnen leeren eine kleine Futterstelle immer wieder, danach wird sie erneuert. */
+function collectUntilRenewed(seed: string): { json: string; renewals: number } {
+  const base = createInitialState({ seed, now: NOW }, { ...DEFAULT_BALANCE, siteSize: 3 });
+  let state: GameState = { ...base, units: { ...base.units, drones: Num.from(7) } };
+  let renewals = 0;
+  for (let i = 0; i < 1000; i++) {
+    state = step(state, TICK_MS).state;
+    if (state.site.stock.isZero()) {
+      state = apply(state, { type: 'newSite' });
+      renewals++;
+    }
+  }
+  return { json: JSON.stringify(state), renewals };
+}
+
 describe('Determinismus', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -44,6 +60,12 @@ describe('Determinismus', () => {
     for (const unit of UNIT_TYPES) {
       expect(bought[unit].gt(0)).toBe(true);
     }
+  });
+
+  it('bleibt beim Sammeln über geleerte Futterstellen hinweg gleich', () => {
+    const first = collectUntilRenewed('idleswarm');
+    expect(first.renewals).toBeGreaterThan(0);
+    expect(collectUntilRenewed('idleswarm')).toEqual(first);
   });
 
   it('liefert bei anderem Seed einen anderen Verlauf', () => {
