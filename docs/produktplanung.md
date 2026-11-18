@@ -4,13 +4,22 @@
 
 ## 1. Produktvision
 
-IdleSwarm ist ein ruhiges, biolumineszentes Idle-Spiel im Browser. Man führt einen Schwarm vom Einzeller in der Ursuppe bis zur dominanten Lebensform des Universums. Aktive Spieler treffen laufend kleine Entscheidungen: Was brüte ich aus, welche Futterstelle greife ich an, welche Adaption entwickle ich? Passive Spieler stellen eine Strategie ein und finden bei der Rückkehr einen gewachsenen Schwarm vor. Alles spielt in **einer zusammenhängenden Welt**: Herauszoomen zeigt die Umgebung, Hineinzoomen das Erbgut.
+IdleSwarm ist ein ruhiges, biolumineszentes Strategie-Idle-Spiel im Browser. Man führt einen Schwarm vom Einzeller in der Ursuppe bis zur dominanten Lebensform des Universums. Es gibt **kein Klicken für Ressourcen**: Fortschritt entsteht ausschließlich durch strategische Käufe und Entscheidungen. Aktive Spieler entscheiden laufend: Was kaufe ich, welche Futterstelle greife ich an, welche Adaption entwickle ich? Passive Spieler stellen eine Strategie ein und finden bei der Rückkehr einen gewachsenen Schwarm vor. Alles spielt in **einer zusammenhängenden Welt**: Herauszoomen zeigt die Umgebung, Hineinzoomen das Erbgut.
+
+Das Spiel wird mit jeder Ära strategischer:
+
+| Ära | Strategische Ebene |
+|---|---|
+| Ursuppe | ein Schwarm, eine Futterstelle zur Zeit; Käufe und Zielwahl entscheiden |
+| Urmeer | 2–3 Standorte gleichzeitig |
+| Land | Gebiete an mehreren Fronten erobern und leerfressen, bis der Planet eingenommen ist |
+| Weltraum | Ausbreitung über das Sonnensystem, danach über die Galaxis, mit globaler Übersicht |
 
 ## 2. Zielgruppen
 
 | Persona | Beschreibung | Was sie braucht |
 |---|---|---|
-| **Der aktive Spieler** | spielt in Sitzungen von 10–30 min am Desktop, klickt, optimiert | häufige, sinnvolle Entscheidungen; sichtbare Wirkung von Käufen |
+| **Der aktive Spieler** | spielt in Sitzungen von 10–30 min am Desktop, plant und optimiert | häufige, sinnvolle Entscheidungen; sichtbare Wirkung von Käufen |
 | **Der Idler** | schaut ein paar Mal am Tag kurz vorbei | verlässlicher Offline-Fortschritt, Auto-Weiterziehen, klare Rückkehr-Zusammenfassung |
 | **Der mobile Gelegenheitsspieler** | spielt auf dem Smartphone unterwegs | Touch-Bedienung, Pinch-Zoom, gut lesbares HUD auf kleinem Bildschirm |
 | **Der Game-Designer** (Entwickler) | gestaltet und balanciert das Spiel | Modell-Seite, die Wachstum und Pacing sichtbar macht, bevor Spieler sich langweilen |
@@ -20,7 +29,8 @@ IdleSwarm ist ein ruhiges, biolumineszentes Idle-Spiel im Browser. Man führt ei
 | Begriff | Bedeutung |
 |---|---|
 | **Futterstelle** | Ort, an dem der Schwarm Nahrung abbaut. Hat Größe (Vorrat), Distanz, Abwehr, DNA-Belohnung und Fundchance. |
-| **Nahrung** | Hauptressource. Kommt aus Klicks und von Drohnen; bezahlt Einheiten und Ausbauten. |
+| **Nahrung** | Hauptressource. Kommt aus dem Grundertrag und von Drohnen; bezahlt Einheiten und Ausbauten. |
+| **Grundertrag** | Fester Nahrungszufluss aus der Futterstelle, solange sie Vorrat hat. Trägt den Spielstart und verhindert, dass der Schwarm ohne Einkommen feststeckt. |
 | **DNA** | Belohnung für das Einnehmen verteidigter Futterstellen; bezahlt Adaptionen im Genom. |
 | **Pheromone** | Punkte, deren Gesamtzahl die Brutrate und deren Verteilung das Verhältnis Drohnen : Soldaten bestimmt. |
 | **Eier** | Nur ein Begriff, keine Ressource. „Eier/min“ ist die Rate, mit der Königinnen passiv Einheiten ausbrüten. |
@@ -36,6 +46,9 @@ IdleSwarm ist ein ruhiges, biolumineszentes Idle-Spiel im Browser. Man führt ei
 | **Adaption** | Knoten im Genom, dauerhafte Verbesserung. |
 | **Fund** | Zufällige Entdeckung an einer Futterstelle: Sofort-Bonus, einzigartige Adaption oder Sammelobjekt. |
 | **Strategie** | Regel, nach der der Schwarm im Idle-Betrieb das nächste Ziel wählt. |
+| **Standort** | Ort, an dem ein Teil des Schwarms gleichzeitig mit anderen Teilen arbeitet; ab AS3. |
+| **Gebiet** | Eroberbarer Abschnitt eines Planeten. Bleibt nach der Eroberung auf der Planetenkarte und liefert Nahrung, bis es leergefressen ist; ab AS4. |
+| **Front** | Gebiet, um das gerade gekämpft wird und dem Einheiten zugewiesen sind; ab AS4. |
 
 ## 4. Story-Format
 
@@ -50,18 +63,18 @@ Eine Story ist fertig, wenn alle AK erfüllt sind und die Definition of Done aus
 
 ## 5. Epics und User Stories · Ausbaustufe 1
 
-### E01 · Nahrung & Klick
+### E01 · Nahrung & Futterstelle
 
-**US-01.01 · Futterstelle anklicken** · Must · M1.1
-Als aktiver Spieler möchte ich auf die Futterstelle klicken, damit ich sofort Nahrung erhalte und schneller vorankomme.
-- AK: Ein Klick/Tap auf die Futterstelle erhöht die Nahrung um den aktuellen Klickertrag.
-- AK: Der Ertrag wird vom Vorrat der Futterstelle abgezogen; ist sie leer, bringt der Klick nichts.
-- AK: Klicks außerhalb der Futterstelle lösen nichts aus.
+**US-01.01 · Grundertrag erhalten** · Must · M1.1
+Als Spieler möchte ich von Anfang an einen festen Nahrungszufluss erhalten, damit ich ohne Klicken meine ersten Käufe planen kann und nie ohne Einkommen feststecke.
+- AK: Solange die Futterstelle Vorrat hat, steigt die Nahrung um den Grundertrag, auch ohne Einheiten.
+- AK: Der Ertrag wird vom Vorrat der Futterstelle abgezogen; ist sie leer, entfällt er.
+- AK: Die Futterstelle ist keine Klickfläche; Klicks und Taps erzeugen keine Nahrung.
 
-**US-01.02 · Klickertrag sehen** · Should · M1.1
-Als aktiver Spieler möchte ich sehen, wie viel ein Klick gebracht hat, damit sich das Klicken befriedigend anfühlt.
-- AK: Am Klickpunkt erscheint eine aufsteigende Zahl (z. B. „+12“).
-- AK: Der Klickertrag steht auch im Titelbereich der Futterstelle.
+**US-01.02 · Nahrungsrate und Herkunft sehen** · Should · M1.1
+Als Spieler möchte ich sehen, wie viel Nahrung woher kommt, damit ich die Wirkung meiner Käufe einschätzen kann.
+- AK: Die Nahrung/s wird nach Grundertrag und Drohnen aufgeschlüsselt.
+- AK: Die Gesamtrate steht auch im Titelbereich der Futterstelle.
 
 **US-01.03 · Vorrat der Futterstelle sehen** · Must · M1.1
 Als Spieler möchte ich den Vorrat und die voraussichtliche Restzeit sehen, damit ich das Weiterziehen planen kann.
@@ -69,7 +82,7 @@ Als Spieler möchte ich den Vorrat und die voraussichtliche Restzeit sehen, dami
 - AK: Die Schätzung aktualisiert sich bei jedem Kauf.
 
 **US-01.04 · Drohnen sammeln passiv** · Must · M1.1
-Als Idler möchte ich, dass Drohnen ohne mein Zutun Nahrung sammeln, damit der Schwarm auch ohne Klicks wächst.
+Als Idler möchte ich, dass Drohnen ohne mein Zutun Nahrung sammeln, damit der Schwarm auch während meiner Abwesenheit wächst.
 - AK: Nahrung/s = Drohnen × Sammelrate × Modifikatoren; Anzeige der Rate im HUD.
 - AK: Gesammelte Nahrung wird vom Vorrat abgezogen; bei leerem Vorrat sinkt die Rate auf 0.
 
@@ -93,7 +106,7 @@ Als Spieler möchte ich sehen, wie viel Platz meine Königinnen bieten und wie v
 - AK: Anzeige „Platz belegt / verfügbar“ mit Balken; Warnfarbe ab 90 %.
 
 **US-02.05 · Königinnen brüten passiv** · Must · M1.1
-Als Idler möchte ich, dass Königinnen laufend Einheiten ausbrüten, damit der Schwarm ohne Klicks wächst.
+Als Idler möchte ich, dass Königinnen laufend Einheiten ausbrüten, damit der Schwarm auch ohne neue Käufe wächst.
 - AK: Eier/min = Königinnen × Brutrate × Modifikatoren; jede Brut kostet die Nahrung der jeweiligen Einheit.
 - AK: Fehlt Nahrung, pausiert die Brut, statt ins Minus zu gehen.
 - AK: Bis M1.3 gilt ein festes Verhältnis Drohnen : Soldaten, danach das Pheromon-Verhältnis.
@@ -272,7 +285,7 @@ Als Desktop-Spieler möchte ich mit Mausrad und Tasten (W, G, Esc) navigieren, d
 
 **US-08.06 · Touch-Bedienung** · Must · M1.4
 Als mobiler Spieler möchte ich mit Pinch und Tippen spielen, damit sich das Spiel auf dem Smartphone natürlich anfühlt.
-- AK: Pinch auseinander/zusammen wechselt den Modus; Tippen auf die Futterstelle sammelt.
+- AK: Pinch auseinander/zusammen wechselt den Modus; Tippen wählt Ziele und Bedienelemente aus.
 - AK: Alle Bedienelemente sind ≥ 44 × 44 px groß.
 
 **US-08.07 · Schmale Bildschirme** · Must · M1.4
@@ -324,7 +337,7 @@ Als Game-Designer möchte ich sehen, wie lange der Spieler jeweils auf die näch
 
 **US-10.04 · Strategie-Bots vergleichen** · Must · M1.1
 Als Game-Designer möchte ich verschiedene Spielweisen simulieren und vergleichen, damit das Spiel für aktive und passive Spieler funktioniert.
-- AK: Bots „Aktiv“ (Klicks und optimale Käufe) und „Idle“ (nur Strategie) ab M1.1; „Drohnen-lastig“ und „Soldaten-lastig“ ab M1.2.
+- AK: Bots „Aktiv“ (häufige, optimale Käufe) und „Idle“ (seltene Besuche, nur Strategie) ab M1.1; „Drohnen-lastig“ und „Soldaten-lastig“ ab M1.2.
 - AK: Mehrere Läufe übereinander in einem Diagramm.
 
 **US-10.05 · Parameter verstellen** · Must · M1.1
@@ -380,17 +393,18 @@ Die Stories werden erst nach dem Konzept-Meilenstein der jeweiligen Stufe ausfor
 - E18 Zweiter Rohstoff
 - E19 Spezialeinheiten
 - E20 Visuelle Ära II
+- E28 Mehrere Standorte (2–3 gleichzeitig)
 
 **AS4 · Land**
 - E21 Land-Biome
 - E22 Zivilisation als Gegner
-- E23 Territorium & Expansion
+- E23 Gebietseroberung, Fronten & Planeteneinnahme
 - E24 Weitere Strategien
 
 **AS5 · Weltraum**
-- E25 Sonnensystem & Planetenklassen
+- E25 Ausbreitung im Sonnensystem & Planetenklassen
 - E26 FTL & Systemwechsel
-- E27 Galaxie-Ebene
+- E27 Galaxis-Ebene & globale Gesamtübersicht
 
 **Querschnitt**
 - Cloud-Sync

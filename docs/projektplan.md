@@ -4,7 +4,7 @@
 
 ## 1. Ziel und Rahmen
 
-IdleSwarm ist ein Idle-Browserspiel für eine Person, ohne Multiplayer. Der Spieler steuert einen Schwarm, der als Einzeller in der Ursuppe beginnt, von Futterstelle zu Futterstelle zieht und sich über mehrere Ären (Meer, Land, All) zur dominanten Lebensform entwickelt.
+IdleSwarm ist ein Idle-Browserspiel für eine Person, ohne Multiplayer. Der Spieler steuert einen Schwarm, der als Einzeller in der Ursuppe beginnt, von Futterstelle zu Futterstelle zieht und sich über mehrere Ären (Meer, Land, All) zur dominanten Lebensform entwickelt. Fortschritt entsteht durch strategische Käufe und Entscheidungen, nicht durch Klicken.
 
 | Rahmen | Festlegung |
 |---|---|
@@ -19,15 +19,19 @@ IdleSwarm ist ein Idle-Browserspiel für eine Person, ohne Multiplayer. Der Spie
 
 Idle-Spiele stehen und fallen mit ihrer Wachstumskurve: Wird die Wartezeit zu lang, langweilt sich der Spieler, wächst alles zu schnell, gibt es keine Entscheidungen mehr. Deshalb entsteht ab Meilenstein 1.1 parallel zum Spiel eine **Modell-Seite**. Sie simuliert das Spiel ohne Oberfläche und zeigt Wachstum, Kosten und Pacing als Diagramme. Jede neue Mechanik wird dort sichtbar gemacht, bevor sie als fertig gilt.
 
+### Leitprinzip: Strategie statt Klicken
+
+Es gibt keine Klick-Mechanik für Ressourcen. Ein fester [Grundertrag](game-design.md#41-grundertrag) trägt den Start, danach zählen Käufe und Entscheidungen. Das Spiel wird mit jeder Ära strategischer: In der Ursuppe wählt man Käufe und Ziele, im Urmeer verteilt man den Schwarm auf 2–3 Standorte, an Land erobert man Gebiete an mehreren Fronten, und im Weltraum steuert man die Ausbreitung über eine globale Übersicht. Das [Mockup K2](mockups/k2-zoom.html) bleibt die optische Vorlage, sein Klick-Verhalten gilt aber nicht mehr.
+
 ## 2. Ausbaustufen im Überblick
 
 | AS | Name | Kern | Detaillierung |
 |---|---|---|---|
 | **1** | **Basisspiel · Ära I Ursuppe** | vollständige Kernschleife einer Ära, K2-Oberfläche, Desktop und Mobile, Modell-Seite | **detailliert** (Abschnitt 3) |
 | 2 | Evolution · große Ascension | Prestige-Schicht (Einzeller → Mehrzeller), Mutationen, Erfolge, aktive Fähigkeiten | grob + Entscheidungspunkte |
-| 3 | Ära II · Urmeer | neue Biome, Verteidigungsarten, zweiter Rohstoff, Spezialeinheiten | grob + Entscheidungspunkte |
-| 4 | Ära III · Land | Biome von Feld bis Metropole, Zivilisation als Gegner | grob + Entscheidungspunkte |
-| 5 | Ära IV+ · Weltraum | Planeten, Systeme, FTL, Galaxien; endlose Skalierung | grob + Entscheidungspunkte |
+| 3 | Ära II · Urmeer | neue Biome, 2–3 gleichzeitige Standorte, Verteidigungsarten, zweiter Rohstoff, Spezialeinheiten | grob + Entscheidungspunkte |
+| 4 | Ära III · Land | Gebiete an mehreren Fronten erobern und leerfressen, bis der Planet eingenommen ist; Zivilisation als Gegner | grob + Entscheidungspunkte |
+| 5 | Ära IV+ · Weltraum | Ausbreitung über Sonnensystem und Galaxis mit globaler Übersicht; endlose Skalierung | grob + Entscheidungspunkte |
 
 Jede Ausbaustufe endet mit einem veröffentlichten Release (1.0, 2.0, …). Spielstände bleiben über alle Stufen hinweg kompatibel (Migrationen, siehe Technisches Konzept).
 
@@ -38,7 +42,7 @@ Jede Ausbaustufe endet mit einem veröffentlichten Release (1.0, 2.0, …). Spie
 Ein vollständiges, ausbalanciertes Spiel für Ära I: Der Schwarm sammelt Nahrung, brütet Einheiten aus, erobert Futterstellen, entwickelt sein Genom und spielt auch idle und offline sinnvoll weiter. Die große Ascension (Übergang zum Mehrzeller) ist **nicht** enthalten. Ära I hat ein offenes Ende, das Spiel endet nicht.
 
 **Umfang:**
-- Klick, Königinnen/Drohnen/Soldaten, Eier/min, Platz
+- Grundertrag, Königinnen/Drohnen/Soldaten, Eier/min, Platz
 - Pheromone
 - Futterstellen, Weiterziehen, Kampf, Transportkapazität, Drohnen opfern, Strategien, Auto-Weiterziehen
 - DNA und Genom
@@ -52,12 +56,12 @@ Ein vollständiges, ausbalanciertes Spiel für Ära I: Der Schwarm sammelt Nahru
 | MS | Name | Ergebnis (Abnahmekriterium) | Aufwand |
 |---|---|---|---|
 | M1.0 | Fundament | Leeres Angular-Projekt läuft auf GitHub Pages; CI grün; Spielzustand tickt, wird gespeichert und geladen | 6,5–9,5 PT |
-| M1.1 | Kernschleife & Modell | Nahrung klicken, Einheiten kaufen, Drohnen sammeln, Königinnen brüten; Modell-Seite zeigt die Kurven dazu | 9,5–13,5 PT |
+| M1.1 | Kernschleife & Modell | Grundertrag statt Klick, Einheiten kaufen, Drohnen sammeln, Königinnen brüten; Modell-Seite zeigt die Kurven dazu | 10,5–15 PT |
 | M1.2 | Weiterziehen & Kampf | Schwarm zieht über die Sonar-Karte von Futterstelle zu Futterstelle, manuell und automatisch; Kampf und Verluste funktionieren | 9,5–13,5 PT |
 | M1.3 | Progression | Genom, Pheromone und Funde vollständig; Modell-Seite zeigt Upgrade-Wirkung und Pacing-Zielband | 8,5–12 PT |
 | M1.4 | K2-Präsentation & Mobile | Oberfläche entspricht Mockup K2 inkl. Zoom-Übergängen; auf Smartphone voll bedienbar | 9–13,5 PT |
 | M1.5 | Idle, Balancing & Release 1.0 | Offline-Fortschritt, Onboarding, PWA; Balancing innerhalb der Zielbänder; Release 1.0 veröffentlicht | 9–13,5 PT |
-| | **Summe AS1** | | **52–76 PT** (+ ~15 % Puffer) |
+| | **Summe AS1** | | **53–77 PT** (+ ~15 % Puffer) |
 
 Die Meilensteine sind so geschnitten, dass zuerst die Mechanik steht (M1.0–M1.3) und danach die Präsentation (M1.4). Die Sonar-Karte (M1.2) und das Genom (M1.3) werden trotzdem schon im K2-Stil gebaut. M1.4 fügt sie zur Zoom-Welt zusammen und macht sie mobiltauglich.
 
@@ -70,6 +74,144 @@ Abhängigkeiten: M1.4 baut auf den Ansichten aus M1.2 (Sonar) und M1.3 (Genom) a
 ### 3.3 Arbeitspakete
 
 Die Spalte **Stories** verweist auf die User Stories in der [Produktplanung](produktplanung.md).
+
+#### Abhängigkeiten der Arbeitspakete
+
+Ein Pfeil bedeutet: Das Arbeitspaket am Pfeilanfang muss fertig sein, bevor das am Pfeilende abgeschlossen werden kann. Indirekte Abhängigkeiten sind nicht eingezeichnet. Die Abhängigkeiten sind aus den Inhalten der Arbeitspakete, den User Stories und dem bisherigen Code abgeleitet. AP 1.0.7 hängt mit keinem anderen Arbeitspaket zusammen.
+
+```mermaid
+flowchart TB
+    subgraph M1_0["M1.0 · Fundament"]
+        ap101["1.0.1 Angular-Workspace"]
+        ap102["1.0.2 CI/CD"]
+        ap103["1.0.3 Core-Gerüst"]
+        ap104["1.0.4 Zahlentyp & Formatierung"]
+        ap105["1.0.5 Speichersystem"]
+        ap106["1.0.6 GameStore & GameLoop"]
+        ap107["1.0.7 Architektur-Entscheidungen"]
+    end
+    subgraph M1_1["M1.1 · Kernschleife & Modell"]
+        ap111["1.1.1 Game-Design-Spezifikation v1"]
+        ap112["1.1.2 Nahrung & Klick"]
+        ap113["1.1.3 Einheiten"]
+        ap114["1.1.4 Brut"]
+        ap115["1.1.5 Sammeln"]
+        ap116["1.1.6 Prototyp-HUD"]
+        ap117["1.1.7 Headless-Runner & Bots"]
+        ap118["1.1.8 Modell-Seite v1"]
+        ap119["1.1.9 Klick-Ausbau & Grundertrag"]
+    end
+    subgraph M1_2["M1.2 · Weiterziehen & Kampf"]
+        ap121["1.2.1 Futterstellen-Generator"]
+        ap122["1.2.2 Reichweite & Sichtbarkeit"]
+        ap123["1.2.3 Kampf"]
+        ap124["1.2.4 Transportkapazität"]
+        ap125["1.2.5 Drohnen opfern"]
+        ap126["1.2.6 Ablauf Weiterziehen"]
+        ap127["1.2.7 Strategien & Auto-Weiterziehen"]
+        ap128["1.2.8 Sonar-Karte"]
+        ap129["1.2.9 Modell: Zyklen"]
+    end
+    subgraph M1_3["M1.3 · Progression"]
+        ap131["1.3.1 Effekt-System"]
+        ap132["1.3.2 Genom-Inhalte Ära I"]
+        ap133["1.3.3 Genom-Ansicht"]
+        ap134["1.3.4 Pheromone"]
+        ap135["1.3.5 Funde"]
+        ap136["1.3.6 Sammlung & Badges"]
+        ap137["1.3.7 Modell: Progression"]
+    end
+    subgraph M1_4["M1.4 · K2-Präsentation & Mobile"]
+        ap141["1.4.1 Ebenen & Kamera"]
+        ap142["1.4.2 Szene-Canvas"]
+        ap143["1.4.3 HUD im K2-Stil"]
+        ap144["1.4.4 Eingabe Desktop"]
+        ap145["1.4.5 Mobile"]
+        ap146["1.4.6 Barrierearmut & Performance"]
+    end
+    subgraph M1_5["M1.5 · Idle, Balancing & Release 1.0"]
+        ap151["1.5.1 Offline-Fortschritt"]
+        ap152["1.5.2 Spielstand-Verwaltung"]
+        ap153["1.5.3 Einstellungen"]
+        ap154["1.5.4 Onboarding"]
+        ap155["1.5.5 Balancing"]
+        ap156["1.5.6 PWA"]
+        ap157["1.5.7 E2E-Tests"]
+        ap158["1.5.8 Playtest & Release"]
+    end
+
+    ap101 --> ap102
+    ap104 --> ap103
+    ap101 --> ap104
+    ap103 --> ap105
+    ap105 --> ap106
+    ap111 --> ap112
+    ap105 --> ap112
+    ap112 --> ap113
+    ap113 --> ap114
+    ap113 --> ap115
+    ap106 --> ap116
+    ap114 --> ap116
+    ap115 --> ap116
+    ap114 --> ap117
+    ap115 --> ap117
+    ap117 --> ap118
+    ap116 --> ap119
+    ap118 --> ap119
+    ap119 --> ap121
+    ap121 --> ap122
+    ap121 --> ap123
+    ap113 --> ap124
+    ap124 --> ap125
+    ap119 --> ap125
+    ap122 --> ap126
+    ap123 --> ap126
+    ap124 --> ap126
+    ap126 --> ap127
+    ap125 --> ap128
+    ap127 --> ap128
+    ap127 --> ap129
+    ap114 --> ap131
+    ap115 --> ap131
+    ap131 --> ap132
+    ap122 --> ap132
+    ap123 --> ap132
+    ap125 --> ap132
+    ap132 --> ap133
+    ap114 --> ap134
+    ap126 --> ap135
+    ap132 --> ap135
+    ap135 --> ap136
+    ap129 --> ap137
+    ap134 --> ap137
+    ap135 --> ap137
+    ap116 --> ap141
+    ap116 --> ap142
+    ap141 --> ap143
+    ap128 --> ap143
+    ap133 --> ap143
+    ap134 --> ap143
+    ap136 --> ap143
+    ap141 --> ap144
+    ap143 --> ap145
+    ap144 --> ap145
+    ap142 --> ap146
+    ap145 --> ap146
+    ap143 --> ap151
+    ap143 --> ap152
+    ap146 --> ap153
+    ap143 --> ap154
+    ap137 --> ap155
+    ap151 --> ap155
+    ap102 --> ap156
+    ap151 --> ap157
+    ap152 --> ap157
+    ap153 --> ap157
+    ap154 --> ap157
+    ap155 --> ap158
+    ap156 --> ap158
+    ap157 --> ap158
+```
 
 #### M1.0 · Fundament
 
@@ -88,13 +230,14 @@ Die Spalte **Stories** verweist auf die User Stories in der [Produktplanung](pro
 | AP | Arbeitspaket | Inhalt | PT | Stories |
 |---|---|---|---|---|
 | 1.1.1 | Game-Design-Spezifikation v1 | `docs/game-design.md`: Formeln, Startwerte, Kostenkurven. Klärt das TODO aus der Projektidee: Kosten der Königinnen je Einheitentyp | 1,5–2 | – |
-| 1.1.2 | Nahrung & Klick | Futterstelle mit Vorrat, Klickertrag, Anzeige des Vorrats. Provisorisch bis M1.2: Knopf „Neue Futterstelle“ füllt den leeren Vorrat wieder auf ([Game-Design §4.4](game-design.md#44-leere-futterstelle-provisorium-bis-m12)) | 0,5–1 | US-01.01–01.03 |
+| 1.1.2 | Nahrung & Klick | Futterstelle mit Vorrat, Klickertrag, Anzeige des Vorrats (der Klick entfällt mit AP 1.1.9). Provisorisch bis M1.2: Knopf „Neue Futterstelle“ füllt den leeren Vorrat wieder auf ([Game-Design §4.4](game-design.md#44-leere-futterstelle-provisorium-bis-m12)) | 0,5–1 | US-01.03 |
 | 1.1.3 | Einheiten | Königinnen, Drohnen, Soldaten: Kauf, Kostenkurven, Platz | 1,5–2 | US-02.01–02.04 |
 | 1.1.4 | Brut | Eier/min aus Königinnen, passive Erzeugung (bis M1.3 mit festem Verhältnis) | 1 | US-02.05 |
 | 1.1.5 | Sammeln | Drohnen bauen Nahrung ab, Futterstelle leert sich | 0,5–1 | US-01.04 |
 | 1.1.6 | Prototyp-HUD | Ressourcen, Aktionsleiste, Vorratsbalken; funktional, noch ohne K2-Grafik | 1–1,5 | – |
 | 1.1.7 | Headless-Runner & Bots | Simulation ohne Oberfläche im Zeitraffer; Bots „Aktiv“ und „Idle“ | 1,5–2 | US-10.01, 10.04 |
 | 1.1.8 | Modell-Seite v1 | Route `/modell`: Ressourcen, Einheiten und Raten über die Zeit (log), Zeit bis zum nächsten Kauf, Parameter-Panel | 2–3 | US-10.02, 10.03, 10.05 |
+| 1.1.9 | Klick-Ausbau & Grundertrag | Klick aus Core, Bots, HUD, Modell-Seite und Tests entfernen; Grundertrag einführen und anzeigen; Spielstand prüfen; Pacing neu messen, [Game-Design §6](game-design.md#6-messwerte-v1) sowie ADR-003 und ADR-004 aktualisieren | 1–1,5 | US-01.01, 01.02, 10.04 |
 
 #### M1.2 · Weiterziehen & Kampf
 
@@ -127,7 +270,7 @@ Die Spalte **Stories** verweist auf die User Stories in der [Produktplanung](pro
 | AP | Arbeitspaket | Inhalt | PT | Stories |
 |---|---|---|---|---|
 | 1.4.1 | Ebenen & Kamera | Drei Ebenen (Sonar, Welt, Genom), Moduswechsel mit CSS transform/clip-path wie im Mockup | 1,5–2 | US-08.01 |
-| 1.4.2 | Szene-Canvas | Futterstelle, Agenten-Renderer mit Budget (ein Sprite = n Einheiten), Plankton, Klick-Effekte, DPR | 2–3 | US-08.02 |
+| 1.4.2 | Szene-Canvas | Futterstelle, Agenten-Renderer mit Budget (ein Sprite = n Einheiten), Plankton, Ertrags-Effekte, DPR | 2–3 | US-08.02 |
 | 1.4.3 | HUD im K2-Stil | Ressourcen, Titel je Modus, Aktionsleiste, Zoom-Leiste, Schubladen, Log, Ära-Anzeige | 2–3 | US-08.03, 08.04 |
 | 1.4.4 | Eingabe Desktop | Mausrad, Tastatur (W / G / Esc), Pointer Events | 0,5–1 | US-08.05 |
 | 1.4.5 | Mobile | Pinch → Moduswechsel, Breakpoints, Bottom-Sheets, Touch-Ziele ≥ 44 px | 2–3 | US-08.06, 08.07 |
@@ -153,6 +296,7 @@ Diese Punkte aus der Projektidee werden in AP 1.1.1 bzw. im jeweiligen AP entsch
 | Frage | Vorschlag bzw. Entscheidung | AP |
 |---|---|---|
 | Brauchen Königinnen für Drohnen, Soldaten und Königinnen dieselbe Menge Nahrung? | **Entschieden** (siehe [Game-Design](game-design.md#22-einheiten)): Nein, eigene Nahrungskosten je Einheitentyp (Drohne < Soldat < Königin). Eier/min ist nur die Brutrate, keine Ressource. | 1.1.1 |
+| Was ersetzt den Klick? | **Entschieden:** Ein fester Grundertrag aus der Futterstelle (Startwert 1,5 Nahrung/s, siehe [Game-Design](game-design.md#41-grundertrag)). Er trägt den Spielstart und verhindert, dass der Schwarm ohne Drohnen und Nahrung feststeckt, solange die Futterstelle Vorrat hat. | 1.1.9 |
 | Wie verhindern wir, dass Soldaten ausgehen und der Spieler feststeckt? | Kombination aus Option 1 und 3 der Projektidee: **Drohnen opfern** mit Umwandlungsverlust (per Genom verringerbar) **und** garantierte Futterstelle mit Abwehr 0 in Reichweite. Keine pluripotenten Drohnen. | 1.2.1, 1.2.5 |
 | Wie hängt die Pheromon-Gesamtzahl mit der Brutrate zusammen? | Brutrate = Königinnen × Basisrate × f(Pheromon-Gesamtzahl); das Verhältnis teilt nur auf Drohnen und Soldaten auf. Königinnen werden nur gezielt gekauft. | 1.3.4 |
 | Was passiert mit zurückgelassenen Einheiten? | Sie gehen verloren (ohne Rückerstattung); die Mitnahme-Priorität entscheidet, wer bleibt. | 1.2.4 |
@@ -191,7 +335,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | Prestige-Währung | eigene Währung (z. B. „Erbgut-Fragmente“) vs. DNA weiterverwenden | Mutagen aus der Ascension |
 | Was bleibt beim Reset? | Genom, Funde, Sammlung, Badges: jeweils behalten, teilweise behalten, verlieren | Mutationen bleiben, Einheiten verfallen |
 | Erzeuger-Ketten | Erzeuger von Erzeugern (z. B. Brutnester → Königinnen → Einheiten) für polynomielles Wachstum: ja/nein, wie viele Stufen | Drone → Queen → Nest → Greater Queen … |
-| Energie & Fähigkeiten | zweite Ressource für aktive Fähigkeiten, z. B. Zeitsprung, Brutschub, Spiegelarmee | Energy/Nexus: Swarmwarp, Clone Larvae, House of Mirrors |
+| Energie & Fähigkeiten | zweite Ressource für aktive Fähigkeiten, z. B. Zeitsprung, Brutschub, Spiegelarmee; sie müssen planbare strategische Käufe bleiben und dürfen keine Reflexaktionen werden | Energy/Nexus: Swarmwarp, Clone Larvae, House of Mirrors |
 | Erfolge | reine Abzeichen vs. Erfolgspunkte mit Bonus | Achievements mit Punktwert |
 | Kaufmodi | ×1 / ×10 / 25 % / Max | Buy 25 % / Max |
 | Mehrfach-Upgrades | Upgrades, die pro Kauf mehrere Einheiten ergeben | Twin-Upgrades |
@@ -199,20 +343,22 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 ### AS3 · Ära II Urmeer
 
-**Ziel:** Fische und andere Meeresbewohner ziehen durch Seetangwälder, Riffe, Gräben und Küstenregionen.
+**Ziel:** Fische und andere Meeresbewohner ziehen durch Seetangwälder, Riffe, Gräben und Küstenregionen. Erstmals arbeitet der Schwarm an 2–3 Standorten gleichzeitig, als Übergang zur Gebietseroberung an Land.
 
 | MS | Name |
 |---|---|
 | M3.0 | Konzept & Entscheidungen |
 | M3.1 | Biome & Futterstellen der Ära II |
-| M3.2 | Verteidigungsarten & Spezialeinheiten |
-| M3.3 | Zweiter Rohstoff |
-| M3.4 | Visuelle Ära II (Szene, Karte, Genom) |
-| M3.5 | Balancing & Release 3.0 |
+| M3.2 | Mehrere Standorte |
+| M3.3 | Verteidigungsarten & Spezialeinheiten |
+| M3.4 | Zweiter Rohstoff |
+| M3.5 | Visuelle Ära II (Szene, Karte, Genom) |
+| M3.6 | Balancing & Release 3.0 |
 
 | Entscheidungspunkt | Optionen |
 |---|---|
 | Biome | Biome als Unterebenen der Ära (Meeresgrund, offenes Meer, Küste) mit eigenen Futterstellentypen vs. gemischte Karte |
+| Mehrere Standorte | **Entschieden:** 2–3 gleichzeitig. Offen: Aufteilung des Schwarms über feste Anteile vs. Zuweisung beim Kauf; Freischaltung der weiteren Standorte |
 | Verteidigungsarten | weiterhin ein Abwehrwert vs. Typen mit Konter-System (z. B. Panzer, Gift, Schwarm) |
 | Zweiter Rohstoff | Kalk/Mineralien, die nicht aus Nahrung kommen, für Schalen und Panzer: ja/nein, Quelle |
 | Spezialeinheiten | neue Einheitentypen (z. B. Späher für Reichweite, Träger für Transport) vs. Spezialisierung über das Genom |
@@ -220,41 +366,46 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 ### AS4 · Ära III Land
 
-**Ziel:** Landtiere erobern Felder, Wälder, Berge, Dörfer und Städte.
+**Ziel:** Landtiere erobern einen Planeten Gebiet für Gebiet, von Feldern und Wäldern bis zu Dörfern und Städten. Der Schwarm kämpft an mehreren Fronten, frisst eroberte Gebiete leer und nimmt so den ganzen Planeten ein.
 
 | MS | Name |
 |---|---|
 | M4.0 | Konzept & Entscheidungen |
-| M4.1 | Land-Biome |
-| M4.2 | Zivilisation als Gegner |
-| M4.3 | Expansion / Territorium |
-| M4.4 | Balancing & Release 4.0 |
+| M4.1 | Land-Biome & Planetenkarte |
+| M4.2 | Gebietseroberung & Fronten |
+| M4.3 | Zivilisation als Gegner |
+| M4.4 | Planeteneinnahme |
+| M4.5 | Balancing & Release 4.0 |
 
 | Entscheidungspunkt | Optionen | Vorbild Swarm Simulator |
 |---|---|---|
+| Eroberung | **Entschieden:** mehrere Fronten gleichzeitig. Eroberte Gebiete bleiben auf der Planetenkarte und liefern Nahrung, bis sie leergefressen sind | – |
+| Zuweisung | Einheiten je Front gezielt kaufen vs. feste Anteile vs. Prioritäten | – |
 | Gegner | statische Abwehr vs. Zivilisation mit eigener Dynamik (wächst, schlägt zurück) | – |
 | Länder | eigene Ascension-Ebene vs. Gruppierung auf der Karte | – |
-| Territorium | Militär erzeugt Territorium, das Expansionen (mehr Brutrate/Reichweite) freischaltet | Territory → Expansions |
-| Strategien | weitere Idle-Strategien (z. B. „Plünderer“, „Siedler“) | – |
+| Leergefressene Gebiete | ohne weiteren Nutzen vs. dauerhafter Bonus (z. B. Reichweite, Platz) | Territory → Expansions |
+| Planeteneinnahme | Bedingung (alle Gebiete vs. Anteil) und Belohnung beim Übergang | – |
+| Strategien | weitere Idle-Strategien für die Frontwahl (z. B. „Plünderer“, „Siedler“) | – |
 
 ### AS5 · Ära IV+ Weltraum
 
-**Ziel:** Schwarmflotten ziehen über Planeten und Sternensysteme. Das Spiel skaliert ab hier offen weiter.
+**Ziel:** Schwarmflotten breiten sich über das aktuelle Sonnensystem und danach über die ganze Galaxis aus. Eine globale Übersicht zeigt alle Systeme, Fronten und Flotten. Das Spiel skaliert ab hier offen weiter. Stellaris dient nur als Orientierung für das Bedienprinzip der Übersicht; Inhalte, Namen und Optik bleiben eigenständig.
 
 | MS | Name |
 |---|---|
 | M5.0 | Konzept & Entscheidungen |
-| M5.1 | Erstes Sonnensystem |
-| M5.2 | FTL & Systemwechsel |
-| M5.3 | Galaxie-Ebene & Endlos-Skalierung |
+| M5.1 | Ausbreitung im Sonnensystem |
+| M5.2 | FTL & weitere Systeme |
+| M5.3 | Galaxis-Gesamtübersicht & Endlos-Skalierung |
 | M5.4 | Release 5.0 |
 
 | Entscheidungspunkt | Optionen |
 |---|---|
 | Einstieg | Erstes Sonnensystem als Tutorial mit FTL-Freischaltung vs. sofort mehrere Systeme |
-| Auswahl-Granularität | Wechsel Planet → System → Galaxie: automatisch ab Schwarmgröße vs. eigene Ascension |
+| Auswahl-Granularität | Steuerung Planet → System → Galaxis: automatisch ab Schwarmgröße vs. eigene Ascension |
+| Globale Übersicht | Eingriffstiefe: einzelne Flotten vs. Prioritäten je Region; Automatisierung im Idle-Betrieb |
 | Planetenklassen | Fels, Eis, Erde, Gasriese, Raumstation: jeweils eigene Mechanik vs. nur andere Werte |
-| Weitere Ascensions | Galaxie-Ascension als weitere Prestige-Schicht |
+| Weitere Ascensions | Galaxis-Ascension als weitere Prestige-Schicht |
 
 ### Querschnittsthemen (Stufe offen)
 
@@ -268,11 +419,13 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | Risiko | Auswirkung | Gegenmaßnahme |
 |---|---|---|
 | Spiel wird langweilig (zu lange Wartezeiten, keine Entscheidungen) | hoch | Modell-Seite ab M1.1, Pacing-Zielbänder, Regressions-Snapshots |
-| Spieler steckt fest (keine Soldaten, kein erreichbares Ziel) | hoch | Garantierte Futterstelle mit Abwehr 0, Drohnen opfern, Stillstands-Warnung im Modell |
+| Spieler steckt fest (keine Soldaten, keine Drohnen, kein erreichbares Ziel) | hoch | Grundertrag, garantierte Futterstelle mit Abwehr 0, Drohnen opfern, Stillstands-Warnung im Modell |
 | K2-Übergänge ruckeln auf Smartphones (`clip-path`, `blur`) | mittel | Profiling in AP 1.4.6, vereinfachte Übergänge als Fallback, `prefers-reduced-motion` |
 | Mobile-Layout passt nicht zu K2 (Platz für Seitenpanels) | mittel | Bottom-Sheets ab AP 1.4.5, frühe Tests auf echtem Gerät |
 | Spielstände späterer Stufen inkompatibel | mittel | Versionierte Saves mit Migrationskette ab M1.0 |
 | Umfang wächst | mittel | Strikte Trennung der Ausbaustufen; Ideen landen im Backlog der späteren Stufen |
+| Große Strategiekarten sind auf dem Smartphone schwer bedienbar | mittel | Bedienkonzept in M4.0 und M5.0 früh für Mobile entwerfen, Steuerung über Prioritäten statt Einzelbefehle |
+| Viele Standorte verlangsamen Simulation und Offline-Fortschritt | mittel | Regionen zusammenfassen, adaptive Schritte, Benchmarks ab AS3 |
 | Rechenaufwand bei großen Zahlen | gering | Decimal-Wrapper, Benchmarks im Core |
 
 ## 6. Vorgehen

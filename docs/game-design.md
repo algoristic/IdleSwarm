@@ -9,10 +9,11 @@ Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für Meilenstein *
 - **Zahlenwerte sind „v1“:** Sie dürfen während M1.1 nachjustiert werden, bis die Bots die [Pacing-Ziele](projektplan.md#35-pacing-ziele-vorläufig) treffen. Formeln und Zielbänder bleiben dabei unverändert.
 - **Alle Konstanten sind über Parameter überschreibbar** ([ADR-007](adr/007-modell-seite-echarts-balancing.md)). So testet die Modell-Seite Varianten ohne Codeänderung.
 - **Nicht enthalten:** Mechaniken ab M1.2 (siehe [Abschnitt 7](#7-ausblick)).
+- **Zielzustand ab AP 1.1.9:** Das Spiel kennt keinen Klick mehr, an seine Stelle tritt der [Grundertrag](#41-grundertrag). Der Code enthält den Klick noch, bis [AP 1.1.9](projektplan.md#m11--kernschleife--modell) umgesetzt ist.
 
 | Thema | Abschnitt | Stories |
 |---|---|---|
-| Klick und Vorrat | [4.1](#41-klick), [4.5](#45-abgeleitete-werte) | US-01.01–01.03 |
+| Grundertrag und Vorrat | [4.1](#41-grundertrag), [4.5](#45-abgeleitete-werte) | US-01.01–01.03 |
 | Sammeln | [4.3](#43-simulationsschritt) | US-01.04 |
 | Kauf von Einheiten | [3](#3-kostenkurven), [4.2](#42-manueller-kauf) | US-02.01–02.03 |
 | Platz | [4.5](#45-abgeleitete-werte) | US-02.04 |
@@ -46,7 +47,7 @@ Jeder Einheitentyp hat eigene Nahrungskosten. Eier/min ist nur eine Rate, keine 
 
 | Symbol | Konstante | Wert v1 | Bedeutung |
 |---|---|---|---|
-| `k_0` | `clickYield` | 1 | Klickertrag |
+| `g_0` | `baseFoodRate` | 1,5 | Grundertrag in Nahrung/s; Startwert, wird in AP 1.1.9 gemessen |
 | `c_d` | `droneCost` | 10 | Basiskosten Drohne |
 | `w_d` | `droneCostGrowth` | 1,07 | Preisfaktor Drohne |
 | `r_d` | `droneCollectRate` | 0,2 | Nahrung/s je Drohne |
@@ -64,7 +65,7 @@ Jeder Einheitentyp hat eigene Nahrungskosten. Eier/min ist nur eine Rate, keine 
 | – | `startQueens` | 1 | Königinnen beim Start |
 | – | `siteSize` | 20.000 | Größe der ersten Futterstelle |
 
-Weitere Symbole: `Q`, `D`, `S` sind die Anzahl Königinnen, Drohnen und Soldaten, `N` die Nahrung, `V` der Vorrat der Futterstelle und `dt` die Schrittdauer in Sekunden. Die Modifikatoren `M_klick`, `M_sammeln` und `M_brut` sind bis M1.3 gleich 1.
+Weitere Symbole: `Q`, `D`, `S` sind die Anzahl Königinnen, Drohnen und Soldaten, `N` die Nahrung, `V` der Vorrat der Futterstelle und `dt` die Schrittdauer in Sekunden. Die Modifikatoren `M_sammeln` und `M_brut` sind bis M1.3 gleich 1.
 
 ## 3. Kostenkurven
 
@@ -88,19 +89,82 @@ Die Tabelle ist auf zwei Stellen gerundet. Gerechnet wird mit dem ungerundeten P
 
 Einheitenzahlen sind intern kontinuierlich (`Num`, Bruchteile erlaubt). Die Anzeige rundet ab.
 
-### 4.1 Klick
+### Wirkungszusammenhänge
 
-```
-Ertrag = min(k_0 · M_klick, V)
-N += Ertrag
-V -= Ertrag
+Das Diagramm zeigt, wie die Größen in M1.1 zusammenwirken. Abgerundete Knoten sind Vorgänge, eckige Knoten sind Größen. Konstanten und die Modifikatoren `M_sammeln` und `M_brut` sind nicht eingezeichnet.
+
+| Darstellung | Bedeutung |
+|---|---|
+| durchgezogener Pfeil | Der Vorgang erhöht die Größe. |
+| dicker Pfeil | Der Vorgang verbraucht die Größe. |
+| gestrichelter Pfeil | Die Größe bestimmt den Wert oder die Stärke des Ziels oder ist seine Bedingung. |
+| gestrichelter Rahmen | Die Größe wirkt in M1.1 auf nichts anderes. |
+
+```mermaid
+flowchart TB
+    grundertrag(["Grundertrag"])
+    sammeln(["Sammeln"])
+    kauf(["Manueller Kauf"])
+    brut(["Passive Brut"])
+    neu(["Neue Futterstelle<br/>(Provisorium bis M1.2)"])
+
+    vorrat["Vorrat V"]
+    nahrung["Nahrung N"]
+    preis["Preis"]
+    bought["Kaufzähler bought"]
+    koenigin["Königinnen Q"]
+    drohne["Drohnen D"]
+    soldat["Soldaten S"]
+    eier["Eier/min"]
+    platzFrei["Platz verfügbar"]
+    platzBelegt["Platz belegt"]
+    angriff["Gesamtangriff A"]
+
+    vorrat ==> grundertrag
+    vorrat ==> sammeln
+    grundertrag --> nahrung
+    sammeln --> nahrung
+    vorrat -.->|"nur bei V = 0"| neu
+    neu --> vorrat
+
+    nahrung ==> kauf
+    nahrung ==> brut
+    bought -.-> preis
+    preis -.-> kauf
+    kauf --> bought
+    kauf --> koenigin
+    kauf --> drohne
+    kauf --> soldat
+
+    koenigin -.-> eier
+    eier -.-> brut
+    brut --> drohne
+    brut --> soldat
+    drohne -.-> sammeln
+
+    koenigin -.-> platzFrei
+    drohne -.-> platzBelegt
+    soldat -.-> platzBelegt
+    soldat -.-> angriff
+
+    classDef ohneWirkung stroke-dasharray: 5 5
+    class platzFrei,platzBelegt,angriff ohneWirkung
 ```
 
-Der Klick wird sofort angewendet, nicht erst im nächsten Tick. Bei leerem Vorrat ist der Ertrag 0.
+- **Wachstum:** Der Grundertrag trägt den Start. Danach sammeln Drohnen Nahrung, und Nahrung wird über Kauf und Brut zu neuen Drohnen. Königinnen verstärken diese Schleife über die Eier/min.
+- **Konkurrenz:** Kauf und Brut verbrauchen dieselbe Nahrung.
+- **Grenze:** Grundertrag und Drohnen leeren denselben Vorrat.
+- **Noch ohne Wirkung:** Platz und Angriff werden erst mit dem Weiterziehen und dem Kampf in M1.2 wirksam.
+
+### 4.1 Grundertrag
+
+Die Futterstelle liefert je Sekunde den festen Ertrag `g_0`, unabhängig von der Zahl der Einheiten. Er wird im [Simulationsschritt](#43-simulationsschritt) zusammen mit dem Sammeln der Drohnen verrechnet und vom selben Vorrat abgezogen. Bei leerem Vorrat ist er 0.
+
+Der Grundertrag hat zwei Aufgaben: Er trägt den Spielstart, in dem die Brut der ersten Königin mehr Nahrung braucht als wenige Drohnen liefern. Außerdem bleibt der Schwarm handlungsfähig, wenn er weder Drohnen noch Nahrung hat. Ein Klick oder Tap erzeugt keine Nahrung.
 
 ### 4.2 Manueller Kauf
 
-Ein Kauf ist nur möglich, wenn `N ≥ Preis`. Er wird wie der Klick sofort angewendet:
+Ein Kauf ist nur möglich, wenn `N ≥ Preis`. Er wird sofort angewendet, nicht erst im nächsten Tick:
 
 ```
 N -= Preis
@@ -112,14 +176,14 @@ Ein Kauf ergibt genau +1 Einheit. **Platz begrenzt weder Kauf noch Brut**, er wi
 
 ### 4.3 Simulationsschritt
 
-Je Schritt der Dauer `dt` laufen nacheinander (1) Sammeln und (2) Brut. Der Logik-Takt beträgt 10 Hz, also `dt = 0,1` ([Technisches Konzept §4](technisches-konzept.md#4-simulation)).
+Je Schritt der Dauer `dt` laufen nacheinander (1) Grundertrag und Sammeln und (2) Brut. Der Logik-Takt beträgt 10 Hz, also `dt = 0,1` ([Technisches Konzept §4](technisches-konzept.md#4-simulation)).
 
-**(1) Sammeln**
+**(1) Grundertrag und Sammeln**
 
 ```
-F_d = min(D · r_d · M_sammeln · dt, V)
-N += F_d
-V -= F_d
+F = min((g_0 + D · r_d · M_sammeln) · dt, V)
+N += F
+V -= F
 ```
 
 **(2) Brut**
@@ -143,18 +207,18 @@ N  -= h · c̄
 
 | Schritt | Rechnung | Ergebnis |
 |---|---|---|
-| Sammeln | `F_d = min(10 · 0,2 · 0,1; 1.000) = 0,2` | `N = 5,2`, `V = 999,8` |
+| Grundertrag und Sammeln | `F = min((1,5 + 10 · 0,2) · 0,1; 1.000) = 0,35` | `N = 5,35`, `V = 999,65` |
 | Eier | `e = 6 / 60 · 0,1 = 0,01` | |
-| Geschlüpft | `h = min(0,01; 5,2 / 13,75 ≈ 0,378) = 0,01` | `D = 10,0075`, `S = 0,0025` |
-| Kosten | `0,01 · 13,75 = 0,1375` | `N = 5,0625` |
+| Geschlüpft | `h = min(0,01; 5,35 / 13,75 ≈ 0,389) = 0,01` | `D = 10,0075`, `S = 0,0025` |
+| Kosten | `0,01 · 13,75 = 0,1375` | `N = 5,2125` |
 
-**Beispiel 2** (Nahrung reicht nicht) mit `Q = 1`, `D = 0`, `S = 0`, `N = 0,05`, `dt = 0,1`: `h = min(0,01; 0,05 / 13,75 ≈ 0,00364) ≈ 0,00364`. Es schlüpfen also rund 0,00273 Drohnen und 0,00091 Soldaten, danach ist `N = 0`.
+**Beispiel 2** (Nahrung reicht nicht) mit `Q = 1`, `D = 0`, `S = 0`, `N = 0,05`, `V = 0`, `dt = 0,1`: Ohne Vorrat gibt es keinen Grundertrag, also ist `h = min(0,01; 0,05 / 13,75 ≈ 0,00364) ≈ 0,00364`. Es schlüpfen rund 0,00273 Drohnen und 0,00091 Soldaten, danach ist `N = 0`.
 
 ### 4.4 Leere Futterstelle (Provisorium bis M1.2)
 
 > **Provisorium:** Diese Regel überbrückt die Zeit, bis es das Weiterziehen gibt. Sie entfällt mit M1.2.
 
-- Bei `V = 0` bringen Klicks und Drohnen nichts mehr. Die Brut läuft weiter, solange Nahrung da ist.
+- Bei `V = 0` bringen Grundertrag und Drohnen nichts mehr. Die Brut läuft weiter, solange Nahrung da ist.
 - Nur bei leerem Vorrat steht die Aktion **„Neue Futterstelle“** bereit. Sie setzt `V` wieder auf die Größe derselben Futterstelle.
 - Einheiten, Nahrung und Kaufzähler bleiben erhalten.
 - Auch die Bots nutzen diese Aktion.
@@ -165,16 +229,17 @@ Diese Werte werden nicht gespeichert, sondern aus dem Zustand berechnet.
 
 | Wert | Formel | Hinweis |
 |---|---|---|
-| Nahrung/s der Drohnen | `D · r_d · M_sammeln` | 0 bei leerem Vorrat |
+| Nahrung/s gesamt | `g_0 + D · r_d · M_sammeln` | 0 bei leerem Vorrat |
+| davon Drohnen | `D · r_d · M_sammeln` | 0 bei leerem Vorrat |
 | Eier/min | `Q · e_q · M_brut` | |
 | Gesamtangriff | `A = S · a_s` | v1: `A = S · 1` |
 | Platz verfügbar | `Q · p_q` | v1: `Q · 10` |
 | Platz belegt | `D · p_d + S · p_s` | v1: `D · 1 + S · 2`; darf den verfügbaren Platz übersteigen |
 | Warnfarbe Platz | `belegt ≥ 0,9 · verfügbar` | US-02.04 |
-| Restzeit Futterstelle | `V / (D · r_d · M_sammeln)` | ohne Drohnen keine Schätzung; Klicks zählen nicht mit |
+| Restzeit Futterstelle | `V / (g_0 + D · r_d · M_sammeln)` | auch ohne Drohnen bestimmbar |
 | Effekt einer weiteren Königin | `+e_q · M_brut` Eier/min, `+p_q` Platz | Anzeige vor dem Kauf (US-02.03) |
 
-Beispiele: Mit 50 Drohnen und vollem Vorrat beträgt die Restzeit `20.000 / (50 · 0,2) = 2.000 s`, also 33 min 20 s. Mit `Q = 2`, `D = 15`, `S = 3` sind 21 von 20 Plätzen belegt (105 %).
+Beispiele: Mit 50 Drohnen und vollem Vorrat beträgt die Restzeit `20.000 / (1,5 + 50 · 0,2) ≈ 1.739 s`, also rund 29 min. Mit `Q = 2`, `D = 15`, `S = 3` sind 21 von 20 Plätzen belegt (105 %).
 
 ## 5. Spielstand Version 2
 
@@ -191,6 +256,8 @@ Die stabile ID der ersten Futterstelle ist `vent` (Schlot). Wie überall speiche
 
 ## 6. Messwerte v1
 
+> **Messung mit Klick, Neumessung in AP 1.1.9:** Dieser Abschnitt beschreibt den Stand vor dem Klick-Ausbau und gilt nicht für den Grundertrag. Er bleibt bis zur Neumessung als Vergleich stehen.
+>
 > **Gemessen** mit dem Headless-Runner (Stand AP 1.1.8). Die Werte v1 bleiben unverändert. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. **Die Mess-Definitionen unten sind vorläufig, die Entscheidung des Product Owners ist offen.**
 
 **Messaufbau**

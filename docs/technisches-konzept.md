@@ -110,7 +110,7 @@ src/app/
 ### 3.3 Datenfluss
 
 ```
-Eingabe (Klick, Taste, Pinch)
+Eingabe (Kauf, Zielwahl, Taste, Pinch)
    │
    ▼
 GameStore.dispatch(cmd) ──► core/rules: apply(state, cmd) ──► neuer State
@@ -155,13 +155,15 @@ Save-Version 2 enthält `version`, `seed`, `rngState`, `time`, `era`, `res`, `un
 
 IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil**. Spielstände speichern nur IDs, keine Texte oder Werte.
 
+**Ausblick auf mehrere Standorte:** `site` ist genau eine Futterstelle. Ab AS3 arbeitet der Schwarm an mehreren Standorten, ab AS4 an Gebieten und Fronten, ab AS5 über Systeme hinweg. Dafür wird `site` zu einer Liste und per Migration umgestellt. M1.2 bleibt bei einem Standort, schreibt seine Regeln aber möglichst so, dass sie je Standort arbeiten.
+
 ## 4. Simulation
 
 | Aspekt | Lösung |
 |---|---|
 | Logik-Takt | fest **10 Hz** (`dt` = 100 ms), unabhängig von der Framerate; Akkumulator-Pattern im GameLoop |
 | Rendering | `requestAnimationFrame`, liest nur den State; pausiert bei `document.hidden` |
-| Klicks | Kommandos werden sofort angewendet, nicht erst im nächsten Tick |
+| Eingaben | Kommandos wie Käufe werden sofort angewendet, nicht erst im nächsten Tick |
 | Determinismus | Zufall nur über den seeded RNG im State (z. B. mulberry32). Gleicher Seed + gleiche Kommandos an gleicher Position zwischen den Ticks ⇒ gleiches Ergebnis. Grundlage für Tests, Modell-Seite und gegen Save-Scumming |
 | Offline-Catch-up | Beim Laden wird `Δt = now − lastSaved` (gedeckelt, Start 24 h) nachgeholt. Das geschieht in **adaptiven Schritten**: große Schritte (z. B. 10 s), die an Ereignisgrenzen (Futterstelle leer, Nahrung reicht für Brut, Auto-Weiterziehen) verkürzt werden. Ergebnis ≈ Echtzeit-Simulation; ein Test sichert die Toleranz ab |
 | Hintergrund-Tab | Browser drosseln Timer, daher erkennt der GameLoop große Zeitsprünge und nutzt dafür ebenfalls den Catch-up |
@@ -180,7 +182,7 @@ Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `core/balance`. Spiel
 | Größe | Formel (Entwurf) |
 |---|---|
 | Nahrung/s durch Drohnen | `F_d = min(D · r_d · M_sammeln, Abbau-Grenze des Vorrats)` |
-| Klickertrag | `F_k = k_0 · M_klick` |
+| Grundertrag | `F_g = g_0`, zählt mit `F_d` gegen die Abbau-Grenze des Vorrats |
 | Brutrate (Eier/min) | `E = Q · e_q · g(P_gesamt) · M_brut`; `g` z. B. `1 + 0,1 · P_gesamt` |
 | Verteilung der Brut | `E_d = E · P_d / P_gesamt`, `E_s = E · P_s / P_gesamt`; jede Brut kostet `c_d` bzw. `c_s` Nahrung |
 | Kaufpreis (manuell) | `Preis(n) = c_basis · w^n` mit Wachstumsfaktor `w` je Einheit (z. B. 1,07–1,15) |
@@ -205,9 +207,9 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 ```
 
 - Der Runner läuft im **Web Worker**, damit die Modell-Seite flüssig bleibt; in Vitest läuft er direkt.
-- `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Klicks liegen also exakt auf ihrer Zeit.
+- `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Käufe liegen also exakt auf ihrer Zeit.
 - Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten, die Futterstellen werden zusammengefasst.
-- Bots ab M1.1: **Aktiv** (Klicks mit realistischer Rate, kauft das Beste), **Idle** (klickt nicht, schaut alle 5 min vorbei und kauft alles Bezahlbare). Ab M1.2: **Drohnen-lastig**, **Soldaten-lastig**.
+- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Bis zu diesem AP klickt der Bot Aktiv noch. Ab M1.2: **Drohnen-lastig**, **Soldaten-lastig**.
 - `params` überschreibt Konstanten aus `core/balance`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
 
 ### 5.4 Kennzahlen
@@ -297,14 +299,14 @@ Die Umsetzung folgt [`docs/mockups/k2-zoom.html`](mockups/k2-zoom.html) (`setMod
 - **Agenten-Budget:** maximal ~300 Sprites (mobil ~150). Bei mehr Einheiten steht ein Sprite für `n` Einheiten, die Verteilung auf die Typen bleibt proportional.
 - **DPR:** Die Canvas-Größe wird mit `devicePixelRatio` skaliert (gedeckelt auf 2).
 - Glow (`shadowBlur`) ist teuer. Deshalb werden Sprites vorgerendert (Offscreen-Canvas) und nur kopiert.
-- Klick-Partikel und Floating Numbers: Partikel im Canvas, Zahlen als DOM-Elemente (wie im Mockup).
+- Ertrags-Partikel und Ereigniszahlen, etwa bei Einnahmen oder Funden: Partikel im Canvas, Zahlen als DOM-Elemente.
 
 ### 8.3 Eingabe
 
 | Eingabe | Desktop | Mobile |
 |---|---|---|
 | Moduswechsel | Mausrad (mit Sperre ~900 ms), Tasten `W` / `G` / `Esc`, Zoom-Leiste | Pinch (Schwellwert), Zoom-Leiste, Zurück-Knopf |
-| Sammeln | Klick auf Futterstelle | Tippen (Multi-Touch erlaubt) |
+| Auswahl | Mausklick auf Ziel, Knoten oder Knopf | Tippen |
 | Technik | Pointer Events einheitlich; Pinch aus zwei aktiven Pointern berechnet; `touch-action: none` auf der Spielfläche |
 
 ### 8.4 Responsives Layout
@@ -342,7 +344,7 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 | Saves | Test je Migration mit eingefrorenen Beispiel-Spielständen |
 | Balancing | Snapshot-Tests der Kennzahlen (Abschnitt 5.6) |
 | UI | Komponententests für zentrale Komponenten (Kaufknopf, Detailpanels) |
-| E2E | Playwright-Smoke: Start, Klick, Kauf, Moduswechsel, Weiterziehen; Viewports Desktop und Smartphone |
+| E2E | Playwright-Smoke: Start, Kauf, Moduswechsel, Weiterziehen; Viewports Desktop und Smartphone |
 | Performance | Messung in AP 1.4.6 auf echtem Smartphone: 60 fps in der Szene, Moduswechsel ohne Ruckeln |
 | CI-Gates | Lint, Unit-Tests, Build und E2E müssen grün sein, bevor auf `main` deployt wird; das Gate E2E greift erst ab AP 1.5.7, wenn es E2E-Tests gibt |
 
