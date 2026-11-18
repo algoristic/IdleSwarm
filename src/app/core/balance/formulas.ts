@@ -6,6 +6,8 @@ import type { BalanceParams } from './constants';
 /** Ab diesem Anteil des verfügbaren Platzes wird gewarnt (Game-Design §4.5, US-02.04). */
 const SPACE_WARNING_SHARE = 0.9;
 
+const MS_PER_MINUTE = 60_000;
+
 /** Parameter der Kostenkurve je Einheitentyp (Game-Design §2.3). */
 const COST_CURVES: Readonly<
   Record<UnitType, { readonly cost: keyof BalanceParams; readonly growth: keyof BalanceParams }>
@@ -19,6 +21,14 @@ const COST_CURVES: Readonly<
 export interface QueenEffect {
   readonly eggsPerMin: Num;
   readonly space: Num;
+}
+
+/** Ergebnis der Brut eines Schritts (Game-Design §4.3). */
+export interface BroodResult {
+  readonly hatched: Num;
+  readonly drones: Num;
+  readonly soldiers: Num;
+  readonly foodCost: Num;
 }
 
 /** Ertrag eines Klicks: `min(k_0 · M_klick, V)` mit `M_klick = 1` bis M1.3 (Game-Design §4.1). */
@@ -35,6 +45,37 @@ export function unitPrice(type: UnitType, bought: Units, params: BalanceParams):
 /** Eier/min: `Q · e_q · M_brut` mit `M_brut = 1` bis M1.3 (Game-Design §4.5). */
 export function eggsPerMinute(units: Units, params: BalanceParams): Num {
   return units.queens.mul(params.queenEggsPerMin);
+}
+
+/** Mittlere Brutkosten: `c̄ = a · c_d + (1 − a) · c_s`, ohne Preisfaktor (Game-Design §4.3). */
+export function meanBroodCost(params: BalanceParams): number {
+  const { broodDroneShare: share, droneCost, soldierCost } = params;
+  return share * droneCost + (1 - share) * soldierCost;
+}
+
+/**
+ * Brut eines Schritts: `e = E / 60 · dt`, `h = min(e, N / c̄)` (Game-Design §4.3).
+ * Bei `c̄ = 0` begrenzt die Nahrung nichts.
+ */
+export function broodResult(
+  units: Units,
+  food: Num,
+  dtMs: number,
+  params: BalanceParams,
+): BroodResult {
+  const eggs = eggsPerMinute(units, params).mul(dtMs / MS_PER_MINUTE);
+  const meanCost = meanBroodCost(params);
+  const fullCost = eggs.mul(meanCost);
+  // Begrenzt die Nahrung, zählt sie direkt als Kosten: `h · c̄` könnte gerundet von `N` abweichen.
+  const limited = meanCost > 0 && fullCost.gte(food);
+  const hatched = limited ? food.div(meanCost) : eggs;
+  const share = params.broodDroneShare;
+  return {
+    hatched,
+    drones: hatched.mul(share),
+    soldiers: hatched.mul(1 - share),
+    foodCost: limited ? food : fullCost,
+  };
 }
 
 /** Gesamtangriff: `S · a_s` (Game-Design §4.5). */

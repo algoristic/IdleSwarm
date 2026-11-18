@@ -1,4 +1,5 @@
 import { DEFAULT_BALANCE, TICK_MS, TICKS_PER_SECOND } from '../balance/constants';
+import { Num } from '../num/num';
 import { createInitialState, GameState } from '../state/game-state';
 import { step, syncClock } from './step';
 
@@ -30,11 +31,9 @@ describe('step', () => {
     expect(JSON.stringify(input)).toBe(before);
   });
 
-  it('ändert nur die Zeit und teilt alle übrigen Teile', () => {
+  it('teilt alle Teile, die der Schritt nicht ändert', () => {
     const input = createState();
     const { state } = step(input, TICK_MS);
-    expect(state.res).toBe(input.res);
-    expect(state.units).toBe(input.units);
     expect(state.site).toBe(input.site);
     expect(state.bought).toBe(input.bought);
     expect(state.rngState).toBe(input.rngState);
@@ -43,10 +42,48 @@ describe('step', () => {
     expect(state.version).toBe(input.version);
   });
 
-  it('nimmt Parameter an, ohne dass sie bisher etwas bewirken', () => {
+  it('lässt Königinnen brüten', () => {
+    const { state } = step(createState(), TICK_MS);
+    expect(state.units.drones.eq(0.0075)).toBe(true);
+    expect(state.units.soldiers.eq(0.0025)).toBe(true);
+    expect(state.res.food.eq(14.8625)).toBe(true);
+  });
+
+  it('reicht die Parameter an die Brut weiter', () => {
+    const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 60, broodDroneShare: 1 };
+    const { state } = step(createState(), 1000, params);
+    expect(state.units.drones.eq(1)).toBe(true);
+    expect(state.units.soldiers.isZero()).toBe(true);
+    expect(state.res.food.eq(5)).toBe(true);
+  });
+
+  it('hängt bei genug Nahrung kaum von der Schrittweite ab', () => {
+    const input = deepFreeze(
+      createInitialState({ seed: 'step', now: NOW }, { ...DEFAULT_BALANCE, startFood: 1000 }),
+    );
+    let fine = input;
+    for (let i = 0; i < 10; i++) {
+      fine = step(fine, TICK_MS).state;
+    }
+    const coarse = step(input, 10 * TICK_MS).state;
+    expect(fine.time).toEqual(coarse.time);
+    expect(fine.units.drones.toNumber()).toBeCloseTo(coarse.units.drones.toNumber(), 10);
+    expect(fine.units.soldiers.toNumber()).toBeCloseTo(coarse.units.soldiers.toNumber(), 10);
+    expect(fine.res.food.toNumber()).toBeCloseTo(coarse.res.food.toNumber(), 10);
+  });
+
+  it('liefert bei gleicher Eingabe dasselbe Ergebnis', () => {
     const input = createState();
-    const params = { ...DEFAULT_BALANCE, droneCollectRate: 5 };
-    expect(step(input, TICK_MS, params)).toEqual(step(input, TICK_MS));
+    expect(JSON.stringify(step(input, 250))).toBe(JSON.stringify(step(input, 250)));
+  });
+
+  it('lässt Zustand ohne Königinnen bis auf die Zeit unverändert', () => {
+    const base = createState();
+    const input = deepFreeze({ ...base, units: { ...base.units, queens: Num.ZERO } });
+    const { state } = step(input, TICK_MS);
+    expect(state.res).toBe(input.res);
+    expect(state.units).toBe(input.units);
+    expect(state.time.played).toBe(TICK_MS);
   });
 
   it.each([0, -0])('gibt bei dtMs %d denselben Zustand zurück', (dtMs) => {
@@ -73,8 +110,6 @@ describe('step', () => {
       state = deepFreeze(result.state);
     }
     expect(state.time).toEqual({ now: NOW + 3_600_000, lastSaved: NOW, played: 3_600_000 });
-    expect(state.res).toBe(input.res);
-    expect(state.units).toBe(input.units);
     expect(state.rngState).toBe(input.rngState);
   });
 });

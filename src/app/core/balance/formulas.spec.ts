@@ -3,9 +3,11 @@ import { Num } from '../num/num';
 import type { Units } from '../state/game-state';
 import { DEFAULT_BALANCE } from './constants';
 import {
+  broodResult,
   clickGain,
   eggsPerMinute,
   isSpaceWarning,
+  meanBroodCost,
   nextQueenEffect,
   spaceAvailable,
   spaceUsage,
@@ -86,6 +88,75 @@ describe('eggsPerMinute', () => {
   it('nutzt überschriebene Parameter', () => {
     const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 2.5 };
     expect(eggsPerMinute(units(2, 0, 0), params).eq(5)).toBe(true);
+  });
+});
+
+describe('meanBroodCost', () => {
+  it('liefert 13,75 mit den Startwerten', () => {
+    expect(meanBroodCost(DEFAULT_BALANCE)).toBe(13.75);
+  });
+
+  it('nutzt überschriebene Parameter', () => {
+    const params = { ...DEFAULT_BALANCE, broodDroneShare: 0.5, droneCost: 2, soldierCost: 4 };
+    expect(meanBroodCost(params)).toBe(3);
+  });
+});
+
+describe('broodResult', () => {
+  it('brütet bei genug Nahrung alle Eier des Schritts aus', () => {
+    const brood = broodResult(units(1, 10, 0), Num.from(5.2), 100, DEFAULT_BALANCE);
+    expect(brood.hatched.eq(0.01)).toBe(true);
+    expect(brood.drones.eq(0.0075)).toBe(true);
+    expect(brood.soldiers.eq(0.0025)).toBe(true);
+    expect(brood.foodCost.eq(0.1375)).toBe(true);
+  });
+
+  it('begrenzt die Brut auf die vorhandene Nahrung', () => {
+    const food = Num.from(0.05);
+    const brood = broodResult(units(1, 0, 0), food, 100, DEFAULT_BALANCE);
+    expect(brood.hatched.toNumber()).toBeCloseTo(0.05 / 13.75, 12);
+    expect(brood.foodCost.eq(food)).toBe(true);
+  });
+
+  it('verbraucht genau passende Nahrung vollständig', () => {
+    const food = Num.from(0.1375);
+    const brood = broodResult(units(1, 0, 0), food, 100, DEFAULT_BALANCE);
+    expect(brood.hatched.eq(0.01)).toBe(true);
+    expect(brood.foodCost.eq(food)).toBe(true);
+  });
+
+  it.each([
+    ['ohne Königinnen', 0, 10, 100],
+    ['ohne Nahrung', 1, 0, 100],
+    ['ohne Zeit', 1, 10, 0],
+  ])('brütet %s nichts aus', (_name, queens, food, dtMs) => {
+    const brood = broodResult(units(queens, 0, 0), Num.from(food), dtMs, DEFAULT_BALANCE);
+    expect(brood.hatched.isZero()).toBe(true);
+    expect(brood.drones.isZero()).toBe(true);
+    expect(brood.soldiers.isZero()).toBe(true);
+    expect(brood.foodCost.isZero()).toBe(true);
+  });
+
+  it('wird bei Kosten von 0 nicht durch Nahrung begrenzt', () => {
+    const params = { ...DEFAULT_BALANCE, droneCost: 0, soldierCost: 0 };
+    const brood = broodResult(units(1, 0, 0), Num.ZERO, 1000, params);
+    expect(brood.hatched.eq(0.1)).toBe(true);
+    expect(brood.foodCost.isZero()).toBe(true);
+  });
+
+  it('nutzt überschriebene Parameter', () => {
+    const params = {
+      ...DEFAULT_BALANCE,
+      queenEggsPerMin: 60,
+      broodDroneShare: 0.5,
+      droneCost: 2,
+      soldierCost: 4,
+    };
+    const brood = broodResult(units(2, 0, 0), Num.from(100), 1000, params);
+    expect(brood.hatched.eq(2)).toBe(true);
+    expect(brood.drones.eq(1)).toBe(true);
+    expect(brood.soldiers.eq(1)).toBe(true);
+    expect(brood.foodCost.eq(6)).toBe(true);
   });
 });
 
