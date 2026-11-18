@@ -14,12 +14,33 @@ a.card:hover{transform:translateY(-3px);border-color:#555}
 .body{padding:14px 16px;background:#1b1e24;font-size:13px;line-height:1.5}
 .body h2{font-size:16px;margin:0 0 6px}
 .body ul{margin:8px 0 0;padding-left:18px;color:#9aa0aa}
+kbd{font:inherit;font-size:11px;border:1px solid #3a3f48;border-radius:4px;padding:0 5px}
 </style>
 </head>
 <body>
 <h1>IdleSwarm · UI-Mockups</h1>
 
-<h2 style="font-weight:300;margin-top:30px">Runde 2 · Varianten von A (Biolumineszenz)</h2>
+<h2 style="font-weight:300;margin-top:30px">Runde 3 · Kombinationen</h2>
+<p class="lead">Alle drei verbinden dieselben Bausteine: die Szene aus A1 als Hauptansicht, das Genom als Fähigkeitenbaum (aus A2) und die Sonar-Karte (aus A3), die nur beim Weiterziehen erscheint. Unterschiedlich ist, <em>wie</em> Genom und Karte ins Bild kommen. In allen dreien lassen sich Adaptionen kaufen, und das wirkt sich auch auf die Karte aus (Säurevakuole hebt den Angriff von 75 auf 90). Tasten: <kbd>G</kbd> Genom, <kbd>W</kbd> Weiterziehen, <kbd>Esc</kbd> zurück.</p>
+<div class="grid">
+  <a class="card" href="k1-overlays.html">
+    <div class="sw" style="background:radial-gradient(circle,#0f3550,#02070d);color:#5ff2e6;text-shadow:0 0 12px #5ff2e6">▣ Overlays</div>
+    <div class="body"><h2>K1 · Vollbild-Overlays</h2>Die Szene bleibt die Startansicht. Genom und Weiterziehen sind zwei große Knöpfe unten rechts und öffnen sich als Vollbild-Ebene über der unscharfen Szene, mit Detailspalte rechts.
+      <ul><li>einfach zu verstehen und am leichtesten umzusetzen</li><li>Baum und Karte haben maximal viel Platz</li><li>verdeckt den Schwarm, solange das Overlay offen ist</li></ul></div>
+  </a>
+  <a class="card" href="k2-zoom.html">
+    <div class="sw" style="background:radial-gradient(circle,#2a1450,#02070d);color:#a98bff;text-shadow:0 0 12px #a98bff">⊖ ✺ ⊕</div>
+    <div class="body"><h2>K2 · Kamera-Zoom</h2>Eine einzige zusammenhängende Welt. Herauszoomen (Mausrad / Zoom-Leiste links) lässt die Szene zum Punkt auf der Sonar-Karte schrumpfen, Hineinzoomen führt in den Zellkern mit radialem Genom.
+      <ul><li>stärkstes Raumgefühl, der Schwarm bleibt auf der Karte live sichtbar</li><li>die Metapher trägt über die Ären (Zelle → Meer → Kontinent → All)</li><li>aufwendigste Übergänge</li></ul></div>
+  </a>
+  <a class="card" href="k3-seitenblaetter.html">
+    <div class="sw" style="background:radial-gradient(circle,#3a2a10,#02070d);color:#ffc65f;text-shadow:0 0 12px #ffc65f">▌ ◉ ▐</div>
+    <div class="body"><h2>K3 · Seitenblätter + Späher</h2>Genom und Karte schieben sich als Blätter von links bzw. rechts herein, die Szene rutscht zur Seite und bleibt sichtbar. Ist der Vorrat fast leer, melden sich die Späher und es läuft ein Countdown bis zum automatischen Weiterziehen (Demo-Knopf oben rechts).
+      <ul><li>Weiterziehen wird zu einem Ereignis statt einem Dauer-Menü</li><li>die Idle-Strategie wird sichtbar (Markierung „AUTO“ auf der Karte)</li><li>auf schmalen Bildschirmen wird es eng</li></ul></div>
+  </a>
+</div>
+
+<h2 style="font-weight:300;margin-top:40px">Runde 2 · Varianten von A (Biolumineszenz)</h2>
 <p class="lead">Gleicher Spielzustand, drei unterschiedliche Schwerpunkte innerhalb der Stilrichtung A.</p>
 <div class="grid">
   <a class="card" href="a1-immersiv.html">

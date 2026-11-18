@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IdleSwarm – Mockup K1: HUD + Vollbild-Overlays</title>
+<style>
+:root{
+  --bg0:#02070d; --glass:rgba(8,30,46,.55); --border:rgba(95,242,230,.18);
+  --cyan:#5ff2e6; --cyan-dim:#2a8f99; --magenta:#ff5fa8; --amber:#ffc65f; --violet:#a98bff;
+  --text:#d4f3f5; --muted:#6f9aa6; --danger:#ff6b6b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--text);background:var(--bg0);font-size:14px}
+canvas{position:fixed;inset:0;display:block;cursor:pointer}
+.glass{background:var(--glass);border:1px solid var(--border);border-radius:18px;backdrop-filter:blur(10px)}
+.hud{position:fixed;z-index:2}
+
+/* Ressourcen */
+.res{top:18px;left:18px;padding:14px 18px;display:flex;flex-direction:column;gap:6px;min-width:220px}
+.logo{font-size:13px;letter-spacing:.3em;color:var(--cyan);text-shadow:0 0 10px var(--cyan);margin-bottom:4px}
+.res .line{display:flex;align-items:center;gap:10px}
+.res .dot{width:8px;height:8px;border-radius:50%}
+.res .v{font-size:22px;font-weight:300;font-variant-numeric:tabular-nums;min-width:90px}
+.res .r{font-size:11px;color:var(--muted)}
+.res .small .v{font-size:15px;font-weight:500}
+
+/* Futterstelle */
+.source{top:18px;left:50%;transform:translateX(-50%);text-align:center;padding:10px 26px}
+.source .k{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.source .t{font-size:22px;font-weight:300}
+.source .bar{width:280px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);margin:8px auto 4px;overflow:hidden}
+.source .bar i{display:block;height:100%;width:63%;background:linear-gradient(90deg,#ff8a5f,var(--amber))}
+.source .s{font-size:11px;color:var(--muted)}
+
+/* Ära */
+.era{top:18px;right:18px;padding:10px 14px;font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.era i{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.2)}
+.era i.on{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.era b{color:var(--cyan);font-weight:500}
+
+/* Schubladen rechts (nur noch Kleinkram) */
+.tabs{top:50%;right:0;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px}
+.tab{width:52px;height:52px;border-radius:16px 0 0 16px;border-right:0;display:grid;place-items:center;font-size:20px;cursor:pointer;position:relative;color:var(--muted);transition:.15s}
+.tab:hover,.tab.on{color:var(--cyan);width:60px;box-shadow:0 0 18px rgba(95,242,230,.15)}
+.tab span.l{position:absolute;right:68px;font-size:11px;white-space:nowrap;opacity:0;transition:.15s;pointer-events:none;background:var(--glass);padding:4px 8px;border-radius:8px}
+.tab:hover span.l{opacity:1}
+.drawer{top:110px;right:72px;width:320px;padding:18px;transition:transform .25s,opacity .25s}
+.drawer.hidden{transform:translateX(30px);opacity:0;pointer-events:none}
+.drawer h2{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan-dim);margin-bottom:12px;display:flex;justify-content:space-between}
+.pher-row{display:grid;grid-template-columns:70px 1fr auto;align-items:center;gap:8px;margin-bottom:10px}
+.pips{display:flex;gap:4px}
+.pip{width:13px;height:13px;border-radius:50%;border:1px solid var(--border)}
+.pm{display:flex;gap:4px}
+.pm button{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:rgba(0,0,0,.25);color:var(--text);cursor:pointer}
+.fund{display:block;text-align:center;font-size:22px;padding:10px;border-radius:14px;background:rgba(0,0,0,.2)}
+.fund small{display:block;font-size:10px;color:var(--muted)}
+
+.btn{font:inherit;cursor:pointer;border:1px solid var(--cyan-dim);color:var(--cyan);background:rgba(95,242,230,.07);border-radius:999px;padding:6px 12px;font-size:12px;transition:.15s;white-space:nowrap}
+.btn:hover{background:rgba(95,242,230,.18);box-shadow:0 0 12px rgba(95,242,230,.35)}
+.btn.primary{background:linear-gradient(135deg,rgba(95,242,230,.25),rgba(169,139,255,.25));border-color:var(--cyan);font-weight:600;padding:11px 18px;font-size:14px;width:100%}
+.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.mini{height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:3px}
+.mini i{display:block;height:100%}
+
+/* Aktionsleiste */
+.actions{bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;padding:10px;align-items:stretch}
+.act{display:flex;align-items:center;gap:12px;padding:8px 14px 8px 10px;border-radius:14px;background:rgba(0,0,0,.25);cursor:pointer;border:1px solid transparent;transition:.15s}
+.act:hover{border-color:var(--cyan-dim);box-shadow:0 0 16px rgba(95,242,230,.15)}
+.act svg{width:36px;height:36px}
+.act .c{font-size:20px;font-weight:300;line-height:1;font-variant-numeric:tabular-nums}
+.act .n{font-size:11px;color:var(--muted)}
+.act .p{font-size:11px;color:var(--cyan);margin-left:6px;text-align:right;line-height:1.3}
+.sep{width:1px;background:var(--border);margin:4px 2px}
+.cap{display:flex;flex-direction:column;justify-content:center;padding:0 10px;font-size:11px;color:var(--muted);min-width:140px}
+.cap .mini{height:6px}
+
+/* Große Modus-Knöpfe unten rechts */
+.modes{right:18px;bottom:18px;display:flex;gap:10px}
+.big{position:relative;width:118px;padding:14px 10px 12px;text-align:center;cursor:pointer;transition:.15s}
+.big:hover{border-color:var(--cyan);box-shadow:0 0 22px rgba(95,242,230,.25);transform:translateY(-2px)}
+.big .i{font-size:26px;color:var(--cyan);text-shadow:0 0 10px var(--cyan);line-height:1.1}
+.big .n{font-size:13px;margin-top:4px}
+.big .s{font-size:10px;color:var(--muted)}
+.big kbd{position:absolute;top:7px;left:9px;font:inherit;font-size:9px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:0 4px}
+.badge{position:absolute;top:7px;right:9px;min-width:18px;height:18px;border-radius:9px;background:var(--amber);color:#02070d;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 8px var(--amber)}
+
+/* Log */
+.log{left:18px;bottom:18px;width:340px;font-size:12px;line-height:1.8;pointer-events:none}
+.log div{text-shadow:0 0 6px #000;animation:fadein .4s}
+.log div:nth-last-child(4){opacity:.3}.log div:nth-last-child(3){opacity:.5}.log div:nth-last-child(2){opacity:.75}
+.log .hl{color:var(--amber)} .log .dn{color:var(--violet)} .log .rd{color:var(--magenta)} .log .cy{color:var(--cyan)}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}}
+.float{position:fixed;z-index:3;pointer-events:none;color:var(--amber);font-weight:700;font-size:18px;text-shadow:0 0 10px var(--amber);animation:up 1s ease-out forwards}
+@keyframes up{to{transform:translateY(-70px);opacity:0}}
+
+/* Overlays */
+.ov{position:fixed;inset:0;z-index:10;background:rgba(2,7,13,.6);backdrop-filter:blur(8px);display:grid;grid-template-rows:auto 1fr;padding:22px 28px;opacity:0;pointer-events:none;transition:opacity .3s}
+.ov.open{opacity:1;pointer-events:auto}
+.ov-head{display:flex;align-items:center;gap:22px;margin-bottom:12px}
+.ov-head .k{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.ov-head h1{font-size:28px;font-weight:300;line-height:1.1}
+.ov-head .close{margin-left:auto;width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:rgba(0,0,0,.3);color:var(--text);font-size:18px;cursor:pointer}
+.ov-head .close:hover{border-color:var(--cyan);color:var(--cyan)}
+.ov-head .esc{font-size:10px;color:var(--muted)}
+.ov-body{display:grid;grid-template-columns:1fr 340px;gap:24px;min-height:0;transform:scale(.97);transition:transform .3s}
+.ov.open .ov-body{transform:none}
+.ov-main{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}
+.ov-main svg{width:100%;height:100%;overflow:visible}
+.side{padding:20px;align-self:start;max-height:100%;overflow:auto}
+.legend{display:flex;gap:16px;font-size:11px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--c);border:1px solid var(--b,transparent)}
+.strategy{display:flex;gap:4px;background:rgba(0,0,0,.3);padding:4px;border-radius:999px;border:1px solid var(--border)}
+.strategy button{font:inherit;font-size:11px;border:0;background:none;color:var(--muted);padding:6px 12px;border-radius:999px;cursor:pointer}
+.strategy button.on{background:rgba(20,60,85,.8);color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan-dim)}
+
+/* Detail-Seitenleiste (geteilt) */
+.side .kind{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.side .name{font-size:24px;font-weight:300;margin:2px 0 8px}
+.side .desc{font-size:13px;color:var(--muted);line-height:1.5}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:14px 0;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{text-align:right;font-variant-numeric:tabular-nums}
+.owned{font-size:13px;padding:10px 0}
+.vs{margin:12px 0 6px;font-size:11px;color:var(--muted)}
+.vsbar{position:relative;height:14px;border-radius:7px;background:rgba(255,255,255,.06)}
+.vsbar .atk{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan))}
+.vsbar .def{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--magenta);box-shadow:0 0 8px var(--magenta)}
+.verdict{font-size:12px;margin:10px 0 14px}
+.verdict.ok{color:var(--cyan)} .verdict.no{color:var(--danger)}
+.here-box{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+
+/* SVG-Bausteine */
+.node{cursor:pointer}
+.node.avail .ring{animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{50%{opacity:.15}}
+.sweep{transform-origin:400px 400px;animation:sweep 6s linear infinite}
+@keyframes sweep{to{transform:rotate(360deg)}}
+.route{stroke-dasharray:6 8;animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-14}}
+.core{animation:pulse 2.4s ease-in-out infinite;transform-origin:400px 400px}
+@keyframes pulse{50%{transform:scale(1.08)}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud glass res">
+  <div class="logo">IDLESWARM</div>
+  <div class="line"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span><span class="v" id="food">1.284</span><span class="r">Nahrung · +42,6/s</span></div>
+  <div class="line small"><span class="dot" style="background:var(--violet);box-shadow:0 0 8px var(--violet)"></span><span class="v dnaV">37</span><span class="r">DNA</span></div>
+  <div class="line small"><span class="dot" style="background:var(--magenta);box-shadow:0 0 8px var(--magenta)"></span><span class="v">12</span><span class="r">Pheromone</span></div>
+  <div class="line small"><span class="dot" style="background:#fff;box-shadow:0 0 8px #fff"></span><span class="v">3,2</span><span class="r">Eier / min</span></div>
+</div>
+
+<div class="hud glass source">
+  <div class="k">Futterstelle 7 · eingenommen</div>
+  <div class="t">Hydrothermaler Schlot</div>
+  <div class="bar"><i></i></div>
+  <div class="s">18.400 / 29.000 · leer in ~4 min · klicken = +12</div>
+</div>
+
+<div class="hud glass era"><i class="on"></i><i></i><i></i><i></i><i></i><span><b>Ära I</b> · Ursuppe</span></div>
+
+<div class="hud tabs">
+  <div class="glass tab" data-d="d-pher">⁂<span class="l">Pheromone</span></div>
+  <div class="glass tab" data-d="d-coll">✦<span class="l">Funde</span></div>
+</div>
+
+<div class="hud glass drawer hidden" id="d-pher">
+  <h2>Pheromone <span>12 Punkte</span></h2>
+  <div class="pher-row"><span>Drohnen</span><div class="pips" id="pd"></div><div class="pm"><button>−</button><button>+</button></div></div>
+  <div class="pher-row"><span>Soldaten</span><div class="pips" id="ps"></div><div class="pm"><button>−</button><button>+</button></div></div>
+  <div class="mini" style="height:10px;display:flex;margin:10px 0 4px"><i style="width:58%;background:var(--cyan)"></i><i style="width:42%;background:var(--magenta)"></i></div>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>58 % Drohnen</span><span>42 % Soldaten</span></div>
+  <button class="btn" style="width:100%;margin-top:14px">Pheromon-Drüse stärken · +1 Punkt · 900 N</button>
+</div>
+
+<div class="hud glass drawer hidden" id="d-coll">
+  <h2>Funde <span>3 / 24</span></h2>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+    <div class="fund" style="color:var(--amber)">◆<small>Schwefel­perle</small></div>
+    <div class="fund" style="color:var(--amber)">◆<small>Schwefel­perle</small></div>
+    <div class="fund" style="color:var(--cyan)">❋<small>Urzeit­kristall</small></div>
+    <div class="fund" style="opacity:.4">?<small>???</small></div>
+  </div>
+</div>
+
+<div class="hud glass actions">
+  <div class="act"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="14" fill="none" stroke="#ffc65f" stroke-width="2"/><circle cx="21" cy="21" r="6" fill="#ffc65f" opacity=".8"/></svg><div><div class="c">4</div><div class="n">Königinnen</div></div><div class="p">+1<br>600 N</div></div>
+  <div class="act"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="9" fill="none" stroke="#5ff2e6" stroke-width="2"/><circle cx="21" cy="21" r="3" fill="#5ff2e6"/></svg><div><div class="c">58</div><div class="n">Drohnen</div></div><div class="p">+1<br>40 N</div></div>
+  <div class="act"><svg viewBox="0 0 42 42"><path d="M21 8 L32 28 L21 34 L10 28 Z" fill="none" stroke="#ff5fa8" stroke-width="2"/><circle cx="21" cy="24" r="4" fill="#ff5fa8"/></svg><div><div class="c">25</div><div class="n">Soldaten</div></div><div class="p">+1<br>65 N</div></div>
+  <div class="sep"></div>
+  <div class="cap">Platz 87 / 100<div class="mini"><i style="width:87%;background:linear-gradient(90deg,var(--cyan),var(--amber))"></i></div></div>
+</div>
+
+<div class="hud modes">
+  <div class="glass big" data-ov="ov-gen"><kbd>G</kbd><span class="badge" id="gbadge">2</span><div class="i">🧬︎</div><div class="n">Genom</div><div class="s"><span class="dnaV">37</span> DNA</div></div>
+  <div class="glass big" data-ov="ov-map"><kbd>W</kbd><div class="i">➶</div><div class="n">Weiterziehen</div><div class="s">4 Ziele in Reichweite</div></div>
+</div>
+
+<div class="hud log" id="log">
+  <div><span class="rd">−14 Soldaten</span> beim Angriff gefallen</div>
+  <div><span class="dn">+12 DNA</span> · Schlot eingenommen</div>
+  <div><span class="hl">Fund!</span> Schwefelperle (2 / 5)</div>
+  <div>Königin brütet 3 Drohnen aus</div>
+</div>
+
+<!-- Overlay: Genom -->
+<div class="ov" id="ov-gen">
+  <div class="ov-head">
+    <div><div class="k">Genetische Adaption</div><h1>Genom</h1></div>
+    <div class="legend"><span style="--c:var(--cyan)">Sammeln</span><span style="--c:var(--amber)">Brut</span><span style="--c:var(--magenta)">Kampf</span><span style="--c:#fff">einzigartig (Fund)</span></div>
+    <div class="legend"><span style="--c:rgba(255,255,255,.4)">entwickelt</span><span style="--c:transparent;--b:var(--cyan)">verfügbar</span><span style="--c:transparent;--b:var(--muted)">zu teuer / gesperrt</span></div>
+    <button class="close" title="Schließen (Esc)">✕</button>
+  </div>
+  <div class="ov-body">
+    <div class="ov-main"><svg viewBox="0 0 900 540" id="tree"></svg></div>
+    <aside class="glass side" id="gdetail"></aside>
+  </div>
+</div>
+
+<!-- Overlay: Sonar -->
+<div class="ov" id="ov-map">
+  <div class="ov-head">
+    <div><div class="k">Weiterziehen · Reichweite 5</div><h1>Meeresgrund · Sektor 3</h1></div>
+    <div class="strategy" id="strat"><button>Geringster Widerstand</button><button class="on">Ausgewogen</button><button>Kampfgehärtet</button></div>
+    <div class="legend"><span style="--c:var(--cyan)">einnehmbar</span><span style="--c:var(--danger)">zu stark</span><span style="--c:transparent;--b:var(--muted)">außer Reichweite</span><span style="--c:transparent;--b:var(--violet)">bisherige Route</span></div>
+    <button class="close" title="Schließen (Esc)">✕</button>
+  </div>
+  <div class="ov-body">
+    <div class="ov-main"><svg viewBox="0 0 800 800" id="map">
+      <defs>
+        <radialGradient id="hereG"><stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/><stop offset=".5" stop-color="#ff8a5f" stop-opacity=".4"/><stop offset="1" stop-color="#ff8a5f" stop-opacity="0"/></radialGradient>
+        <linearGradient id="sweepG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5ff2e6" stop-opacity="0"/><stop offset="1" stop-color="#5ff2e6" stop-opacity=".22"/></linearGradient>
+        <filter id="gl"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <g id="rings"></g>
+      <path class="sweep" d="M400 400 L780 400 A380 380 0 0 0 668.7 131.3 Z" fill="url(#sweepG)"/>
+      <g id="trail"></g>
+      <path id="route" class="route" d="" stroke="#5ff2e6" stroke-width="2" fill="none" filter="url(#gl)"/>
+      <g id="nodes"></g>
+      <g>
+        <circle cx="400" cy="400" r="60" fill="url(#hereG)"/>
+        <g class="core"><circle cx="400" cy="400" r="22" fill="#ffc65f" fill-opacity=".35" stroke="#ffc65f" stroke-width="2" filter="url(#gl)"/></g>
+        <g id="swarmdots"></g>
+        <text x="400" y="456" text-anchor="middle" fill="#d4f3f5" font-size="13">Schlot (hier)</text>
+      </g>
+    </svg></div>
+    <aside class="glass side" id="tdetail"></aside>
+  </div>
+</div>
+
+<script>
+const ns='http://www.w3.org/2000/svg';const mk=(t,a)=>{const e=document.createElementNS(ns,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const rnd=(a,b)=>a+Math.random()*(b-a);
+
+// ---------- Log ----------
+const logEl=document.getElementById('log');
+function log(html){const d=document.createElement('div');d.innerHTML=html;logEl.appendChild(d);while(logEl.children.length>4)logEl.firstElementChild.remove();}
+
+// ---------- Schubladen ----------
+const pips=(id,n,col)=>{const el=document.getElementById(id);for(let i=0;i<10;i++){const p=document.createElement('i');p.className='pip';if(i<n){p.style.background=col;p.style.boxShadow='0 0 8px '+col;}el.appendChild(p);}};
+pips('pd',7,'#5ff2e6');pips('ps',5,'#ff5fa8');
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{const open=t.classList.contains('on');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.drawer').forEach(d=>d.classList.add('hidden'));
+  if(!open){t.classList.add('on');document.getElementById(t.dataset.d).classList.remove('hidden');}}));
+
+// ---------- Overlays ----------
+function openOv(id){document.querySelectorAll('.ov').forEach(o=>o.classList.toggle('open',o.id===id));}
+function closeOv(){document.querySelectorAll('.ov').forEach(o=>o.classList.remove('open'));}
+document.querySelectorAll('.big').forEach(b=>b.addEventListener('click',()=>openOv(b.dataset.ov)));
+document.querySelectorAll('.close').forEach(b=>b.addEventListener('click',closeOv));
+addEventListener('keydown',e=>{if(e.key==='Escape')closeOv();if(e.key==='g'||e.key==='G')openOv('ov-gen');if(e.key==='w'||e.key==='W')openOv('ov-map');});
+
+// ---------- Genom ----------
+const COL={s:'#5ff2e6',k:'#ff5fa8',b:'#ffc65f',u:'#ffffff'};
+const BR={s:'Sammeln',k:'Kampf',b:'Brut',u:'Einzigartig'};
+let dna=37;
+const NODES=[
+ {id:'root',b:'u',x:450,y:480,ic:'◎',t:'Urzelle',d:'Ausgangspunkt des Schwarms. Von hier wachsen alle Äste.',own:1},
+ {id:'s1',b:'s',x:310,y:400,ic:'〰',t:'Cilien-Schlag I',d:'Drohnen bewegen sich schneller zwischen Futterstelle und Schwarm.',fx:'+10 % Sammeln',own:1},
+ {id:'s2',b:'s',x:220,y:305,ic:'≋',t:'Cilien-Schlag II',d:'Drohnen bewegen sich noch schneller.',fx:'0,60 → 0,69 N/s je Drohne',c:12},
+ {id:'s3',b:'s',x:150,y:205,ic:'⋔',t:'Filtrierer',d:'Klicks auf die Futterstelle bringen doppelt so viel.',fx:'+12 → +24 je Klick',c:40},
+ {id:'s4',b:'s',x:100,y:100,ic:'⌖',t:'Chemotaxis',d:'Der Schwarm wittert Futterstellen über größere Distanz.',fx:'Reichweite 5 → 6',c:70},
+ {id:'u1',b:'u',x:320,y:250,ic:'✦',t:'Thermosynthese',d:'Einzigartig – am Hydrothermalen Schlot gefunden. Wirkt an allen Schloten.',fx:'+10 % Nahrung an Schloten',own:1,uniq:1},
+ {id:'b1',b:'b',x:450,y:370,ic:'◍',t:'Dotterreserve',d:'Königinnen legen mehr Eier.',fx:'+10 % Eier',own:1},
+ {id:'b2',b:'b',x:450,y:260,ic:'⬡',t:'Brutwaben',d:'Jede Königin trägt einen größeren Schwarm.',fx:'Platz 25 → 30 je Königin',c:60},
+ {id:'b3',b:'b',x:450,y:150,ic:'⁂',t:'Zweite Drüse',d:'Ein zusätzlicher Pheromon-Punkt.',fx:'Pheromone 12 → 13',c:90},
+ {id:'k1',b:'k',x:590,y:400,ic:'◈',t:'Säurevakuole',d:'Soldaten greifen stärker an.',fx:'Angriff 75 → 90',c:20},
+ {id:'k2',b:'k',x:680,y:305,ic:'⟲',t:'Autophagie',d:'Gefallene Soldaten werden zu Nahrung.',fx:'+20 N je Verlust',c:45},
+ {id:'k3',b:'k',x:750,y:205,ic:'✳',t:'Nesselzellen',d:'Weniger Verluste beim Einnehmen.',fx:'Verluste −25 %',c:80},
+ {id:'k4',b:'k',x:800,y:100,ic:'⬢',t:'Kalkpanzer',d:'Soldaten überstehen den ersten Treffer.',fx:'Verluste −40 %',c:120},
+ {id:'u2',b:'u',x:580,y:250,ic:'✦',t:'Schwefelpanzer',d:'Einzigartig – entsteht aus 5 Schwefelperlen.',fx:'Angriff je Soldat 3 → 4',uniq:1,need:'Fund: Schwefelperle 2 / 5'},
+];
+const EDGES=[['root','s1'],['s1','s2'],['s2','s3'],['s3','s4'],['s1','u1'],['root','b1'],['b1','b2'],['b2','b3'],['root','k1'],['k1','k2'],['k2','k3'],['k3','k4'],['k1','u2']];
+const byId=Object.fromEntries(NODES.map(n=>[n.id,n]));
+const parentOf=n=>{const e=EDGES.find(e=>e[1]===n.id);return e&&byId[e[0]];};
+function status(n){if(n.own)return'own';if(n.uniq)return'lock';const p=parentOf(n);if(p&&!p.own)return'lock';return dna>=n.c?'avail':'poor';}
+let selNode='s2';
+function drawTree(){
+  const svg=document.getElementById('tree');svg.innerHTML='';
+  [['SAMMELN',90,40,'#5ff2e6'],['BRUT',450,90,'#ffc65f'],['KAMPF',810,40,'#ff5fa8']].forEach(([t,x,y,c])=>{const e=mk('text',{x,y,'text-anchor':'middle',fill:c,'fill-opacity':.5,'font-size':11,'letter-spacing':4});e.textContent=t;svg.appendChild(e);});
+  for(const [a,b] of EDGES){const A=byId[a],B=byId[b],sb=status(B),col=COL[B.b],own=A.own&&B.own;
+    const bend=B.x>A.x?-25:B.x<A.x?25:0;
+    svg.appendChild(mk('path',{d:`M${A.x} ${A.y} Q ${(A.x+B.x)/2+bend} ${(A.y+B.y)/2} ${B.x} ${B.y}`,fill:'none',stroke:sb==='lock'?'rgba(255,255,255,.14)':col,'stroke-opacity':own||sb==='lock'?1:.4,'stroke-width':own?3:1.6,'stroke-dasharray':sb==='lock'?'4 6':'',style:own?`filter:drop-shadow(0 0 5px ${col})`:''}));}
+  for(const n of NODES){const st=status(n),col=COL[n.b],r=n.id==='root'?24:19;
+    const g=mk('g',{class:'node '+st});
+    if(n.id===selNode)g.appendChild(mk('circle',{cx:n.x,cy:n.y,r:r+11,fill:'none',stroke:'#fff','stroke-opacity':.7,'stroke-dasharray':'3 4'}));
+    if(st==='avail')g.appendChild(mk('circle',{class:'ring',cx:n.x,cy:n.y,r:r+6,fill:'none',stroke:col,'stroke-width':1.5}));
+    g.appendChild(mk('circle',{cx:n.x,cy:n.y,r,fill:st==='own'?col:'#06121c','fill-opacity':st==='own'?.28:.95,stroke:col,'stroke-width':2,'stroke-opacity':st==='lock'?.25:st==='poor'?.55:1,'stroke-dasharray':n.uniq&&!n.own?'3 3':'',style:st==='own'||st==='avail'?`filter:drop-shadow(0 0 ${st==='avail'?10:6}px ${col})`:''}));
+    const ic=mk('text',{x:n.x,y:n.y+5,'text-anchor':'middle','font-size':15,fill:st==='lock'?'#3d5a66':st==='own'?'#fff':col});ic.textContent=n.ic;g.appendChild(ic);
+    const lb=mk('text',{x:n.x,y:n.y+r+17,'text-anchor':'middle','font-size':12,fill:st==='lock'?'#3d5a66':'#d4f3f5'});lb.textContent=n.t;g.appendChild(lb);
+    if(st==='avail'||st==='poor'){const c=mk('text',{x:n.x,y:n.y+r+31,'text-anchor':'middle','font-size':10,fill:st==='avail'?'#a98bff':'#6f9aa6'});c.textContent=n.c+' DNA';g.appendChild(c);}
+    g.addEventListener('click',()=>{selNode=n.id;drawTree();});
+    svg.appendChild(g);}
+  drawGeneDetail();updateDna();
+}
+function drawGeneDetail(){const n=byId[selNode],st=status(n),col=COL[n.b],p=parentOf(n);
+  let btn;
+  if(st==='own')btn=`<div class="owned" style="color:${col}">✓ entwickelt · wirkt dauerhaft</div>`;
+  else if(st==='avail')btn=`<button class="btn primary" id="buy">Für ${n.c} DNA entwickeln</button>`;
+  else if(st==='poor')btn=`<button class="btn primary" disabled>${n.c} DNA · es fehlen ${n.c-dna}</button>`;
+  else btn=`<button class="btn primary" disabled>${n.uniq?'noch nicht gefunden':'gesperrt'}</button>`;
+  document.getElementById('gdetail').innerHTML=`<div class="kind" style="color:${col}">${BR[n.b]}</div><div class="name">${n.t}</div><p class="desc">${n.d}</p>
+    <dl class="kv">${n.fx?`<dt>Effekt</dt><dd>${n.fx}</dd>`:''}${p?`<dt>Voraussetzung</dt><dd>${p.t} ${p.own?'✓':'✗'}</dd>`:''}${n.need?`<dt>Freischaltung</dt><dd>${n.need}</dd>`:''}</dl>${btn}
+    <div class="here-box">DNA bekommt der Schwarm beim Einnehmen neuer Futterstellen – je wehrhafter das Ziel, desto mehr.</div>`;
+  const b=document.getElementById('buy');if(b)b.onclick=()=>{dna-=n.c;n.own=1;log(`<span class="dn">${n.t}</span> entwickelt · −${n.c} DNA`);drawTree();drawMap();};
+}
+function updateDna(){document.querySelectorAll('.dnaV').forEach(e=>e.textContent=dna);
+  const n=NODES.filter(n=>status(n)==='avail').length,b=document.getElementById('gbadge');b.textContent=n;b.style.display=n?'':'none';}
+
+// ---------- Sonar ----------
+const CX=400,CY=400,STEP=64,RANGE=5;
+const atk=()=>75+(byId.k1.own?15:0);
+const rings=document.getElementById('rings');
+for(let d=1;d<=6;d++){rings.appendChild(mk('circle',{cx:CX,cy:CY,r:d*STEP,fill:'none',stroke:d===RANGE?'#5ff2e6':'rgba(95,242,230,.1)','stroke-width':d===RANGE?1.5:1,'stroke-dasharray':d===RANGE?'8 6':'',filter:d===RANGE?'url(#gl)':''}));
+  const t=mk('text',{x:CX+4,y:CY-d*STEP-5,fill:d===RANGE?'#5ff2e6':'#3e6672','font-size':11});t.textContent=d===RANGE?`${d} · Reichweite`:d;rings.appendChild(t);}
+for(let i=0;i<12;i++){const a=i/12*Math.PI*2;rings.appendChild(mk('line',{x1:CX+Math.cos(a)*STEP*.6,y1:CY+Math.sin(a)*STEP*.6,x2:CX+Math.cos(a)*STEP*6,y2:CY+Math.sin(a)*STEP*6,stroke:'rgba(95,242,230,.05)'}));}
+const past=[[-2.6,5.4],[-1.9,4.2],[-0.9,3.6],[-1.4,2.2],[-0.6,1.1]];
+const tr=document.getElementById('trail');let pp='';past.forEach(([a,d],i)=>{const x=CX+Math.cos(a)*d*STEP,y=CY+Math.sin(a)*d*STEP;pp+=(i?'L':'M')+x+' '+y+' ';tr.appendChild(mk('circle',{cx:x,cy:y,r:4,fill:'none',stroke:'#a98bff','stroke-opacity':.5}));});
+pp+=`L${CX} ${CY}`;tr.appendChild(mk('path',{d:pp,fill:'none',stroke:'#a98bff','stroke-opacity':.4,'stroke-dasharray':'2 5'}));
+const T=[
+ {id:'wal',n:'Walsturz',k:'Kadaver',a:-0.55,d:4,size:'XL',sz:22,def:60,dna:28,loss:'~22 Soldaten',food:'64.000',find:'hoch'},
+ {id:'alg',n:'Algenmatte',k:'Pflanzlich',a:0.9,d:1.1,size:'M',sz:13,def:0,dna:0,loss:'—',food:'18.000',find:'gering'},
+ {id:'bak',n:'Bakterienrasen',k:'Kolonie',a:2.4,d:2,size:'L',sz:17,def:140,dna:55,loss:'—',food:'31.000',find:'mittel'},
+ {id:'sch2',n:'Schwarzer Raucher',k:'Schlot',a:1.6,d:3.3,size:'L',sz:16,def:35,dna:14,loss:'~12 Soldaten',food:'27.000',find:'mittel'},
+ {id:'far',n:'Methanquelle',k:'Schlot',a:-1.9,d:5.6,size:'XL',sz:20,def:90,dna:40,loss:'—',food:'70.000',find:'hoch',out:true},
+ {id:'unk',n:'???',k:'unerforscht',a:0.2,d:5.5,size:'?',sz:12,def:null,dna:null,out:true,unk:true},
+];
+let selT='wal';
+const tpos=t=>[CX+Math.cos(t.a)*t.d*STEP,CY+Math.sin(t.a)*t.d*STEP];
+const reachable=t=>!t.out&&!t.unk&&t.def<=atk();
+function drawMap(){const nodes=document.getElementById('nodes');nodes.innerHTML='';
+  for(const t of T){const [x,y]=tpos(t),ok=reachable(t),col=t.out?'#6f9aa6':ok?'#5ff2e6':'#ff6b6b';
+    const g=mk('g',{class:'node',opacity:t.out?.55:1});
+    if(t.id===selT)g.appendChild(mk('circle',{cx:x,cy:y,r:t.sz+14,fill:'none',stroke:'#5ff2e6','stroke-width':1.5,'stroke-dasharray':'3 4',filter:'url(#gl)'}));
+    g.appendChild(mk('circle',{cx:x,cy:y,r:t.sz+6,fill:'none',stroke:col,'stroke-opacity':.35}));
+    g.appendChild(mk('circle',{cx:x,cy:y,r:t.sz,fill:t.unk?'rgba(0,0,0,.4)':col,'fill-opacity':t.unk?1:.18,stroke:col,'stroke-width':2,'stroke-dasharray':t.out?'4 4':'',filter:t.out?'':'url(#gl)'}));
+    if(t.def){const frac=Math.min(t.def/150,1),r=t.sz+6,c=2*Math.PI*r;g.appendChild(mk('circle',{cx:x,cy:y,r,fill:'none',stroke:'#ff5fa8','stroke-width':3,'stroke-dasharray':`${c*frac} ${c}`,transform:`rotate(-90 ${x} ${y})`}));}
+    const lbl=mk('text',{x,y:y+t.sz+24,'text-anchor':'middle',fill:t.out?'#6f9aa6':'#d4f3f5','font-size':13});lbl.textContent=t.n;g.appendChild(lbl);
+    if(t.dna){const d=mk('text',{x,y:y+t.sz+39,'text-anchor':'middle',fill:'#a98bff','font-size':11});d.textContent=`+${t.dna} DNA`;g.appendChild(d);}
+    if(t.unk){const q=mk('text',{x,y:y+5,'text-anchor':'middle',fill:'#6f9aa6','font-size':14});q.textContent='?';g.appendChild(q);}
+    g.addEventListener('click',()=>{selT=t.id;drawMap();});nodes.appendChild(g);}
+  const t=T.find(x=>x.id===selT),[x,y]=tpos(t),ok=reachable(t),A=atk();
+  document.getElementById('route').setAttribute('d',t.out?'':`M${CX} ${CY} Q ${(CX+x)/2+40} ${(CY+y)/2+40} ${x} ${y}`);
+  const td=document.getElementById('tdetail');
+  td.innerHTML=`<div class="kind">${t.k} · Distanz ${t.d.toFixed(0)}</div><div class="name">${t.n}</div>`+
+    (t.unk?`<p class="desc">Außerhalb der Wahrnehmung. Mehr Reichweite (z. B. Chemotaxis im Genom) deckt das Ziel auf.</p>`:
+    `<dl class="kv"><dt>Größe</dt><dd>${t.size}</dd><dt>Nahrungsvorrat</dt><dd>${t.food}</dd><dt>DNA-Belohnung</dt><dd style="color:var(--violet)">+${t.dna}</dd><dt>Fundchance</dt><dd>${t.find}</dd><dt>Erwartete Verluste</dt><dd>${t.loss}</dd></dl>
+     <div class="vs">Angriff ${A} vs. Abwehr ${t.def}</div><div class="vsbar"><div class="atk" style="width:${A/150*100}%"></div><div class="def" style="left:${Math.min(t.def/150,1)*100}%"></div></div>
+     <div class="verdict ${ok?'ok':'no'}">${t.out?'✗ außer Reichweite (5)':ok?'✓ einnehmbar':'✗ zu stark – mehr Soldaten nötig'}</div>`)+
+    `<button class="btn primary" id="go" ${ok?'':'disabled'}>${ok?'Aufbrechen →':'nicht erreichbar'}</button>
+     <div class="here-box">Hier: Hydrothermaler Schlot · Vorrat 63 % · leer in ~4 min.<br>Ohne Entscheidung zieht der Schwarm bei leerem Vorrat nach Strategie <b style="color:var(--cyan)">${document.querySelector('#strat .on').textContent}</b> weiter.</div>`;
+  const go=document.getElementById('go');if(go)go.onclick=()=>{closeOv();log(`<span class="cy">Aufbruch</span> → ${t.n} (Distanz ${t.d.toFixed(0)})`);};
+}
+document.querySelectorAll('#strat button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#strat button').forEach(x=>x.classList.remove('on'));b.classList.add('on');drawMap();}));
+const sd=document.getElementById('swarmdots');
+for(let i=0;i<40;i++){const a=Math.random()*7,r=26+Math.random()*22;const c=mk('circle',{cx:CX+Math.cos(a)*r,cy:CY+Math.sin(a)*r,r:1.6,fill:i<28?'#5ff2e6':'#ff5fa8'});
+  c.animate([{transform:'translate(0,0)'},{transform:`translate(${(Math.random()-.5)*10}px,${(Math.random()-.5)*10}px)`}],{duration:1500+Math.random()*2000,iterations:Infinity,direction:'alternate'});sd.appendChild(c);}
+drawTree();drawMap();
+
+// ---------- Szene ----------
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');let W,H,SX,SY;
+function size(){W=cv.width=innerWidth;H=cv.height=innerHeight;SX=W/2;SY=H/2+20;}size();addEventListener('resize',size);
+const plankton=Array.from({length:120},()=>({x:rnd(0,1),y:rnd(0,1),z:rnd(.3,1.5),s:rnd(.00005,.0003)}));
+const agents=[];
+for(let i=0;i<58;i++)agents.push({t:'d',a:rnd(0,7),r:rnd(130,260),home:rnd(130,260),v:rnd(.002,.006),load:Math.random()<.3,phase:Math.random()<.5?'out':'in'});
+for(let i=0;i<25;i++)agents.push({t:'s',a:rnd(0,7),r:rnd(220,300),v:rnd(-.004,-.0015)});
+for(let i=0;i<4;i++)agents.push({t:'q',a:i*Math.PI/2+.4,r:rnd(170,200),v:.0012});
+const bursts=[];
+function frame(time){
+  let g=ctx.createRadialGradient(SX,SY,0,SX,SY,Math.max(W,H)*.7);g.addColorStop(0,'#0f3550');g.addColorStop(.4,'#061a2b');g.addColorStop(1,'#02070d');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  for(const p of plankton){p.y-=p.s*p.z;if(p.y<0)p.y=1;ctx.fillStyle=`rgba(95,242,230,${.15*p.z})`;ctx.beginPath();ctx.arc(p.x*W+Math.sin(time/3000+p.x*20)*8,p.y*H,p.z,0,7);ctx.fill();}
+  const pulse=1+Math.sin(time/900)*.04;
+  g=ctx.createRadialGradient(SX,SY,0,SX,SY,170*pulse);g.addColorStop(0,'rgba(255,210,122,.9)');g.addColorStop(.3,'rgba(255,138,95,.45)');g.addColorStop(.7,'rgba(95,242,230,.08)');g.addColorStop(1,'rgba(95,242,230,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(SX,SY,170*pulse,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(255,198,95,.8)';ctx.lineWidth=2;ctx.shadowColor='#ffc65f';ctx.shadowBlur=18;ctx.beginPath();
+  for(let i=0;i<=64;i++){const a=i/64*Math.PI*2,rr=78*pulse+Math.sin(a*5+time/700)*5+Math.sin(a*3-time/1100)*4;ctx.lineTo(SX+Math.cos(a)*rr,SY+Math.sin(a)*rr);}ctx.stroke();ctx.shadowBlur=0;
+  for(let i=0;i<6;i++){const t=((time/2400)+i/6)%1;ctx.fillStyle=`rgba(255,243,208,${.6*(1-t)})`;ctx.beginPath();ctx.arc(SX+Math.sin(t*9+i)*12,SY-t*160,2+i%3,0,7);ctx.fill();}
+  for(const a of agents){
+    a.a+=a.v;
+    if(a.t==='d'){if(a.phase==='in'){a.r-=.9;if(a.r<85){a.phase='out';a.load=true;}}else{a.r+=.7;if(a.r>a.home){a.phase='in';a.load=false;}}}
+    const x=SX+Math.cos(a.a)*a.r,y=SY+Math.sin(a.a)*a.r*.82;
+    if(a.t==='d'){ctx.fillStyle='#5ff2e6';ctx.shadowColor='#5ff2e6';ctx.shadowBlur=8;ctx.beginPath();ctx.arc(x,y,2.6,0,7);ctx.fill();
+      if(a.load){ctx.fillStyle='#ffc65f';ctx.shadowColor='#ffc65f';ctx.beginPath();ctx.arc(x+3,y-3,1.6,0,7);ctx.fill();}}
+    else if(a.t==='s'){ctx.save();ctx.translate(x,y);ctx.rotate(a.a);ctx.fillStyle='#ff5fa8';ctx.shadowColor='#ff5fa8';ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(4,4);ctx.lineTo(-4,4);ctx.closePath();ctx.fill();ctx.restore();}
+    else{ctx.strokeStyle='#ffc65f';ctx.shadowColor='#ffc65f';ctx.shadowBlur=14;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.stroke();ctx.fillStyle='#ffc65f';ctx.beginPath();ctx.arc(x,y,2.5,0,7);ctx.fill();}
+    ctx.shadowBlur=0;
+  }
+  for(let i=bursts.length-1;i>=0;i--){const b=bursts[i];b.x+=b.vx;b.y+=b.vy;b.l-=.025;if(b.l<=0){bursts.splice(i,1);continue;}ctx.fillStyle=`rgba(255,198,95,${b.l})`;ctx.beginPath();ctx.arc(b.x,b.y,2,0,7);ctx.fill();}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- Klick + Idle ----------
+let food=1284;const el=document.getElementById('food');const fmt=n=>Math.floor(n).toLocaleString('de-DE');
+cv.addEventListener('click',e=>{if(Math.hypot(e.clientX-SX,e.clientY-SY)>170)return;food+=12;el.textContent=fmt(food);
+  const f=document.createElement('div');f.className='float';f.textContent='+12';f.style.left=(e.clientX-12)+'px';f.style.top=(e.clientY-20)+'px';document.body.appendChild(f);setTimeout(()=>f.remove(),1000);
+  for(let i=0;i<14;i++)bursts.push({x:e.clientX,y:e.clientY,vx:rnd(-2,2),vy:rnd(-2,2),l:1});});
+setInterval(()=>{food+=4.26;el.textContent=fmt(food);},100);
+</script>
+</body>
+</html>
