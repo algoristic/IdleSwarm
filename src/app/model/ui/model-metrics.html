@@ -1,0 +1,26 @@
+<section class="panel" aria-labelledby="metrics-title">
+  <h2 id="metrics-title">{{ texts.metricsTitle }}</h2>
+  <p data-testid="range">{{ rangeText() }}</p>
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{{ texts.metric }}</th>
+          @for (column of columns(); track column) {
+            <th scope="col">{{ column }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.label) {
+          <tr>
+            <th scope="row">{{ row.label }}</th>
+            @for (value of row.values; track $index) {
+              <td>{{ value }}</td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

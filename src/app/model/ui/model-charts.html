@@ -1,0 +1,55 @@
+<section class="panel" [attr.aria-label]="texts.chartsLabel">
+  <div class="tabs" role="tablist">
+    @for (entry of tabs; track entry.id) {
+      <button
+        type="button"
+        role="tab"
+        [id]="'tab-' + entry.id"
+        [attr.data-testid]="'tab-' + entry.id"
+        [attr.aria-selected]="tab() === entry.id"
+        aria-controls="chart-panel"
+        (click)="tab.set(entry.id)"
+      >
+        {{ entry.label }}
+      </button>
+    }
+  </div>
+
+  <div class="controls">
+    <label>
+      <input
+        type="checkbox"
+        data-testid="log"
+        [checked]="logScale()"
+        (change)="logScale.set(!logScale())"
+      />
+      {{ texts.logScale }}
+    </label>
+    <button type="button" data-testid="reset-zoom" (click)="resetZoom()">
+      {{ texts.resetZoom }}
+    </button>
+    @if (logScale()) {
+      <small>{{ texts.logHint }}</small>
+    }
+  </div>
+
+  <div class="controls" role="group" [attr.aria-label]="texts.markers">
+    @for (marker of markerRows(); track marker.type) {
+      <label>
+        <input
+          type="checkbox"
+          [attr.data-testid]="'marker-' + marker.type"
+          [checked]="markers().has(marker.type)"
+          (change)="toggleMarker(marker.type)"
+        />
+        <span aria-hidden="true" [style.color]="marker.color">{{ marker.glyph }}</span>
+        {{ marker.label }}
+        <small [attr.data-testid]="'marker-count-' + marker.type">({{ marker.count }})</small>
+      </label>
+    }
+  </div>
+
+  <div class="chart" id="chart-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
+    <app-echart [option]="option()" (zoomChange)="zoomChange.emit($event)" />
+  </div>
+</section>
