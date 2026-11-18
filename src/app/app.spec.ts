@@ -18,12 +18,12 @@ describe('App', () => {
     expect(Array.from(element.children, (child) => child.tagName)).toEqual(['ROUTER-OUTLET']);
   });
 
-  it('lädt auf der Default-Route die Statusseite', async () => {
+  it('lädt auf der Default-Route das HUD', async () => {
     const harness = await RouterTestingHarness.create('/');
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('IdleSwarm');
   });
 
-  it('leitet unbekannte Pfade auf die Statusseite um', async () => {
+  it('leitet unbekannte Pfade auf das HUD um', async () => {
     const harness = await RouterTestingHarness.create('/gibt-es-nicht');
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('IdleSwarm');
   });

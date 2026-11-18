@@ -1,0 +1,8 @@
+<button type="button" [disabled]="!affordable()" (click)="buy()">
+  <span class="name">{{ name() }}</span>
+  <span data-testid="count">{{ count() }}</span>
+  <span data-testid="price">{{ price() }}</span>
+  @if (effect(); as text) {
+    <span class="effect" data-testid="effect">{{ text }}</span>
+  }
+</button>

@@ -1,5 +1,12 @@
 :root {
   color-scheme: dark;
+  --hud-surface: #141d25;
+  --hud-surface-raised: #1c2832;
+  --hud-border: #5c6b78;
+  --hud-muted: #a9b6c2;
+  --hud-accent: #3fb68b;
+  --hud-warning: #f2a33a;
+  --hud-focus: #7cc4ff;
 }
 
 body {

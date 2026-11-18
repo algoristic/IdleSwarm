@@ -29,7 +29,7 @@ Angular ist dem Entwickler vertraut. Der Code bleibt für ihn dadurch gut nachvo
 - Angular 22 ([`package.json`](../../package.json)), Node 24.15.0 ([`.nvmrc`](../../.nvmrc)).
 - Standalone: [`App`](../../src/app/app.ts) bindet seine Abhängigkeiten über `imports` ein, es gibt kein `NgModule`.
 - Zoneless: `zone.js` ist weder Abhängigkeit noch Polyfill.
-- Signals: [`GameStoreService`](../../src/app/game/game-store.service.ts) hält den Zustand in einem Signal, die [Statusseite](../../src/app/ui/status/status-page.ts) leitet ihre Anzeige über `computed()` ab.
+- Signals: [`GameStoreService`](../../src/app/game/game-store.service.ts) hält den Zustand in einem Signal, das [HUD](../../src/app/ui/hud/hud-page.ts) leitet seine Anzeige über `computed()` ab.
 - Die Schichtenregel ist aktiv, `core/` enthält nur reines TypeScript.
 
 ## Konsequenzen

@@ -1,0 +1,74 @@
+<main class="hud">
+  <h1>{{ texts['hud.title'] }}</h1>
+
+  <section class="panel resources" aria-labelledby="resources-title">
+    <h2 id="resources-title">{{ texts['hud.resources.title'] }}</h2>
+    <dl>
+      <div>
+        <dt>{{ texts['hud.resources.food'] }}</dt>
+        <dd data-testid="food">{{ food() }}</dd>
+      </div>
+      <div>
+        <dt>{{ texts['hud.resources.foodRate'] }}</dt>
+        <dd data-testid="food-rate">{{ foodRate() }}</dd>
+      </div>
+      <div>
+        <dt>{{ texts['hud.resources.eggs'] }}</dt>
+        <dd data-testid="eggs">{{ eggs() }}</dd>
+      </div>
+      <div>
+        <dt>{{ texts['hud.resources.attack'] }}</dt>
+        <dd data-testid="attack">{{ attack() }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <app-feeding-site class="panel" />
+
+  <section class="panel" aria-labelledby="space-title">
+    <div class="space-head">
+      <h2 id="space-title">{{ texts['hud.space.title'] }}</h2>
+      <span data-testid="space" [class.warning]="spaceWarning()">
+        {{ spaceText() }}
+        @if (spacePercentText(); as percent) {
+          ({{ percent }})
+        }
+      </span>
+    </div>
+    <app-hud-meter
+      [percent]="spaceBar()"
+      [label]="texts['hud.space.title']"
+      [valueText]="spaceText()"
+      [warning]="spaceWarning()"
+    />
+    @if (spaceWarning()) {
+      <p class="warning" data-testid="space-warning">{{ texts['hud.space.warning'] }}</p>
+    }
+  </section>
+
+  <section class="panel actions" aria-labelledby="units-title">
+    <h2 id="units-title">{{ texts['hud.units.title'] }}</h2>
+    <div class="buttons">
+      @for (unit of buyOrder; track unit) {
+        <app-buy-button [unit]="unit" />
+      }
+    </div>
+  </section>
+
+  <footer>
+    <p data-testid="last-saved">
+      {{ texts['status.lastSaved'] }}:
+      @if (lastSaved(); as saved) {
+        <time [attr.datetime]="saved.iso">{{ saved.label }}</time>
+      } @else {
+        {{ texts['status.neverSaved'] }}
+      }
+    </p>
+    <!-- Die Live-Region steht von Anfang an im DOM, damit neue Hinweise angesagt werden. -->
+    <div role="status">
+      @for (notice of notices(); track notice) {
+        <p>{{ notice }}</p>
+      }
+    </div>
+  </footer>
+</main>
