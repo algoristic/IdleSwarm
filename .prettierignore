@@ -1,0 +1,13 @@
+# Dokumentation und Werkzeugkonfiguration werden nicht formatiert
+docs/
+.claude/
+README.md
+CLAUDE.md
+
+# Build-Ausgaben und Abhängigkeiten
+dist/
+coverage/
+.angular/
+out-tsc/
+node_modules/
+package-lock.json
