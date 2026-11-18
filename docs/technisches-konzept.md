@@ -209,7 +209,7 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 - Der Runner läuft im **Web Worker**, damit die Modell-Seite flüssig bleibt; in Vitest läuft er direkt.
 - `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Käufe liegen also exakt auf ihrer Zeit.
 - Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten, die Futterstellen werden zusammengefasst.
-- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Bis zu diesem AP klickt der Bot Aktiv noch. Ab M1.2: **Drohnen-lastig**, **Soldaten-lastig**.
+- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Ab M1.2: **Drohnen-lastig**, **Soldaten-lastig**.
 - `params` überschreibt Konstanten aus `core/balance`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
 
 ### 5.4 Kennzahlen

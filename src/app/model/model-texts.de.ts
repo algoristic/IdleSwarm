@@ -94,7 +94,7 @@ export const SERIES_LABELS = {
 
 /** Bedeutung aus Game-Design §2.3; neue Konstanten erscheinen auch ohne Eintrag. */
 export const PARAM_HINTS: Partial<Readonly<Record<keyof BalanceParams, string>>> = {
-  clickYield: 'Klickertrag',
+  baseFoodRate: 'Grundertrag in Nahrung/s',
   droneCost: 'Basiskosten Drohne',
   droneCostGrowth: 'Preisfaktor Drohne',
   droneCollectRate: 'Nahrung/s je Drohne',

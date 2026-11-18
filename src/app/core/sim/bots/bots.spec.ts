@@ -51,34 +51,21 @@ describe('createActiveBot', () => {
     expect(createActiveBot().name).toBe('active');
   });
 
-  it('verteilt standardmäßig 3 Klicks je Sekunde auf ganze Millisekunden', () => {
-    expect(actionTimes(createActiveBot(), 2000)).toEqual([333, 667, 1000, 1333, 1667, 2000]);
+  it('entscheidet standardmäßig jede Sekunde', () => {
+    expect(actionTimes(createActiveBot(), 3000)).toEqual([1000, 2000, 3000]);
   });
 
-  it.each([
-    [3, 30],
-    [2, 20],
-    [0.5, 5],
-    [0, 0],
-  ])('klickt bei %d Klicks/s in 10 s genau %d-mal', (clicksPerSecond, expected) => {
-    const bot = createActiveBot({ clicksPerSecond });
-    const { decide } = setup();
-    const clicks = actionTimes(bot, 10_000)
-      .flatMap((time) => decide(bot, time))
-      .filter((command) => command.type === 'click');
-    expect(clicks).toHaveLength(expected);
-  });
-
-  it('entscheidet nur im eingestellten Abstand', () => {
-    const bot = createActiveBot({ clicksPerSecond: 0, decideEveryMs: 2500 });
+  it('entscheidet im eingestellten Abstand', () => {
+    const bot = createActiveBot({ decideEveryMs: 2500 });
     expect(actionTimes(bot, 5000)).toEqual([2500, 5000]);
     const { decide } = setup({ startFood: 100 });
     expect(decide(bot, 2500)).toContainEqual({ type: 'buy', unit: 'drones' });
   });
 
-  it('kauft zwischen den Entscheidungen nichts', () => {
+  it('erzeugt nur Käufe und neue Futterstellen', () => {
     const { decide } = setup({ startFood: 1000 });
-    expect(decide(createActiveBot(), 333)).toEqual([{ type: 'click' }]);
+    const types = new Set(decide(createActiveBot(), 0).map((command) => command.type));
+    expect([...types]).toEqual(['buy']);
   });
 
   it('bevorzugt Drohnen, solange Brut teurer ist als der Kauf', () => {
@@ -103,7 +90,7 @@ describe('createActiveBot', () => {
 
   it('kauft keine Königin, deren Brut der Zufluss nicht bezahlt', () => {
     const { decide } = setup({}, withCounts(0, 30, 0, 100));
-    const commands = decide(createActiveBot({ clicksPerSecond: 0 }), 0);
+    const commands = decide(createActiveBot(), 0);
     expect(commands).toEqual([{ type: 'buy', unit: 'drones' }]);
   });
 
@@ -117,19 +104,14 @@ describe('createActiveBot', () => {
     expect(decide(createActiveBot(), 1000)).toContainEqual({ type: 'newSite' });
   });
 
-  it('erneuert auch, wenn der Klick derselben Entscheidung den Vorrat leert', () => {
-    const lastFood = (state: GameState): GameState => ({
-      ...state,
-      site: { ...state.site, stock: Num.ONE },
-    });
-    const commands = setup({}, lastFood).decide(createActiveBot(), 1000);
-    expect(commands.slice(0, 2)).toEqual([{ type: 'click' }, { type: 'newSite' }]);
+  it('erneuert die Futterstelle vor den Käufen', () => {
+    const commands = setup({ startFood: 100 }, emptySite).decide(createActiveBot(), 1000);
+    expect(commands[0]).toEqual({ type: 'newSite' });
+    expect(commands).toContainEqual({ type: 'buy', unit: 'drones' });
   });
 
-  it('lehnt ungültige Optionen ab', () => {
-    expect(() => createActiveBot({ clicksPerSecond: -1 })).toThrow(RangeError);
-    expect(() => createActiveBot({ clicksPerSecond: 1001 })).toThrow(RangeError);
-    expect(() => createActiveBot({ decideEveryMs: 0 })).toThrow(RangeError);
+  it.each([0, -1, NaN, Infinity])('lehnt den Abstand %d ab', (decideEveryMs) => {
+    expect(() => createActiveBot({ decideEveryMs })).toThrow(RangeError);
   });
 });
 
@@ -145,7 +127,7 @@ describe('createIdleBot', () => {
     expect(createIdleBot({ visitEveryMs: 1000 }).nextActionMs(1500)).toBe(2000);
   });
 
-  it('kauft alles Bezahlbare, Königin vor Drohne, und klickt nie', () => {
+  it('kauft alles Bezahlbare, Königin vor Drohne', () => {
     // 200 Nahrung: Königinnen zu 60 und 72, danach 68 übrig für Drohnen zu 10 bis 13,11.
     const commands = setup({ startFood: 200 }).decide(createIdleBot(), 0);
     expect(commands).toEqual([

@@ -1,12 +1,5 @@
 import { Num } from '../../core/num/num';
-import {
-  barPercent,
-  fillText,
-  formatDown,
-  formatDuration,
-  formatGain,
-  formatUp,
-} from './hud-format';
+import { barPercent, fillText, formatDown, formatDuration, formatUp } from './hud-format';
 
 describe('hud-format', () => {
   it('rundet Mengen ab und Preise auf', () => {
@@ -33,13 +26,6 @@ describe('hud-format', () => {
   it('rundet in wissenschaftlicher Notation gerichtet', () => {
     expect(formatDown(Num.from('1.239e30'))).toBe('1,23e30');
     expect(formatUp(Num.from('1.231e30'))).toBe('1,24e30');
-  });
-
-  it('zeigt Erträge ganz oder mit Nachkommastelle, aber nie als 0,0', () => {
-    expect(formatGain(Num.ONE)).toBe('1');
-    expect(formatGain(Num.ZERO)).toBe('0');
-    expect(formatGain(Num.from(0.4))).toBe('0,4');
-    expect(formatGain(Num.from(0.001))).toBe('0,1');
   });
 
   it.each([

@@ -6,7 +6,8 @@ export const TICK_MS = 100;
 
 /** Überschreibbare Balance-Werte (Game-Design §2.3, ADR-007). */
 export interface BalanceParams {
-  readonly clickYield: number;
+  /** Grundertrag `g_0` in Nahrung/s (Game-Design §4.1). */
+  readonly baseFoodRate: number;
   readonly droneCost: number;
   readonly droneCostGrowth: number;
   readonly droneCollectRate: number;
@@ -27,7 +28,7 @@ export interface BalanceParams {
 
 /** Werte v1 aus Game-Design §2.3. */
 export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
-  clickYield: 1,
+  baseFoodRate: 1.5,
   droneCost: 10,
   droneCostGrowth: 1.07,
   droneCollectRate: 0.2,

@@ -75,12 +75,15 @@ describe('HudPage', () => {
 
     expect(element().querySelector('h1')?.textContent).toBe(TEXTS_DE['hud.title']);
     expect(text('food')).toBe('1.284');
-    expect(text('food-rate')).toBe('3,2');
+    // 1,5 Grundertrag + 16 · 0,2 Drohnen
+    expect(text('food-rate')).toBe('4,7');
+    expect(text('base-rate')).toBe('1,5');
+    expect(text('drone-rate')).toBe('3,2');
     expect(text('eggs')).toBe('12,0');
     expect(text('attack')).toBe('3');
   });
 
-  it('zeigt bei leerem Vorrat die Sammelrate 0', () => {
+  it('zeigt bei leerem Vorrat alle Nahrungsraten als 0', () => {
     const base = state();
     store.replace({
       ...base,
@@ -89,6 +92,8 @@ describe('HudPage', () => {
     });
     fixture.detectChanges();
     expect(text('food-rate')).toBe('0,0');
+    expect(text('base-rate')).toBe('0,0');
+    expect(text('drone-rate')).toBe('0,0');
   });
 
   it('bietet je Einheit einen Kaufknopf', () => {
@@ -96,9 +101,9 @@ describe('HudPage', () => {
     expect(element().querySelectorAll('app-buy-button')).toHaveLength(3);
   });
 
-  it('aktualisiert die Nahrung nach einem Klick auf die Futterstelle', () => {
-    setUnits({});
-    (query('site') as HTMLButtonElement).click();
+  it('aktualisiert die Nahrung über den Grundertrag, auch ohne Einheiten', () => {
+    setUnits({ queens: 0 });
+    store.tick(1000);
     fixture.detectChanges();
     expect(text('food')).toBe('16');
   });

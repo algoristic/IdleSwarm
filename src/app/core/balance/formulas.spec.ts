@@ -3,12 +3,13 @@ import { Num } from '../num/num';
 import type { Units } from '../state/game-state';
 import { DEFAULT_BALANCE } from './constants';
 import {
+  baseFoodPerSecond,
   broodFoodPerSecond,
   broodResult,
-  clickGain,
   collectGain,
   droneFoodPerSecond,
   eggsPerMinute,
+  foodPerSecond,
   isAffordable,
   isSpaceWarning,
   meanBroodCost,
@@ -30,21 +31,6 @@ function units(queens: number, drones: number, soldiers: number): Units {
     soldiers: Num.from(soldiers),
   });
 }
-
-describe('clickGain', () => {
-  it('liefert den Klickertrag bei ausreichendem Vorrat', () => {
-    expect(clickGain(Num.from(20000), DEFAULT_BALANCE).eq(1)).toBe(true);
-  });
-
-  it('begrenzt den Ertrag auf den Vorrat', () => {
-    expect(clickGain(Num.from(0.25), DEFAULT_BALANCE).eq(0.25)).toBe(true);
-    expect(clickGain(Num.ZERO, DEFAULT_BALANCE).isZero()).toBe(true);
-  });
-
-  it('nutzt überschriebene Parameter', () => {
-    expect(clickGain(Num.from(100), { ...DEFAULT_BALANCE, clickYield: 3 }).eq(3)).toBe(true);
-  });
-});
 
 describe('unitPrice', () => {
   // Game-Design §3, dort auf zwei Stellen gerundet.
@@ -107,63 +93,109 @@ describe('droneFoodPerSecond', () => {
   });
 });
 
+describe('baseFoodPerSecond', () => {
+  it('liefert den Grundertrag, auch ohne Einheiten', () => {
+    expect(baseFoodPerSecond(Num.from(100), DEFAULT_BALANCE).eq(1.5)).toBe(true);
+  });
+
+  it('ist bei leerem Vorrat 0', () => {
+    expect(baseFoodPerSecond(Num.ZERO, DEFAULT_BALANCE).isZero()).toBe(true);
+  });
+
+  it('nutzt überschriebene Parameter', () => {
+    const params = { ...DEFAULT_BALANCE, baseFoodRate: 4 };
+    expect(baseFoodPerSecond(Num.from(1), params).eq(4)).toBe(true);
+  });
+});
+
+describe('foodPerSecond', () => {
+  it('addiert Grundertrag und Drohnen', () => {
+    expect(foodPerSecond(units(1, 50, 0), Num.from(100), DEFAULT_BALANCE).eq(11.5)).toBe(true);
+  });
+
+  it('liefert ohne Drohnen den Grundertrag', () => {
+    expect(foodPerSecond(units(1, 0, 0), Num.from(100), DEFAULT_BALANCE).eq(1.5)).toBe(true);
+  });
+
+  it('ist bei leerem Vorrat 0', () => {
+    expect(foodPerSecond(units(1, 50, 0), Num.ZERO, DEFAULT_BALANCE).isZero()).toBe(true);
+  });
+
+  it('nutzt überschriebene Parameter', () => {
+    const params = { ...DEFAULT_BALANCE, baseFoodRate: 1, droneCollectRate: 3 };
+    expect(foodPerSecond(units(1, 2, 0), Num.from(1), params).eq(7)).toBe(true);
+  });
+});
+
 describe('collectGain', () => {
-  it('rechnet den Sammel-Teil von Beispiel 1 aus Game-Design §4.3', () => {
+  it('rechnet Grundertrag und Sammeln aus Beispiel 1 in Game-Design §4.3', () => {
     const gain = collectGain(units(1, 10, 0), Num.from(1000), 100, DEFAULT_BALANCE);
-    expect(gain.eq(0.2)).toBe(true);
+    expect(gain.toNumber()).toBeCloseTo(0.35, 12);
+  });
+
+  it('liefert ohne Drohnen den Grundertrag', () => {
+    const gain = collectGain(units(1, 0, 0), Num.from(1000), 100, DEFAULT_BALANCE);
+    expect(gain.toNumber()).toBeCloseTo(0.15, 12);
   });
 
   it('begrenzt die Menge auf den Vorrat', () => {
     const stock = Num.from(0.05);
     expect(collectGain(units(1, 10, 0), stock, 100, DEFAULT_BALANCE)).toBe(stock);
+    expect(collectGain(units(1, 0, 0), stock, 100, DEFAULT_BALANCE)).toBe(stock);
   });
 
   it.each([
-    [1, 0.002],
-    [16, 0.032],
-    [60_000, 120],
+    [1, 0.0035],
+    [16, 0.056],
+    [60_000, 210],
   ])('rechnet mit beliebiger Schrittdauer (%d ms)', (dtMs, expected) => {
     const gain = collectGain(units(1, 10, 0), Num.from(1000), dtMs, DEFAULT_BALANCE);
     expect(gain.toNumber()).toBeCloseTo(expected, 12);
   });
 
   it.each([
-    ['ohne Drohnen', 0, 100, 100],
     ['bei leerem Vorrat', 10, 0, 100],
     ['ohne Zeit', 10, 100, 0],
-  ])('sammelt %s nichts', (_name, drones, stock, dtMs) => {
+  ])('liefert %s nichts', (_name, drones, stock, dtMs) => {
     const gain = collectGain(units(1, drones, 0), Num.from(stock), dtMs, DEFAULT_BALANCE);
     expect(gain.isZero()).toBe(true);
   });
 
+  it('liefert ohne Drohnen und ohne Grundertrag nichts', () => {
+    const params = { ...DEFAULT_BALANCE, baseFoodRate: 0 };
+    expect(collectGain(units(1, 0, 0), Num.from(100), 100, params).isZero()).toBe(true);
+  });
+
   it('nutzt überschriebene Parameter', () => {
-    const params = { ...DEFAULT_BALANCE, droneCollectRate: 3 };
-    expect(collectGain(units(1, 2, 0), Num.from(100), 1000, params).eq(6)).toBe(true);
+    const params = { ...DEFAULT_BALANCE, baseFoodRate: 1, droneCollectRate: 3 };
+    expect(collectGain(units(1, 2, 0), Num.from(100), 1000, params).eq(7)).toBe(true);
   });
 });
 
 describe('siteSecondsLeft', () => {
   it('rechnet das Beispiel aus Game-Design §4.5', () => {
     const left = siteSecondsLeft(units(1, 50, 0), Num.from(20000), DEFAULT_BALANCE);
-    expect(left?.eq(2000)).toBe(true);
+    expect(left?.toNumber()).toBeCloseTo(20000 / 11.5, 9);
   });
 
-  it('liefert ohne Drohnen keine Schätzung, auch bei leerem Vorrat', () => {
-    expect(siteSecondsLeft(units(1, 0, 0), Num.from(20000), DEFAULT_BALANCE)).toBeNull();
-    expect(siteSecondsLeft(units(1, 0, 0), Num.ZERO, DEFAULT_BALANCE)).toBeNull();
+  it('schätzt auch ohne Drohnen über den Grundertrag', () => {
+    const left = siteSecondsLeft(units(1, 0, 0), Num.from(20000), DEFAULT_BALANCE);
+    expect(left?.toNumber()).toBeCloseTo(20000 / 1.5, 9);
   });
 
-  it('liefert ohne Sammelrate keine Schätzung', () => {
-    const params = { ...DEFAULT_BALANCE, droneCollectRate: 0 };
-    expect(siteSecondsLeft(units(1, 50, 0), Num.from(20000), params)).toBeNull();
+  it('liefert ohne Abbaurate keine Schätzung, auch bei leerem Vorrat', () => {
+    const params = { ...DEFAULT_BALANCE, baseFoodRate: 0 };
+    expect(siteSecondsLeft(units(1, 0, 0), Num.from(20000), params)).toBeNull();
+    expect(siteSecondsLeft(units(1, 0, 0), Num.ZERO, params)).toBeNull();
   });
 
-  it('ist bei leerem Vorrat mit Drohnen 0', () => {
+  it('ist bei leerem Vorrat 0', () => {
     expect(siteSecondsLeft(units(1, 50, 0), Num.ZERO, DEFAULT_BALANCE)?.isZero()).toBe(true);
+    expect(siteSecondsLeft(units(1, 0, 0), Num.ZERO, DEFAULT_BALANCE)?.isZero()).toBe(true);
   });
 
   it('nutzt überschriebene Parameter', () => {
-    const params = { ...DEFAULT_BALANCE, droneCollectRate: 2 };
+    const params = { ...DEFAULT_BALANCE, baseFoodRate: 0, droneCollectRate: 2 };
     expect(siteSecondsLeft(units(1, 5, 0), Num.from(100), params)?.eq(10)).toBe(true);
   });
 });
@@ -337,9 +369,9 @@ describe('broodFoodPerSecond', () => {
 });
 
 describe('netFoodPerSecond', () => {
-  it('zieht die Brutkosten vom Sammeln ab', () => {
+  it('zieht die Brutkosten von Grundertrag und Sammeln ab', () => {
     const net = netFoodPerSecond(units(1, 10, 0), Num.from(100), DEFAULT_BALANCE);
-    expect(net.toNumber()).toBeCloseTo(0.625, 10);
+    expect(net.toNumber()).toBeCloseTo(2.125, 10);
   });
 
   it('wird ohne Vorrat negativ', () => {

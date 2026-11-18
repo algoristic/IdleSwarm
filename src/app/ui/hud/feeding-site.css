@@ -55,62 +55,14 @@ button {
   touch-action: manipulation;
 }
 
+h2:focus-visible,
 button:focus-visible {
   outline: 3px solid var(--hud-focus);
   outline-offset: 2px;
-}
-
-.site {
-  position: relative;
-  min-height: 9rem;
-  margin-top: 0.75rem;
-  overflow: hidden;
-  border: 1px solid var(--hud-accent);
-  background: var(--hud-surface-raised);
-  font-size: 1.125rem;
-  user-select: none;
-}
-
-.site:hover {
-  background: var(--hud-surface);
 }
 
 .renew {
   margin-top: 0.5rem;
   border: 1px solid var(--hud-warning);
   background: var(--hud-surface-raised);
-}
-
-.gains {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.gain {
-  position: absolute;
-  color: var(--hud-accent);
-  font-weight: 700;
-  transform: translate(-50%, -50%);
-  animation: rise 800ms ease-out forwards;
-}
-
-@keyframes rise {
-  to {
-    opacity: 0;
-    transform: translate(-50%, calc(-50% - 2.5rem));
-  }
-}
-
-@keyframes fade {
-  to {
-    opacity: 0;
-  }
-}
-
-/* Ohne Bewegung, aber mit Animation: Ihr Ende entfernt die Zahl. */
-@media (prefers-reduced-motion: reduce) {
-  .gain {
-    animation-name: fade;
-  }
 }

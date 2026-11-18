@@ -14,7 +14,7 @@ function play(seed: string): { json: string; values: number[]; state: GameState 
   let state = createInitialState({ seed, now: NOW }, { ...DEFAULT_BALANCE, startFood: 1000 });
   const values: number[] = [];
   for (let i = 0; i < 1000; i++) {
-    state = apply(state, { type: i % 2 === 0 ? 'click' : 'newSite' });
+    state = apply(state, { type: i % 2 === 0 ? 'noop' : 'newSite' });
     if (i % 5 === 0) {
       state = apply(state, { type: 'buy', unit: UNIT_TYPES[i % UNIT_TYPES.length] });
     }

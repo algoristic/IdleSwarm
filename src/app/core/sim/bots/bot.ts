@@ -1,7 +1,7 @@
 import type { BalanceParams } from '../../balance/constants';
 import {
-  droneFoodPerSecond,
   eggsPerMinute,
+  foodPerSecond,
   isAffordable,
   netFoodPerSecond,
   unitPrice,
@@ -22,9 +22,9 @@ export interface BotView {
   readonly timeMs: number;
   readonly params: BalanceParams;
   readonly prices: UnitPrices;
-  /** Nahrung/s der Drohnen. */
+  /** Nahrung/s aus Grundertrag und Drohnen. */
   readonly foodPerSecond: Num;
-  /** Nahrung/s der Drohnen minus Brutkosten, ohne Klicks. */
+  /** Nahrung/s gesamt minus Brutkosten bei voller Eierrate. */
   readonly netFoodPerSecond: Num;
   readonly eggsPerMinute: Num;
   /** Dieselbe Sicht auf einen anderen Zustand, etwa nach einem geplanten Kauf. */
@@ -72,7 +72,7 @@ class LazyBotView implements BotView {
   }
 
   get foodPerSecond(): Num {
-    return droneFoodPerSecond(this.state.units, this.state.site.stock, this.params);
+    return foodPerSecond(this.state.units, this.state.site.stock, this.params);
   }
 
   get netFoodPerSecond(): Num {

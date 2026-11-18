@@ -52,6 +52,11 @@ dd {
   font-variant-numeric: tabular-nums;
 }
 
+/* Aufschlüsselung der Nahrung/s (US-01.02): kleiner als die Hauptwerte. */
+.detail dd {
+  font-size: 1rem;
+}
+
 .space-head {
   display: flex;
   flex-wrap: wrap;

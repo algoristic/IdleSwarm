@@ -33,11 +33,6 @@ export interface BroodResult {
   readonly foodCost: Num;
 }
 
-/** Ertrag eines Klicks: `min(k_0 · M_klick, V)` mit `M_klick = 1` bis M1.3 (Game-Design §4.1). */
-export function clickGain(stock: Num, params: BalanceParams): Num {
-  return Num.from(params.clickYield).min(stock);
-}
-
 /** Ungerundeter Kaufpreis `c · w^n` mit `n` aus dem Kaufzähler (Game-Design §3). */
 export function unitPrice(type: UnitType, bought: Units, params: BalanceParams): Num {
   const { cost, growth } = COST_CURVES[type];
@@ -49,26 +44,44 @@ function droneCollectRate(units: Units, params: BalanceParams): Num {
   return units.drones.mul(params.droneCollectRate);
 }
 
+/** Abbaurate der Futterstelle: `g_0 + D · r_d · M_sammeln`, ohne Vorratsgrenze (Game-Design §4.3). */
+function siteYieldRate(units: Units, params: BalanceParams): Num {
+  return droneCollectRate(units, params).add(params.baseFoodRate);
+}
+
+/** Angezeigter Grundertrag in Nahrung/s; bei leerem Vorrat 0 (Game-Design §4.1). */
+export function baseFoodPerSecond(stock: Num, params: BalanceParams): Num {
+  return stock.isZero() ? Num.ZERO : Num.from(params.baseFoodRate);
+}
+
 /** Angezeigte Nahrung/s der Drohnen; bei leerem Vorrat 0 (Game-Design §4.5). */
 export function droneFoodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
   return stock.isZero() ? Num.ZERO : droneCollectRate(units, params);
 }
 
-/** Sammelmenge eines Schritts: `F_d = min(D · r_d · M_sammeln · dt, V)` (Game-Design §4.3). */
-export function collectGain(units: Units, stock: Num, dtMs: number, params: BalanceParams): Num {
-  if (units.drones.isZero() || stock.isZero()) {
-    return Num.ZERO;
-  }
-  // Rate und Dauer als `number` zusammenfassen spart eine `Num`-Multiplikation je Schritt.
-  return units.drones.mul(params.droneCollectRate * (dtMs / MS_PER_SECOND)).min(stock);
+/** Nahrung/s gesamt: `g_0 + D · r_d · M_sammeln`; bei leerem Vorrat 0 (Game-Design §4.5). */
+export function foodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
+  return stock.isZero() ? Num.ZERO : siteYieldRate(units, params);
 }
 
 /**
- * Restzeit der Futterstelle in Sekunden: `V / (D · r_d · M_sammeln)` (Game-Design §4.5).
- * Ohne Sammelrate gibt es keine Schätzung, auch nicht bei leerem Vorrat; Klicks zählen nicht mit.
+ * Ertrag eines Schritts aus Grundertrag und Sammeln: `F = min((g_0 + D · r_d · M_sammeln) · dt, V)`
+ * (Game-Design §4.3).
+ */
+export function collectGain(units: Units, stock: Num, dtMs: number, params: BalanceParams): Num {
+  if (stock.isZero()) {
+    return Num.ZERO;
+  }
+  const gain = siteYieldRate(units, params).mul(dtMs / MS_PER_SECOND);
+  return gain.gt(Num.ZERO) ? gain.min(stock) : Num.ZERO;
+}
+
+/**
+ * Restzeit der Futterstelle in Sekunden: `V / (g_0 + D · r_d · M_sammeln)` (Game-Design §4.5).
+ * Ohne Abbaurate gibt es keine Schätzung, auch nicht bei leerem Vorrat.
  */
 export function siteSecondsLeft(units: Units, stock: Num, params: BalanceParams): Num | null {
-  const rate = droneCollectRate(units, params);
+  const rate = siteYieldRate(units, params);
   return rate.gt(Num.ZERO) ? stock.div(rate) : null;
 }
 
@@ -145,11 +158,11 @@ export function broodFoodPerSecond(units: Units, params: BalanceParams): Num {
 }
 
 /**
- * Nettozufluss: Nahrung/s der Drohnen minus Nahrungsbedarf der Brut, ohne Klicks. Kann negativ sein;
- * die Brut pausiert dann real anteilig (Game-Design §4.3), die Nahrung fällt also nicht unter 0.
+ * Nettozufluss: Nahrung/s gesamt minus Nahrungsbedarf der Brut. Kann negativ sein; die Brut pausiert
+ * dann real anteilig (Game-Design §4.3), die Nahrung fällt also nicht unter 0.
  */
 export function netFoodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
-  return droneFoodPerSecond(units, stock, params).sub(broodFoodPerSecond(units, params));
+  return foodPerSecond(units, stock, params).sub(broodFoodPerSecond(units, params));
 }
 
 /** Kaufbedingung `N ≥ Preis` (Game-Design §4.2); ein negativer Preis ist nie bezahlbar. */

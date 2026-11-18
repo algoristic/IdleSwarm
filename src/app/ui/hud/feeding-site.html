@@ -1,24 +1,8 @@
 <section aria-labelledby="site-title">
   <header>
-    <h2 id="site-title">{{ texts['hud.site.title'] }}</h2>
-    <p data-testid="click-yield">{{ clickYield() }}</p>
+    <h2 #title id="site-title" tabindex="-1">{{ texts['hud.site.title'] }}</h2>
+    <p data-testid="site-rate">{{ rate() }}</p>
   </header>
-
-  <button #siteButton type="button" class="site" data-testid="site" (click)="collect($event)">
-    {{ texts['hud.site.action'] }}
-    <span class="gains" aria-hidden="true">
-      @for (gain of floatingGains(); track gain.id) {
-        <span
-          class="gain"
-          data-testid="gain"
-          [style.left]="gain.left"
-          [style.top]="gain.top"
-          (animationend)="removeGain(gain.id)"
-          >{{ gain.text }}</span
-        >
-      }
-    </span>
-  </button>
 
   <div class="stock">
     <span>{{ texts['hud.site.stock'] }}</span>

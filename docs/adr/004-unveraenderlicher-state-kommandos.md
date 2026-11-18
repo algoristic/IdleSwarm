@@ -19,8 +19,8 @@ Eingaben und der Logik-Takt ändern denselben Spielzustand. Die Oberfläche beob
 
 **Umgesetzt:**
 
-- [`core/rules/commands.ts`](../../src/app/core/rules/commands.ts): Typ `Command` und `apply` mit `noop`, `click`, `newSite` und `buy`; fehlt ein Fall in `apply`, schlägt das Kompilieren fehl.
-- [`core/sim/step.ts`](../../src/app/core/sim/step.ts): `step` führt Sammeln und Brut aus und liefert `{ state, events }`. Die Ereignisliste ist noch leer.
+- [`core/rules/commands.ts`](../../src/app/core/rules/commands.ts): Typ `Command` und `apply` mit `noop`, `newSite` und `buy`; fehlt ein Fall in `apply`, schlägt das Kompilieren fehl.
+- [`core/sim/step.ts`](../../src/app/core/sim/step.ts): `step` führt Grundertrag, Sammeln und Brut aus und liefert `{ state, events }`. Die Ereignisliste ist noch leer.
 - [`core/state/game-state.ts`](../../src/app/core/state/game-state.ts): alle Felder sind `readonly`.
 - [`game/game-store.service.ts`](../../src/app/game/game-store.service.ts): `dispatch` wendet Kommandos sofort an, `tick` ruft `step` auf; der Zustand ist nach außen nur lesbar.
 

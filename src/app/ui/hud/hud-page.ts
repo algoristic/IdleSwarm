@@ -2,8 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 
 import { DEFAULT_BALANCE } from '../../core/balance/constants';
 import {
+  baseFoodPerSecond,
   droneFoodPerSecond,
   eggsPerMinute,
+  foodPerSecond,
   isSpaceWarning,
   spaceAvailable,
   spaceUsage,
@@ -45,6 +47,13 @@ export class HudPage {
 
   protected readonly food = computed(() => formatDown(this.store.state().res.food));
   protected readonly foodRate = computed(() => {
+    const { units, site } = this.store.state();
+    return formatRate(foodPerSecond(units, site.stock, DEFAULT_BALANCE));
+  });
+  protected readonly baseRate = computed(() =>
+    formatRate(baseFoodPerSecond(this.store.state().site.stock, DEFAULT_BALANCE)),
+  );
+  protected readonly droneRate = computed(() => {
     const { units, site } = this.store.state();
     return formatRate(droneFoodPerSecond(units, site.stock, DEFAULT_BALANCE));
   });

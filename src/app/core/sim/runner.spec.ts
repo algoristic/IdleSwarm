@@ -21,8 +21,12 @@ const UNIT_TOLERANCE = 0.01;
 
 const BUY_DRONE: Command = { type: 'buy', unit: 'drones' };
 
-/** Ohne Königin keine Brut, ohne Preisfaktor konstante Preise: alles bleibt nachrechenbar. */
+/**
+ * Ohne Königin keine Brut, ohne Grundertrag nur Drohnen als Zufluss, ohne Preisfaktor konstante
+ * Preise: alles bleibt nachrechenbar.
+ */
 const SIMPLE: Partial<BalanceParams> = {
+  baseFoodRate: 0,
   startQueens: 0,
   startFood: 1000,
   droneCostGrowth: 1,
@@ -162,16 +166,16 @@ describe('runSimulation', () => {
     });
 
     it('schätzt die Zeit bis zum Kauf aus Nahrung und Nettozufluss', () => {
-      // Eine Drohne, 0 Nahrung, 0,2 Nahrung/s: Fehlbetrag / Zufluss je Einheitentyp.
+      // Eine Drohne, 0 Nahrung, 1,5 + 0,2 Nahrung/s: Fehlbetrag / Zufluss je Einheitentyp.
       const { samples } = run(scripted({ 0: [BUY_DRONE] }), {
         params: { startQueens: 0, startFood: 10 },
       });
       const { nextBuyMs, netFoodPerSecond } = samples[0];
-      expect(netFoodPerSecond).toBeCloseTo(0.2, 10);
-      expect(nextBuyMs.drones).toBeCloseTo(53_500, 6);
-      expect(nextBuyMs.soldiers).toBeCloseTo(125_000, 6);
-      expect(nextBuyMs.queens).toBeCloseTo(300_000, 6);
-      expect(nextBuyMs.total).toBeCloseTo(53_500, 6);
+      expect(netFoodPerSecond).toBeCloseTo(1.7, 10);
+      expect(nextBuyMs.drones).toBeCloseTo((10.7 / 1.7) * 1000, 6);
+      expect(nextBuyMs.soldiers).toBeCloseTo((25 / 1.7) * 1000, 6);
+      expect(nextBuyMs.queens).toBeCloseTo((60 / 1.7) * 1000, 6);
+      expect(nextBuyMs.total).toBeCloseTo((10.7 / 1.7) * 1000, 6);
     });
 
     it('meldet 0 für bezahlbare Käufe', () => {
@@ -180,18 +184,18 @@ describe('runSimulation', () => {
     });
 
     it('meldet null, wenn der Kauf beim aktuellen Zufluss nie erreicht wird', () => {
-      // Eine Königin ohne Drohnen: Der Nettozufluss ist negativ.
+      // Eine Königin ohne Drohnen und ohne Grundertrag: Der Nettozufluss ist negativ.
       const { nextBuyMs, netFoodPerSecond } = run(scripted({}), {
-        params: { startFood: 0 },
+        params: { startFood: 0, baseFoodRate: 0 },
       }).samples[0];
       expect(netFoodPerSecond).toBeCloseTo(-1.375, 10);
       expect(nextBuyMs).toEqual({ queens: null, drones: null, soldiers: null, total: null });
     });
 
     it('zählt Soldaten nicht zur Gesamtzeit', () => {
-      // Soldat bezahlbar, Drohne und Königin nicht.
+      // Soldat bezahlbar, Drohne und Königin ohne Zufluss nie.
       const { nextBuyMs } = run(scripted({}), {
-        params: { startQueens: 0, startFood: 30, droneCost: 40 },
+        params: { startQueens: 0, startFood: 30, droneCost: 40, baseFoodRate: 0 },
       }).samples[0];
       expect(nextBuyMs.soldiers).toBe(0);
       expect(nextBuyMs.total).toBeNull();
@@ -231,11 +235,14 @@ describe('runSimulation', () => {
       expect(sites).toEqual([{ index: 0, startMs: 0, emptyMs: null, durationMs: null }]);
     });
 
-    it('erkennt einen Klick, der den Vorrat leert', () => {
-      const { events } = run(scripted({ 5000: [{ type: 'click' }] }), {
-        params: { ...SIMPLE, siteSize: 1 },
+    it('erkennt, wenn der Grundertrag allein den Vorrat leert', () => {
+      const { events, metrics } = run(scripted({}), {
+        params: { startQueens: 0, siteSize: 30 },
+        // Der grobe Schritt prüft, dass der Zeitpunkt nicht an der Schrittweite hängt.
+        stepMs: 7000,
       });
-      expect(events).toEqual([{ timeMs: 5000, type: 'siteEmpty', site: 0 }]);
+      expect(events).toEqual([{ timeMs: 20_000, type: 'siteEmpty', site: 0 }]);
+      expect(metrics.firstSiteMs).toBe(20_000);
     });
 
     it('ignoriert wirkungslose Kommandos', () => {
@@ -317,9 +324,9 @@ describe('runSimulation', () => {
     });
 
     it('zählt als Wartezeit, solange weder Königin noch Drohne bezahlbar ist', () => {
-      // 5 Nahrung, nach 5 s bringt ein Klick 5 dazu: Die Drohne zu 10 ist ab dann bezahlbar.
-      const { waitShare } = run(scripted({ 5000: [{ type: 'click' }] }), {
-        params: { startQueens: 0, startFood: 5, clickYield: 5 },
+      // 5 Nahrung und 1 Nahrung/s Grundertrag: Die Drohne zu 10 ist ab 5 s bezahlbar.
+      const { waitShare } = run(scripted({}), {
+        params: { startQueens: 0, startFood: 5, baseFoodRate: 1 },
         durationMs: 20_000,
         sampleEveryMs: 20_000,
       }).metrics;
@@ -328,46 +335,38 @@ describe('runSimulation', () => {
 
     it('wertet einen bezahlbaren Soldaten nicht als Ende der Wartezeit', () => {
       const { waitShare } = run(scripted({}), {
-        params: { startQueens: 0, startFood: 30, droneCost: 40 },
+        params: { startQueens: 0, startFood: 30, droneCost: 40, baseFoodRate: 0 },
       }).metrics;
       expect(waitShare).toBe(1);
     });
 
     describe('längste Wartestrecke', () => {
-      /** Ohne Brut und Sammeln ändert sich die Nahrung nur durch Klicks und Käufe. */
+      /** Ohne Brut, Grundertrag und Sammeln ändert sich die Nahrung nur durch Käufe. */
       const STATIC: Partial<BalanceParams> = {
+        baseFoodRate: 0,
         startQueens: 0,
         droneCollectRate: 0,
         droneCostGrowth: 1,
       };
-      const CLICK: Command = { type: 'click' };
 
       it('nimmt die längste zusammenhängende Strecke', () => {
-        // Wartet 0–5 s, ist bis 8 s versorgt, wartet nach dem Kauf 8–30 s, danach nicht mehr.
-        const { longestWaitMs, waitShare } = run(
-          scripted({
-            5000: [CLICK],
-            8000: [BUY_DRONE],
-            20_000: [CLICK],
-            30_000: [CLICK],
-          }),
-          {
-            params: { ...STATIC, startFood: 5, clickYield: 5 },
-            durationMs: 40_000,
-            sampleEveryMs: 40_000,
-          },
-        ).metrics;
-        expect(longestWaitMs).toBe(22_000);
-        expect(waitShare).toBeCloseTo(27 / 40, 10);
+        // 1 Nahrung/s: wartet 0–5 s, ist bis 8 s versorgt, wartet nach dem Kauf 8–15 s.
+        const { longestWaitMs, waitShare } = run(scripted({ 8000: [BUY_DRONE] }), {
+          params: { ...STATIC, baseFoodRate: 1, startFood: 5 },
+          durationMs: 40_000,
+          sampleEveryMs: 40_000,
+        }).metrics;
+        expect(longestWaitMs).toBe(7000);
+        expect(waitShare).toBeCloseTo(12 / 40, 10);
       });
 
       it('hängt nicht an der Schrittweite, solange Aktionen die Strecke begrenzen', () => {
-        const { longestWaitMs } = run(scripted({ 5000: [CLICK] }), {
-          params: { ...STATIC, startFood: 5, clickYield: 5 },
+        const { longestWaitMs } = run(scripted({ 5000: [BUY_DRONE] }), {
+          params: { ...STATIC, startFood: 10 },
           durationMs: 60_000,
           stepMs: 7000,
         }).metrics;
-        expect(longestWaitMs).toBe(5000);
+        expect(longestWaitMs).toBe(55_000);
       });
 
       it('endet am Fensterende, auch wenn das Warten weitergeht', () => {
@@ -421,7 +420,7 @@ describe('runSimulation', () => {
       expect(foodRateDoubling.lastMs).toBeCloseTo(120_000, 6);
     });
 
-    it('hat ohne Sammelrate keine Verdopplungszeit', () => {
+    it('hat ohne Nahrungsrate keine Verdopplungszeit', () => {
       expect(run(scripted({}), { params: SIMPLE }).metrics.foodRateDoubling).toEqual({
         count: 0,
         medianMs: null,

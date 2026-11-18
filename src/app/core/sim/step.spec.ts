@@ -35,7 +35,6 @@ describe('step', () => {
   it('teilt alle Teile, die der Schritt nicht ändert', () => {
     const input = createState();
     const { state } = step(input, TICK_MS);
-    expect(state.site).toBe(input.site);
     expect(state.bought).toBe(input.bought);
     expect(state.rngState).toBe(input.rngState);
     expect(state.seed).toBe(input.seed);
@@ -43,11 +42,13 @@ describe('step', () => {
     expect(state.version).toBe(input.version);
   });
 
-  it('lässt Königinnen brüten', () => {
+  it('lässt Königinnen brüten und bringt den Grundertrag ein', () => {
     const { state } = step(createState(), TICK_MS);
     expect(state.units.drones.eq(0.0075)).toBe(true);
     expect(state.units.soldiers.eq(0.0025)).toBe(true);
-    expect(state.res.food.eq(14.8625)).toBe(true);
+    // 15 + 1,5 · 0,1 − 0,01 · 13,75
+    expect(state.res.food.toNumber()).toBeCloseTo(15.0125, 10);
+    expect(state.site.stock.toNumber()).toBeCloseTo(19_999.85, 10);
   });
 
   it('reicht die Parameter an die Brut weiter', () => {
@@ -55,7 +56,7 @@ describe('step', () => {
     const { state } = step(createState(), 1000, params);
     expect(state.units.drones.eq(1)).toBe(true);
     expect(state.units.soldiers.isZero()).toBe(true);
-    expect(state.res.food.eq(5)).toBe(true);
+    expect(state.res.food.eq(6.5)).toBe(true);
   });
 
   it('hängt die Brut bei genug Nahrung kaum von der Schrittweite ab', () => {
@@ -86,8 +87,8 @@ describe('step', () => {
 
     it('rechnet Beispiel 1 aus Game-Design §4.3 vollständig', () => {
       const { res, site, units } = step(swarm(1, 10, 5, 1000), TICK_MS).state;
-      expect(res.food.toNumber()).toBeCloseTo(5.0625, 10);
-      expect(site.stock.toNumber()).toBeCloseTo(999.8, 10);
+      expect(res.food.toNumber()).toBeCloseTo(5.2125, 10);
+      expect(site.stock.toNumber()).toBeCloseTo(999.65, 10);
       expect(units.drones.toNumber()).toBeCloseTo(10.0075, 10);
       expect(units.soldiers.toNumber()).toBeCloseTo(0.0025, 10);
     });
@@ -95,19 +96,19 @@ describe('step', () => {
     it('sammelt vor der Brut, frische Nahrung reicht im selben Schritt', () => {
       const { res, units } = step(swarm(1, 10, 0, 1000), TICK_MS).state;
       expect(units.soldiers.toNumber()).toBeCloseTo(0.0025, 10);
-      expect(res.food.toNumber()).toBeCloseTo(0.0625, 10);
+      expect(res.food.toNumber()).toBeCloseTo(0.2125, 10);
     });
 
     it('sammelt mit den Drohnen vom Anfang des Schritts', () => {
       const { site } = step(swarm(100, 10, 1000, 1000), 1000).state;
-      expect(site.stock.toNumber()).toBeCloseTo(998, 10);
+      expect(site.stock.toNumber()).toBeCloseTo(996.5, 10);
     });
 
     it('reicht die Parameter an das Sammeln weiter', () => {
       const params = { ...DEFAULT_BALANCE, droneCollectRate: 1 };
       const { res, site } = step(swarm(0, 10, 0, 1000), 1000, params).state;
-      expect(res.food.eq(10)).toBe(true);
-      expect(site.stock.eq(990)).toBe(true);
+      expect(res.food.eq(11.5)).toBe(true);
+      expect(site.stock.eq(988.5)).toBe(true);
     });
 
     it('lässt die Brut bei leerem Vorrat weiterlaufen', () => {
@@ -133,12 +134,17 @@ describe('step', () => {
     expect(JSON.stringify(step(input, 250))).toBe(JSON.stringify(step(input, 250)));
   });
 
-  it('lässt Zustand ohne Königinnen bis auf die Zeit unverändert', () => {
+  it('lässt Zustand ohne Königinnen und ohne Vorrat bis auf die Zeit unverändert', () => {
     const base = createState();
-    const input = deepFreeze({ ...base, units: { ...base.units, queens: Num.ZERO } });
+    const input = deepFreeze({
+      ...base,
+      units: { ...base.units, queens: Num.ZERO },
+      site: { ...base.site, stock: Num.ZERO },
+    });
     const { state } = step(input, TICK_MS);
     expect(state.res).toBe(input.res);
     expect(state.units).toBe(input.units);
+    expect(state.site).toBe(input.site);
     expect(state.time.played).toBe(TICK_MS);
   });
 

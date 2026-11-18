@@ -1,4 +1,4 @@
-import { formatNum, formatRate } from '../../core/num/format';
+import { formatNum } from '../../core/num/format';
 import { Num, NumLike } from '../../core/num/num';
 
 /** Ab hier kürzt `formatNum` auf Kurzformen, ab `SCIENTIFIC_FROM` auf wissenschaftliche Notation. */
@@ -10,8 +10,6 @@ const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 3600;
 /** Darüber sind Minuten bedeutungslos und `number` wäre nicht mehr verlässlich. */
 const HOURS_ONLY_FROM_SECONDS = 1e9;
-/** Kleinster Ertrag, den `formatRate` noch von null unterscheidet. */
-const MIN_SHOWN_GAIN = 0.1;
 
 /** Signifikante Stellen, die `formatNum` ab 1 Mio. zeigt. */
 function shownDigits(exponent: number): number {
@@ -51,11 +49,6 @@ export function formatDown(value: Num): string {
 
 export function formatUp(value: Num): string {
   return formatNum(roundUpForDisplay(value));
-}
-
-/** Klickertrag ohne Vorzeichen: ganz wie `1`, ein kleiner Rest wie `0,4`, aber nie `0,0`. */
-export function formatGain(gain: Num): string {
-  return gain.floor().eq(gain) ? formatNum(gain) : formatRate(gain.max(MIN_SHOWN_GAIN));
 }
 
 /** Deutsche Zeitangabe: `45 s`, `12 min 30 s`, `2 h 05 min`. */

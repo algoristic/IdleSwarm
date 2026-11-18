@@ -10,7 +10,7 @@ export interface IdleBotOptions {
   readonly visitEveryMs?: number;
 }
 
-/** Klickt nie, schaut regelmäßig vorbei und kauft dann alles Bezahlbare. */
+/** Schaut regelmäßig vorbei und kauft dann alles Bezahlbare. */
 export function createIdleBot({ visitEveryMs = IDLE_VISIT_EVERY_MS }: IdleBotOptions = {}): Bot {
   assertPositiveInterval('createIdleBot', visitEveryMs);
   return {

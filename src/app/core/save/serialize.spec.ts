@@ -11,6 +11,13 @@ import { decodeSave, encodeSave, SaveError } from './serialize';
 const FROZEN_V1_SAVE =
   'N4IgbgpgTgzglgewHYgFwEYA0IYQgEzRDnwBsIYB3AQygFsRsokBzAZQBdqOI10BmAOwAOUegAMANiwgOcOr1SgkCSn0HjNm/pK3jspajA5tqkQhg17+e/SAAOhgJ4E0OvQF9s0akQCusH729rxMFGigAGYICBYg6AB0AEzCACwQ/Iwg+Ei+qCCCCQCsEOIgXiB+SHAcMBEgAI5+eEh1+fylWfhQyOH5qckQ6FkwCKT4cNBt8cVDtmUeHkA=';
 
+/**
+ * Eingefrorener Spielstand der Version 2 aus der Zeit vor dem Klick-Ausbau (AP 1.1.9). Nicht
+ * anpassen: Version 2 gilt ohne Migration weiter, der Stand muss unverändert ladbar bleiben.
+ */
+const FROZEN_V2_SAVE =
+  'N4IgbgpgTgzglgewHYgFwCYA0IYQgEzRDnwBsIYB3AQygFsRsokBzAZQBdqOI0BGAMwB2ABxi+ABgBsfbBzh1eqUEgSV+QiVu0SArNuylqMDm2qRCqPpp22J2AA5GAngTT6tAX2zRqRAK6w/g4OvEwUaKAAZggIliB8AHToIgAsEAKMIPhIfqggQom6EBIg3iD+SHAcMJEgAI7+eEi1+QIlWfhQyBH5qckQfFkwCKT4cNCtCUUd5fA8dRzOoUSQSBzDcABeSiDoEKnDHAgAxgDWREnoAqnFmeUARgj+LAAWG8oNTRAtRPul2C6PSm6SG2BGYwmsCIElmniAA';
+
 const NOW = 1_700_000_000_000;
 
 function sampleState(): GameState {
@@ -148,6 +155,29 @@ describe('eingefrorener Spielstand der Version 1', () => {
 
   it('lässt sich nach der Migration wieder speichern und laden', () => {
     const state = decodeSave(FROZEN_V1_SAVE);
+    expectSameState(decodeSave(encodeSave(state)), state);
+  });
+});
+
+describe('eingefrorener Spielstand der Version 2', () => {
+  it('lädt unverändert, ohne Migration', () => {
+    const state = decodeSave(FROZEN_V2_SAVE);
+    expect(state.version).toBe(STATE_VERSION);
+    expect(JSON.parse(JSON.stringify(state))).toEqual({
+      version: 2,
+      seed: 'idleswarm',
+      rngState: 1378881061,
+      time: { now: 1700000005000, lastSaved: 1700000000000, played: 5000 },
+      era: 'ursuppe',
+      res: { food: '1.284e3', dna: '7.5e0' },
+      units: { queens: '3e0', drones: '4.2e1', soldiers: '1.5e0' },
+      site: { type: 'vent', size: '2e4', stock: '1.2345e3' },
+      bought: { queens: '2e0', drones: '4e1', soldiers: '0e0' },
+    });
+  });
+
+  it('lässt sich wieder speichern und laden', () => {
+    const state = decodeSave(FROZEN_V2_SAVE);
     expectSameState(decodeSave(encodeSave(state)), state);
   });
 });

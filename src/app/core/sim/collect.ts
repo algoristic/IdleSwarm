@@ -3,7 +3,7 @@ import { collectGain } from '../balance/formulas';
 import { Num } from '../num/num';
 import type { GameState } from '../state/game-state';
 
-/** Sammel-Teil des Simulationsschritts; ohne Ertrag kommt derselbe Zustand zurück. */
+/** Grundertrag und Sammeln im Simulationsschritt; ohne Ertrag kommt derselbe Zustand zurück. */
 export function applyCollect(state: GameState, dtMs: number, params: BalanceParams): GameState {
   const { res, site, units } = state;
   const gain = collectGain(units, site.stock, dtMs, params);

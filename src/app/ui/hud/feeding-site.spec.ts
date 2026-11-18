@@ -14,8 +14,6 @@ describe('FeedingSite', () => {
   const query = <T extends HTMLElement>(testId: string) =>
     element().querySelector<T>(`[data-testid="${testId}"]`);
   const text = (testId: string) => query(testId)?.textContent?.trim();
-  const site = () => query<HTMLButtonElement>('site') as HTMLButtonElement;
-  const gains = () => Array.from(element().querySelectorAll<HTMLElement>('[data-testid="gain"]'));
   const meter = () => element().querySelector('[role="progressbar"]') as HTMLElement;
 
   function setup(change: (state: GameState) => GameState = (state) => state): void {
@@ -32,44 +30,28 @@ describe('FeedingSite', () => {
     units: { ...state.units, drones: Num.from(drones) },
   });
 
-  function mouseClick(x: number, y: number): void {
-    site().dispatchEvent(
-      new MouseEvent('click', { bubbles: true, detail: 1, clientX: x, clientY: y }),
-    );
-    fixture.detectChanges();
-  }
-
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [FeedingSite] });
     store = TestBed.inject(GameStoreService);
     fixture = TestBed.createComponent(FeedingSite);
   });
 
-  it('löst beim Klick auf die Futterstelle das Kommando aus', () => {
-    setup();
-    const dispatch = vi.spyOn(store, 'dispatch');
-
-    site().click();
-
-    expect(dispatch).toHaveBeenCalledExactlyOnceWith({ type: 'click' });
-    expect(store.state().res.food.eq(16)).toBe(true);
-    expect(store.state().site.stock.eq(19_999)).toBe(true);
-  });
-
-  it('reagiert nicht auf Klicks neben die Futterstelle', () => {
+  it('ist keine Klickfläche', () => {
     setup();
     const dispatch = vi.spyOn(store, 'dispatch');
 
     element().querySelector('header')?.click();
     (element().querySelector('.stock') as HTMLElement).click();
 
+    expect(element().querySelectorAll('button')).toHaveLength(0);
     expect(dispatch).not.toHaveBeenCalled();
+    expect(store.state().res.food.eq(15)).toBe(true);
   });
 
-  it('zeigt Klickertrag, Vorrat und Balkenwerte', () => {
+  it('zeigt Nahrungsrate, Vorrat und Balkenwerte', () => {
     setup(withStock(5000));
 
-    expect(text('click-yield')).toBe('Klickertrag: +1 Nahrung');
+    expect(text('site-rate')).toBe('1,5 Nahrung/s');
     expect(text('stock')).toBe('5.000 / 20.000');
     expect(meter().getAttribute('aria-valuenow')).toBe('25');
     expect(meter().getAttribute('aria-valuemin')).toBe('0');
@@ -77,78 +59,33 @@ describe('FeedingSite', () => {
     expect(meter().getAttribute('aria-valuetext')).toBe('5.000 / 20.000');
   });
 
+  it('zeigt im Titel die Gesamtrate aus Grundertrag und Drohnen', () => {
+    setup(withDrones(50));
+    expect(text('site-rate')).toBe('11,5 Nahrung/s');
+
+    store.replace(withStock(0)(store.state()));
+    fixture.detectChanges();
+    expect(text('site-rate')).toBe('0,0 Nahrung/s');
+  });
+
   it('zeigt einen Rest im Vorrat nicht als 0', () => {
     setup(withStock(0.4));
     expect(text('stock')).toBe('1 / 20.000');
-    expect(text('click-yield')).toBe('Klickertrag: +0,4 Nahrung');
     expect(query('renew')).toBeNull();
   });
 
-  it('nennt ohne Drohnen statt einer Zeit einen Hinweis', () => {
+  it('schätzt ohne Drohnen die Restzeit über den Grundertrag', () => {
     setup();
-    expect(text('time-left')).toBe(TEXTS_DE['hud.site.noDrones']);
+    expect(text('time-left')).toBe('Leer in etwa 3 h 42 min');
   });
 
   it('schätzt mit Drohnen die Restzeit und folgt dem Kauf', () => {
     setup(withDrones(50));
-    expect(text('time-left')).toBe('Leer in etwa 33 min 20 s');
+    expect(text('time-left')).toBe('Leer in etwa 29 min 00 s');
 
     store.replace(withDrones(1)(store.state()));
     fixture.detectChanges();
-    expect(text('time-left')).toBe('Leer in etwa 27 h 46 min');
-  });
-
-  it('zeigt die Zahl am Klickpunkt', () => {
-    setup();
-    mouseClick(30, 40);
-
-    expect(gains()).toHaveLength(1);
-    expect(gains()[0].textContent).toBe('+1');
-    expect(gains()[0].style.left).toBe('30px');
-    expect(gains()[0].style.top).toBe('40px');
-    expect(gains()[0].closest('[aria-hidden="true"]')).not.toBeNull();
-  });
-
-  it('zeigt die Zahl bei Tastaturbedienung mittig', () => {
-    setup();
-    site().click();
-    fixture.detectChanges();
-
-    expect(gains()[0].style.left).toBe('50%');
-    expect(gains()[0].style.top).toBe('50%');
-  });
-
-  it('zeigt den tatsächlichen Ertrag', () => {
-    setup(withStock(0.4));
-    site().click();
-    fixture.detectChanges();
-    expect(gains()[0].textContent).toBe('+0,4');
-  });
-
-  it('zeigt bei leerer Futterstelle keine Zahl', () => {
-    setup(withStock(0));
-    mouseClick(1, 1);
-    expect(gains()).toHaveLength(0);
-    expect(store.state().res.food.eq(15)).toBe(true);
-  });
-
-  it('entfernt die Zahl nach der Animation', () => {
-    setup();
-    site().click();
-    fixture.detectChanges();
-
-    gains()[0].dispatchEvent(new Event('animationend'));
-    fixture.detectChanges();
-    expect(gains()).toHaveLength(0);
-  });
-
-  it('begrenzt die Anzahl der Zahlen', () => {
-    setup();
-    for (let i = 0; i < 30; i++) {
-      mouseClick(i, 0);
-    }
-    expect(gains()).toHaveLength(12);
-    expect(gains()[11].style.left).toBe('29px');
+    expect(text('time-left')).toBe('Leer in etwa 3 h 16 min');
   });
 
   it('bietet die neue Futterstelle nur bei leerem Vorrat an', () => {
@@ -165,7 +102,7 @@ describe('FeedingSite', () => {
     expect(query('time-left')).toBeNull();
   });
 
-  it('füllt die Futterstelle auf und gibt den Fokus an sie weiter', () => {
+  it('füllt die Futterstelle auf und setzt den Fokus auf ihre Überschrift', () => {
     document.body.append(element());
     setup(withStock(0));
     const dispatch = vi.spyOn(store, 'dispatch');
@@ -176,7 +113,7 @@ describe('FeedingSite', () => {
     expect(dispatch).toHaveBeenCalledExactlyOnceWith({ type: 'newSite' });
     expect(text('stock')).toBe('20.000 / 20.000');
     expect(query('renew')).toBeNull();
-    expect(document.activeElement).toBe(site());
+    expect(document.activeElement).toBe(element().querySelector('#site-title'));
     element().remove();
   });
 });

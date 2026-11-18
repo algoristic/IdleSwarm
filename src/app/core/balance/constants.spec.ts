@@ -11,7 +11,7 @@ describe('Takt-Konstanten', () => {
 describe('DEFAULT_BALANCE', () => {
   it('enthält die Werte v1 aus Game-Design §2.3', () => {
     expect(DEFAULT_BALANCE).toEqual({
-      clickYield: 1,
+      baseFoodRate: 1.5,
       droneCost: 10,
       droneCostGrowth: 1.07,
       droneCollectRate: 0.2,

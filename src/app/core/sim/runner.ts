@@ -52,8 +52,9 @@ export interface SimSample {
   readonly queens: number;
   readonly drones: number;
   readonly soldiers: number;
+  /** Grundertrag und Sammeln. */
   readonly foodPerSecond: number;
-  /** Sammeln minus Brutkosten bei voller Eierrate, ohne Klicks. */
+  /** Grundertrag und Sammeln minus Brutkosten bei voller Eierrate. */
   readonly netFoodPerSecond: number;
   readonly eggsPerMinute: number;
   readonly nextBuyMs: NextBuyTimes;
@@ -334,11 +335,9 @@ export function runSimulation(options: SimOptions): SimResult {
     if (timeMs === nextActionMs) {
       for (const command of bot.decide(state, viewAt(state, timeMs))) {
         const next = apply(state, command, params);
+        // Kein Kommando leert den Vorrat; leer wird er nur in `step`.
         if (next !== state) {
           recorder.command(command, timeMs);
-          if (emptied(state, next)) {
-            recorder.siteEmptied(timeMs);
-          }
           state = next;
         }
       }
