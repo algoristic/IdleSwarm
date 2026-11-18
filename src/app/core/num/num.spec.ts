@@ -85,6 +85,57 @@ describe('Num', () => {
     });
   });
 
+  describe('Cache für number-Werte', () => {
+    /** Mehr verschiedene Zahlen, als der Cache fasst; er wird dabei mindestens einmal geleert. */
+    const overflowCache = (): void => {
+      for (let i = 0; i < 2100; i++) {
+        Num.from(1_000_000.5 + i);
+      }
+    };
+
+    it('liefert für dieselbe Zahl denselben Wert', () => {
+      expect(Num.from(1.07).toString()).toBe(Num.from('1.07').toString());
+      expect(Num.from(1.07).toString()).toBe(Num.from(1.07).toString());
+    });
+
+    it('liefert denselben Wert auch, nachdem der Cache geleert wurde', () => {
+      const values = [0.2, 1.07, 13.75, 1e300, -2.5e-7];
+      const before = values.map((value) => Num.from(value).toString());
+      overflowCache();
+      expect(values.map((value) => Num.from(value).toString())).toEqual(before);
+      expect(values.map((value) => Num.from(value).toNumber())).toEqual(values);
+    });
+
+    it('rechnet die verdrängten Zahlen weiter korrekt', () => {
+      overflowCache();
+      for (const value of [1_000_000.5, 1_001_000.5, 1_002_099.5]) {
+        expect(Num.from(value).toNumber()).toBe(value);
+      }
+    });
+
+    it.each([
+      ['0 zuerst', [0, -0]],
+      ['-0 zuerst', [-0, 0]],
+    ])('behandelt 0 und -0 als normale Null (%s)', (_name, order) => {
+      overflowCache();
+      for (const value of order) {
+        const zero = Num.from(value);
+        expect(zero.isZero()).toBe(true);
+        expect(zero.isNegative()).toBe(false);
+        expect(Object.is(zero.mantissa, 0)).toBe(true);
+        expect(Object.is(zero.exponent, 0)).toBe(true);
+        expect(Object.is(zero.toNumber(), 0)).toBe(true);
+        expect(zero.toString()).toBe('0e0');
+      }
+    });
+
+    it.each([NaN, Infinity, -Infinity])('wirft bei %d auch wiederholt', (value) => {
+      // Stünde der Wert nach dem ersten Versuch im Cache, bliebe der zweite Fehler aus.
+      expect(() => Num.from(value)).toThrow(RangeError);
+      expect(() => Num.from(value)).toThrow(RangeError);
+    });
+  });
+
   describe('Rechnen', () => {
     it('addiert und subtrahiert', () => {
       expect(Num.from(1284).add(16).toNumber()).toBe(1300);

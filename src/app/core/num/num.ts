@@ -9,6 +9,9 @@ const EXPONENT_LIMIT = 9e15;
 /** Skaliert die Mantisse beim Entrauschen auf 15 signifikante Stellen. */
 const MANTISSA_SCALE = 1e14;
 
+/** Obergrenze des Caches in {@link Num.fromNumber}. */
+const NUMBER_CACHE_LIMIT = 1024;
+
 const NUMBER_PATTERN = /^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/;
 
 function invalid(message: string): never {
@@ -33,6 +36,9 @@ export class Num {
   static readonly ZERO = new Num(new Decimal(0));
   static readonly ONE = new Num(new Decimal(1));
 
+  /** `Num` ist unveränderlich; Parameter und Schrittweiten wiederholen sich in jedem Schritt. */
+  static readonly #fromNumberCache = new Map<number, Num>();
+
   readonly #value: Decimal;
 
   private constructor(value: Decimal) {
@@ -54,12 +60,21 @@ export class Num {
   }
 
   private static fromNumber(value: number): Num {
+    const cached = Num.#fromNumberCache.get(value);
+    if (cached) {
+      return cached;
+    }
     if (!Number.isFinite(value)) {
       invalid(`ungültige Zahl ${value}`);
     }
     // `toExponential` liefert die kürzesten Ziffern, also dasselbe Ergebnis wie aus dem String.
     const [mantissa, exponent] = value.toExponential().split('e');
-    return Num.fromParts(Number(mantissa), Number(exponent));
+    const result = Num.fromParts(Number(mantissa), Number(exponent));
+    if (Num.#fromNumberCache.size >= NUMBER_CACHE_LIMIT) {
+      Num.#fromNumberCache.clear();
+    }
+    Num.#fromNumberCache.set(value, result);
+    return result;
   }
 
   /** Eigener Parser: Die Bibliothek akzeptiert `12abc` und liefert für `1E400` unendlich. */

@@ -3,14 +3,18 @@ import { Num } from '../num/num';
 import type { Units } from '../state/game-state';
 import { DEFAULT_BALANCE } from './constants';
 import {
+  broodFoodPerSecond,
   broodResult,
   clickGain,
   collectGain,
   droneFoodPerSecond,
   eggsPerMinute,
+  isAffordable,
   isSpaceWarning,
   meanBroodCost,
+  netFoodPerSecond,
   nextQueenEffect,
+  secondsUntilAffordable,
   siteSecondsLeft,
   spaceAvailable,
   spaceUsage,
@@ -323,5 +327,50 @@ describe('nextQueenEffect', () => {
     const effect = nextQueenEffect({ ...DEFAULT_BALANCE, queenEggsPerMin: 9, queenSpace: 3 });
     expect(effect.eggsPerMin.eq(9)).toBe(true);
     expect(effect.space.eq(3)).toBe(true);
+  });
+});
+
+describe('broodFoodPerSecond', () => {
+  it('rechnet den Bedarf bei voller Eierrate', () => {
+    expect(broodFoodPerSecond(units(2, 0, 0), DEFAULT_BALANCE).toNumber()).toBeCloseTo(2.75, 10);
+  });
+});
+
+describe('netFoodPerSecond', () => {
+  it('zieht die Brutkosten vom Sammeln ab', () => {
+    const net = netFoodPerSecond(units(1, 10, 0), Num.from(100), DEFAULT_BALANCE);
+    expect(net.toNumber()).toBeCloseTo(0.625, 10);
+  });
+
+  it('wird ohne Vorrat negativ', () => {
+    const net = netFoodPerSecond(units(1, 10, 0), Num.ZERO, DEFAULT_BALANCE);
+    expect(net.toNumber()).toBeCloseTo(-1.375, 10);
+  });
+});
+
+describe('isAffordable', () => {
+  it('verlangt N ≥ Preis', () => {
+    expect(isAffordable(Num.from(10), Num.from(10))).toBe(true);
+    expect(isAffordable(Num.from(10), Num.from(9.99))).toBe(false);
+  });
+
+  it('lehnt negative Preise ab', () => {
+    expect(isAffordable(Num.from(-1), Num.from(10))).toBe(false);
+  });
+});
+
+describe('secondsUntilAffordable', () => {
+  it('ist 0, wenn der Preis schon bezahlbar ist', () => {
+    expect(secondsUntilAffordable(Num.from(5), Num.from(5), Num.ZERO)?.isZero()).toBe(true);
+  });
+
+  it('teilt den Fehlbetrag durch den Zufluss', () => {
+    expect(secondsUntilAffordable(Num.from(10), Num.from(4), Num.from(2))?.eq(3)).toBe(true);
+  });
+
+  it('liefert null ohne positiven Zufluss oder bei negativem Preis', () => {
+    expect(secondsUntilAffordable(Num.from(10), Num.ZERO, Num.ZERO)).toBeNull();
+    expect(secondsUntilAffordable(Num.from(10), Num.ZERO, Num.from(-1))).toBeNull();
+    expect(secondsUntilAffordable(Num.from(-1), Num.ZERO, Num.ONE)).toBeNull();
   });
 });

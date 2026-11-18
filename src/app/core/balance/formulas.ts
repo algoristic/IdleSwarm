@@ -8,6 +8,7 @@ const SPACE_WARNING_SHARE = 0.9;
 
 const MS_PER_SECOND = 1000;
 const MS_PER_MINUTE = 60_000;
+const SECONDS_PER_MINUTE = 60;
 
 /** Parameter der Kostenkurve je Einheitentyp (Game-Design §2.3). */
 const COST_CURVES: Readonly<
@@ -136,4 +137,36 @@ export function isSpaceWarning(units: Units, params: BalanceParams): boolean {
 /** Effekt einer weiteren Königin: `+e_q · M_brut` Eier/min, `+p_q` Platz (Game-Design §4.5). */
 export function nextQueenEffect(params: BalanceParams): QueenEffect {
   return { eggsPerMin: Num.from(params.queenEggsPerMin), space: Num.from(params.queenSpace) };
+}
+
+/** Nahrungsbedarf der Brut bei voller Eierrate: `E / 60 · c̄` (Game-Design §4.3). */
+export function broodFoodPerSecond(units: Units, params: BalanceParams): Num {
+  return eggsPerMinute(units, params).mul(meanBroodCost(params)).div(SECONDS_PER_MINUTE);
+}
+
+/**
+ * Nettozufluss: Nahrung/s der Drohnen minus Nahrungsbedarf der Brut, ohne Klicks. Kann negativ sein;
+ * die Brut pausiert dann real anteilig (Game-Design §4.3), die Nahrung fällt also nicht unter 0.
+ */
+export function netFoodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
+  return droneFoodPerSecond(units, stock, params).sub(broodFoodPerSecond(units, params));
+}
+
+/** Kaufbedingung `N ≥ Preis` (Game-Design §4.2); ein negativer Preis ist nie bezahlbar. */
+export function isAffordable(price: Num, food: Num): boolean {
+  return !price.isNegative() && food.gte(price);
+}
+
+/**
+ * Sekunden, bis `price` beim Zufluss `foodPerSecond` bezahlbar ist: 0, wenn er es schon ist, `null`,
+ * wenn er so nie erreicht wird. Schätzung mit konstantem Zufluss.
+ */
+export function secondsUntilAffordable(price: Num, food: Num, foodPerSecond: Num): Num | null {
+  if (isAffordable(price, food)) {
+    return Num.ZERO;
+  }
+  if (price.isNegative() || !foodPerSecond.gt(Num.ZERO)) {
+    return null;
+  }
+  return price.sub(food).div(foodPerSecond);
 }
