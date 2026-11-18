@@ -1,5 +1,9 @@
 # IdleSwarm
 
+> **Archiviert (18.11.2026).** Ursprüngliche Ideensammlung, wird nicht mehr gepflegt. Maßgeblich sind
+> [Projektplan](../projektplan.md), [Produktplanung](../produktplanung.md) und
+> [Technisches Konzept](../technisches-konzept.md).
+
 ## Abstract
 Wir entwickeln ein Idle-Browser-Spiel. Nur ein Client für den Spieler - **keine** Multiplayerfunktionen geplant.
 
