@@ -77,7 +77,7 @@ src/app/
     sim/step.ts, catch-up.ts, runner.ts, bots/
     balance/constants.ts, formulas.ts
     data/units.ts, genome-era1.ts, sites-era1.ts, finds-era1.ts, texts.de.ts
-    save/serialize.ts, migrations/
+    save/serialize.ts, slots.ts, migrations/
     num/num.ts, format.ts
     rng/rng.ts
   game/
@@ -144,6 +144,8 @@ interface GameState {
 }
 ```
 
+Save-Version 1 enthält nach Entscheidung des Product Owners nur `version`, `seed`, `rngState`, `time`, `era`, `res` und `units`. Der Rest des Entwurfs kommt mit den jeweiligen Mechaniken über Migrationen.
+
 IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil**. Spielstände speichern nur IDs, keine Texte oder Werte.
 
 ## 4. Simulation
@@ -153,7 +155,7 @@ IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil*
 | Logik-Takt | fest **10 Hz** (`dt` = 100 ms), unabhängig von der Framerate; Akkumulator-Pattern im GameLoop |
 | Rendering | `requestAnimationFrame`, liest nur den State; pausiert bei `document.hidden` |
 | Klicks | Kommandos werden sofort angewendet, nicht erst im nächsten Tick |
-| Determinismus | Zufall nur über den seeded RNG im State (z. B. mulberry32). Gleicher Seed + gleiche Kommandos ⇒ gleiches Ergebnis. Grundlage für Tests, Modell-Seite und gegen Save-Scumming |
+| Determinismus | Zufall nur über den seeded RNG im State (z. B. mulberry32). Gleicher Seed + gleiche Kommandos an gleicher Position zwischen den Ticks ⇒ gleiches Ergebnis. Grundlage für Tests, Modell-Seite und gegen Save-Scumming |
 | Offline-Catch-up | Beim Laden wird `Δt = now − lastSaved` (gedeckelt, Start 24 h) nachgeholt. Das geschieht in **adaptiven Schritten**: große Schritte (z. B. 10 s), die an Ereignisgrenzen (Futterstelle leer, Nahrung reicht für Brut, Auto-Weiterziehen) verkürzt werden. Ergebnis ≈ Echtzeit-Simulation; ein Test sichert die Toleranz ab |
 | Hintergrund-Tab | Browser drosseln Timer, daher erkennt der GameLoop große Zeitsprünge und nutzt dafür ebenfalls den Catch-up |
 | Performance-Budget | `step` < 2 ms auf einem Mittelklasse-Smartphone; Catch-up für 24 h < 1 s |
@@ -250,10 +252,10 @@ export const GENOME_ERA1: GenomeNode[] = [
 
 | Aspekt | Lösung |
 |---|---|
-| Speicherort | `localStorage`, Schlüssel `idleswarm.save`; zusätzlich ein Backup-Slot des vorletzten Stands |
-| Format | JSON → komprimiert (z. B. `lz-string`) → Base64; `Num` als String serialisiert |
+| Speicherort | `localStorage`, Schlüssel `idleswarm.save`; zusätzlich ein Backup-Slot des vorletzten Stands und der Slot `idleswarm.save.unreadable`: Ein unlesbarer Primär-Stand wird beim nächsten Speichern dorthin verschoben statt überschrieben |
+| Format | JSON → komprimiert (`lz-string`) → Base64; `Num` als String serialisiert |
 | Autosave | alle 30 s (einstellbar), bei `visibilitychange` (hidden) und `pagehide` |
-| Versionierung | Feld `version`; beim Laden läuft die Migrationskette `migrations/v1→v2.ts …` |
+| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/index.ts` (noch leer, aktuell Version 1) |
 | Robustheit | Validierung beim Laden. Bei einem Fehler wird der Backup-Slot geladen und der Spieler informiert |
 | Export/Import | derselbe String zum Kopieren; Import validiert und migriert |
 | Später | Cloud-Sync optional (Querschnittsthema), ohne Änderung am Format |
@@ -308,8 +310,9 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 
 - `Num`-Formatierung in `core/num/format.ts`, deutsch:
   - unter 1 Mio.: ganze Zahlen mit Tausenderpunkt (`1.284`), Raten mit einer Nachkommastelle (`3,2`)
-  - ab 1 Mio.: Kurzformen `Mio.`, `Mrd.`, `Bio.`, `Brd.`, `Trio.` …
+  - ab 1 Mio.: Kurzformen `Mio.`, `Mrd.`, `Bio.`, `Brd.`, `Trio.`, `Trd.` (< 1e24)
   - danach wissenschaftliche Notation (`1,23e45`)
+  - Kurzformen und wissenschaftliche Notation: zwei Nachkommastellen, kaufmännisches Runden mit Übertrag
 - Einstellbar: Kurzformen / wissenschaftlich / technisch.
 
 ## 10. Qualitätssicherung
@@ -324,7 +327,7 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 | UI | Komponententests für zentrale Komponenten (Kaufknopf, Detailpanels) |
 | E2E | Playwright-Smoke: Start, Klick, Kauf, Moduswechsel, Weiterziehen; Viewports Desktop und Smartphone |
 | Performance | Messung in AP 1.4.6 auf echtem Smartphone: 60 fps in der Szene, Moduswechsel ohne Ruckeln |
-| CI-Gates | Lint, Unit-Tests, Build und E2E müssen grün sein, bevor auf `main` deployt wird |
+| CI-Gates | Lint, Unit-Tests, Build und E2E müssen grün sein, bevor auf `main` deployt wird; das Gate E2E greift erst ab AP 1.5.7, wenn es E2E-Tests gibt |
 
 ## 11. Deployment & PWA
 
@@ -334,7 +337,7 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 
 ## 12. Architektur-Entscheidungen (ADRs)
 
-Die Entscheidungen werden in AP 1.0.7 als einzelne Dateien in `docs/adr/` festgehalten:
+Die Entscheidungen sind als einzelne Dateien in [`docs/adr/`](adr/README.md) festgehalten:
 
 | Nr | Entscheidung |
 |---|---|
