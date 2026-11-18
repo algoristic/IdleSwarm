@@ -73,10 +73,14 @@ src/app/
   core/
     state/game-state.ts
     rules/commands.ts           # Kommando-Typen + apply()
-    rules/units.ts, migrate.ts, combat.ts, genome.ts, pheromones.ts, finds.ts
-    sim/step.ts, catch-up.ts, runner.ts, bots/
+    rules/units.ts, site.ts
+    rules/migrate.ts, combat.ts, genome.ts, pheromones.ts, finds.ts  # geplant
+    sim/step.ts, collect.ts, brood.ts, runner.ts
+    sim/bots/bot.ts, active.ts, idle.ts
+    sim/catch-up.ts             # geplant
     balance/constants.ts, formulas.ts
-    data/units.ts, genome-era1.ts, sites-era1.ts, finds-era1.ts, texts.de.ts
+    data/units.ts, sites-era1.ts, texts.de.ts
+    data/genome-era1.ts, finds-era1.ts  # geplant
     save/serialize.ts, slots.ts, migrations/
     num/num.ts, format.ts
     rng/rng.ts
@@ -91,13 +95,16 @@ src/app/
     scene/                      # Canvas-Renderer
     sonar/                      # SVG-Karte + Detailpanel
     genome/                     # SVG-Genom + Detailpanel
-    hud/                        # Ressourcen, Titel, Aktionsleiste, Zoom-Leiste, Log, Ära
+    hud/                        # Prototyp-HUD: hud-page, feeding-site, buy-button, hud-meter, hud-format
+                                # geplant: Titel, Zoom-Leiste, Log, Ära
     drawers/                    # Pheromone, Funde
     dialogs/                    # Rückkehr-Zusammenfassung, Einstellungen, Export
   model/                        # Modell-Seite (lazy)
-    model-page.component.ts
-    charts/echart.component.ts
-    panels/parameters, bots, warnings
+    model-page.ts, model-route.guard.ts, model-form.ts, model-format.ts, model-texts.de.ts
+    metrics.ts, params.ts, wait-share.ts
+    charts/echart.ts, chart-options.ts, chart-theme.ts
+    sim/sim.worker.ts, sim-client.ts, sim-core.ts, sim-protocol.ts, reduce-result.ts
+    ui/model-params.ts, model-charts.ts, model-metrics.ts
 ```
 
 ### 3.3 Datenfluss
@@ -188,13 +195,19 @@ Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `core/balance`. Spiel
 ### 5.3 Headless-Runner und Bots
 
 ```ts
-interface Bot { name: string; decide(state: GameState, view: Derived): Command[] }
-runSimulation({ seed, params, bot, duration, sampleEvery }): SimResult
-// SimResult: Zeitreihen (Ressourcen, Einheiten, Raten), Ereignisse, Kennzahlen
+interface Bot {
+  name: string;
+  nextActionMs(afterMs: number): number;
+  decide(state: GameState, view: BotView): readonly Command[];
+}
+runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTimeMs? }): SimResult
+// SimResult: Zeitreihen (Ressourcen, Einheiten, Raten), Ereignisse, Kennzahlen; nur JSON-Werte
 ```
 
 - Der Runner läuft im **Web Worker**, damit die Modell-Seite flüssig bleibt; in Vitest läuft er direkt.
-- Bots: **Aktiv** (Klicks mit realistischer Rate, kauft das Beste), **Idle** (nur Pheromone und Strategie, schaut alle X h vorbei), **Drohnen-lastig**, **Soldaten-lastig**.
+- `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Klicks liegen also exakt auf ihrer Zeit.
+- Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten, die Futterstellen werden zusammengefasst.
+- Bots ab M1.1: **Aktiv** (Klicks mit realistischer Rate, kauft das Beste), **Idle** (klickt nicht, schaut alle 5 min vorbei und kauft alles Bezahlbare). Ab M1.2: **Drohnen-lastig**, **Soldaten-lastig**.
 - `params` überschreibt Konstanten aus `core/balance`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
 
 ### 5.4 Kennzahlen
@@ -214,18 +227,20 @@ runSimulation({ seed, params, bot, duration, sampleEvery }): SimResult
 
 ```
 ┌ Parameter ─────┐ ┌ Diagramme ──────────────────────────────────────┐
-│ Seed           │ │ [Ressourcen] [Raten] [Entscheidungen] [Zyklen]  │
-│ Dauer 1h…7d    │ │ [Upgrades]                                      │
-│ Bots ☑☑☐☐      │ │  ▁▂▃▅▇  log ▾  ─ Zielband ░░                    │
-│ Konstanten …   │ │  Markierungen: ▲ Weiterzug ● Adaption ✦ Fund    │
-│ [Basislauf] [▶]│ ├ Warnungen ──────────────────────────────────────┤
-│ [JSON export]  │ │ ⚠ 00:42 Aktiv: 12 min ohne Entscheidung         │
+│ Seed           │ │ [Ressourcen] [Raten] [Entscheidungen]           │
+│ Dauer 1h…7d    │ │                                                 │
+│ Bots ☑☑        │ │  ▁▂▃▅▇  log ▾  Zoom                             │
+│ Konstanten …   │ │  Markierungen: ▲ Kauf ◆ leer ● neue Futterstelle│
+│ [Basislauf] [▶]│ ├ Kennzahlen ─────────────────────────────────────┤
+│ [JSON export]  │ │ je Bot: Käufe, Wartezeit, Futterstellen, …      │
 └────────────────┘ └─────────────────────────────────────────────────┘
 ```
 
-- Erreichbar unter `/modell`. Im Produktiv-Build ist die Seite nur per Flag erreichbar (z. B. `?dev`) und nicht verlinkt.
+- Erreichbar unter `/modell`. Im Produktiv-Build ist die Seite nur mit `?dev` erreichbar und nicht verlinkt.
+- **Reiter in M1.1:** Ressourcen (Nahrung, Vorrat, Einheiten), Raten (Nahrung/s, Netto/s, Eier/min) und Entscheidungen (Zeit bis zum nächsten Kauf je Einheit und gesamt). Zyklen folgen ab AP 1.2.9, Upgrades ab AP 1.3.7.
+- **Kennzahlen je Bot:** erster Kauf, Kauflücken und längste Wartezeit der ersten 30 min, erste Futterstelle, Anzahl und Median der Futterstellen, längste Strecke ohne Kauf, Verdopplungszeit, Anteil Wartezeit, Käufe gesamt und Rechendauer.
 - **Vergleich:** Ein gespeicherter Basislauf und der aktuelle Lauf liegen übereinander.
-- **Zielbänder:** Die Pacing-Ziele aus dem [Projektplan](projektplan.md#35-pacing-ziele-vorläufig) liegen als Konfiguration in `core/balance/targets.ts` und werden als Flächen angezeigt. Verletzungen landen in der Warnliste.
+- **Zielbänder (ab AP 1.3.7):** Die Pacing-Ziele aus dem [Projektplan](projektplan.md#35-pacing-ziele-vorläufig) liegen dann als Konfiguration in `core/balance/targets.ts` und werden als Flächen angezeigt. Verletzungen landen in einer Warnliste.
 
 ### 5.6 Balancing als Test
 

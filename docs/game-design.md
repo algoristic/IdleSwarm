@@ -189,29 +189,54 @@ Die stabile ID der ersten Futterstelle ist `vent` (Schlot). Wie überall speiche
 
 **Migration von Version 1:** Seed, RNG-Zustand und Zeiten bleiben erhalten. Futterstelle, Kaufzähler, Ressourcen und Einheiten werden auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt.
 
-## 6. Plausibilitätsrechnung
+## 6. Messwerte v1
 
-> **Grobe Schätzung.** Die Werte stammen aus einer vorläufigen Überschlagssimulation mit vereinfachten Bots. Sie sind keine Messung und werden mit dem Headless-Runner (AP 1.1.7) überprüft.
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.1.8). Die Werte v1 bleiben unverändert. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. **Die Mess-Definitionen unten sind vorläufig, die Entscheidung des Product Owners ist offen.**
 
-**Annahmen**
+**Messaufbau**
 
-- Formeln und Werte wie oben, `dt = 0,1`.
-- **Aktiv:** 2–5 Klicks/s, kauft sofort, was bezahlbar ist. Geprüft mit Königin vor Drohne, mit und ohne Soldaten.
-- **Idle:** klickt nicht, schaut alle 10 min vorbei, kauft dann alles Bezahlbare (Königin vor Drohne) und nutzt bei Bedarf „Neue Futterstelle“.
+- Seed `modell`, `stepMs` 1000, Formeln und Werte wie oben. Die Spiellogik zieht noch keinen Zufall, das Ergebnis hängt also nicht vom Seed ab.
+- **Aktiv:** 3 Klicks/s, entscheidet jede Sekunde und kauft die Einheit mit der kürzesten Amortisation. Ist diese noch zu teuer, spart er auf sie. Soldaten kauft er nicht.
+- **Idle:** klickt nicht, schaut alle 5 min vorbei und kauft dann alles Bezahlbare, Königin vor Drohne. Soldaten kauft er nicht.
+- Beide lösen bei leerem Vorrat „Neue Futterstelle“ aus: Aktiv bei der nächsten Entscheidung, Idle beim nächsten Besuch.
 
-| Kennzahl ([Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig)) | Ziel | Schätzung | Einordnung |
-|---|---|---|---|
-| Erste sinnvolle Entscheidung (aktiv) | < 10 s | sofort: 15 Nahrung reichen für die erste Drohne | im Ziel |
-| Zeit zwischen zwei Käufen, erste 30 min (aktiv) | 5–60 s | Median ca. 8–11 s, längste Pause ca. 18–31 s | im Ziel |
-| Dauer der ersten Futterstelle (aktiv) | 3–15 min | ca. 10–13 min | im Ziel |
-| Dauer der ersten Futterstelle (idle) | 10–60 min | ca. 17 min (ganz ohne Käufe ca. 29 min) | im Ziel |
-| Dauer der wiederaufgefüllten Futterstelle (aktiv) | 3–15 min | 2. ca. 3,1–3,5 min, 3. ca. 2,2–2,4 min, 8. ca. 1,1 min | **ab der 3. unter dem Ziel** |
-| Dauer der wiederaufgefüllten Futterstelle (idle) | 10–60 min | 2. ca. 2,6 min, 3. ca. 1,1 min | **unter dem Ziel** |
+**Mess-Definitionen (vorläufig, Entscheidung des Product Owners offen)**
 
-**Auffälligkeiten für das Nachjustieren**
+- Kauflücken und längste Wartezeit der ersten 30 min werden mit `siteSize: 1e12` gemessen, damit das [Provisorium](#44-leere-futterstelle-provisorium-bis-m12) sie nicht verfälscht. Die Futterstellen werden mit der echten Größe 20.000 gemessen.
+- **Längste Wartezeit** (`longestWaitMs`): längste zusammenhängende Strecke der ersten 30 min, in der weder Königin noch Drohne bezahlbar ist.
+- Das Idle-Ziel „< 5 min“ und die Obergrenze 60 s für Aktiv werden über die längste Wartezeit bewertet, weil sonst Besuchsabstand und bewusstes Sparen die Kauflücke bestimmen.
+- **Kauflücke:** Abstand zweier Kaufzeitpunkte; Käufe im selben Moment zählen als einer.
+- **Dauer einer Futterstelle:** von ihrem Beginn bis zum leeren Vorrat, ohne die Zeit bis zur Erneuerung.
+- Die „Durststrecke ohne neue Option“ wird als längste Strecke ohne Kauf gemessen.
+
+| Kennzahl | Futterstelle | Ziel aktiv | Aktiv | Ziel idle | Idle |
+|---|---|---|---|---|---|
+| Erster Kauf | 20.000 | < 10 s | 0 s | – | 0 s |
+| Längste Wartezeit, erste 30 min | `1e12` | ≤ 60 s | 14,7 s | < 5 min | 3 min 15 s |
+| Kauflücken, erste 30 min: Anzahl | `1e12` | – | 92 | – | 6 |
+| Kauflücken, erste 30 min: Median | `1e12` | 5–60 s | 5 s | – | 5 min |
+| Kauflücken, erste 30 min: Maximum | `1e12` | – | 106 s | – | 5 min |
+| Erste Futterstelle | 20.000 | 3–15 min | 9,60 min | 10–60 min | 15,50 min |
+| 2. / 3. / 4. Futterstelle | 20.000 | 3–15 min | 2,71 / 1,91 / 1,53 min | 10–60 min | 2,58 / 1,56 / 1,05 min |
+| Längste Strecke ohne Kauf, 1 h | 20.000 | < 10 min | 3,97 min | < 60 min | 10,00 min |
+| Längste Strecke ohne Kauf, 24 h | 20.000 | < 10 min | 187,73 min | < 60 min | 95,00 min |
+| Längste Strecke ohne Kauf, 24 h | `1e12` | < 10 min | 115,53 min | < 60 min | 30,00 min |
+
+Ergänzend, ohne Zielband: Der Anteil Wartezeit beträgt in den ersten 30 min 11,5 % (Aktiv) und 12,8 % (Idle), jeweils mit `siteSize: 1e12`. Über 24 h mit echter Futterstelle sind es 0,27 % und 59,29 %. Die Nahrungsrate verdoppelt sich im Median alle 225 s (Aktiv) und 354 s (Idle), abgetastet je Minute.
+
+**Außerhalb der Zielbänder oder nur mit der vorläufigen Definition passend**
+
+- **Kauflücken Aktiv:** 40 von 92 Lücken liegen unter 5 s (kürzeste 1 s), 8 über 60 s (63 bis 106 s). Der Median liegt genau an der Untergrenze. Die Obergrenze hält Aktiv nur über die längste Wartezeit ein: In den langen Lücken spart er auf eine Königin, obwohl eine Drohne bezahlbar ist. Die Untergrenze von 5 s deckt die längste Wartezeit nicht ab.
+- **Kauflücken Idle:** Alle 6 Lücken betragen genau 5 min, also den Besuchsabstand. Als Kauflücke wäre „< 5 min“ damit nicht erfüllt. Mit echter Futterstelle gibt es zudem eine Lücke von 10 min, die längste Wartezeit beträgt dort 3 min 35 s.
+- **Wiederaufgefüllte Futterstellen:** Keine liegt im Zielband (Aktiv 0 von 71.347, längste 2,71 min; Idle 0 von 284, längste 2,58 min). Am Ende von 24 h dauern sie nur noch 0,2 s bzw. 0,4 s.
+- **Strecke ohne Kauf über 24 h:** Aktiv verfehlt das Ziel mit und ohne Provisorium. Idle verfehlt es mit echter Futterstelle und hält es nur mit `siteSize: 1e12` ein.
+- **Platz:** Er läuft früh und dauerhaft über, siehe unten.
+
+**Auffälligkeiten**
 
 - **Wiederauffüllen beschleunigt sich selbst:** Der Schwarm bleibt erhalten, die Futterstelle wächst aber nicht mit. Dieser Effekt gehört zum [Provisorium](#44-leere-futterstelle-provisorium-bis-m12) und entfällt mit dem Weiterziehen.
-- **Platz läuft früh über:** Ganz ohne Käufe wird die Warnschwelle nach ca. 3 min erreicht. Der aktive Bot belegt am Ende der ersten Futterstelle ca. 614 von 150 Plätzen (ca. 410 %). In M1.1 hat das keine Folgen, für das Weiterziehen in M1.2 aber schon.
+- **Platz läuft früh über:** Die Warnschwelle wird bei Aktiv nach 24 s erreicht, bei Idle nach 2 min 21 s; die Belegung übersteigt den Platz nach 29 s bzw. 2 min 30 s. Am Ende der ersten Futterstelle sind 750 von 200 Plätzen belegt (375 %, Aktiv) bzw. 706 von 200 (353 %, Idle), nach 30 min 1.426 % bzw. 969 %. In M1.1 hat das keine Folgen, für das Weiterziehen in M1.2 aber schon.
+- **Späte Käufe werden selten:** Aktiv spart spät im Lauf lange auf die nächste Königin, obwohl Drohnen bezahlbar sind. Daher stammt seine längste Strecke ohne Kauf über 24 h.
 - **Die Brut konkurriert mit Käufen:** Eine Königin verbraucht bis zu `0,1 · 13,75 = 1,375` Nahrung/s, das entspricht dem Ertrag von knapp 7 Drohnen. Ohne Klicks und Käufe sinkt die Startnahrung nach ca. 3,6 s unter den Preis der ersten Drohne und ist nach ca. 10,9 s aufgebraucht.
 - **Soldaten binden Nahrung:** Sie machen ein Viertel der Brut aus, aber rund 45 % ihrer Kosten, und haben in M1.1 noch keine spielerische Wirkung.
 

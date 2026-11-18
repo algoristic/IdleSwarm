@@ -25,7 +25,7 @@ Das Spielergebnis darf nicht von der Framerate abhängen. Gleichzeitig braucht d
 - `TICKS_PER_SECOND` und `TICK_MS` in [`core/balance/constants.ts`](../../src/app/core/balance/constants.ts)
 - Mulberry32 und Seed-Hash in [`core/rng/rng.ts`](../../src/app/core/rng/rng.ts)
 - `rngState` in [`core/state/game-state.ts`](../../src/app/core/state/game-state.ts)
-- `step(state, dtMs)` und `syncClock(state, nowMs)` in [`core/sim/step.ts`](../../src/app/core/sim/step.ts); `step` schreibt bisher nur die Zeit fort
+- `step(state, dtMs)` und `syncClock(state, nowMs)` in [`core/sim/step.ts`](../../src/app/core/sim/step.ts); `step` führt Sammeln und Brut aus und schreibt die Zeit fort
 - Logik- und Render-Takt in [`game/game-loop.service.ts`](../../src/app/game/game-loop.service.ts)
 
 **Geplant:**

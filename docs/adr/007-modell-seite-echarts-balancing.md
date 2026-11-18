@@ -19,14 +19,20 @@ Zielwerte, Toleranzen und Snapshot-Inhalte legt dieses ADR nicht fest. Die Pacin
 
 ### Umsetzungsstand
 
-**Umgesetzt:** noch nichts davon; `src/app/model/` enthält noch keinen Code, ECharts ist noch keine Abhängigkeit. [`core/balance/constants.ts`](../../src/app/core/balance/constants.ts) enthält bisher nur die Takt-Konstanten.
+**Umgesetzt:**
+
+- [`core/balance/constants.ts`](../../src/app/core/balance/constants.ts): alle Konstanten aus dem Game-Design als `BalanceParams` mit den Standardwerten `DEFAULT_BALANCE`; [`formulas.ts`](../../src/app/core/balance/formulas.ts) enthält die Formeln.
+- [`core/sim/runner.ts`](../../src/app/core/sim/runner.ts): Headless-Runner `runSimulation` mit Teil-Overrides über `params`, Standard-Schrittweite 1000 ms.
+- [`core/sim/bots/`](../../src/app/core/sim/bots/): Bots „Aktiv“ und „Idle“.
+- [`model/model-page.ts`](../../src/app/model/model-page.ts): lazy Route `/modell` mit Parameter-Panel, Basislauf, JSON-Export, Diagrammen und Kennzahlen.
+- [`model/model-route.guard.ts`](../../src/app/model/model-route.guard.ts): Im Produktiv-Build ist die Route nur mit `?dev` erreichbar, im Entwicklungs-Build immer. Das Spiel verlinkt sie nicht.
+- [`model/charts/echart.ts`](../../src/app/model/charts/echart.ts): eigener Wrapper um Apache ECharts (`^6.1.0`).
+- [`model/sim/sim.worker.ts`](../../src/app/model/sim/sim.worker.ts): Der Runner läuft im Web Worker, [`reduce-result.ts`](../../src/app/model/sim/reduce-result.ts) verkleinert die Ergebnisse vor dem Senden.
 
 **Geplant:**
 
 | Teil | Umsetzung |
 |---|---|
-| Headless-Runner, Bots „Aktiv“ und „Idle“ | ab AP 1.1.7 |
-| Modell-Seite v1 mit ECharts | ab AP 1.1.8 |
 | Zyklen und Stillstand | ab AP 1.2.9 |
 | Upgrade-Wirkung, Zielband, Warnungen | ab AP 1.3.7 |
 | Balancing-Snapshots | ab AP 1.5.5 |
