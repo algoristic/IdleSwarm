@@ -88,7 +88,7 @@ Die Spalte **Stories** verweist auf die User Stories in der [Produktplanung](pro
 | AP | Arbeitspaket | Inhalt | PT | Stories |
 |---|---|---|---|---|
 | 1.1.1 | Game-Design-Spezifikation v1 | `docs/game-design.md`: Formeln, Startwerte, Kostenkurven. Klärt das TODO aus der Projektidee: Kosten der Königinnen je Einheitentyp | 1,5–2 | – |
-| 1.1.2 | Nahrung & Klick | Futterstelle mit Vorrat, Klickertrag, Anzeige des Vorrats | 0,5–1 | US-01.01–01.03 |
+| 1.1.2 | Nahrung & Klick | Futterstelle mit Vorrat, Klickertrag, Anzeige des Vorrats. Provisorisch bis M1.2: Knopf „Neue Futterstelle“ füllt den leeren Vorrat wieder auf ([Game-Design §4.4](game-design.md#44-leere-futterstelle-provisorium-bis-m12)) | 0,5–1 | US-01.01–01.03 |
 | 1.1.3 | Einheiten | Königinnen, Drohnen, Soldaten: Kauf, Kostenkurven, Platz | 1,5–2 | US-02.01–02.04 |
 | 1.1.4 | Brut | Eier/min aus Königinnen, passive Erzeugung (bis M1.3 mit festem Verhältnis) | 1 | US-02.05 |
 | 1.1.5 | Sammeln | Drohnen bauen Nahrung ab, Futterstelle leert sich | 0,5–1 | US-01.04 |
@@ -148,11 +148,11 @@ Die Spalte **Stories** verweist auf die User Stories in der [Produktplanung](pro
 
 ### 3.4 Game-Design-Entscheidungen für AS1
 
-Diese Punkte aus der Projektidee sind noch offen und werden in AP 1.1.1 bzw. im jeweiligen AP entschieden. Der Vorschlag ist der Ausgangspunkt und wird über die Modell-Seite geprüft.
+Diese Punkte aus der Projektidee werden in AP 1.1.1 bzw. im jeweiligen AP entschieden. Ist ein Punkt nicht als **entschieden** markiert, ist er noch offen: Der Vorschlag ist dann der Ausgangspunkt und wird über die Modell-Seite geprüft.
 
-| Frage | Vorschlag | AP |
+| Frage | Vorschlag bzw. Entscheidung | AP |
 |---|---|---|
-| Brauchen Königinnen für Drohnen, Soldaten und Königinnen dieselbe Menge Nahrung? | Nein: eigene Nahrungskosten je Einheitentyp (Drohne < Soldat < Königin). Eier/min ist nur die Brutrate, keine Ressource. | 1.1.1 |
+| Brauchen Königinnen für Drohnen, Soldaten und Königinnen dieselbe Menge Nahrung? | **Entschieden** (siehe [Game-Design](game-design.md#22-einheiten)): Nein, eigene Nahrungskosten je Einheitentyp (Drohne < Soldat < Königin). Eier/min ist nur die Brutrate, keine Ressource. | 1.1.1 |
 | Wie verhindern wir, dass Soldaten ausgehen und der Spieler feststeckt? | Kombination aus Option 1 und 3 der Projektidee: **Drohnen opfern** mit Umwandlungsverlust (per Genom verringerbar) **und** garantierte Futterstelle mit Abwehr 0 in Reichweite. Keine pluripotenten Drohnen. | 1.2.1, 1.2.5 |
 | Wie hängt die Pheromon-Gesamtzahl mit der Brutrate zusammen? | Brutrate = Königinnen × Basisrate × f(Pheromon-Gesamtzahl); das Verhältnis teilt nur auf Drohnen und Soldaten auf. Königinnen werden nur gezielt gekauft. | 1.3.4 |
 | Was passiert mit zurückgelassenen Einheiten? | Sie gehen verloren (ohne Rückerstattung); die Mitnahme-Priorität entscheidet, wer bleibt. | 1.2.4 |

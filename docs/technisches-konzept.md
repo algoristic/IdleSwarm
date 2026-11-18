@@ -166,7 +166,9 @@ IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil*
 
 Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `core/balance`. Spiel, Offline-Catch-up, Headless-Runner und Modell-Seite rufen dieselben Funktionen auf. Die Modell-Seite enthält keine Kopie der Spiellogik.
 
-### 5.2 Modellgrößen (Entwurf, wird in AP 1.1.1 als `docs/game-design.md` finalisiert)
+### 5.2 Modellgrößen (Entwurf für spätere Größen)
+
+> Für M1.1 ist die [Game-Design-Spezifikation](game-design.md) maßgeblich. Die Tabelle bleibt als Entwurf für spätere Größen stehen; bei Abweichungen gilt die Spezifikation.
 
 | Größe | Formel (Entwurf) |
 |---|---|
