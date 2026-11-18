@@ -1,3 +1,8 @@
 import { Routes } from '@angular/router';
 
-export const routes: Routes = [];
+import { StatusPage } from './ui/status/status-page';
+
+export const routes: Routes = [
+  { path: '', pathMatch: 'full', component: StatusPage },
+  { path: '**', redirectTo: '' },
+];

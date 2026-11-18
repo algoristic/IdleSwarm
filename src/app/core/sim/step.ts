@@ -31,3 +31,18 @@ export function step(state: GameState, dtMs: number): StepResult {
     events: NO_EVENTS,
   };
 }
+
+/**
+ * Setzt `time.now` auf die echte Zeit, ohne dass Spielzeit vergeht (`played` bleibt).
+ *
+ * @throws RangeError bei negativem oder nicht endlichem `nowMs`.
+ */
+export function syncClock(state: GameState, nowMs: number): GameState {
+  if (!Number.isFinite(nowMs) || nowMs < 0) {
+    throw new RangeError(`syncClock: ungültiges nowMs ${nowMs}`);
+  }
+  if (nowMs === state.time.now) {
+    return state;
+  }
+  return { ...state, time: { ...state.time, now: nowMs } };
+}

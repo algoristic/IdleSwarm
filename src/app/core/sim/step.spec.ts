@@ -1,6 +1,6 @@
 import { TICK_MS, TICKS_PER_SECOND } from '../balance/constants';
 import { createInitialState, GameState } from '../state/game-state';
-import { step } from './step';
+import { step, syncClock } from './step';
 
 const NOW = 1_700_000_000_000;
 
@@ -68,5 +68,27 @@ describe('step', () => {
     expect(state.res).toBe(input.res);
     expect(state.units).toBe(input.units);
     expect(state.rngState).toBe(input.rngState);
+  });
+});
+
+describe('syncClock', () => {
+  const createState = (): GameState =>
+    deepFreeze(step(createInitialState({ seed: 'sync', now: NOW }), TICK_MS).state);
+
+  it('setzt nur time.now und lässt played und lastSaved unverändert', () => {
+    const input = createState();
+    const state = syncClock(input, NOW + 60_000);
+    expect(state.time).toEqual({ now: NOW + 60_000, lastSaved: NOW, played: TICK_MS });
+    expect(state.res).toBe(input.res);
+    expect(input.time.now).toBe(NOW + TICK_MS);
+  });
+
+  it('gibt bei gleichem Wert dieselbe Referenz zurück', () => {
+    const input = createState();
+    expect(syncClock(input, input.time.now)).toBe(input);
+  });
+
+  it.each([-1, Number.NaN, Infinity, -Infinity])('wirft bei ungültigem nowMs %d', (nowMs) => {
+    expect(() => syncClock(createState(), nowMs)).toThrow(RangeError);
   });
 });

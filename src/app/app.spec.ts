@@ -1,18 +1,30 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+
 import { App } from './app';
+import { routes } from './app.routes';
 
 describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [App],
-    }).compileComponents();
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [App], providers: [provideRouter(routes)] });
   });
 
-  it('zeigt den Titel IdleSwarm', async () => {
+  it('enthält nur den Router-Outlet', () => {
     const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
+    fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('h1')?.textContent).toBe('IdleSwarm');
+    expect(Array.from(element.children, (child) => child.tagName)).toEqual(['ROUTER-OUTLET']);
+  });
+
+  it('lädt auf der Default-Route die Statusseite', async () => {
+    const harness = await RouterTestingHarness.create('/');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('IdleSwarm');
+  });
+
+  it('leitet unbekannte Pfade auf die Statusseite um', async () => {
+    const harness = await RouterTestingHarness.create('/gibt-es-nicht');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('IdleSwarm');
   });
 });
