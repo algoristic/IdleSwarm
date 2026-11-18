@@ -11,7 +11,7 @@ function play(seed: string): { json: string; values: number[] } {
   let state = createInitialState({ seed, now: NOW });
   const values: number[] = [];
   for (let i = 0; i < 1000; i++) {
-    state = apply(state, { type: 'noop' });
+    state = apply(state, { type: i % 2 === 0 ? 'click' : 'newSite' });
     state = step(state, TICK_MS).state;
     if (i % 3 === 0) {
       const result = drawRandom(state);

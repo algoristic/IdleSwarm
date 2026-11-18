@@ -33,7 +33,7 @@ Ohne Backend liegen Spielstände vollständig im Browser ([ADR-008](008-kein-bac
 
 - [`serialize.ts`](../../src/app/core/save/serialize.ts): Kodierung und Validierung
 - [`slots.ts`](../../src/app/core/save/slots.ts): Slots, Speichern und Laden über die Schnittstelle `KeyValueStore`, der `localStorage` genügt
-- [`migrations/index.ts`](../../src/app/core/save/migrations/index.ts): Migrationskette und `SaveError`. Die Registry ist leer, weil es nur Version 1 gibt.
+- [`migrations/index.ts`](../../src/app/core/save/migrations/index.ts): Migrationskette und `SaveError`. Die Registry enthält die Migration von Version 1 auf die aktuelle Version 2 ([`v1-to-v2.ts`](../../src/app/core/save/migrations/v1-to-v2.ts)).
 
 **Umgesetzt** in [`game/persistence.service.ts`](../../src/app/game/persistence.service.ts): Laden beim Start, Autosave, Hinweise an die Oberfläche und das erneute Laden nach einem gescheiterten Speicherzugriff. Ein unveränderter Zustand wird nicht erneut geschrieben, damit ein zweites Ereignis beim Verlassen das Backup nicht verdrängt.
 

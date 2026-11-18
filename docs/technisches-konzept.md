@@ -144,7 +144,7 @@ interface GameState {
 }
 ```
 
-Save-Version 1 enthält nach Entscheidung des Product Owners nur `version`, `seed`, `rngState`, `time`, `era`, `res` und `units`. Der Rest des Entwurfs kommt mit den jeweiligen Mechaniken über Migrationen.
+Save-Version 2 enthält `version`, `seed`, `rngState`, `time`, `era`, `res`, `units`, `site` und `bought` ([Game-Design §5](game-design.md#5-spielstand-version-2)). Der Rest des Entwurfs kommt mit den jeweiligen Mechaniken über Migrationen.
 
 IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil**. Spielstände speichern nur IDs, keine Texte oder Werte.
 
@@ -257,7 +257,7 @@ export const GENOME_ERA1: GenomeNode[] = [
 | Speicherort | `localStorage`, Schlüssel `idleswarm.save`; zusätzlich ein Backup-Slot des vorletzten Stands und der Slot `idleswarm.save.unreadable`: Ein unlesbarer Primär-Stand wird beim nächsten Speichern dorthin verschoben statt überschrieben |
 | Format | JSON → komprimiert (`lz-string`) → Base64; `Num` als String serialisiert |
 | Autosave | alle 30 s (einstellbar), bei `visibilitychange` (hidden) und `pagehide` |
-| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/index.ts` (noch leer, aktuell Version 1) |
+| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/index.ts` (aktuell Version 2, mit der Migration 1→2) |
 | Robustheit | Validierung beim Laden. Bei einem Fehler wird der Backup-Slot geladen und der Spieler informiert |
 | Export/Import | derselbe String zum Kopieren; Import validiert und migriert |
 | Später | Cloud-Sync optional (Querschnittsthema), ohne Änderung am Format |

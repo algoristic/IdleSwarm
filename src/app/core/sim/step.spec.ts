@@ -1,4 +1,4 @@
-import { TICK_MS, TICKS_PER_SECOND } from '../balance/constants';
+import { DEFAULT_BALANCE, TICK_MS, TICKS_PER_SECOND } from '../balance/constants';
 import { createInitialState, GameState } from '../state/game-state';
 import { step, syncClock } from './step';
 
@@ -35,10 +35,18 @@ describe('step', () => {
     const { state } = step(input, TICK_MS);
     expect(state.res).toBe(input.res);
     expect(state.units).toBe(input.units);
+    expect(state.site).toBe(input.site);
+    expect(state.bought).toBe(input.bought);
     expect(state.rngState).toBe(input.rngState);
     expect(state.seed).toBe(input.seed);
     expect(state.era).toBe(input.era);
     expect(state.version).toBe(input.version);
+  });
+
+  it('nimmt Parameter an, ohne dass sie bisher etwas bewirken', () => {
+    const input = createState();
+    const params = { ...DEFAULT_BALANCE, droneCollectRate: 5 };
+    expect(step(input, TICK_MS, params)).toEqual(step(input, TICK_MS));
   });
 
   it.each([0, -0])('gibt bei dtMs %d denselben Zustand zurück', (dtMs) => {

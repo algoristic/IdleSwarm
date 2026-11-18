@@ -1,8 +1,10 @@
+import { BalanceParams, DEFAULT_BALANCE } from '../balance/constants';
+import { SiteTypeId, START_SITE_TYPE } from '../data/sites-era1';
 import { Num } from '../num/num';
 import { seedToRngState } from '../rng/rng';
 
 /** Aktuelle Version des Zustandsformats. */
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 export type Era = 'ursuppe';
 
@@ -24,6 +26,13 @@ export interface Units {
   readonly soldiers: Num;
 }
 
+/** Aktuelle Futterstelle; `stock` liegt immer zwischen 0 und `size`. */
+export interface Site {
+  readonly type: SiteTypeId;
+  readonly size: Num;
+  readonly stock: Num;
+}
+
 /** Unveränderlicher Spielzustand; Änderungen erzeugen neue Objekte. */
 export interface GameState {
   readonly version: number;
@@ -34,6 +43,9 @@ export interface GameState {
   readonly era: Era;
   readonly res: Resources;
   readonly units: Units;
+  readonly site: Site;
+  /** Manuell gekaufte Einheiten je Typ; Grundlage der Preise, passive Brut zählt nicht. */
+  readonly bought: Units;
 }
 
 export interface InitialStateOptions {
@@ -42,15 +54,21 @@ export interface InitialStateOptions {
   readonly now: number;
 }
 
-/** Erzeugt den Startzustand; alle Mengen sind neutrale Platzhalter (`Num.ZERO`). */
-export function createInitialState({ seed, now }: InitialStateOptions): GameState {
+/** Erzeugt den Startzustand nach Game-Design §2.1. */
+export function createInitialState(
+  { seed, now }: InitialStateOptions,
+  params: BalanceParams = DEFAULT_BALANCE,
+): GameState {
+  const siteSize = Num.from(params.siteSize);
   return {
     version: STATE_VERSION,
     seed,
     rngState: seedToRngState(seed),
     time: { now, lastSaved: now, played: 0 },
     era: 'ursuppe',
-    res: { food: Num.ZERO, dna: Num.ZERO },
-    units: { queens: Num.ZERO, drones: Num.ZERO, soldiers: Num.ZERO },
+    res: { food: Num.from(params.startFood), dna: Num.ZERO },
+    units: { queens: Num.from(params.startQueens), drones: Num.ZERO, soldiers: Num.ZERO },
+    site: { type: START_SITE_TYPE, size: siteSize, stock: siteSize },
+    bought: { queens: Num.ZERO, drones: Num.ZERO, soldiers: Num.ZERO },
   };
 }

@@ -1,7 +1,8 @@
 import { compressToBase64, decompressFromBase64 } from 'lz-string';
 
+import { isSiteTypeId } from '../data/sites-era1';
 import { Num } from '../num/num';
-import { GameState, STATE_VERSION } from '../state/game-state';
+import { GameState, Site, STATE_VERSION, Units } from '../state/game-state';
 import { isRecord, migrate, SaveError } from './migrations/index';
 
 export { SaveError } from './migrations/index';
@@ -57,6 +58,29 @@ function readAmount(value: unknown, path: string): Num {
   return amount;
 }
 
+function readUnits(value: unknown, path: string): Units {
+  const units = readRecord(value, path);
+  return {
+    queens: readAmount(units['queens'], `${path}.queens`),
+    drones: readAmount(units['drones'], `${path}.drones`),
+    soldiers: readAmount(units['soldiers'], `${path}.soldiers`),
+  };
+}
+
+function readSite(value: unknown): Site {
+  const site = readRecord(value, 'site');
+  const type = site['type'];
+  if (!isSiteTypeId(type)) {
+    throw invalid('site.type');
+  }
+  const size = readAmount(site['size'], 'site.size');
+  const stock = readAmount(site['stock'], 'site.stock');
+  if (stock.gt(size)) {
+    throw invalid('site.stock');
+  }
+  return { type, size, stock };
+}
+
 /** Prüft einen rohen Stand der aktuellen Version und übernimmt nur die bekannten Felder. */
 function toGameState(value: unknown): GameState {
   const raw = readRecord(value, 'Spielstand');
@@ -72,7 +96,6 @@ function toGameState(value: unknown): GameState {
   }
   const time = readRecord(raw['time'], 'time');
   const res = readRecord(raw['res'], 'res');
-  const units = readRecord(raw['units'], 'units');
   return {
     version: STATE_VERSION,
     seed,
@@ -87,11 +110,9 @@ function toGameState(value: unknown): GameState {
       food: readAmount(res['food'], 'res.food'),
       dna: readAmount(res['dna'], 'res.dna'),
     },
-    units: {
-      queens: readAmount(units['queens'], 'units.queens'),
-      drones: readAmount(units['drones'], 'units.drones'),
-      soldiers: readAmount(units['soldiers'], 'units.soldiers'),
-    },
+    units: readUnits(raw['units'], 'units'),
+    site: readSite(raw['site']),
+    bought: readUnits(raw['bought'], 'bought'),
   };
 }
 

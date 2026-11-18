@@ -1,4 +1,5 @@
 import { STATE_VERSION } from '../../state/game-state';
+import { migrateV1ToV2 } from './v1-to-v2';
 
 /**
  * Fehlerarten beim Lesen und Schreiben von Spielständen. `storage` steht für einen Fehler des
@@ -34,7 +35,7 @@ export interface MigrateOptions {
   readonly target?: number;
 }
 
-export const MIGRATIONS: MigrationRegistry = {};
+export const MIGRATIONS: MigrationRegistry = { 1: migrateV1ToV2 };
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

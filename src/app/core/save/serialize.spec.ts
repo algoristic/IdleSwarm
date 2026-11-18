@@ -19,6 +19,8 @@ function sampleState(): GameState {
     time: { now: NOW + 5000, lastSaved: NOW, played: 5000 },
     res: { food: Num.from('1.284e3'), dna: Num.from(7.5) },
     units: { queens: Num.from(3), drones: Num.from(42), soldiers: Num.ZERO },
+    site: { type: 'vent', size: Num.from(20000), stock: Num.from(1234.5) },
+    bought: { queens: Num.from(2), drones: Num.from(40), soldiers: Num.ZERO },
   };
 }
 
@@ -72,6 +74,9 @@ describe('encodeSave und decodeSave', () => {
     expect(decoded.res.food).toBeInstanceOf(Num);
     expect(decoded.res.food.eq(1284)).toBe(true);
     expect(decoded.units.soldiers.isZero()).toBe(true);
+    expect(decoded.site.stock).toBeInstanceOf(Num);
+    expect(decoded.site.stock.eq(1234.5)).toBe(true);
+    expect(decoded.bought.drones.eq(40)).toBe(true);
   });
 
   it.each(['1.5e1000000', '9.999999999e8999999999999999', '1.23456789012345e308', '1e-5'])(
@@ -89,6 +94,8 @@ describe('encodeSave und decodeSave', () => {
     const json = JSON.parse(decompressFromBase64(encodeSave(sampleState())));
     expect(json.version).toBe(STATE_VERSION);
     expect(json.res.food).toBe('1.284e3');
+    expect(json.site).toEqual({ type: 'vent', size: '2e4', stock: '1.2345e3' });
+    expect(json.bought).toEqual({ queens: '2e0', drones: '4e1', soldiers: '0e0' });
   });
 
   it('verändert den Eingabezustand nicht', () => {
@@ -98,6 +105,8 @@ describe('encodeSave und decodeSave', () => {
     Object.freeze(state.time);
     Object.freeze(state.res);
     Object.freeze(state.units);
+    Object.freeze(state.site);
+    Object.freeze(state.bought);
     encodeSave(state);
     expect(JSON.stringify(state)).toBe(before);
   });
@@ -111,24 +120,35 @@ describe('encodeSave und decodeSave', () => {
     ['NaN in der Zeit', { time: { now: NaN, lastSaved: 0, played: 0 } }],
     ['negative Menge', { res: { food: Num.from(-1), dna: Num.ZERO } }],
     ['fremde Version', { version: STATE_VERSION + 1 }],
+    ['Vorrat über der Größe', { site: { type: 'vent', size: Num.ONE, stock: Num.from(2) } }],
   ])('schreibt keinen unlesbaren Stand: %s', (_name, patch) => {
     expect(codeOf(() => encodeSave({ ...sampleState(), ...patch }))).toBe('invalid');
   });
 });
 
 describe('eingefrorener Spielstand der Version 1', () => {
-  it('bleibt ladbar', () => {
+  it('bleibt ladbar und behält Seed, RNG-Zustand und Zeiten', () => {
     const state = decodeSave(FROZEN_V1_SAVE);
     expect(state.version).toBe(STATE_VERSION);
     expect(state.seed).toBe('idleswarm');
     expect(state.rngState).toBe(1378881061);
     expect(state.time).toEqual({ now: 1700000360000, lastSaved: 1700000300000, played: 360000 });
     expect(state.era).toBe('ursuppe');
-    expect(state.res.food.toString()).toBe('1.284e3');
-    expect(state.res.dna.toString()).toBe('7.5e0');
-    expect(state.units.queens.toString()).toBe('3e0');
-    expect(state.units.drones.toString()).toBe('4.2e1');
-    expect(state.units.soldiers.toString()).toBe('1.5e1000000');
+  });
+
+  it('bekommt die Startwerte von Version 2', () => {
+    const state = decodeSave(FROZEN_V1_SAVE);
+    expect(JSON.parse(JSON.stringify(state))).toMatchObject({
+      res: { food: '1.5e1', dna: '0e0' },
+      units: { queens: '1e0', drones: '0e0', soldiers: '0e0' },
+      site: { type: 'vent', size: '2e4', stock: '2e4' },
+      bought: { queens: '0e0', drones: '0e0', soldiers: '0e0' },
+    });
+  });
+
+  it('lässt sich nach der Migration wieder speichern und laden', () => {
+    const state = decodeSave(FROZEN_V1_SAVE);
+    expectSameState(decodeSave(encodeSave(state)), state);
   });
 });
 
@@ -203,6 +223,27 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     ['units.drones', 1],
     ['units.soldiers', undefined],
     ['units.soldiers', '-5e-1'],
+    ['site', undefined],
+    ['site', 'vent'],
+    ['site.type', undefined],
+    ['site.type', 'schlot'],
+    ['site.type', 'constructor'],
+    ['site.type', 1],
+    ['site.size', undefined],
+    ['site.size', 20000],
+    ['site.size', '-1e0'],
+    ['site.stock', undefined],
+    ['site.stock', 5],
+    ['site.stock', '-1e0'],
+    ['site.stock', '2.00001e4'],
+    ['bought', undefined],
+    ['bought', []],
+    ['bought.queens', undefined],
+    ['bought.queens', '-1e0'],
+    ['bought.drones', undefined],
+    ['bought.drones', 1],
+    ['bought.soldiers', undefined],
+    ['bought.soldiers', 'abc'],
   ])('meldet invalid für %s = %j', (path, value) => {
     expect(codeOf(() => decodeSave(encodeRaw(withField(path, value))))).toBe('invalid');
   });
@@ -222,6 +263,11 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     expect(state.seed).toBe('');
   });
 
+  it.each(['0e0', '2e4'])('akzeptiert den Vorrat %s innerhalb der Größe', (stock) => {
+    const state = decodeSave(encodeRaw(withField('site.stock', stock)));
+    expect(state.site.stock.toString()).toBe(stock);
+  });
+
   it('meldet future-version für neuere Stände', () => {
     expect(codeOf(() => decodeSave(encodeRaw(withField('version', STATE_VERSION + 1))))).toBe(
       'future-version',
@@ -234,6 +280,8 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     (raw['time'] as Record<string, unknown>)['extra'] = 1;
     (raw['res'] as Record<string, unknown>)['extra'] = '1e0';
     (raw['units'] as Record<string, unknown>)['extra'] = '1e0';
+    (raw['site'] as Record<string, unknown>)['extra'] = '1e0';
+    (raw['bought'] as Record<string, unknown>)['extra'] = '1e0';
     expectSameState(decodeSave(encodeRaw(raw)), sampleState());
   });
 

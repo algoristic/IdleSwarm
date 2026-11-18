@@ -1,3 +1,4 @@
+import { BalanceParams, DEFAULT_BALANCE } from '../balance/constants';
 import type { GameState } from '../state/game-state';
 
 /** Ereignisse eines Schritts; noch leer, neue Varianten werden hier ergänzt. */
@@ -15,7 +16,13 @@ const NO_EVENTS: readonly GameEvent[] = Object.freeze([]);
  *
  * @throws RangeError bei negativem oder nicht endlichem `dtMs`.
  */
-export function step(state: GameState, dtMs: number): StepResult {
+export function step(
+  state: GameState,
+  dtMs: number,
+  // Noch ungenutzt: Sammeln und Brut kommen mit AP 1.1.4 und 1.1.5.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  params: BalanceParams = DEFAULT_BALANCE,
+): StepResult {
   if (!Number.isFinite(dtMs) || dtMs < 0) {
     throw new RangeError(`step: ungültiges dtMs ${dtMs}`);
   }
