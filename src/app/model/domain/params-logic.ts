@@ -1,5 +1,11 @@
 import { BalanceParams } from '@app/balance/domain/constants';
-import { SITE_TYPE_PARAMS } from '@app/balance/domain/formulas';
+import {
+  GENOME_NODE_PARAMS,
+  SITE_TYPE_PARAMS,
+  UNIQUE_ADAPTATION_PARAMS,
+} from '@app/balance/domain/formulas';
+import { GENOME_NODES, UNIQUE_ADAPTATIONS } from '@app/genome/domain/data/genome-era1.data';
+import type { EffectSpec } from '@app/genome/domain/models/genome.model';
 import { NumberRange, parseDecimal } from '@app/shared/util/parse/parse';
 
 export type ParamKey = keyof BalanceParams;
@@ -50,9 +56,53 @@ const FIND_CHANCE_KEYS: ReadonlySet<ParamKey> = new Set(
 );
 const WEIGHT_KEYS: ReadonlySet<ParamKey> = new Set(SITE_TYPE_KEYS.map((keys) => keys.weight));
 
-/** Grenzen der Konstante; Anteile in [0; 1], Zählwerte ganzzahlig, sonst ab 0. */
+/** Steigernde Faktoren `mul ≥ 1` (Datenregel, Game-Design §4.13). */
+const RAISING_FACTOR_LIMIT: ParamLimit = { min: 1 };
+const POINTS_LIMIT: ParamLimit = { min: 0, integer: true };
+const FRAGMENTS_LIMIT: ParamLimit = { min: 1, integer: true };
+
+/**
+ * Grenze eines Effektwerts nach Ziel und Operation (Datenregel aus `isValidEffect`): `add ≥ 0`, bei
+ * Pheromonpunkten ganzzahlig; `mul ≥ 1`, senkend (`combatLoss`) in [0; 1]. 0 und 1 bleiben als
+ * Grenzfälle erlaubt (kein Verlust bzw. ohne Wirkung), weil `NumberRange` nur einschließt.
+ */
+function effectLimit(spec: EffectSpec): ParamLimit {
+  if (spec.op === 'add') {
+    return spec.target === 'pheromonePoints' ? POINTS_LIMIT : DEFAULT_LIMIT;
+  }
+  return spec.target === 'combatLoss' ? SHARE_LIMIT : RAISING_FACTOR_LIMIT;
+}
+
+/** Effekt mit Zahl einer Quelle; höchstens einer je Quelle (Game-Design §2.3, Parameter je ID). */
+function valueEffectLimit(effects: readonly EffectSpec[]): ParamLimit {
+  const spec = effects.find((effect) => effect.op !== 'unlock');
+  return spec === undefined ? DEFAULT_LIMIT : effectLimit(spec);
+}
+
+// Je Adaption aus den Tabellen in `balance` und den Spieldaten, damit neue Knoten von selbst erfasst werden.
+const GENOME_LIMITS: ReadonlyMap<ParamKey, ParamLimit> = new Map([
+  ...GENOME_NODES.map(
+    (node) => [GENOME_NODE_PARAMS[node.id].effect, valueEffectLimit(node.effects)] as const,
+  ),
+  ...UNIQUE_ADAPTATIONS.flatMap((adaptation) => {
+    const keys = UNIQUE_ADAPTATION_PARAMS[adaptation.id];
+    return [
+      [keys.effect, valueEffectLimit(adaptation.effects)] as const,
+      [keys.fragments, FRAGMENTS_LIMIT] as const,
+    ];
+  }),
+]);
+
+/**
+ * Grenzen der Konstante; Anteile in [0; 1], Zählwerte ganzzahlig, Effektwerte nach der Datenregel,
+ * sonst ab 0.
+ */
 export function paramLimit(key: ParamKey): ParamLimit {
-  return PARAM_LIMITS[key] ?? (FIND_CHANCE_KEYS.has(key) ? SHARE_LIMIT : DEFAULT_LIMIT);
+  return (
+    PARAM_LIMITS[key] ??
+    GENOME_LIMITS.get(key) ??
+    (FIND_CHANCE_KEYS.has(key) ? SHARE_LIMIT : DEFAULT_LIMIT)
+  );
 }
 
 export function formatParam(value: number): string {

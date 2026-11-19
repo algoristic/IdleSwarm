@@ -164,4 +164,30 @@ describe('apply', () => {
       expect(apply(state, { type: 'setAutoMove', threshold: Number.NaN })).toBe(state);
     });
   });
+
+  describe('evolve (Game-Design §4.14)', () => {
+    const rich = Object.freeze({
+      ...state,
+      res: Object.freeze({ ...state.res, dna: Num.from(10) }),
+    });
+
+    it('entwickelt einen Knoten für DNA und meldet `evolved`', () => {
+      const result = applyCommand(rich, { type: 'evolve', node: 'cilia-1' });
+      expect(result.state.genome.owned).toEqual(['cilia-1']);
+      expect(result.state.res.dna.eq(2)).toBe(true);
+      expect(result.events).toHaveLength(1);
+      expect(result.events[0]).toMatchObject({
+        type: 'evolved',
+        node: 'cilia-1',
+        playedMs: rich.time.played,
+      });
+    });
+
+    it('gibt ohne Wirkung denselben Zustand ohne Ereignisse zurück', () => {
+      const result = applyCommand(rich, { type: 'evolve', node: 'cilia-2' });
+      expect(result.state).toBe(rich);
+      expect(result.events).toEqual([]);
+      expect(apply(state, { type: 'evolve', node: 'cilia-1' })).toBe(state);
+    });
+  });
 });

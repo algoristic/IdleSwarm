@@ -84,4 +84,10 @@ describe('eventLogText', () => {
       'Futterstelle leer: Hydrothermaler Schlot',
     );
   });
+
+  it('meldet eine entwickelte Adaption mit Namen und Kosten', () => {
+    expect(
+      eventLogText({ type: 'evolved', playedMs: 0, node: 'chemotaxis', cost: Num.from(253) }),
+    ).toBe('Adaption entwickelt: Chemotaxis · −253 DNA');
+  });
 });

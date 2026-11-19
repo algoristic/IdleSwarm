@@ -213,6 +213,17 @@ describe('runSimulation', () => {
   });
 
   describe('Ereignisse und Futterstellen', () => {
+    it('hält entwickelte Genom-Knoten fest, wirkungslose Käufe nicht', () => {
+      const evolveCilia: Command = { type: 'evolve', node: 'cilia-1' };
+      const { events } = run(scripted({ 60_000: [evolveCilia], 120_000: [evolveCilia] }), {
+        params: { genomeCost: 0 },
+        durationMs: 3 * MINUTE_MS,
+      });
+      expect(events.filter((event) => event.type === 'evolved')).toEqual([
+        { timeMs: 60_000, type: 'evolved', node: 'cilia-1' },
+      ]);
+    });
+
     /** Ohne Platzbedarf kommen alle Drohnen mit; fünf Drohnen sammeln 1 Nahrung/s. */
     const MOVING: Partial<BalanceParams> = { ...SIMPLE, siteSize: 100, droneSpace: 0 };
     const FIVE_DRONES: readonly Command[] = Array(5).fill(BUY_DRONE);

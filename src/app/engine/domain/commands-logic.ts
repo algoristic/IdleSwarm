@@ -1,4 +1,6 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { evolve } from '@app/genome/domain/genome-logic';
+import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
 import { setAutoMove } from '@app/site/domain/auto-move-logic';
 import type { StrategyId } from '@app/site/domain/models/auto-move.model';
 import { depart } from '@app/site/domain/move-logic';
@@ -76,6 +78,15 @@ export interface StrengthenGlandCommand {
   readonly type: 'strengthenGland';
 }
 
+/**
+ * Entwickelt einen regulären Genom-Knoten für DNA (Game-Design §4.14); auch während einer Reise.
+ * Meldet `evolved`; ohne Wirkung, wenn er schon entwickelt ist, der Vorgänger fehlt oder die DNA nicht reicht.
+ */
+export interface EvolveCommand {
+  readonly type: 'evolve';
+  readonly node: GenomeNodeId;
+}
+
 /** Alle Kommandos; neue Varianten hier ergänzen und in {@link applyCommand} behandeln. */
 export type Command =
   | NoopCommand
@@ -86,7 +97,8 @@ export type Command =
   | DepartCommand
   | SetAutoMoveCommand
   | SetPheromonesCommand
-  | StrengthenGlandCommand;
+  | StrengthenGlandCommand
+  | EvolveCommand;
 
 const NO_EVENTS: readonly GameEvent[] = Object.freeze([]);
 
@@ -134,6 +146,8 @@ export function applyCommand(
       );
     case 'strengthenGland':
       return withoutEvents(strengthenGland(state, params));
+    case 'evolve':
+      return evolve(state, cmd.node, params);
     default:
       return assertNever(type);
   }

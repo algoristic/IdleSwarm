@@ -1,6 +1,9 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
 import { combineEffects } from '@app/balance/domain/effects-logic';
 import type { Effect, Modifiers } from '@app/balance/domain/models/effect.model';
+import type { EffectPreview } from '@app/genome/domain/genome-logic';
+import { genomeEffects, nodeEffectPreview } from '@app/genome/domain/genome-logic';
+import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 
 import type { GameState } from './models/game-state.model';
@@ -8,10 +11,11 @@ import type { GameState } from './models/game-state.model';
 /**
  * Effekte aller Quellen des Zustands (Game-Design §4.13): entwickelte Adaptionen, einzigartige
  * Adaptionen, Badges und laufende Buffs. Der Spielstand speichert nur die Quellen; jede Quelle trägt
- * ihre Effekte hier bei. Bis zu den Quellen (M1.3) gibt es keine.
+ * ihre Effekte hier bei.
  */
-export function stateEffects(_state: GameState, _params: BalanceParams): readonly Effect[] {
-  return [];
+export function stateEffects(state: GameState, params: BalanceParams): readonly Effect[] {
+  // Badges (§4.17) und laufende Buffs (§4.16) kommen mit den Funden hinzu, als weitere Quellen hier.
+  return genomeEffects(state.genome, state.finds, params);
 }
 
 /** Typ, gegen den Bedingungen `when: { siteType }` geprüft werden; während einer Reise `null`. */
@@ -26,4 +30,16 @@ export function effectSiteType(state: GameState): SiteTypeId | null {
  */
 export function stateModifiers(state: GameState, params: BalanceParams): Modifiers {
   return combineEffects(stateEffects(state, params), effectSiteType(state));
+}
+
+/**
+ * „Effekt vorher → nachher“ eines regulären Knotens mit allen übrigen Quellen des Zustands
+ * (Game-Design §4.14, US-05.02); für die Viewmodels der Genom-Ansicht.
+ */
+export function genomeNodePreview(
+  state: GameState,
+  id: GenomeNodeId,
+  params: BalanceParams,
+): readonly EffectPreview[] {
+  return nodeEffectPreview(state, id, params, (current) => stateModifiers(current, params));
 }

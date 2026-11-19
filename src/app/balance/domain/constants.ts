@@ -28,6 +28,10 @@ export interface BalanceParams {
   readonly glandCost: number;
   /** Preisfaktor `w_P` der Drüse. */
   readonly glandCostGrowth: number;
+  /** DNA-Kosten `c_G` eines Genom-Knotens der Stufe 1 (Game-Design §4.14). */
+  readonly genomeCost: number;
+  /** Kostenfaktor `w_G` je Stufe; Kosten `round(c_G · w_G^(s−1))`. */
+  readonly genomeCostGrowth: number;
   readonly startFood: number;
   readonly startQueens: number;
   /** Größe der ersten Futterstelle `s_0` und Basis der Größe aller weiteren (Game-Design §4.6). */
@@ -82,6 +86,33 @@ export interface BalanceParams {
   readonly whaleFallDefenseFactor: number;
   readonly whaleFallFindChance: number;
   readonly whaleFallWeight: number;
+  // Reguläre Adaptionen (Game-Design §2.3, Parameter je ID, §4.14): Betrag bzw. Faktor des Effekts
+  // mit Zahl, zugeordnet über `GENOME_NODE_PARAMS`.
+  readonly cilia1Effect: number;
+  readonly cilia2Effect: number;
+  readonly filterFeederEffect: number;
+  readonly chemotaxisEffect: number;
+  readonly flagellumEffect: number;
+  readonly yolkReserveEffect: number;
+  readonly broodCombsEffect: number;
+  readonly secondGlandEffect: number;
+  readonly nurseCellsEffect: number;
+  readonly buddingEffect: number;
+  readonly acidVacuoleEffect: number;
+  readonly autophagyEffect: number;
+  readonly nettleCellsEffect: number;
+  readonly chalkShellEffect: number;
+  readonly spineCellsEffect: number;
+  // Einzigartige Adaptionen (§4.14): Effektwert und benötigte Fragmente, zugeordnet über
+  // `UNIQUE_ADAPTATION_PARAMS`.
+  readonly thermosynthesisEffect: number;
+  readonly thermosynthesisFragments: number;
+  readonly algalSymbiosisEffect: number;
+  readonly algalSymbiosisFragments: number;
+  readonly crystalSenseEffect: number;
+  readonly crystalSenseFragments: number;
+  readonly sulfurShellEffect: number;
+  readonly sulfurShellFragments: number;
 }
 
 /** Werte v1 aus Game-Design §2.3. */
@@ -103,6 +134,8 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   startPheromoneSoldiers: 1,
   glandCost: 100,
   glandCostGrowth: 2,
+  genomeCost: 8,
+  genomeCostGrowth: Math.sqrt(10),
   startFood: 15,
   startQueens: 1,
   siteSize: 20_000,
@@ -148,4 +181,27 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   whaleFallDefenseFactor: 3,
   whaleFallFindChance: 0.3,
   whaleFallWeight: 1,
+  cilia1Effect: 0.2,
+  cilia2Effect: 0.3,
+  filterFeederEffect: 0.25,
+  chemotaxisEffect: 1,
+  flagellumEffect: 1.5,
+  yolkReserveEffect: 0.2,
+  broodCombsEffect: 2,
+  secondGlandEffect: 1,
+  nurseCellsEffect: 0.3,
+  buddingEffect: 1.25,
+  acidVacuoleEffect: 0.2,
+  autophagyEffect: 0.4,
+  nettleCellsEffect: 0.75,
+  chalkShellEffect: 0.6,
+  spineCellsEffect: 0.5,
+  thermosynthesisEffect: 0.25,
+  thermosynthesisFragments: 3,
+  algalSymbiosisEffect: 0.25,
+  algalSymbiosisFragments: 2,
+  crystalSenseEffect: 0.25,
+  crystalSenseFragments: 2,
+  sulfurShellEffect: 1,
+  sulfurShellFragments: 5,
 });

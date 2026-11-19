@@ -1,3 +1,8 @@
+import type {
+  GenomeNodeId,
+  GenomeTier,
+  UniqueAdaptationId,
+} from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND, SECONDS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
@@ -66,6 +71,55 @@ export const SITE_TYPE_PARAMS: Readonly<Record<SiteTypeId, SiteTypeParamKeys>> =
     weight: 'whaleFallWeight',
   },
 };
+
+export type GenomeNodeParamKeys = Readonly<Record<'effect', keyof BalanceParams>>;
+
+/**
+ * Parameter je regulärer Adaption (Game-Design §2.3, Parameter je ID): `effect` ist der Betrag bzw.
+ * Faktor ihres Effekts mit Zahl.
+ */
+export const GENOME_NODE_PARAMS: Readonly<Record<GenomeNodeId, GenomeNodeParamKeys>> = {
+  'cilia-1': { effect: 'cilia1Effect' },
+  'cilia-2': { effect: 'cilia2Effect' },
+  'filter-feeder': { effect: 'filterFeederEffect' },
+  chemotaxis: { effect: 'chemotaxisEffect' },
+  flagellum: { effect: 'flagellumEffect' },
+  'yolk-reserve': { effect: 'yolkReserveEffect' },
+  'brood-combs': { effect: 'broodCombsEffect' },
+  'second-gland': { effect: 'secondGlandEffect' },
+  'nurse-cells': { effect: 'nurseCellsEffect' },
+  budding: { effect: 'buddingEffect' },
+  'acid-vacuole': { effect: 'acidVacuoleEffect' },
+  autophagy: { effect: 'autophagyEffect' },
+  'nettle-cells': { effect: 'nettleCellsEffect' },
+  'chalk-shell': { effect: 'chalkShellEffect' },
+  'spine-cells': { effect: 'spineCellsEffect' },
+};
+
+export type UniqueAdaptationParamKeys = Readonly<
+  Record<'effect' | 'fragments', keyof BalanceParams>
+>;
+
+/**
+ * Parameter je einzigartiger Adaption (Game-Design §2.3, Parameter je ID): Effektwert und Zahl der
+ * benötigten Fragmente.
+ */
+export const UNIQUE_ADAPTATION_PARAMS: Readonly<
+  Record<UniqueAdaptationId, UniqueAdaptationParamKeys>
+> = {
+  thermosynthesis: { effect: 'thermosynthesisEffect', fragments: 'thermosynthesisFragments' },
+  'algal-symbiosis': { effect: 'algalSymbiosisEffect', fragments: 'algalSymbiosisFragments' },
+  'crystal-sense': { effect: 'crystalSenseEffect', fragments: 'crystalSenseFragments' },
+  'sulfur-shell': { effect: 'sulfurShellEffect', fragments: 'sulfurShellFragments' },
+};
+
+/**
+ * DNA-Kosten eines Genom-Knotens der Stufe `s`: `round(c_G · w_G^(s−1))`, kaufmännisch gerundet
+ * (Game-Design §4.14); v1 8, 25, 80, 253, 800.
+ */
+export function genomeNodeCost(tier: GenomeTier, params: BalanceParams): Num {
+  return Num.from(Math.round(params.genomeCost * params.genomeCostGrowth ** (tier - 1)));
+}
 
 /** Effekt einer weiteren Königin. */
 export interface QueenEffect {

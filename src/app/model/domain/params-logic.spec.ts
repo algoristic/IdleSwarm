@@ -73,6 +73,20 @@ describe('paramLimit', () => {
     expect(paramLimit('siteSizeGrowth')).toEqual({ min: 0 });
   });
 
+  it('begrenzt Genom-Werte nach der Datenregel der Effekte (Game-Design §4.13)', () => {
+    expect(paramLimit('cilia1Effect')).toEqual({ min: 0 });
+    expect(paramLimit('chemotaxisEffect')).toEqual({ min: 0 });
+    expect(paramLimit('secondGlandEffect')).toEqual({ min: 0, integer: true });
+    expect(paramLimit('flagellumEffect')).toEqual({ min: 1 });
+    expect(paramLimit('buddingEffect')).toEqual({ min: 1 });
+    expect(paramLimit('nettleCellsEffect')).toEqual({ min: 0, max: 1 });
+    expect(paramLimit('autophagyEffect')).toEqual({ min: 0 });
+    expect(paramLimit('sulfurShellEffect')).toEqual({ min: 0 });
+    expect(paramLimit('sulfurShellFragments')).toEqual({ min: 1, integer: true });
+    expect(paramLimit('genomeCost')).toEqual({ min: 0 });
+    expect(paramLimit('genomeCostGrowth')).toEqual({ min: 0 });
+  });
+
   it('wird von allen Standardwerten erfüllt', () => {
     expect(paramFields(DEFAULT_BALANCE, {}).filter((field) => field.value === null)).toEqual([]);
   });

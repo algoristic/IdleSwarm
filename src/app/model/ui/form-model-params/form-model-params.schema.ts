@@ -21,6 +21,9 @@ function invalidParamMessage(limit: ParamLimit): string {
     const max = formatParam(limit.max);
     return $localize`:@@uiModel-formModelParams-error-paramRange:Ungültig: Zahl von ${min}:min: bis ${max}:max: eingeben, Dezimaltrenner Komma oder Punkt.`;
   }
+  if (limit.min !== 0) {
+    return $localize`:@@uiModel-formModelParams-error-paramMin:Ungültig: Zahl ab ${min}:min: eingeben, Dezimaltrenner Komma oder Punkt, kein Tausenderpunkt.`;
+  }
   return $localize`:@@uiModel-formModelParams-error-param:Ungültig: Zahl ab 0 eingeben, Dezimaltrenner Komma oder Punkt, kein Tausenderpunkt.`;
 }
 

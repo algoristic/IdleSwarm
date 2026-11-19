@@ -1,5 +1,6 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { isAffordable, secondsUntilAffordable } from '@app/balance/domain/formulas';
+import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
@@ -77,7 +78,8 @@ export interface SimSample {
 
 /**
  * Ereignisse eines Laufs; `site` ist der Index in {@link SimMetrics.sites}. `departed` nennt die
- * verlassene Futterstelle und den Typ des Ziels, `arrived` die neue Futterstelle.
+ * verlassene Futterstelle und den Typ des Ziels, `arrived` die neue Futterstelle, `evolved` den
+ * entwickelten Genom-Knoten (Markierung „Adaption gekauft“, US-10.02).
  */
 export type SimEvent =
   | { readonly timeMs: number; readonly type: 'buy'; readonly unit: UnitType }
@@ -94,7 +96,8 @@ export type SimEvent =
       readonly type: 'arrived';
       readonly site: number;
       readonly siteType: SiteTypeId;
-    };
+    }
+  | { readonly timeMs: number; readonly type: 'evolved'; readonly node: GenomeNodeId };
 
 /**
  * Futterstelle von der Ankunft (die erste bei 0) bis zum Aufbruch. Die Felder zu Reise, Kampf und
@@ -400,6 +403,9 @@ class Recorder {
           this.events.push({ timeMs, type: 'arrived', site: index, siteType });
           break;
         }
+        case 'evolved':
+          this.events.push({ timeMs, type: 'evolved', node: event.node });
+          break;
       }
     }
   }

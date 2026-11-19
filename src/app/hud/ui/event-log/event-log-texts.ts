@@ -1,4 +1,5 @@
 import type { GameEvent } from '@app/engine/domain/models/game-event.model';
+import { GENOME_NODE_LABELS } from '@app/genome/ui/genome-labels/genome-labels';
 import { formatDown, formatUp, roundUpForDisplay } from '@app/shared/util/format/display-format';
 import { formatRate } from '@app/shared/util/format/format';
 import { Num } from '@app/shared/util/num/num';
@@ -8,7 +9,7 @@ import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels
 const SEPARATOR = ' · ';
 
 /**
- * Text eines Log-Eintrags (US-04.05, US-04.09). DNA abgerundet wie die Mengen; Zurückgelassene und
+ * Text eines Log-Eintrags (US-04.05, US-04.09, US-05.03). DNA abgerundet wie die Mengen; Zurückgelassene und
  * Verluste aufgerundet wie die Vorschau der Umgebung, damit ein Bruchteil nicht verschwindet.
  */
 export function eventLogText(event: GameEvent): string {
@@ -20,6 +21,14 @@ export function eventLogText(event: GameEvent): string {
     case 'siteDepleted': {
       const site = SITE_TYPE_LABELS[event.siteType];
       return $localize`:@@uiHud-eventLog-siteDepleted:Futterstelle leer: ${site}:site:`;
+    }
+    case 'evolved': {
+      const node = GENOME_NODE_LABELS[event.node];
+      const cost = formatDown(event.cost);
+      return [
+        $localize`:@@uiHud-eventLog-evolved:Adaption entwickelt: ${node}:node:`,
+        $localize`:@@uiHud-eventLog-evolved-cost:−${cost}:cost: DNA`,
+      ].join(SEPARATOR);
     }
   }
 }
