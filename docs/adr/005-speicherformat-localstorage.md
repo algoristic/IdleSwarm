@@ -31,9 +31,12 @@ Ohne Backend liegen Spielstände vollständig im Browser ([ADR-008](008-kein-bac
 
 **Umgesetzt** in `persistence/domain/`:
 
-- [`serialize.ts`](../../src/app/persistence/domain/serialize-logic.ts): Kodierung und Validierung
-- [`slots.ts`](../../src/app/persistence/domain/slots-logic.ts): Slots, Speichern und Laden über die Schnittstelle `KeyValueStore`, der `localStorage` genügt
-- [`migrations/index.ts`](../../src/app/persistence/domain/migrations/migrations-logic.ts): Migrationskette und `SaveError`. Die Registry enthält die Migration von Version 1 auf die aktuelle Version 2 ([`v1-to-v2.ts`](../../src/app/persistence/domain/migrations/v1-to-v2.ts)).
+- [`serialize-logic.ts`](../../src/app/persistence/domain/serialize-logic.ts): Kodierung und Validierung
+- [`slots-logic.ts`](../../src/app/persistence/domain/slots-logic.ts): Slots, Speichern und Laden über die Schnittstelle `KeyValueStore`, der `localStorage` genügt
+- [`migrations/migrations-logic.ts`](../../src/app/persistence/domain/migrations/migrations-logic.ts): Migrationskette und `SaveError`. Die Registry enthält die Migrationen 1→2 ([`v1-to-v2.ts`](../../src/app/persistence/domain/migrations/v1-to-v2.ts)) und 2→3 ([`v2-to-v3.ts`](../../src/app/persistence/domain/migrations/v2-to-v3.ts)).
+- **Version 3** (aktuell, AP 1.2.1–1.2.7) ergänzt `map`, `travel`, `auto` und `priority` ([Game-Design §5](../game-design.md#5-spielstand-version-3)). Die Migration 2→3 setzt nach Entscheidung im Game-Design alles außer Seed, RNG-Zustand und Zeiten auf die Startwerte und erzeugt die Startkandidaten aus dem übernommenen `rngState`; Startwerte und Generatorwerte stehen dort als feste Literale, damit spätere Balance-Änderungen das Ergebnis nicht verschieben.
+- Die Prüfung beim Laden lässt Route mit 1 bis 50 Punkten und die Schwelle in `[0; 1]` zu, damit ein späteres Absenken von `θ_max` gespeicherte Stände nicht ungültig macht.
+- Tests mit eingefrorenen Spielständen der Versionen 1, 2 und 3 ([`serialize-logic.spec.ts`](../../src/app/persistence/domain/serialize-logic.spec.ts); der v3-Stand liegt mitten in der zweiten Reise) und je Migration ([`v1-to-v2.spec.ts`](../../src/app/persistence/domain/migrations/v1-to-v2.spec.ts), [`v2-to-v3.spec.ts`](../../src/app/persistence/domain/migrations/v2-to-v3.spec.ts)).
 
 **Umgesetzt** in [`persistence/data-access/persistence/persistence.service.ts`](../../src/app/persistence/data-access/persistence/persistence.service.ts): Laden beim Start, Autosave, Hinweise an die Oberfläche und das erneute Laden nach einem gescheiterten Speicherzugriff. Ein unveränderter Zustand wird nicht erneut geschrieben, damit ein zweites Ereignis beim Verlassen das Backup nicht verdrängt.
 

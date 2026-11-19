@@ -19,12 +19,13 @@ Eingaben und der Logik-Takt ändern denselben Spielzustand. Die Oberfläche beob
 
 **Umgesetzt:**
 
-- [`engine/domain/commands-logic.ts`](../../src/app/engine/domain/commands-logic.ts): Typ `Command` und `apply` mit `noop`, `newSite` und `buy`; fehlt ein Fall in `apply`, schlägt das Kompilieren fehl.
-- [`engine/domain/step-logic.ts`](../../src/app/engine/domain/step-logic.ts): `step` führt Grundertrag, Sammeln und Brut aus und liefert `{ state, events }`. Die Ereignisliste ist noch leer.
+- [`engine/domain/commands-logic.ts`](../../src/app/engine/domain/commands-logic.ts): Typ `Command` mit `noop`, `buy`, `sacrificeDrones`, `convertDronesToQueen`, `setTransportPriority`, `depart` und `setAutoMove` (seit M1.2; `newSite` ist mit dem Provisorium entfallen). `applyCommand` liefert wie `step` `{ state, events }`, `apply` ist die Kurzform ohne Ereignisse. Fehlt ein Fall in `applyCommand`, schlägt das Kompilieren fehl. Ein wirkungsloses Kommando liefert denselben Zustand ohne Ereignisse.
+- [`engine/domain/step-logic.ts`](../../src/app/engine/domain/step-logic.ts): `step` führt Reise, Grundertrag, Sammeln, Brut und Auto-Weiterziehen aus und liefert `{ state, events }`.
+- [`engine/domain/models/game-event.model.ts`](../../src/app/engine/domain/models/game-event.model.ts): `GameEvent` und `StepResult`; die Ereignisse `departed`, `arrived` und `siteDepleted` definiert [`site/domain/models/site-event.model.ts`](../../src/app/site/domain/models/site-event.model.ts) als Codes mit IDs, Rohwerten und `playedMs`.
 - [`engine/domain/models/game-state.model.ts`](../../src/app/engine/domain/models/game-state.model.ts): alle Felder sind `readonly`.
-- [`engine/data-access/game-store/game-store.service.ts`](../../src/app/engine/data-access/game-store/game-store.service.ts): `dispatch` wendet Kommandos sofort an, `tick` ruft `step` auf; der Zustand ist nach außen nur lesbar.
+- [`engine/data-access/game-store/game-store.service.ts`](../../src/app/engine/data-access/game-store/game-store.service.ts): `dispatch` wendet Kommandos über `applyCommand` sofort an, `tick` ruft `step` auf; der Zustand ist nach außen nur lesbar. Die Ereignisse beider landen im Ereignis-Log (`log`, höchstens 50 Einträge, nur im Arbeitsspeicher), das das HUD anzeigt.
 
-**Geplant:** Weitere Kommandos und die Ereignisse von `step` folgen mit den Mechaniken ab M1.2.
+**Geplant:** Weitere Kommandos und Ereignisse (z. B. Funde, Genom) folgen mit den Mechaniken ab M1.3; Effekte und Rückkehr-Zusammenfassung lesen die Ereignisse später ebenfalls.
 
 ## Konsequenzen
 

@@ -248,9 +248,15 @@ Ein Kauf ergibt genau +1 Einheit. **Platz begrenzt weder Kauf noch Brut**, er wi
 
 Je Schritt der Dauer `dt` laufen nacheinander (0) Reise, (1) Grundertrag und Sammeln, (2) Brut und (3) Auto-Weiterziehen. Der Logik-Takt beträgt 10 Hz, also `dt = 0,1` ([Technisches Konzept §4](technisches-konzept.md#4-simulation)).
 
-**(0) Reise:** Nur während einer Reise; die Restdauer sinkt um `dt`, bei 0 kommt der Schwarm an ([4.11](#411-weiterziehen-und-reise)).
+**(0) Reise:** Nur während einer Reise; die Restdauer sinkt um `dt`, bei 0 kommt der Schwarm an ([4.11](#411-weiterziehen-und-reise)). Endet die Reise im Schritt, wird er an der Ankunft geteilt:
 
-**(1) Grundertrag und Sammeln:** Entfällt in jedem Schritt, in dem eine Reise läuft oder endet.
+- **Reiseteil** (bis zur Ankunft): Grundertrag und Sammeln ruhen, die Brut (2) läuft. Sie läuft vor dem Kampf, unterwegs geschlüpfte Soldaten kämpfen also mit.
+- **Ankunft:** Kampf, DNA, neue Futterstelle und neue Kandidaten ([4.11](#411-weiterziehen-und-reise)).
+- **Rest des Schritts** (nach der Ankunft): läuft wie ein Schritt ohne Reise, also mit (1) und (2) an der neuen Futterstelle.
+
+So hängt das Ergebnis nicht von der Schrittweite ab, und die Ankunft liegt exakt.
+
+**(1) Grundertrag und Sammeln:** Entfällt, solange eine Reise läuft, also auch im Reiseteil des Ankunftsschritts.
 
 ```
 F = min((g_0 + D · r_d · M_sammeln) · dt, V)
@@ -291,7 +297,7 @@ N  -= h · c̄
 
 ### 4.4 Leere Futterstelle (Provisorium bis M1.2)
 
-> **Entfallen mit M1.2:** An die Stelle dieser Regel und der Aktion „Neue Futterstelle“ tritt das [Weiterziehen](#411-weiterziehen-und-reise). Der Abschnitt bleibt stehen, weil die [Messwerte v1](#6-messwerte-v1) mit diesem Provisorium gemessen wurden.
+> **Entfallen mit M1.2:** An die Stelle dieser Regel und der Aktion „Neue Futterstelle“ tritt das [Weiterziehen](#411-weiterziehen-und-reise). Der Abschnitt bleibt stehen, weil die [Messung M1.1](#62-messung-m11-historisch) mit diesem Provisorium gemessen wurde.
 
 Bis M1.1 galt:
 
@@ -505,7 +511,7 @@ Reise = keine
 ```
 
 - **Bleibt erhalten:** Nahrung, Königinnen, die Kaufzähler `bought` für alle Einheitentypen und die Einstellungen.
-- Die Reise rechnet in Spielzeit und läuft deshalb auch im Offline-Fortschritt weiter. Der Catch-up verkürzt seine Schritte an der Ankunft ([Technisches Konzept §4](technisches-konzept.md#4-simulation)).
+- Die Reise rechnet in Spielzeit und läuft deshalb auch im Offline-Fortschritt weiter. Jeder Schritt wird an der Ankunft geteilt ([4.3](#43-simulationsschritt)); der Headless-Runner teilt seine Schritte zusätzlich am vorhergesagten Auslöser des Auto-Weiterziehens ([Technisches Konzept §5.3](technisches-konzept.md#53-headless-runner-und-bots)).
 
 **Ereignisse fürs Log** (Codes mit Daten, die Texte setzt die Oberfläche):
 
@@ -515,7 +521,16 @@ Reise = keine
 | `arrived` | Typ der neuen Futterstelle, Verluste an Soldaten, gutgeschriebene DNA |
 | `siteDepleted` | Typ der Futterstelle, deren Vorrat im Schritt auf 0 gefallen ist |
 
-**Beispiel 7:** Der Schwarm aus Beispiel 4 (`S = 34`) bricht zu K1 auf (`d = 3`). Die Reise dauert `3 · 10 = 30 s`. Unterwegs schlüpfen bei `Q = 1` rund `30 · 0,1 · 0,25 = 0,75` Soldaten, wenn die Nahrung reicht; bei Ankunft ist `S ≈ 34,75` und `L = 34,75 · 0,5 · (26 / 34,75)² ≈ 9,73`. Der Schwarm erhält 13,55 DNA, steht an einem Schlot mit 30.240 Vorrat, und es entstehen neue Kandidaten mit `z = 1`.
+**Beispiel 7:** Ein Schwarm mit `Q = 7`, `D = 0`, `S = 34` und `N = 300` bricht zu K1 auf (`d = 3`, `B = 26`). Mit `C = 70` und `O = 68` passen alle mit, also `S' = 34`, `A' = 34`, und die erwarteten Verluste sind wie in Beispiel 4 rund 9,94. Die Reise dauert `3 · 10 = 30 s`.
+
+| Schritt | Rechnung | Ergebnis |
+|---|---|---|
+| Eier unterwegs | `7 · 6 / 60 · 30 = 21` | |
+| Geschlüpft | `h = min(21; 300 / 13,75 ≈ 21,82) = 21`, kein Sammeln | `D = 15,75`, `S = 34 + 5,25 = 39,25` |
+| Brutkosten | `21 · 13,75 = 288,75` | `N = 11,25` |
+| Kampf bei Ankunft | `L = 39,25 · 0,5 · (26 / 39,25)² ≈ 8,61` | `S ≈ 30,64` |
+
+Die Verluste liegen unter den angezeigten 9,94, weil unterwegs Soldaten geschlüpft sind. Der Schwarm erhält 13,55 DNA, steht an einem Schlot mit 30.240 Vorrat, und es entstehen neue Kandidaten mit `z = 1`.
 
 ### 4.12 Strategien und Auto-Weiterziehen
 
@@ -553,7 +568,7 @@ K5 und K6 liegen nicht in Reichweite. „Geringster Widerstand“ wählt K3, „
 
 ## 5. Spielstand Version 3
 
-Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler ergänzt, Version 3 ergänzt Karte, Reise und Einstellungen. Die Feldnamen sind Vorschläge für die Umsetzung in AP 1.2.6.
+Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler ergänzt, Version 3 ergänzt Karte, Reise und Einstellungen. Die Feldnamen sind so umgesetzt (`STATE_VERSION = 3`, AP 1.2.1–1.2.7).
 
 | Feld | Inhalt | seit |
 |---|---|---|
@@ -561,10 +576,11 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 | `bought` | Kaufzähler je Einheitentyp (`queens`, `drones`, `soldiers`) | 2 |
 | `map` | aktuelle Position `position` (`x`, `y`), Kandidaten `candidates` (je `type`, `position`, `size`, `defense`), Route `route` (je `type`, `position`, ab der Startfutterstelle; höchstens die letzten 50 Punkte), Zugzähler `moves` (`z`) | 3 |
 | `travel` | `null` oder Ziel `target` (wie ein Kandidat) und Restdauer `remainingMs` | 3 |
-| `auto` | `enabled`, `strategy` (Strategie-ID), `threshold` (0 bis 0,9) | 3 |
+| `auto` | `enabled`, `strategy` (Strategie-ID), `threshold` (Anteil, einstellbar 0 bis `θ_max`) | 3 |
 | `priority` | ID der Mitnahme-Priorität | 3 |
 
 - Gespeichert werden je Kandidat nur Typ-ID, Position, Größe und Abwehr. Distanz, Status, DNA, Fundchance, Einnehmbarkeit und Verluste sind abgeleitet, ebenso die Reichweite.
+- **Ladeprüfung:** Die Route muss mindestens einen und darf höchstens 50 Punkte enthalten. Die Schwelle `threshold` wird in `[0; 1]` akzeptiert, nicht nur bis `θ_max`: `θ_max` ist ein Balance-Wert, und ein späteres Absenken soll gespeicherte Spielstände nicht ungültig machen. Das Kommando zum Einstellen begrenzt die Schwelle weiterhin auf `[0; θ_max]`.
 - Die stabile ID der ersten Futterstelle ist `vent` (Schlot). Wie überall speichert der Spielstand nur IDs, keine Texte ([Technisches Konzept §3.4](technisches-konzept.md#34-zustandsmodell-entwurf)).
 
 **Migration von Version 1:** Seed, RNG-Zustand und Zeiten bleiben erhalten. Futterstelle, Kaufzähler, Ressourcen und Einheiten werden auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt.
@@ -573,7 +589,71 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 
 ## 6. Messwerte v1
 
-> **Hinweis M1.2:** Die Messungen unten stammen aus M1.1 und nutzen das inzwischen entfallene [Provisorium aus §4.4](#44-leere-futterstelle-provisorium-bis-m12). Mit den Mechaniken aus M1.2 wird neu gemessen.
+Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. Aktuell ist die [Messung M1.2](#61-messung-m12); die [Messung M1.1](#62-messung-m11-historisch) bleibt als historischer Stand stehen.
+
+### 6.1 Messung M1.2
+
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.2.7, mit Weiterziehen, Kampf und Transport). **Die Mess-Definitionen sind weiterhin vorläufig, die Entscheidung des Product Owners ist offen.**
+
+**Messaufbau**
+
+- `runSimulation` mit Seed `modell`, `stepMs` 1000, Standardwerte aus [Abschnitt 2](#2-startwerte-und-konstanten), Dauer 24 h; die Kennzahl „1 h“ aus einem eigenen Lauf über 1 h. Der Generator zieht jetzt Zufall, das Ergebnis hängt also vom Seed ab.
+- **Aktiv** und **Idle** kaufen wie in M1.1 (Soldaten nie) und schalten bei ihrer ersten Entscheidung das Auto-Weiterziehen ein. Strategie „Ausgewogen“, Schwelle 0 % und Mitnahme-Priorität „ausgewogen“ bleiben auf den Startwerten. Jeder Aufbruch ist also ein Auto-Aufbruch bei leerem Vorrat.
+- Alle Kennzahlen mit der echten Futterstellengröße; `siteSize: 1e12` entfällt mit dem Provisorium.
+- **Dauer einer Futterstelle:** von der Ankunft (die erste ab 0) bis zum leeren Vorrat, ohne die Reise. Die übrigen Definitionen wie in [6.2](#62-messung-m11-historisch).
+
+| Kennzahl | Ziel aktiv | Aktiv | Ziel idle | Idle |
+|---|---|---|---|---|
+| Erster Kauf | < 10 s | 0 s | – | 0 s |
+| Längste Wartezeit, erste 30 min | ≤ 60 s | **1 min 49 s** | < 5 min | 1 min 07 s |
+| Kauflücken, erste 30 min: Anzahl / Median / Maximum | Median 5–60 s | 62 / 17,5 s / 4 min 05 s | – | 6 / 5 min / 5 min |
+| Weiterzüge in 24 h (davon auto) | – | 27 (27) | – | 27 (27) |
+| Gewählte Typen | – | 27 × Algenmatte | – | 27 × Algenmatte |
+| Erste Futterstelle (Schlot) | 3–15 min | 10,57 min | 10–60 min | 13,11 min |
+| 2. / 3. / 4. Futterstelle | 3–15 min | 4,16 / 4,02 / 5,42 min | 10–60 min | **4,45 / 4,02 / 5,45 min** |
+| Letzte fünf abgeschlossene Futterstellen (23.–27.) | 3–15 min | **104,7 / 122,8 / 145,0 / 152,7 / 206,9 min** | 10–60 min | **108,3 / 126,9 / 149,7 / 157,5 / 214,4 min** |
+| Futterstellen im Zielband | – | **10 von 27** (1.–10.) | – | **13 von 27** (1., 9.–20.) |
+| Längste Strecke ohne Kauf, 1 h | < 10 min | 5,30 min | < 60 min | 5,00 min |
+| Längste Strecke ohne Kauf, 24 h | < 10 min | **119,43 min** | < 60 min | 55,00 min |
+
+Fett: außerhalb des Zielbands. Die Reisen dauern 11 bis 49 s.
+
+**Platz und Transport** (ohne Zielband)
+
+| Kennzahl | Aktiv | Idle |
+|---|---|---|
+| Warnschwelle erreicht / Platz überschritten | 40 s / 47 s | 1 min 04 s / 1 min 13 s |
+| Belegung beim ersten Aufbruch | 756 von 200 (378 %) | 705 von 160 (441 %) |
+| Zurückgelassen beim ersten Aufbruch (Drohnen / Soldaten) | 343,0 / 106,7 (73,5 % der Einheiten) | 330,0 / 107,9 (77,3 %) |
+| Zurückgelassen in 24 h (Drohnen / Soldaten) | 366.792 / 122.202 | 355.216 / 118.337 |
+| Gefallene Soldaten, DNA in 24 h | 0, 0 | 0, 0 |
+
+**Endbestand nach 24 h**
+
+| Größe | Aktiv | Idle |
+|---|---|---|
+| Königinnen (gekauft) | 74 (73) | 69 (68) |
+| Drohnen (gekauft) | 40.223 (194) | 23.681 (208) |
+| Soldaten | 13.405 | 7.893 |
+| Nahrung | 30,10 Mio. | 7,34 Mio. |
+| DNA | 0 | 0 |
+| Zugzähler `z` | 27 | 27 |
+| Platz belegt / verfügbar | 67.034 / 740 (9.059 %) | 39.468 / 690 (5.720 %) |
+| Anteil Wartezeit über 24 h | 20,3 % | 70,8 % |
+
+**Auffälligkeiten**
+
+- **Nur Algenmatten:** Beide Bots ziehen 27-mal zur Algenmatte. Nur bei zwei Aufbrüchen (2. und 3.) lag überhaupt ein anderes Ziel einnehmbar in Reichweite, jeweils ein Schlot. „Ausgewogen“ verwirft es, weil der erwartete Verlustanteil über `ℓ_max = 25 %` liegt (Aktiv: 25,4 % und 43,8 % beim 2., 40,0 % beim 3. Aufbruch; Idle: 31,5 % beim 2., 43,7 % beim 3. Aufbruch). Alle übrigen Ziele sind mit `S'` zu stark. Damit fallen nie Soldaten, und es gibt in 24 h keine DNA.
+- **`S'` nach Transport begrenzt den Angriff:** Weil der Platz ab 47 s bzw. 73 s überläuft, nimmt „ausgewogen“ nur den Anteil `C / O` mit. Bei einer Brut von 3 : 1 ist `S' ≈ C / 5 = 2 · Q`, beim ersten Aufbruch 38,4 (Aktiv) bzw. 31,6 (Idle), gegen Abwehr 59 und 66 der Bakterienrasen. Mit „Soldaten zuerst“ wären es beim ersten Aufbruch von Aktiv `S' = min(144,9; 200 / 2) = 100`, der Bakterienrasen mit `B = 59` wäre einnehmbar (Verlustanteil `0,5 · 0,59² ≈ 17,4 %`), und „Ausgewogen“ wählte ihn (Größe 53.715 statt 16.952). Die Bots ändern die Priorität nicht.
+- **Abwehr wächst schneller als der Angriff:** `z` steigt mit jedem Weiterzug, auch zur Algenmatte, und mit ihm die Abwehr um `γ_B = 1,35`. Der Angriff nach Transport ist höchstens `C · a_s / p_s = 5 · Q` und wächst nur mit den Königinnen. Beim letzten Aufbruch (Aktiv, `Q = 74`) stehen höchstens 370 gegen Abwehrwerte ab 97.194 der anderen Typen in Reichweite. Spätestens dann ist der Schwarm unabhängig von der Priorität auf die Algenmatte festgelegt; mit „ausgewogen“ schon ab dem 4. Aufbruch.
+- **Späte Futterstellen dauern über 3 h:** Die Größe der Algenmatte wächst je Weiterzug um `γ_G = 1,4`. Nach jedem Aufbruch bleiben nur `D' ≲ 10 · Q` Drohnen (beim letzten Aufbruch 444 von 68.249), die Sammelrate baut sich danach fast nur über die Brut wieder auf (`a · Q · e_q = 4,5 · Q` Drohnen/min). Über `T` Minuten sammelt der Schwarm damit rund `27 · Q · T²` Nahrung, die Dauer wächst also etwa mit `√(G / Q)`. Für die 27. Futterstelle (Aktiv, `G ≈ 85,0 Mio.`, `Q = 72` beim Aufbruch) ergibt das ≈ 209 min, gemessen 206,9 min. Die Dauer steigt je Weiterzug um etwa 18 %; ab der 11. (Aktiv) bzw. 21. Futterstelle (Idle) liegt sie über dem Zielband. Die 2. bis 8. Futterstelle von Idle sind dagegen kürzer als 10 min, weil die kleine Algenmatte (`f_G = 0,5`) mit dem mitgenommenen Schwarm schnell leer ist.
+- **Transport vernichtet fast den ganzen Schwarm:** Beim letzten Aufbruch kommen 0,65 % der Einheiten mit (Aktiv: 444 Drohnen, 148 Soldaten von 68.249 bzw. 22.749). Die Bots kaufen keine Königinnen gezielt für den Platz und wandeln keine Drohnen um.
+- **Strecke ohne Kauf über 24 h (Aktiv):** Die längste Strecke liegt am Laufende (1.320,6 bis 1.440 min) und beginnt mit dem letzten Aufbruch. Aktiv spart auf die nächste Königin (Preis ≈ 3,6 · 10⁷), obwohl Drohnen bezahlbar sind, wie schon in M1.1. Idle hält das Zielband jetzt ein (55 statt 95 min).
+- **Unverändert gegenüber M1.1:** Bis zum ersten Aufbruch verläuft das Spiel wie in M1.1. Erste Futterstelle, erster Kauf, längste Wartezeit und Platzüberlauf stimmen deshalb überein.
+
+### 6.2 Messung M1.1 (historisch)
+
+> **Hinweis M1.2:** Diese Messungen stammen aus M1.1 und nutzen das inzwischen entfallene [Provisorium aus §4.4](#44-leere-futterstelle-provisorium-bis-m12). Aktuell ist die [Messung M1.2](#61-messung-m12).
 
 > **Gemessen** mit dem Headless-Runner (Stand AP 1.1.9, ohne Klick, mit Grundertrag `g_0 = 1,5`). Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. **Die Mess-Definitionen unten sind vorläufig, die Entscheidung des Product Owners ist offen.**
 
@@ -632,6 +712,6 @@ Ergänzend, ohne Zielband: Der Anteil Wartezeit beträgt in den ersten 30 min 15
 
 ## 7. Ausblick
 
-- **M1.2, weitere APs:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer pro Futterstelle, Soldaten-Bilanz, Warnung bei Stillstand) und bekommt die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Die Bots „Aktiv“ und „Idle“ ziehen schon ab AP 1.2.7 weiter; die Messwerte in [Abschnitt 6](#6-messwerte-v1) werden mit M1.2 neu erhoben.
+- **M1.2, weitere APs:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer pro Futterstelle, Soldaten-Bilanz, Warnung bei Stillstand) und bekommt die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Die Bots „Aktiv“ und „Idle“ ziehen seit AP 1.2.7 über das Auto-Weiterziehen weiter; die Messwerte stehen in [Abschnitt 6.1](#61-messung-m12).
 - **M1.3:** Das Genom gibt DNA aus und füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust` und `M_ausbeute`; Adaptionen wie „Chemotaxis“ erhöhen die Reichweite. Pheromone lösen das feste Brutverhältnis ab. Funde werden bei der Ankunft mit der Fundchance des Typs gezogen.
 - **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder.

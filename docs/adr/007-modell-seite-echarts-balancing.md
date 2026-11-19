@@ -21,9 +21,10 @@ Zielwerte, Toleranzen und Snapshot-Inhalte legt dieses ADR nicht fest. Die Pacin
 
 **Umgesetzt:**
 
-- [`balance/domain/constants.ts`](../../src/app/balance/domain/constants.ts): alle Konstanten aus dem Game-Design als `BalanceParams` mit den Standardwerten `DEFAULT_BALANCE`; [`formulas.ts`](../../src/app/balance/domain/formulas.ts) enthält die Formeln.
+- [`balance/domain/constants.ts`](../../src/app/balance/domain/constants.ts): alle Konstanten aus dem Game-Design als `BalanceParams` mit den Standardwerten `DEFAULT_BALANCE`; [`formulas.ts`](../../src/app/balance/domain/formulas.ts) enthält die Formeln. Seit M1.2 auch Generator, Reichweite, Kampf, DNA, Opfern, Reise, Strategie und Auto-Schwelle; die Typtabelle ist als flache Felder je Typ überschreibbar (z. B. `ventSizeFactor`, `ventDefenseFactor`, `ventFindChance`, `ventWeight`).
+- Parameter-Panel ([`form-model-params.component.ts`](../../src/app/model/ui/form-model-params/form-model-params.component.ts)): Die neuen Konstanten erscheinen automatisch, mit Hinweistexten je Feld.
 - [`engine/domain/runner-logic.ts`](../../src/app/engine/domain/runner-logic.ts): Headless-Runner `runSimulation` mit Teil-Overrides über `params`, Standard-Schrittweite 1000 ms.
-- [`model/domain/bots/`](../../src/app/model/domain/bots/): Bots „Aktiv“ und „Idle“.
+- [`model/domain/bots/`](../../src/app/model/domain/bots/): Bots „Aktiv“ und „Idle“; seit AP 1.2.7 schalten beide das Auto-Weiterziehen ein. Der Runner übernimmt die Ereignisse aus Kommandos und Schritten und teilt die Schritte an Ankunft und Auto-Auslöser; die Diagramme markieren Kauf, leere Futterstelle und Weiterzug (`arrived`). Messung M1.2 in [Game-Design §6.1](../game-design.md#61-messung-m12).
 - [`model/feature/model/model.page.ts`](../../src/app/model/feature/model/model.page.ts): lazy Route `/modell` mit Parameter-Panel, Basislauf, JSON-Export, Diagrammen und Kennzahlen.
 - [`model/feature/state/model.guards.ts`](../../src/app/model/feature/state/model.guards.ts): Im Produktiv-Build ist die Route nur mit `?dev` erreichbar, im Entwicklungs-Build immer. Das Spiel verlinkt sie nicht.
 - [`model/ui/echart/echart.component.ts`](../../src/app/model/ui/echart/echart.component.ts): eigener Wrapper um Apache ECharts (`6.1.0`); Farben aus den `--sw-*`-Tokens.

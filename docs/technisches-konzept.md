@@ -89,19 +89,29 @@ src/app/
     domain/constants.ts, formulas.ts, targets.ts (geplant)
   engine/
     domain/models/game-state.model.ts   # Zusammensetzung aus den Fachdomänen
+    domain/models/game-event.model.ts   # GameEvent, StepResult
     domain/game-state-logic.ts, commands-logic.ts, step-logic.ts, random-logic.ts
     domain/runner-logic.ts, bot-logic.ts, catch-up (geplant)
-    data-access/game-store/, game-loop/, game-core/   # provideGameCore()
+    data-access/game-store/, game-loop/, game-core/   # provideGameCore(), Ereignis-Log
   swarm/
-    domain/models/units.model.ts, units-logic.ts, brood-logic.ts
+    domain/models/units.model.ts, transport-priority.model.ts
+    domain/units-logic.ts, brood-logic.ts, transport-logic.ts, sacrifice-logic.ts
   site/
-    domain/models/site.model.ts, data/sites-era1.data.ts, site-logic.ts, collect-logic.ts
+    domain/models/site.model.ts, map.model.ts, travel.model.ts, auto-move.model.ts, site-event.model.ts
+    domain/data/sites-era1.data.ts, collect-logic.ts, generator-logic.ts, map-logic.ts
+    domain/combat-logic.ts, move-logic.ts, strategy-logic.ts, auto-move-logic.ts
+    ui/site-type-labels/        # Namen der Futterstellentypen für HUD, Log und Umgebung
   persistence/
     domain/serialize-logic.ts, slots-logic.ts, migrations/
     data-access/persistence/    # PersistenceService, KEY_VALUE_STORE
   hud/
+    domain/sacrifice-count-logic.ts   # Eingabeprüfung „Drohnen opfern“
     feature/hud.routes.ts, hud/hud.page.ts, state/hud.facade.ts, state/hud.utils.ts
-    ui/buy-button/, feeding-site/, hud-meter/
+    ui/buy-button/, feeding-site/, hud-meter/, event-log/, form-sacrifice-drones/
+  sonar/                        # Umgebung /umgebung (lazy), Prototyp bis zur Sonar-Karte (AP 1.2.8)
+    domain/auto-threshold-logic.ts    # Eingabeprüfung der Schwelle
+    feature/sonar.routes.ts, sonar/sonar.page.ts, state/sonar.facade.ts, state/sonar.utils.ts
+    ui/target-list/, target-detail/, form-move-settings/, sonar-labels/, models/
   model/                        # Modell-Seite (lazy)
     feature/model.routes.ts, model/model.page.ts, state/model.facade.ts, state/model.guards.ts
     ui/form-model-params/, model-charts/, model-metrics/, echart/, bot-labels/
@@ -110,10 +120,10 @@ src/app/
   # geplant
   shell/                        # Ebenen-Layout, Modus/Kamera (K2)
   scene/                        # Canvas-Renderer
-  sonar/, genome/, finds/, settings/
+  genome/, finds/, settings/
 ```
 
-Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `apply` und `step` daraus zusammen.
+Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `applyCommand`/`apply` und `step` daraus zusammen. Eine `domain`-Schicht in einer Oberflächen-Domäne (`hud/domain`, `sonar/domain`) enthält nur reine Eingabeprüfung ohne Spielregeln, damit Formular-Schemas in `ui` sie nutzen können.
 
 ### 3.3 Datenfluss
 
@@ -121,11 +131,11 @@ Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/doma
 Eingabe (Kauf, Zielwahl, Taste, Pinch)
    │
    ▼
-Facade.buy(…) ──► GameStore.dispatch(cmd) ──► engine: apply(state, cmd) ──► neuer State
+Facade.buy(…) ──► GameStore.dispatch(cmd) ──► engine: applyCommand(state, cmd)─┐
                                                                                │
 GameLoop (fester Takt) ──► GameStore.tick(dt) ──► engine: step(state, dt) ─────┤
                                                                                ▼
-                                                      GameStore.state = signal(State)
+                                 GameStore.state = signal(State), GameStore.log (Ereignisse)
                                                                                │
                                      Facades: computed()-Viewmodels (Raten, Preise, Status)
                                                                                │
@@ -134,9 +144,10 @@ GameLoop (fester Takt) ──► GameStore.tick(dt) ──► engine: step(state
                            HUD/Sonar/Genom (Templates, ui-Komponenten)   Szene (Canvas liest State im rAF)
 ```
 
-- **Unveränderlicher Zustand:** `apply` und `step` liefern neue Objekte (flache Kopien der geänderten Teile). Das passt zu Signals und macht Tests einfach.
+- **Unveränderlicher Zustand:** `applyCommand` und `step` liefern neue Objekte (flache Kopien der geänderten Teile). Das passt zu Signals und macht Tests einfach.
 - **Abgeleitete Werte** (Raten, Preise, Einnehmbarkeit) werden nicht im State gespeichert. Sie entstehen über reine Funktionen in `balance/domain` und werden in den Facades als `computed()`-Viewmodels gekapselt. Komponenten lesen nur diese Viewmodels.
-- **Ereignisse** (Einheit gefallen, Fund, Ankunft) gibt `step` als Liste zurück. Das Log, Effekte und die Rückkehr-Zusammenfassung lesen sie.
+- **Ereignisse:** `applyCommand` und `step` liefern `StepResult` = `{ state, events }`. Die Ereignisse (`GameEvent`, seit M1.2 `departed`, `arrived`, `siteDepleted`) sind Codes mit IDs, Rohwerten und der Spielzeit `playedMs`; die Texte setzt die Oberfläche. `apply` ist die Kurzform ohne Ereignisse. Später lesen auch Effekte und die Rückkehr-Zusammenfassung sie (Einheit gefallen, Fund).
+- **Ereignis-Log:** Der `GameStore` hängt die Ereignisse aus `dispatch` und `tick` an sein Signal `log` an, höchstens 50 Einträge (`LOG_MAX_ENTRIES`), älteste zuerst. Das Log liegt nur im Arbeitsspeicher und gehört nicht zum Spielstand. `replace` leert es nur bei einem anderen Spiel (anderer Seed) oder wenn die Spielzeit zurückspringt, nicht beim Speichern oder Uhrabgleich.
 
 ### 3.4 Zustandsmodell (Entwurf)
 
@@ -149,17 +160,20 @@ interface GameState {
   res: { food: Num; dna: Num };
   units: { queens: Num; drones: Num; soldiers: Num };
   pheromones: { total: number; drones: number; soldiers: number };
-  site: SiteState;              // aktuelle Futterstelle (Typ, Vorrat, Größe …)
-  map: { candidates: SiteCandidate[]; route: RoutePoint[]; range: number };
+  site: { type: SiteTypeId; size: Num; stock: Num };   // aktuelle Futterstelle
+  bought: { queens: Num; drones: Num; soldiers: Num };  // Kaufzähler, Grundlage der Preise
+  map: { position: Position; candidates: SiteCandidate[]; route: RoutePoint[]; moves: number };
+  travel: { target: SiteCandidate; remainingMs: number } | null;
+  auto: { enabled: boolean; strategy: StrategyId; threshold: number };
+  priority: TransportPriority;  // Mitnahme-Priorität beim Aufbruch
   genome: { owned: string[] };  // IDs der Adaptionen
   finds: { collected: Record<string, number>; badges: string[]; buffs: Buff[] };
-  auto: { enabled: boolean; strategy: Strategy; threshold: number; priority: Priority };
   stats: Stats;                 // Summen für Zusammenfassung und Erfolge
   settings: Settings;
 }
 ```
 
-Save-Version 2 enthält `version`, `seed`, `rngState`, `time`, `era`, `res`, `units`, `site` und `bought` ([Game-Design §5](game-design.md#5-spielstand-version-2)). Der Rest des Entwurfs kommt mit den jeweiligen Mechaniken über Migrationen.
+Save-Version 3 enthält `version`, `seed`, `rngState`, `time`, `era`, `res`, `units`, `site`, `bought`, `map`, `travel`, `auto` und `priority` ([Game-Design §5](game-design.md#5-spielstand-version-3)). Die Reichweite steht nicht im Zustand, sie wird abgeleitet. `pheromones`, `genome`, `finds`, `stats` und `settings` sind Entwurf und kommen mit den jeweiligen Mechaniken über Migrationen.
 
 IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil**. Spielstände speichern nur IDs, keine Texte oder Werte.
 
@@ -185,7 +199,7 @@ Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `balance/domain`. Spi
 
 ### 5.2 Modellgrößen (Entwurf für spätere Größen)
 
-> Für M1.1 ist die [Game-Design-Spezifikation](game-design.md) maßgeblich. Die Tabelle bleibt als Entwurf für spätere Größen stehen; bei Abweichungen gilt die Spezifikation.
+> Für M1.1 und M1.2 ist die [Game-Design-Spezifikation](game-design.md) maßgeblich, auch für Platz, Kampf (Verluste-Formel `L = S · λ · (B / A)^κ`), DNA-Belohnung (`d_0 · B^δ`), Futterstellen-Generator, Transport und Opfern. Die Tabelle bleibt als Entwurf für spätere Größen stehen (z. B. Pheromone, `M_platz`, `M_angriff`); bei Abweichungen gilt die Spezifikation.
 
 | Größe | Formel (Entwurf) |
 |---|---|
@@ -216,8 +230,10 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 
 - Der Runner läuft im **Web Worker**, damit die Modell-Seite flüssig bleibt; in Vitest läuft er direkt.
 - `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Käufe liegen also exakt auf ihrer Zeit.
+- Der Runner wendet Kommandos über `applyCommand` an und übernimmt die Ereignisse aus Kommandos und Schritten (`siteDepleted` → `siteEmpty`, `departed`, `arrived`). Daraus entstehen die Futterstellen der Kennzahlen (Beginn bei der Ankunft, Ende bei leerem Vorrat).
+- Er teilt die Schritte zusätzlich an der Ankunft und am vorhergesagten Auslöser des Auto-Weiterziehens (`V = θ · G`, exakt, weil die Abbaurate im Schritt konstant ist). `step` selbst teilt einen Schritt an der Ankunft ([Game-Design §4.3](game-design.md#43-simulationsschritt)).
 - Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten, die Futterstellen werden zusammengefasst.
-- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Ab M1.2: **Drohnen-lastig**, **Soldaten-lastig**.
+- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Seit AP 1.2.7 schalten beide bei ihrer ersten Entscheidung das Auto-Weiterziehen ein (`CommandPlan.enableAutoMove`) und ziehen damit weiter. Ab AP 1.2.9: **Drohnen-lastig**, **Soldaten-lastig**.
 - `params` überschreibt Konstanten aus `balance/domain`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
 
 ### 5.4 Kennzahlen
@@ -240,7 +256,7 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 │ Seed           │ │ [Ressourcen] [Raten] [Entscheidungen]           │
 │ Dauer 1h…7d    │ │                                                 │
 │ Bots ☑☑        │ │  ▁▂▃▅▇  log ▾  Zoom                             │
-│ Konstanten …   │ │  Markierungen: ▲ Kauf ◆ leer ● neue Futterstelle│
+│ Konstanten …   │ │  Markierungen: ▲ Kauf ◆ leer ● Weitergezogen    │
 │ [Basislauf] [▶]│ ├ Kennzahlen ─────────────────────────────────────┤
 │ [JSON export]  │ │ je Bot: Käufe, Wartezeit, Futterstellen, …      │
 └────────────────┘ └─────────────────────────────────────────────────┘
@@ -282,7 +298,7 @@ export const GENOME_ERA1: GenomeNode[] = [
 | Speicherort | `localStorage`, Schlüssel `idleswarm.save`; zusätzlich ein Backup-Slot des vorletzten Stands und der Slot `idleswarm.save.unreadable`: Ein unlesbarer Primär-Stand wird beim nächsten Speichern dorthin verschoben statt überschrieben |
 | Format | JSON → komprimiert (`lz-string`) → Base64; `Num` als String serialisiert |
 | Autosave | alle 30 s (einstellbar), bei `visibilitychange` (hidden) und `pagehide` |
-| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/index.ts` (aktuell Version 2, mit der Migration 1→2) |
+| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/migrations-logic.ts` (aktuell Version 3, mit den Migrationen 1→2 und 2→3; beide setzen den Spielstand bis auf Seed, RNG-Zustand und Zeiten auf die Startwerte) |
 | Robustheit | Validierung beim Laden. Bei einem Fehler wird der Backup-Slot geladen und der Spieler informiert |
 | Export/Import | derselbe String zum Kopieren; Import validiert und migriert |
 | Später | Cloud-Sync optional (Querschnittsthema), ohne Änderung am Format |

@@ -226,7 +226,7 @@ describe('step mit Weiterziehen', () => {
     candidate('methane-seep', 0, 6.5, 108_500, 73),
   ];
 
-  // Beispiel 7 nimmt S = 34 bei Q = 1 mit; dafür braucht es 68 Plätze statt 10.
+  // Die übrigen Reisetests nehmen S = 34 bei Q = 1 mit; dafür braucht es 68 Plätze statt 10.
   const params = { ...DEFAULT_BALANCE, queenSpace: 70 };
 
   function swarm(candidates: readonly SiteCandidate[] = EXAMPLE_3): GameState {
@@ -263,13 +263,22 @@ describe('step mit Weiterziehen', () => {
   }
 
   it('rechnet Beispiel 7 aus Game-Design §4.11', () => {
-    const { state, events } = run(departed(0), 30_000, TICK_MS);
-    // Unterwegs schlüpfen 0,75 Soldaten, gekämpft wird mit S = 34,75.
-    expect(state.units.soldiers.toNumber()).toBeCloseTo(34.75 - 9.73, 2);
-    expect(state.units.drones.toNumber()).toBeCloseTo(2.25, 10);
+    // Q = 7 bietet 70 Plätze, alle 68 belegten kommen mit; Standardwerte ohne Override.
+    const base = swarm();
+    const input = deepFreeze({
+      ...base,
+      res: { ...base.res, food: Num.from(300) },
+      units: { ...base.units, queens: Num.from(7) },
+    });
+    const start = applyCommand(input, { type: 'depart', target: 0 }, DEFAULT_BALANCE);
+    expect(start.events.map((event) => event.type)).toEqual(['departed']);
+    const { state, events } = run(deepFreeze(start.state), 30_000, TICK_MS, DEFAULT_BALANCE);
+    // Unterwegs schlüpfen 21 Eier, gekämpft wird mit S = 39,25.
+    expect(state.units.soldiers.toNumber()).toBeCloseTo(39.25 - 8.61, 2);
+    expect(state.units.drones.toNumber()).toBeCloseTo(15.75, 10);
     expect(state.res.dna.toNumber()).toBeCloseTo(13.55, 2);
-    // Ohne Sammeln unterwegs: nur die Brutkosten von 3 Eiern · 13,75.
-    expect(state.res.food.toNumber()).toBeCloseTo(100 - 41.25, 10);
+    // Ohne Sammeln unterwegs: nur die Brutkosten von 21 Eiern · 13,75.
+    expect(state.res.food.toNumber()).toBeCloseTo(300 - 288.75, 8);
     expect(state.site).toEqual({ type: 'vent', size: Num.from(30_240), stock: Num.from(30_240) });
     expect(state.map.moves).toBe(1);
     expect(state.map.position).toEqual({ x: 3, y: 0 });
@@ -280,7 +289,7 @@ describe('step mit Weiterziehen', () => {
       throw new Error('arrived erwartet');
     }
     expect(arrived.playedMs).toBe(30_000);
-    expect(arrived.losses.toNumber()).toBeCloseTo(9.73, 2);
+    expect(arrived.losses.toNumber()).toBeCloseTo(8.61, 2);
   });
 
   it('zählt die Restdauer herunter und ruht unterwegs beim Sammeln', () => {

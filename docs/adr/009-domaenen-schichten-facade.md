@@ -34,6 +34,12 @@ Als Vorbild dient die Architektur aus PortfoliGo (Domäne × Schicht, Facades, N
 - [`ModelFacade`](../../src/app/model/feature/state/model.facade.ts) mit `SimService`, Basislauf, Zoom und entprelltem Auto-Lauf; der Worker endet mit der Seite.
 - [`eslint.config.js`](../../eslint.config.js): Schichtregeln je Domäne, Fremd-Domänen nur über `@app/…`, Determinismus in `domain`/`util`, `import-x/order` und Klassensuffixe `Page`/`Component`.
 
+**Umgesetzt** in M1.2 (AP 1.2.1–1.2.7):
+
+- Neue Domäne `sonar` mit der lazy Route `/umgebung` ([`SonarFacade`](../../src/app/sonar/feature/state/sonar.facade.ts), reines Viewmodel `toSonarView`, präsentationale Zielliste, Detailpanel und Einstellungsformular). Die Regeln für Generator, Kampf, Weiterziehen und Strategien liegen in `site/domain`, Transport und Opfern in `swarm/domain`; `engine/domain` setzt sie in `applyCommand` und `step` zusammen.
+- `site/ui` ([`site-type-labels`](../../src/app/site/ui/site-type-labels/site-type-labels.ts)): Namen der Futterstellentypen, die HUD, Log und Umgebung gemeinsam nutzen.
+- `domain`-Schicht in Oberflächen-Domänen nur für reine Eingabeprüfung: [`hud/domain/sacrifice-count-logic.ts`](../../src/app/hud/domain/sacrifice-count-logic.ts) und [`sonar/domain/auto-threshold-logic.ts`](../../src/app/sonar/domain/auto-threshold-logic.ts); die Formular-Schemas in `ui` nutzen sie.
+
 ## Konsequenzen
 
 - Fachliche Grenzen sind im Ordnerbaum sichtbar; neue Mechaniken bekommen eine eigene Domäne statt eines weiteren Ordners in `core/`.
