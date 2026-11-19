@@ -1,6 +1,7 @@
 import { Num } from '@app/shared/util/num/num';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { CandidateStatus, Position } from '@app/site/domain/models/map.model';
+import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
 import type { UnitType, Units } from '@app/swarm/domain/models/units.model';
 
 import type { BalanceParams } from './constants';
@@ -170,7 +171,12 @@ export function broodResult(
 
 /** Gesamtangriff: `S · a_s` (Game-Design §4.5). */
 export function totalAttack(units: Units, params: BalanceParams): Num {
-  return units.soldiers.mul(params.soldierAttack);
+  return soldierAttack(units.soldiers, params);
+}
+
+/** Angriff `A = S · a_s` einer Anzahl Soldaten, z. B. der mitkommenden `S'` (Game-Design §4.8). */
+export function soldierAttack(soldiers: Num, params: BalanceParams): Num {
+  return soldiers.mul(params.soldierAttack);
 }
 
 /** Verfügbarer Platz: `Q · p_q` (Game-Design §4.5). */
@@ -192,6 +198,105 @@ export function spaceUsage(units: Units, params: BalanceParams): Num | null {
 /** Warnschwelle: `belegt ≥ 0,9 · verfügbar`, also auch immer bei 0 verfügbarem Platz. */
 export function isSpaceWarning(units: Units, params: BalanceParams): boolean {
   return spaceUsed(units, params).gte(spaceAvailable(units, params).mul(SPACE_WARNING_SHARE));
+}
+
+/**
+ * Wie viele Einheiten mit Platzbedarf `space` in `capacity` passen, höchstens `count`. Ohne
+ * Platzbedarf passen alle.
+ */
+function fitting(count: Num, capacity: Num, space: number): Num {
+  return space > 0 ? count.min(capacity.max(Num.ZERO).div(space)) : count;
+}
+
+/**
+ * Mitkommende Einheiten `D'`, `S'` beim Aufbruch je Mitnahme-Priorität (Game-Design §4.9).
+ * Königinnen kommen immer mit; bei `O ≤ C` kommen alle mit, und es kommt dasselbe Objekt zurück.
+ */
+export function carriedUnits(
+  units: Units,
+  priority: TransportPriority,
+  params: BalanceParams,
+): Units {
+  const capacity = spaceAvailable(units, params).max(Num.ZERO);
+  const used = spaceUsed(units, params);
+  if (used.lte(capacity)) {
+    return units;
+  }
+  const { drones, soldiers } = units;
+  const { droneSpace, soldierSpace } = params;
+  switch (priority) {
+    case 'drones-first': {
+      const carried = fitting(drones, capacity, droneSpace);
+      const rest = capacity.sub(carried.mul(droneSpace));
+      return { ...units, drones: carried, soldiers: fitting(soldiers, rest, soldierSpace) };
+    }
+    case 'soldiers-first': {
+      const carried = fitting(soldiers, capacity, soldierSpace);
+      const rest = capacity.sub(carried.mul(soldierSpace));
+      return { ...units, drones: fitting(drones, rest, droneSpace), soldiers: carried };
+    }
+    case 'balanced': {
+      // `O > C ≥ 0`, also ist `O` positiv.
+      const share = capacity.div(used);
+      return { ...units, drones: drones.mul(share), soldiers: soldiers.mul(share) };
+    }
+  }
+}
+
+/** Einnehmbar: `A ≥ B` (Game-Design §4.8); vor dem Aufbruch mit `A'` nach Transport. */
+export function isCapturable(attack: Num, defense: Num): boolean {
+  return attack.gte(defense);
+}
+
+/**
+ * Erwartete Verluste `L = S · λ · (B / A)^κ · M_verlust` mit `M_verlust = 1` bis M1.3
+ * (Game-Design §4.8); 0 bei `B = 0`, auch bei `A = 0`. Für nicht einnehmbare Ziele ist `B / A` auf 1
+ * begrenzt, `L` also höchstens `λ · S`.
+ */
+export function expectedLosses(soldiers: Num, defense: Num, params: BalanceParams): Num {
+  if (!defense.gt(Num.ZERO) || !soldiers.gt(Num.ZERO)) {
+    return Num.ZERO;
+  }
+  const cap = soldiers.mul(params.lossFactor);
+  const attack = soldiers.mul(params.soldierAttack);
+  if (!attack.gt(Num.ZERO)) {
+    return cap;
+  }
+  const ratio = defense.div(attack).min(Num.ONE);
+  return cap.mul(ratio.pow(params.lossExponent)).min(cap);
+}
+
+/** Erwarteter Verlustanteil `L / S'` (Game-Design §4.5); 0 bei `L = 0`. */
+export function expectedLossShare(losses: Num, soldiers: Num): Num {
+  return losses.gt(Num.ZERO) && soldiers.gt(Num.ZERO) ? losses.div(soldiers) : Num.ZERO;
+}
+
+/**
+ * Ausbeute beim Opfern `η = min(η_0 · M_ausbeute, 1 − v_min)` (Game-Design §4.10). Einzige Quelle der
+ * Ausbeute: Adaptionen ab M1.3 ergänzen hier ihren Modifikator `M_ausbeute` (bis dahin 1).
+ */
+export function sacrificeYieldShare(params: BalanceParams): number {
+  const yieldModifier = 1;
+  return Math.min(params.sacrificeYield * yieldModifier, 1 - params.minSacrificeLoss);
+}
+
+/** Umwandlungsverlust `1 − η`, vor dem Opfern angezeigt (Game-Design §4.10, US-04.07). */
+export function sacrificeLossShare(params: BalanceParams): number {
+  return 1 - sacrificeYieldShare(params);
+}
+
+/** Nahrung aus `n` geopferten Drohnen: `n · η · c_d`, zum Basispreis (Game-Design §4.10). */
+export function sacrificeFood(count: Num, params: BalanceParams): Num {
+  return count.mul(sacrificeYieldShare(params) * params.droneCost);
+}
+
+/**
+ * Drohnen je Königin `k_q = Preis_Königin / (η · c_d)` zum aktuellen Königinnenpreis
+ * (Game-Design §4.10). Ohne positiven Drohnenwert `η · c_d` ist keine Umwandlung möglich: `null`.
+ */
+export function dronesPerQueen(bought: Units, params: BalanceParams): Num | null {
+  const droneValue = sacrificeYieldShare(params) * params.droneCost;
+  return droneValue > 0 ? unitPrice('queens', bought, params).div(droneValue) : null;
 }
 
 /** Effekt einer weiteren Königin: `+e_q · M_brut` Eier/min, `+p_q` Platz (Game-Design §4.5). */

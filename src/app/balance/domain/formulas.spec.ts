@@ -37,6 +37,14 @@ import {
   travelDurationMs,
   unitPrice,
   weightedIndex,
+  carriedUnits,
+  dronesPerQueen,
+  expectedLossShare,
+  expectedLosses,
+  isCapturable,
+  sacrificeFood,
+  sacrificeLossShare,
+  sacrificeYieldShare,
 } from './formulas';
 
 function units(queens: number, drones: number, soldiers: number): Units {
@@ -554,5 +562,143 @@ describe('clampAutoThreshold', () => {
     expect(clampAutoThreshold(0.5, DEFAULT_BALANCE)).toBe(0.5);
     expect(clampAutoThreshold(1, DEFAULT_BALANCE)).toBe(0.9);
     expect(clampAutoThreshold(-0.1, DEFAULT_BALANCE)).toBe(0);
+  });
+});
+
+describe('Kampf (Game-Design §4.8)', () => {
+  it('rechnet Beispiel 4: S = 34 gegen B = 26', () => {
+    const losses = expectedLosses(Num.from(34), Num.from(26), DEFAULT_BALANCE);
+    expect(isCapturable(Num.from(34), Num.from(26))).toBe(true);
+    expect(losses.toNumber()).toBeCloseTo(9.94, 2);
+    expect(expectedLossShare(losses, Num.from(34)).toNumber()).toBeCloseTo(0.292, 3);
+    expect(dnaReward(Num.from(26), DEFAULT_BALANCE).toNumber()).toBeCloseTo(13.55, 2);
+  });
+
+  it('rechnet K4 aus Beispiel 8: S = 34 gegen B = 20', () => {
+    const losses = expectedLosses(Num.from(34), Num.from(20), DEFAULT_BALANCE);
+    expect(losses.toNumber()).toBeCloseTo(5.88, 2);
+    expect(expectedLossShare(losses, Num.from(34)).toNumber()).toBeCloseTo(0.173, 3);
+  });
+
+  it('beurteilt K2 (B = 52) bei A = 34 als zu stark', () => {
+    expect(isCapturable(Num.from(34), Num.from(52))).toBe(false);
+  });
+
+  it('ist bei A = B einnehmbar und verliert dann λ · S', () => {
+    expect(isCapturable(Num.from(26), Num.from(26))).toBe(true);
+    expect(expectedLosses(Num.from(26), Num.from(26), DEFAULT_BALANCE).eq(13)).toBe(true);
+  });
+
+  it.each([
+    [0, 0],
+    [34, 0],
+  ])('verliert bei S = %d gegen B = 0 nichts', (soldiers, defense) => {
+    const losses = expectedLosses(Num.from(soldiers), Num.from(defense), DEFAULT_BALANCE);
+    expect(losses.isZero()).toBe(true);
+    expect(isCapturable(Num.from(soldiers), Num.from(defense))).toBe(true);
+    expect(expectedLossShare(losses, Num.from(soldiers)).isZero()).toBe(true);
+  });
+
+  it('verliert ohne Soldaten nichts, auch gegen Abwehr', () => {
+    expect(expectedLosses(Num.ZERO, Num.from(26), DEFAULT_BALANCE).isZero()).toBe(true);
+    expect(isCapturable(Num.ZERO, Num.from(26))).toBe(false);
+  });
+
+  it('begrenzt die Verluste gegen zu starke Ziele auf λ · S', () => {
+    expect(expectedLosses(Num.from(10), Num.from(52), DEFAULT_BALANCE).eq(5)).toBe(true);
+    const noAttack = { ...DEFAULT_BALANCE, soldierAttack: 0 };
+    expect(expectedLosses(Num.from(10), Num.from(1), noAttack).eq(5)).toBe(true);
+  });
+
+  it('nutzt überschriebene Parameter', () => {
+    const params = { ...DEFAULT_BALANCE, lossFactor: 0.4, lossExponent: 1, soldierAttack: 2 };
+    // A = 20, L = 10 · 0,4 · (10 / 20)^1 = 2
+    expect(expectedLosses(Num.from(10), Num.from(10), params).eq(2)).toBe(true);
+  });
+});
+
+describe('carriedUnits (Game-Design §4.9)', () => {
+  // Beispiel 5: C = 200, O = 760.
+  const swarm = units(20, 500, 130);
+
+  it('teilt bei „ausgewogen“ beide Typen mit C / O', () => {
+    const carried = carriedUnits(swarm, 'balanced', DEFAULT_BALANCE);
+    expect(carried.queens.eq(20)).toBe(true);
+    expect(carried.drones.toNumber()).toBeCloseTo(131.58, 2);
+    expect(carried.soldiers.toNumber()).toBeCloseTo(34.21, 2);
+    expect(totalAttack(carried, DEFAULT_BALANCE).toNumber()).toBeCloseTo(34.21, 2);
+  });
+
+  it('nimmt bei „Drohnen zuerst“ 200 Drohnen und keine Soldaten', () => {
+    const carried = carriedUnits(swarm, 'drones-first', DEFAULT_BALANCE);
+    expect(carried.drones.eq(200)).toBe(true);
+    expect(carried.soldiers.isZero()).toBe(true);
+  });
+
+  it('nimmt bei „Soldaten zuerst“ 100 Soldaten und keine Drohnen', () => {
+    const carried = carriedUnits(swarm, 'soldiers-first', DEFAULT_BALANCE);
+    expect(carried.drones.isZero()).toBe(true);
+    expect(carried.soldiers.eq(100)).toBe(true);
+  });
+
+  it('füllt den Restplatz mit dem anderen Typ', () => {
+    // C = 20, O = 30: Drohnen zuerst 10 + (20 − 10) / 2 = 5 Soldaten; Soldaten zuerst 10 · 2, 0 Drohnen.
+    const mixed = units(2, 10, 10);
+    const dronesFirst = carriedUnits(mixed, 'drones-first', DEFAULT_BALANCE);
+    expect(dronesFirst.drones.eq(10)).toBe(true);
+    expect(dronesFirst.soldiers.eq(5)).toBe(true);
+    const soldiersFirst = carriedUnits(mixed, 'soldiers-first', DEFAULT_BALANCE);
+    expect(soldiersFirst.soldiers.eq(10)).toBe(true);
+    expect(soldiersFirst.drones.isZero()).toBe(true);
+  });
+
+  it.each(['balanced', 'drones-first', 'soldiers-first'] as const)(
+    'nimmt bei „%s“ alle mit, wenn der Platz reicht (auch O = C)',
+    (priority) => {
+      const fits = units(2, 16, 2);
+      expect(carriedUnits(fits, priority, DEFAULT_BALANCE)).toBe(fits);
+    },
+  );
+
+  it('lässt ohne Königinnen alle Drohnen und Soldaten zurück', () => {
+    const carried = carriedUnits(units(0, 5, 3), 'balanced', DEFAULT_BALANCE);
+    expect(carried.drones.isZero()).toBe(true);
+    expect(carried.soldiers.isZero()).toBe(true);
+  });
+
+  it('nimmt Einheiten ohne Platzbedarf immer mit', () => {
+    const params = { ...DEFAULT_BALANCE, droneSpace: 0 };
+    const carried = carriedUnits(units(1, 50, 10), 'drones-first', params);
+    expect(carried.drones.eq(50)).toBe(true);
+    expect(carried.soldiers.eq(5)).toBe(true);
+  });
+});
+
+describe('Drohnen opfern (Game-Design §4.10)', () => {
+  it('rechnet Beispiel 6: 10 Drohnen ergeben 50 Nahrung, Verlust 50 %', () => {
+    expect(sacrificeYieldShare(DEFAULT_BALANCE)).toBe(0.5);
+    expect(sacrificeLossShare(DEFAULT_BALANCE)).toBe(0.5);
+    expect(sacrificeFood(Num.from(10), DEFAULT_BALANCE).eq(50)).toBe(true);
+  });
+
+  it('bewertet Bruchteile anteilig', () => {
+    expect(sacrificeFood(Num.from(2.5), DEFAULT_BALANCE).eq(12.5)).toBe(true);
+  });
+
+  it('kappt die Ausbeute bei 1 − v_min', () => {
+    const params = { ...DEFAULT_BALANCE, sacrificeYield: 2 };
+    expect(sacrificeYieldShare(params)).toBe(0.9);
+    expect(sacrificeLossShare(params)).toBeCloseTo(0.1, 12);
+    expect(sacrificeFood(Num.from(10), params).eq(90)).toBe(true);
+  });
+
+  it('kostet beim Start 12 Drohnen je Königin, nach fünf Käufen ≈ 29,86', () => {
+    expect(dronesPerQueen(units(0, 0, 0), DEFAULT_BALANCE)?.toNumber()).toBeCloseTo(12, 12);
+    expect(dronesPerQueen(units(5, 0, 0), DEFAULT_BALANCE)?.toNumber()).toBeCloseTo(29.86, 2);
+  });
+
+  it('hat ohne positiven Drohnenwert keinen Preis in Drohnen', () => {
+    expect(dronesPerQueen(units(0, 0, 0), { ...DEFAULT_BALANCE, droneCost: 0 })).toBeNull();
+    expect(dronesPerQueen(units(0, 0, 0), { ...DEFAULT_BALANCE, sacrificeYield: 0 })).toBeNull();
   });
 });

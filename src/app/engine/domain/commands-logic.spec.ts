@@ -61,4 +61,52 @@ describe('apply', () => {
       expect(apply(current, { type: 'newSite' })).toBe(current);
     });
   });
+  describe('sacrificeDrones', () => {
+    const withDrones = Object.freeze({
+      ...state,
+      units: Object.freeze({ ...state.units, drones: Num.from(10) }),
+    });
+
+    it('opfert Drohnen für Nahrung (Beispiel 6)', () => {
+      const next = apply(withDrones, { type: 'sacrificeDrones', count: 10 });
+      expect(next.units.drones.isZero()).toBe(true);
+      expect(next.res.food.eq(withDrones.res.food.add(50))).toBe(true);
+      expect(withDrones.units.drones.eq(10)).toBe(true);
+    });
+
+    it.each([0, -3, NaN])('gibt bei count = %d denselben Zustand zurück', (count) => {
+      expect(apply(withDrones, { type: 'sacrificeDrones', count })).toBe(withDrones);
+    });
+  });
+
+  describe('convertDronesToQueen', () => {
+    it('wandelt 12 Drohnen in eine Königin um', () => {
+      const current = Object.freeze({
+        ...state,
+        units: Object.freeze({ ...state.units, drones: Num.from(12) }),
+      });
+      const next = apply(current, { type: 'convertDronesToQueen' });
+      expect(next.units.queens.eq(state.units.queens.add(1))).toBe(true);
+      expect(next.units.drones.toNumber()).toBeCloseTo(0, 12);
+      expect(next.bought.queens.eq(1)).toBe(true);
+    });
+
+    it('gibt ohne genug Drohnen denselben Zustand zurück', () => {
+      expect(apply(state, { type: 'convertDronesToQueen' })).toBe(state);
+    });
+  });
+
+  describe('setTransportPriority', () => {
+    it('setzt die Priorität', () => {
+      const next = apply(state, { type: 'setTransportPriority', priority: 'soldiers-first' });
+      expect(next.priority).toBe('soldiers-first');
+      expect(state.priority).toBe('balanced');
+    });
+
+    it('gibt bei unbekannter ID denselben Zustand zurück', () => {
+      // @ts-expect-error: `queens-first` ist keine Mitnahme-Priorität.
+      const cmd: Command = { type: 'setTransportPriority', priority: 'queens-first' };
+      expect(apply(state, cmd)).toBe(state);
+    });
+  });
 });
