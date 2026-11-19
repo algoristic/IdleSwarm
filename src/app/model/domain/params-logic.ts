@@ -6,11 +6,12 @@ import {
   SITE_TYPE_PARAMS,
   UNIQUE_ADAPTATION_PARAMS,
 } from '@app/balance/domain/formulas';
-import { COLLECTION_SETS } from '@app/finds/domain/data/finds-era1.data';
+import { COLLECTION_SETS, FIND_ENTRIES_BY_SITE } from '@app/finds/domain/data/finds-era1.data';
 import { BUFF_IDS } from '@app/finds/domain/models/finds.model';
 import { GENOME_NODES, UNIQUE_ADAPTATIONS } from '@app/genome/domain/data/genome-era1.data';
 import type { EffectSpec } from '@app/genome/domain/models/genome.model';
 import { NumberRange, parseDecimal } from '@app/shared/util/parse/parse';
+import { SITE_TYPE_IDS, SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 
 export type ParamKey = keyof BalanceParams;
 export type ParamOverrides = Partial<Record<ParamKey, number>>;
@@ -22,7 +23,12 @@ export interface ParamLimit extends NumberRange {
 }
 
 /** Widersprüche zwischen Konstanten, die jede für sich gültig sind. */
-export const PARAM_CONFLICTS = ['candidateDistance', 'autoThreshold', 'siteTypeWeights'] as const;
+export const PARAM_CONFLICTS = [
+  'candidateDistance',
+  'autoThreshold',
+  'siteTypeWeights',
+  'findWeights',
+] as const;
 export type ParamConflict = (typeof PARAM_CONFLICTS)[number];
 /** Konflikt je Feld, an dem er gemeldet wird. */
 export type ParamConflicts = Partial<Readonly<Record<ParamKey, ParamConflict>>>;
@@ -62,6 +68,11 @@ const FIND_CHANCE_KEYS: ReadonlySet<ParamKey> = new Set(
   SITE_TYPE_KEYS.map((keys) => keys.findChance),
 );
 const WEIGHT_KEYS: ReadonlySet<ParamKey> = new Set(SITE_TYPE_KEYS.map((keys) => keys.weight));
+
+// Fundgewichte je Typ aus der Fundtabelle, damit neue Einträge und Typen von selbst erfasst werden.
+function findWeightKeys(type: SiteTypeId): readonly ParamKey[] {
+  return FIND_ENTRIES_BY_SITE[type].map((entry) => FIND_ENTRY_PARAMS[entry.id].weight);
+}
 
 /** Steigernde Faktoren `mul ≥ 1` (Datenregel, Game-Design §4.13). */
 const RAISING_FACTOR_LIMIT: ParamLimit = { min: 1 };
@@ -163,14 +174,32 @@ export function isValidParam(key: ParamKey, text: string): boolean {
 
 /**
  * Widersprüche zwischen gültigen Eingaben: kleinste Kandidatendistanz über der größten,
- * Standard-Schwelle über der höchsten, keine Typgewichte. Ungültige oder fehlende Eingaben
+ * Standard-Schwelle über der höchsten, keine Typgewichte, keine Fundgewichte an einem Typ. Ungültige oder fehlende Eingaben
  * prüft das jeweilige Feld selbst; sie lösen hier keinen Konflikt aus.
  */
+function draftValue(drafts: ParamDrafts, key: ParamKey): number | null {
+  const text = drafts[key];
+  return text === undefined ? null : parseParam(text, paramLimit(key));
+}
+
+/**
+ * Typen, an denen alle möglichen Fundeinträge das Gewicht 0 haben; die Ziehung fiele dort still auf
+ * „Fremde DNA“ zurück. Wie bei den anderen Konflikten zählen nur gültige, vorhandene Eingaben.
+ */
+export function findWeightConflicts(drafts: ParamDrafts): readonly SiteTypeId[] {
+  return SITE_TYPE_IDS.filter((type) => {
+    const keys = findWeightKeys(type);
+    return keys.length > 0 && keys.every((key) => draftValue(drafts, key) === 0);
+  });
+}
+
+/** Typen aus `findWeightConflicts`, zu deren Fundtabelle das Gewicht `key` gehört. */
+export function findWeightConflictsAt(drafts: ParamDrafts, key: ParamKey): readonly SiteTypeId[] {
+  return findWeightConflicts(drafts).filter((type) => findWeightKeys(type).includes(key));
+}
+
 export function paramConflicts(drafts: ParamDrafts): ParamConflicts {
-  const value = (key: ParamKey): number | null => {
-    const text = drafts[key];
-    return text === undefined ? null : parseParam(text, paramLimit(key));
-  };
+  const value = (key: ParamKey): number | null => draftValue(drafts, key);
   const conflicts: Partial<Record<ParamKey, ParamConflict>> = {};
   const minDistance = value('candidateMinDistance');
   const maxDistance = value('candidateMaxDistance');
@@ -187,6 +216,11 @@ export function paramConflicts(drafts: ParamDrafts): ParamConflicts {
   if (weights.length > 0 && weights.every((weight) => weight === 0)) {
     for (const key of weightKeys) {
       conflicts[key] = 'siteTypeWeights';
+    }
+  }
+  for (const type of findWeightConflicts(drafts)) {
+    for (const key of findWeightKeys(type)) {
+      conflicts[key] = 'findWeights';
     }
   }
   return conflicts;

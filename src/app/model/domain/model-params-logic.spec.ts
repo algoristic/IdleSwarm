@@ -66,6 +66,31 @@ describe('model-params-logic', () => {
     expect(toSimConfig({ ...defaults, params }, DEFAULT_BALANCE)).toBeNull();
   });
 
+  it('liefert ohne Fundgewicht an einem Typ keine Konfiguration', () => {
+    // Alle an `whale-fall` möglichen Fundeinträge (Game-Design §4.16).
+    const whaleFallWeights = [
+      'foreignDnaWeight',
+      'nutrientBubbleWeight',
+      'planktonBloomWeight',
+      'warmCurrentWeight',
+      'primalCrystalWeight',
+      'boneSplinterWeight',
+      'fatPearlWeight',
+      'toothScaleWeight',
+      'pumiceWeight',
+      'foamBallWeight',
+      'clayBeadWeight',
+    ] as const;
+    const params = { ...defaults.params };
+    for (const key of whaleFallWeights) {
+      params[key] = '0';
+    }
+    expect(toSimConfig({ ...defaults, params }, DEFAULT_BALANCE)).toBeNull();
+    expect(
+      toSimConfig({ ...defaults, params: { ...params, toothScaleWeight: '1' } }, DEFAULT_BALANCE),
+    ).not.toBeNull();
+  });
+
   it('wertet gleichwertige Eingaben als dieselbe Konfiguration', () => {
     const a = toSimConfig(withParam('droneCost', '10'), DEFAULT_BALANCE);
     const b = toSimConfig(withParam('droneCost', '10,0'), DEFAULT_BALANCE);

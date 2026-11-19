@@ -3,6 +3,7 @@ import { schema, validate } from '@angular/forms/signals';
 import type { ModelParamsValue } from '../../domain/models/model-params.model';
 import { BOT_KINDS } from '../../domain/models/sim.model';
 import {
+  findWeightConflictsAt,
   formatParam,
   isValidParam,
   ParamConflict,
@@ -27,11 +28,19 @@ function invalidParamMessage(limit: ParamLimit): string {
   return $localize`:@@uiModel-formModelParams-error-param:Ungültig: Zahl ab 0 eingeben, Dezimaltrenner Komma oder Punkt, kein Tausenderpunkt.`;
 }
 
-const CONFLICT_MESSAGES: Readonly<Record<ParamConflict, string>> = {
+type FixedConflict = Exclude<ParamConflict, 'findWeights'>;
+
+const CONFLICT_MESSAGES: Readonly<Record<FixedConflict, string>> = {
   candidateDistance: $localize`:@@uiModel-formModelParams-error-conflict-candidateDistance:Darf nicht kleiner sein als candidateMinDistance.`,
   autoThreshold: $localize`:@@uiModel-formModelParams-error-conflict-autoThreshold:Darf nicht kleiner sein als defaultAutoThreshold.`,
   siteTypeWeights: $localize`:@@uiModel-formModelParams-error-conflict-siteTypeWeights:Mindestens ein Ziehungsgewicht muss über 0 liegen.`,
 };
+
+// Wie die übrigen Meldungen nennt sie Schlüssel statt Namen: die Typ-IDs der betroffenen Typen.
+function findWeightsMessage(params: ModelParamsValue['params'], key: ParamKey): string {
+  const siteTypes = findWeightConflictsAt(params, key).join(', ');
+  return $localize`:@@uiModel-formModelParams-error-conflict-findWeights:Mindestens ein Fundgewicht an ${siteTypes}:siteTypes: muss über 0 liegen.`;
+}
 
 /** Regeln des Parameter-Panels; die Prüfungen selbst liegen in `model/domain`. */
 export function modelParamsSchema(keys: readonly ParamKey[]) {
@@ -59,10 +68,16 @@ export function modelParamsSchema(keys: readonly ParamKey[]) {
           : { kind: 'invalidParam', message: invalidParamMessage(paramLimit(key)) },
       );
       validate(path.params[key], ({ valueOf }) => {
-        const conflict = paramConflicts(valueOf(path.params))[key];
-        return conflict === undefined
-          ? null
-          : { kind: 'paramConflict', message: CONFLICT_MESSAGES[conflict] };
+        const params = valueOf(path.params);
+        const conflict = paramConflicts(params)[key];
+        if (conflict === undefined) {
+          return null;
+        }
+        const message =
+          conflict === 'findWeights'
+            ? findWeightsMessage(params, key)
+            : CONFLICT_MESSAGES[conflict];
+        return { kind: 'paramConflict', message };
       });
     }
   });

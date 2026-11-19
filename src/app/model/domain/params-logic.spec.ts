@@ -2,6 +2,8 @@ import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 
 import {
   changedParams,
+  findWeightConflicts,
+  findWeightConflictsAt,
   formatParam,
   paramConflicts,
   ParamDrafts,
@@ -163,6 +165,93 @@ describe('paramConflicts', () => {
   it('überlässt ungültige Eingaben der Feldprüfung', () => {
     expect(paramConflicts({ ...defaults, candidateMinDistance: 'x' })).toEqual({});
     expect(paramConflicts({ ...allWeights('0'), ventWeight: 'x' })).toEqual({});
+  });
+
+  it('meldet fehlende Fundgewichte an jedem Fundgewicht des Typs', () => {
+    expect(paramConflicts({ ...defaults, ...wholeTableWeights('0') })).toEqual(
+      Object.fromEntries(Object.keys(wholeTableWeights('0')).map((key) => [key, 'findWeights'])),
+    );
+  });
+});
+
+// Alle Fundeinträge der Ära I (Game-Design §4.16), unabhängig von der Fundtabelle im Code.
+const ALL_SITE_FIND_WEIGHTS = [
+  'foreignDnaWeight',
+  'nutrientBubbleWeight',
+  'planktonBloomWeight',
+  'warmCurrentWeight',
+  'pumiceWeight',
+  'foamBallWeight',
+  'clayBeadWeight',
+] as const;
+const VENT_FIND_WEIGHTS = [
+  ...ALL_SITE_FIND_WEIGHTS,
+  'thermophileWeight',
+  'sulfurPearlWeight',
+  'pyriteWeight',
+  'basaltPebbleWeight',
+  'magnetiteWeight',
+] as const;
+
+function wholeTableWeights(text: string): ParamDrafts {
+  return Object.fromEntries(
+    [
+      ...VENT_FIND_WEIGHTS,
+      'chloroplastWeight',
+      'primalCrystalWeight',
+      'stromatoliteWeight',
+      'biofilmDiscWeight',
+      'greenPearlWeight',
+      'boneSplinterWeight',
+      'fatPearlWeight',
+      'toothScaleWeight',
+    ].map((key) => [key, text]),
+  ) as ParamDrafts;
+}
+
+describe('findWeightConflicts', () => {
+  const defaults = Object.fromEntries(
+    paramFields(DEFAULT_BALANCE, {}).map((field) => [field.key, field.text]),
+  ) as ParamDrafts;
+  const ventZero = {
+    ...defaults,
+    ...Object.fromEntries(VENT_FIND_WEIGHTS.map((key) => [key, '0'])),
+  } as ParamDrafts;
+
+  it('meldet für die Standardwerte keinen Typ', () => {
+    expect(findWeightConflicts(defaults)).toEqual([]);
+  });
+
+  it('meldet einen Typ, an dem alle möglichen Fundgewichte 0 sind', () => {
+    expect(findWeightConflicts(ventZero)).toEqual(['vent']);
+    expect(findWeightConflicts({ ...defaults, ...wholeTableWeights('0') })).toEqual([
+      'algal-mat',
+      'vent',
+      'bacterial-mat',
+      'methane-seep',
+      'whale-fall',
+    ]);
+  });
+
+  it('meldet keinen Typ, sobald ein mögliches Fundgewicht über 0 liegt', () => {
+    expect(findWeightConflicts({ ...ventZero, magnetiteWeight: '0,5' })).toEqual([]);
+    expect(findWeightConflicts({ ...ventZero, foreignDnaWeight: '1' })).toEqual([]);
+  });
+
+  it('ignoriert Gewichte von Einträgen, die am Typ nicht möglich sind', () => {
+    expect(findWeightConflicts({ ...ventZero, chloroplastWeight: '5' })).toEqual(['vent']);
+  });
+
+  it('überlässt ungültige Eingaben der Feldprüfung', () => {
+    expect(findWeightConflicts({ ...ventZero, pyriteWeight: 'x' })).toEqual([]);
+  });
+
+  it('nennt je Gewicht nur die Typen, zu deren Fundtabelle es gehört', () => {
+    const drafts = { ...defaults, ...wholeTableWeights('0') };
+    expect(findWeightConflictsAt(drafts, 'thermophileWeight')).toEqual(['vent']);
+    expect(findWeightConflictsAt(drafts, 'sulfurPearlWeight')).toEqual(['vent', 'methane-seep']);
+    expect(findWeightConflictsAt(ventZero, 'foreignDnaWeight')).toEqual(['vent']);
+    expect(findWeightConflictsAt(ventZero, 'chloroplastWeight')).toEqual([]);
   });
 });
 
