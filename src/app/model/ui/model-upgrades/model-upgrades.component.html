@@ -1,0 +1,76 @@
+@let button =
+  'cursor-pointer rounded border border-border-control bg-surface-raised px-2.5 py-1 aria-selected:border-accent aria-selected:text-accent';
+@let th = 'border-b border-border px-2 py-1 text-left font-normal text-fg-muted';
+@let td = 'border-b border-border px-2 py-1 align-top';
+
+<section
+  class="grid gap-2 rounded-lg border border-border bg-glass p-3"
+  aria-labelledby="upgrades-title"
+>
+  <h2 id="upgrades-title" class="text-lg font-semibold" i18n="@@uiModel-modelUpgrades-title">
+    Wirkung von Upgrades
+  </h2>
+  <p class="text-xs text-fg-muted" i18n="@@uiModel-modelUpgrades-hint">
+    Bewertet am Zustand des gewählten Bots am Laufende. Genom-Knoten und einzigartige Adaptionen
+    vergleichen den Zustand ohne und mit dem Upgrade. Königin und Drüsenpunkt bewertet wie der Bot
+    „Aktiv“. Amortisation nur bei Kosten in Nahrung.
+  </p>
+  <div class="flex flex-wrap items-center gap-1 text-sm" role="tablist">
+    @for (run of runs(); track run.bot) {
+      <button
+        type="button"
+        role="tab"
+        [class]="button"
+        [attr.data-testid]="'model.upgrades.bot-' + run.bot"
+        [attr.aria-selected]="bot() === run.bot"
+        (click)="bot.set(run.bot)"
+      >
+        {{ botLabels[run.bot] }}
+      </button>
+    }
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full border-collapse text-sm tabular-nums" data-testid="model.upgrades.table">
+      <thead>
+        <tr>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-upgrade">Upgrade</th>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-kind">Art</th>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-status">Status</th>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-cost">Kosten</th>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-effect">
+            Wirkung (vorher → nachher)
+          </th>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-foodGain">+ Nahrung/s</th>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-foodGainShare">
+            + Anteil
+          </th>
+          <th scope="col" [class]="th" i18n="@@uiModel-modelUpgrades-col-payback">Amortisation</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr [attr.data-testid]="'model.upgrades.' + row.id">
+            <th scope="row" [class]="td + ' font-normal text-left'">{{ row.label }}</th>
+            <td [class]="td">{{ row.kind }}</td>
+            <td [class]="td">{{ row.status }}</td>
+            <td [class]="td + ' text-right whitespace-nowrap'">{{ row.cost }}</td>
+            <td [class]="td">
+              @for (effect of row.effects; track $index) {
+                <div>{{ effect }}</div>
+              }
+            </td>
+            <td [class]="td + ' text-right whitespace-nowrap'">{{ row.foodGain }}</td>
+            <td [class]="td + ' text-right whitespace-nowrap'">{{ row.foodGainShare }}</td>
+            <td [class]="td + ' text-right whitespace-nowrap'">{{ row.payback }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td [class]="td" colspan="8" i18n="@@uiModel-modelUpgrades-empty">
+              Kein Referenzzustand
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -14,6 +14,10 @@ function sample(timeMs: number, total: number | null): SimSample {
     netFoodPerSecond: 0,
     eggsPerMinute: 0,
     nextBuyMs: { queens: total, drones: total, soldiers: total, total },
+    dna: 0,
+    dnaFromCombat: 0,
+    dnaFromFinds: 0,
+    dnaSpent: 0,
   };
 }
 

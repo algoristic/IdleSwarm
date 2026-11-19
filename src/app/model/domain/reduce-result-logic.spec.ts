@@ -1,7 +1,8 @@
-import { runSimulation, SiteMetric } from '@app/engine/domain/runner-logic';
+import { runSimulation, runSimulationWithState, SiteMetric } from '@app/engine/domain/runner-logic';
 
 import { createActiveBot } from './bots/active-bot-logic';
 import {
+  EVENT_TYPES,
   MAX_EVENTS_PER_TYPE,
   MAX_SAMPLES,
   MAX_SITES,
@@ -125,7 +126,7 @@ describe('reduceResult', () => {
 
     expect(JSON.stringify(run).length).toBeLessThan(MEGABYTE);
     expect(run.samples.length).toBeLessThanOrEqual(MAX_SAMPLES);
-    for (const type of ['buy', 'siteEmpty', 'arrived'] as const) {
+    for (const type of EVENT_TYPES) {
       const all = result.events.filter((event) => event.type === type);
       const kept = run.events.filter((event) => event.type === type);
       expect(run.eventTotals[type]).toBe(all.length);
@@ -137,7 +138,26 @@ describe('reduceResult', () => {
     expect(run.metrics.sites.count).toBe(result.metrics.sites.length);
     expect(run.metrics.siteList).toEqual(result.metrics.sites);
     expect(run.metrics.firstBuyMs).toBe(result.metrics.firstBuyMs);
+    // Ohne Endzustand bleibt die Upgrade-Tabelle leer; die Progression zählt alle Ereignisse.
+    expect(run.upgrades).toEqual([]);
+    expect(run.progress.findCount).toBe(result.events.filter((e) => e.type === 'found').length);
   }, 30_000);
+
+  it('bewertet Upgrades am Endzustand und behält Adaptionen, Funde und Drüsenpunkte', () => {
+    const { result, state } = runSimulationWithState({
+      seed: 'upgrade',
+      bot: createActiveBot(),
+      durationMs: HOUR_MS,
+      sampleEveryMs: 60_000,
+    });
+    const run = reduceResult(result, 'active', 0, state);
+    expect(run.upgrades).toHaveLength(22);
+    expect(run.upgrades.filter((row) => row.owned).length).toBe(state.genome.owned.length);
+    expect(run.eventTotals.evolved).toBe(state.genome.owned.length);
+    expect(run.eventTotals.gland).toBe(state.pheromones.glands);
+    expect(run.eventTotals.found).toBe(state.finds.total);
+    expect(structuredClone(run)).toEqual(run);
+  });
 
   it('dünnt zu dichte Zeitreihen aus', () => {
     const result = runSimulation({

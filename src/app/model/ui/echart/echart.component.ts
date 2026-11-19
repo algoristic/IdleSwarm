@@ -16,6 +16,7 @@ import {
   DataZoomSliderComponent,
   GridComponent,
   LegendComponent,
+  MarkAreaComponent,
   TooltipComponent,
 } from 'echarts/components';
 import { EChartsCoreOption, init, registerTheme, use } from 'echarts/core';
@@ -30,6 +31,7 @@ use([
   ScatterChart,
   GridComponent,
   LegendComponent,
+  MarkAreaComponent,
   TooltipComponent,
   DataZoomInsideComponent,
   DataZoomSliderComponent,

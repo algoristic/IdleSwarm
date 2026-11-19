@@ -72,6 +72,24 @@ const input: SiteChartInput = {
   palette: readChartPalette((name) => `color${name}`),
 };
 
+describe('Zielband „Dauer pro Futterstelle“ (US-10.08)', () => {
+  it('liegt am Aufenthalt von Aktiv (3–15 min) und Idle (10–60 min), nicht an Analyse-Bots', () => {
+    const { series } = buildSiteChartOption(input);
+    const banded = series.filter((entry) => 'markArea' in entry && entry.markArea !== undefined);
+    expect(banded.map((entry) => entry.name)).toEqual(['Aktiv · Aufenthalt', 'Idle · Aufenthalt']);
+    expect(banded.map((entry) => entry.markArea?.data)).toEqual([
+      [[{ yAxis: 3 }, { yAxis: 15 }]],
+      [[{ yAxis: 10 }, { yAxis: 60 }]],
+    ]);
+    expect(banded[0].markArea?.itemStyle.color).toBe('color--sw-accent');
+  });
+
+  it('fehlt im Reiter „Soldaten“', () => {
+    const { series } = buildSiteChartOption({ ...input, tab: 'soldiers' });
+    expect(series.some((entry) => entry.markArea !== undefined)).toBe(false);
+  });
+});
+
 describe('siteIndices', () => {
   it('vereinigt die Nummern aller Läufe aufsteigend', () => {
     expect(siteIndices(input.runs)).toEqual([0, 1, 2, 3]);

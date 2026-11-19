@@ -1,5 +1,5 @@
 import type { Bot } from '@app/engine/domain/bot-logic';
-import { runSimulation } from '@app/engine/domain/runner-logic';
+import { runSimulationWithState } from '@app/engine/domain/runner-logic';
 
 import { createActiveBot } from '../../domain/bots/active-bot-logic';
 import { createDroneHeavyBot } from '../../domain/bots/drone-heavy-bot-logic';
@@ -32,14 +32,14 @@ export function handleSimRequest(
   try {
     for (const spec of bots) {
       const startedAt = now();
-      const result = runSimulation({
+      const { result, state } = runSimulationWithState({
         seed,
         durationMs,
         params,
         bot: createBot(spec),
         sampleEveryMs: sampleEveryFor(durationMs),
       });
-      const run = reduceResult(result, spec.kind, now() - startedAt);
+      const run = reduceResult(result, spec.kind, now() - startedAt, state);
       post({ type: 'result', runId, run });
     }
     post({ type: 'done', runId });

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
-import { runSimulation } from '@app/engine/domain/runner-logic';
+import { runSimulationWithState } from '@app/engine/domain/runner-logic';
 
 import type { SimRequest, SimResponse } from '../../data-access/sim/sim-service.model';
 import { SIM_WORKER_FACTORY, SimWorker } from '../../data-access/sim/sim-service.tokens';
@@ -38,8 +38,13 @@ class FakeWorker implements SimWorker {
 
 function makeRun(kind: 'active' | 'idle', durationMs = HOUR_MS): ReducedRun {
   const bot = kind === 'active' ? createActiveBot() : createIdleBot();
-  const result = runSimulation({ seed: 'seite', bot, durationMs, sampleEveryMs: 60_000 });
-  return reduceResult(result, kind, 12);
+  const { result, state } = runSimulationWithState({
+    seed: 'seite',
+    bot,
+    durationMs,
+    sampleEveryMs: 60_000,
+  });
+  return reduceResult(result, kind, 12, state);
 }
 
 describe('ModelPage', () => {
@@ -143,7 +148,10 @@ describe('ModelPage', () => {
     expect(element().querySelector('app-echart')).toBeNull();
     finishRun();
     expect(lastOption().series.filter((series) => series.type === 'line')).toHaveLength(10);
-    const headers = Array.from(element().querySelectorAll('thead th'), (th) => th.textContent);
+    const headers = Array.from(
+      element().querySelectorAll('app-model-metrics thead th'),
+      (th) => th.textContent,
+    );
     expect(headers.map((header) => header?.trim())).toEqual(['Kennzahl', 'Aktiv', 'Idle']);
     expect(element().querySelector('tbody')?.textContent).toContain('12 ms');
   });
@@ -265,13 +273,32 @@ describe('ModelPage', () => {
     expect(lastOption().yAxis[0].type).toBe('value');
 
     const scatter = () => lastOption().series.filter((s) => s.type === 'scatter').length;
-    expect(scatter()).toBe(6);
+    // Sechs Arten (Kauf, leer, Weitergezogen, Adaption, Fund, Drüsenpunkt) je Bot.
+    expect(scatter()).toBe(12);
     byTestId('model.charts.marker-buy')?.click();
     settle();
-    expect(scatter()).toBe(4);
+    expect(scatter()).toBe(10);
     byTestId('model.charts.marker-buy')?.click();
     settle();
-    expect(scatter()).toBe(6);
+    expect(scatter()).toBe(12);
+  });
+
+  it('zeigt Zielband-Warnungen, Upgrades und den DNA-Fluss', () => {
+    finishRun();
+    expect(byTestId('model.pacing.active')).not.toBeNull();
+    expect(byTestId('model.pacing.idle')).not.toBeNull();
+    const rows = element().querySelectorAll('[data-testid="model.upgrades.table"] tbody tr');
+    // 15 Genom-Knoten, 4 einzigartige Adaptionen, Drüsenpunkt, Königin, Drohne.
+    expect(rows).toHaveLength(22);
+    expect(byTestId('model.upgrades.bot-active')?.getAttribute('aria-selected')).toBe('true');
+    byTestId('model.upgrades.bot-idle')?.click();
+    settle();
+    expect(byTestId('model.upgrades.bot-idle')?.getAttribute('aria-selected')).toBe('true');
+
+    byTestId('model.charts.tab-dna')?.click();
+    settle();
+    expect(lastOption().series.filter((s) => s.type === 'line')).toHaveLength(10);
+    expect(byTestId('model.charts.hint-dna')).not.toBeNull();
   });
 
   it('nennt die Gesamtzahl der Ereignisse', () => {

@@ -40,7 +40,7 @@ export interface ActiveBotOptions {
  * aktuellen Preis und kostet dafür `c̄`; `a` folgt aus der Pheromon-Verteilung des Zustands. Ohne
  * Zufluss für ihre Brut bringt sie nichts.
  */
-function queenGainPerSecond(view: BotView, pheromones: Pheromones, income: Num): Num {
+export function queenGainPerSecond(view: BotView, pheromones: Pheromones, income: Num): Num {
   const { params, prices, modifiers } = view;
   const value = prices.drones
     .mul(pheromoneDroneShare(pheromones))
@@ -73,7 +73,7 @@ export type FoodOption = UnitType | 'gland';
  * §6.3), denn ein verteilter Punkt bringt `Q · e_q · M_brut / P_0` Eier/min. Ohne verteilte Punkte
  * gibt es keinen Bezug; dann bringt er nichts.
  */
-function glandGainPerSecond(state: GameState, queenGain: Num): Num {
+export function glandGainPerSecond(state: GameState, queenGain: Num): Num {
   const distributed = distributedPheromonePoints(state.pheromones);
   return distributed > 0 ? queenGain.mul(state.units.queens).div(distributed) : Num.ZERO;
 }

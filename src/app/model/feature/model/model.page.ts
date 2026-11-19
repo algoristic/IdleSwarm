@@ -4,17 +4,21 @@ import type { SimError } from '../../data-access/sim/sim-service.model';
 import { FormModelParamsComponent } from '../../ui/form-model-params/form-model-params.component';
 import { ModelChartsComponent } from '../../ui/model-charts/model-charts.component';
 import { ModelMetricsComponent } from '../../ui/model-metrics/model-metrics.component';
+import { ModelPacingComponent } from '../../ui/model-pacing/model-pacing.component';
 import { ModelStallsComponent } from '../../ui/model-stalls/model-stalls.component';
+import { ModelUpgradesComponent } from '../../ui/model-upgrades/model-upgrades.component';
 import { ModelFacade } from '../state/model.facade';
 
-/** Modell-Seite (US-10.01 bis 10.06): Bot-Läufe im Worker, Diagramme und Kennzahlen. */
+/** Modell-Seite (US-10.01 bis 10.08): Bot-Läufe im Worker, Diagramme und Kennzahlen. */
 @Component({
   selector: 'app-model-page',
   imports: [
     FormModelParamsComponent,
     ModelChartsComponent,
     ModelMetricsComponent,
+    ModelPacingComponent,
     ModelStallsComponent,
+    ModelUpgradesComponent,
   ],
   templateUrl: './model.page.html',
   host: { class: 'block' },

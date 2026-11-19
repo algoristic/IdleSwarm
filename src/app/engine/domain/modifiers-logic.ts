@@ -5,8 +5,12 @@ import { badgeEffects } from '@app/finds/domain/collection-logic';
 import { buffEffects, isBuffActive } from '@app/finds/domain/finds-logic';
 import type { FindBuff } from '@app/finds/domain/models/finds.model';
 import type { EffectPreview } from '@app/genome/domain/genome-logic';
-import { genomeEffects, nodeEffectPreview } from '@app/genome/domain/genome-logic';
-import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
+import {
+  genomeEffects,
+  nodeEffectPreview,
+  uniqueAdaptationEffectPreview,
+} from '@app/genome/domain/genome-logic';
+import type { GenomeNodeId, UniqueAdaptationId } from '@app/genome/domain/models/genome.model';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 
 import type { GameState } from './models/game-state.model';
@@ -87,4 +91,18 @@ export function genomeNodePreview(
   params: BalanceParams,
 ): readonly EffectPreview[] {
   return nodeEffectPreview(state, id, params, (current) => stateModifiers(current, params));
+}
+
+/**
+ * „Effekt vorher → nachher“ einer einzigartigen Adaption mit allen übrigen Quellen des Zustands
+ * (Game-Design §4.14); für die Upgrade-Tabelle der Modell-Seite (US-10.07).
+ */
+export function uniqueAdaptationPreview(
+  state: GameState,
+  id: UniqueAdaptationId,
+  params: BalanceParams,
+): readonly EffectPreview[] {
+  return uniqueAdaptationEffectPreview(state, id, params, (current) =>
+    stateModifiers(current, params),
+  );
 }

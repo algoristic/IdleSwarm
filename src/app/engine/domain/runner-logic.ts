@@ -1,7 +1,7 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { isAffordable, secondsUntilAffordable } from '@app/balance/domain/formulas';
-import type { FindEntryId, FindKind } from '@app/finds/domain/models/finds.model';
-import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
+import type { CollectionSetId, FindEntryId, FindKind } from '@app/finds/domain/models/finds.model';
+import type { GenomeNodeId, UniqueAdaptationId } from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
@@ -75,13 +75,23 @@ export interface SimSample {
   readonly netFoodPerSecond: number;
   readonly eggsPerMinute: number;
   readonly nextBuyMs: NextBuyTimes;
+  /** DNA-Bestand. */
+  readonly dna: number;
+  /** DNA seit Laufbeginn aus Einnahmen mit Kampf (US-10.07). */
+  readonly dnaFromCombat: number;
+  /** DNA seit Laufbeginn aus Funden der Art DNA (US-10.07). */
+  readonly dnaFromFinds: number;
+  /** Für Genom-Knoten ausgegebene DNA seit Laufbeginn (US-10.07). */
+  readonly dnaSpent: number;
 }
 
 /**
  * Ereignisse eines Laufs; `site` ist der Index in {@link SimMetrics.sites}. `departed` nennt die
  * verlassene Futterstelle und den Typ des Ziels, `arrived` die neue Futterstelle, `evolved` den
- * entwickelten Genom-Knoten (Markierung „Adaption gekauft“, US-10.02), `found` einen Fund an der
- * aktuellen Futterstelle mit wirksamem Eintrag, Art und ggf. ersetztem Eintrag (Game-Design §4.16).
+ * entwickelten Genom-Knoten mit seinen Kosten (Markierung „Adaption gekauft“, US-10.02), `found`
+ * einen Fund an der aktuellen Futterstelle mit wirksamem Eintrag, Art, ggf. ersetztem Eintrag,
+ * gutgeschriebener DNA, freigeschalteter einzigartiger Adaption und Badge (Game-Design §4.16),
+ * `gland` einen gekauften Drüsenpunkt mit der Zahl `k` danach (Game-Design §4.15).
  */
 export type SimEvent =
   | { readonly timeMs: number; readonly type: 'buy'; readonly unit: UnitType }
@@ -99,7 +109,12 @@ export type SimEvent =
       readonly site: number;
       readonly siteType: SiteTypeId;
     }
-  | { readonly timeMs: number; readonly type: 'evolved'; readonly node: GenomeNodeId }
+  | {
+      readonly timeMs: number;
+      readonly type: 'evolved';
+      readonly node: GenomeNodeId;
+      readonly cost: number;
+    }
   | {
       readonly timeMs: number;
       readonly type: 'found';
@@ -107,7 +122,12 @@ export type SimEvent =
       readonly entry: FindEntryId;
       readonly kind: FindKind;
       readonly replaced: FindEntryId | null;
-    };
+      /** Gutgeschriebene DNA; 0 bei anderen Arten. */
+      readonly dna: number;
+      readonly unlocked: UniqueAdaptationId | null;
+      readonly badge: CollectionSetId | null;
+    }
+  | { readonly timeMs: number; readonly type: 'gland'; readonly glands: number };
 
 /**
  * Futterstelle von der Ankunft (die erste bei 0) bis zum Aufbruch. Die Felder zu Reise, Kampf und
@@ -168,6 +188,8 @@ export interface SimMetrics {
   readonly firstSiteMs: number | null;
   /** Längste Strecke ohne Kauf, einschließlich Laufbeginn und Laufende. */
   readonly longestNoBuyMs: number;
+  /** Beginn dieser Strecke (Laufbeginn oder ein Kaufzeitpunkt); bei Gleichstand die erste. */
+  readonly longestNoBuyFromMs: number;
   /** Zeitanteil (0–1), in dem weder Königin noch Drohne bezahlbar ist. */
   readonly waitShare: number;
   /**
@@ -175,6 +197,8 @@ export interface SimMetrics {
    * abgeschnitten. Misst anders als `buyGaps` nicht den Besuchsabstand eines Bots.
    */
   readonly longestWaitMs: number;
+  /** Beginn der längsten Wartestrecke; `null` ohne Wartezeit. */
+  readonly longestWaitFromMs: number | null;
   /** Verdopplungen der Nahrung/s, zwischen den Abtastpunkten logarithmisch interpoliert. */
   readonly foodRateDoubling: DoublingMetric;
   /** Längste Strecke ohne Einnahme mit Kampf, einschließlich Laufbeginn und Laufende. */
@@ -233,8 +257,15 @@ function buyGapMetric(times: readonly number[]): GapMetric {
   };
 }
 
-function longestNoBuy(times: readonly number[], durationMs: number): number {
-  return Math.max(...gapsBetween([0, ...times, durationMs]));
+/** Längste Strecke ohne Kauf und ihr Beginn; bei Gleichstand die erste. */
+function longestNoBuy(
+  times: readonly number[],
+  durationMs: number,
+): { readonly ms: number; readonly fromMs: number } {
+  const bounds = [0, ...times, durationMs];
+  const gaps = gapsBetween(bounds);
+  const ms = Math.max(...gaps);
+  return { ms, fromMs: bounds[gaps.indexOf(ms)] };
 }
 
 /** Zeitpunkte, zu denen die Rate das Doppelte des jeweils letzten Niveaus erreicht. */
@@ -282,7 +313,13 @@ class Recorder {
   saturated = false;
   private waitMs = 0;
   private currentWaitMs = 0;
+  private currentWaitFromMs = 0;
   private longestWaitMs = 0;
+  private longestWaitFromMs: number | null = null;
+  /** Kumulierte DNA-Ströme für die Abtastpunkte (US-10.07). */
+  private dnaFromCombat = Num.ZERO;
+  private dnaFromFinds = Num.ZERO;
+  private dnaSpent = Num.ZERO;
 
   /** Größe der aktuellen Futterstelle; `collected` rechnet in `Num`, bevor es gewandelt wird. */
   private siteSize: Num;
@@ -327,10 +364,16 @@ class Recorder {
     if (fromMs >= BUY_GAP_WINDOW_MS) {
       return;
     }
+    if (waiting && this.currentWaitMs === 0) {
+      this.currentWaitFromMs = fromMs;
+    }
     this.currentWaitMs = waiting
       ? this.currentWaitMs + Math.min(toMs, BUY_GAP_WINDOW_MS) - fromMs
       : 0;
-    this.longestWaitMs = Math.max(this.longestWaitMs, this.currentWaitMs);
+    if (this.currentWaitMs > this.longestWaitMs) {
+      this.longestWaitMs = this.currentWaitMs;
+      this.longestWaitFromMs = this.currentWaitFromMs;
+    }
   }
 
   /** Wandelt in eine JSON-taugliche Zahl; siehe {@link SimResult}. */
@@ -373,13 +416,22 @@ class Recorder {
         soldiers: this.nextBuyMs('soldiers', state, view),
         total: useful.length > 0 ? Math.min(...useful) : null,
       },
+      dna: this.wire(res.dna),
+      dnaFromCombat: this.wire(this.dnaFromCombat),
+      dnaFromFinds: this.wire(this.dnaFromFinds),
+      dnaSpent: this.wire(this.dnaSpent),
     });
   }
 
-  /** Hält einen wirksamen Kauf des Bots fest; wirkungslose Kommandos kommen hier nicht an. */
-  command(command: Command, timeMs: number): void {
+  /**
+   * Hält einen wirksamen Kauf oder Drüsenpunkt des Bots fest; wirkungslose Kommandos kommen hier
+   * nicht an. Der Drüsenpunkt zählt nicht als Kauf (Kauflücken, Strecke ohne Kauf).
+   */
+  command(command: Command, timeMs: number, after: GameState): void {
     if (command.type === 'buy') {
       this.events.push({ timeMs, type: 'buy', unit: command.unit });
+    } else if (command.type === 'strengthenGland') {
+      this.events.push({ timeMs, type: 'gland', glands: after.pheromones.glands });
     }
   }
 
@@ -410,13 +462,22 @@ class Recorder {
           const index = last + 1;
           const { siteType } = event;
           this.arrived(event, before);
+          this.dnaFromCombat = this.dnaFromCombat.add(event.dna);
           this.events.push({ timeMs, type: 'arrived', site: index, siteType });
           break;
         }
         case 'evolved':
-          this.events.push({ timeMs, type: 'evolved', node: event.node });
+          this.dnaSpent = this.dnaSpent.add(event.cost);
+          this.events.push({
+            timeMs,
+            type: 'evolved',
+            node: event.node,
+            cost: this.wire(event.cost),
+          });
           break;
-        case 'found':
+        case 'found': {
+          const dna = event.kind === 'dna' && event.amount !== null ? event.amount : Num.ZERO;
+          this.dnaFromFinds = this.dnaFromFinds.add(dna);
           // Bei der Ankunft steht `found` nach `arrived`; `last` ist dann schon die neue Futterstelle.
           this.events.push({
             timeMs,
@@ -425,8 +486,12 @@ class Recorder {
             entry: event.entry,
             kind: event.kind,
             replaced: event.replaced,
+            dna: this.wire(dna),
+            unlocked: event.unlocked,
+            badge: event.badge,
           });
           break;
+        }
       }
     }
   }
@@ -507,14 +572,17 @@ class Recorder {
         collected: this.wire(this.siteSize.sub(final.site.stock)),
       };
     }
+    const noBuy = longestNoBuy(times, durationMs);
     return {
       firstBuyMs: times.length > 0 ? times[0] : null,
       buyGaps: buyGapMetric(times),
       sites: this.sites,
       firstSiteMs: this.sites[0].durationMs,
-      longestNoBuyMs: longestNoBuy(times, durationMs),
+      longestNoBuyMs: noBuy.ms,
+      longestNoBuyFromMs: noBuy.fromMs,
       waitShare: durationMs > 0 ? this.waitMs / durationMs : 0,
       longestWaitMs: this.longestWaitMs,
+      longestWaitFromMs: this.longestWaitFromMs,
       foodRateDoubling: doublingMetric(this.samples),
       longestNoCombatCaptureMs: longestSpanMs(noCombatCaptureSpans(this.sites, durationMs)),
       longestSiteStayMs: longestSpanMs(siteStaySpans(this.sites, durationMs)),
@@ -533,6 +601,12 @@ function assertOptions(durationMs: number, sampleEveryMs: number, stepMs: number
   }
 }
 
+/** Ergebnis und Endzustand eines Laufs; der Zustand enthält `Num` und ist nicht übertragbar. */
+export interface SimRun {
+  readonly result: SimResult;
+  readonly state: GameState;
+}
+
 /**
  * Simuliert einen Lauf ohne Oberfläche, ausschließlich über `applyCommand`, `step` und
  * `balance/domain`.
@@ -544,6 +618,14 @@ function assertOptions(durationMs: number, sampleEveryMs: number, stepMs: number
  * @throws RangeError bei ungültigen Zeitangaben oder wenn ein Bot keinen späteren Zeitpunkt nennt.
  */
 export function runSimulation(options: SimOptions): SimResult {
+  return runSimulationWithState(options).result;
+}
+
+/**
+ * Wie {@link runSimulation}, liefert zusätzlich den Endzustand, etwa als Referenzzustand der
+ * Upgrade-Tabelle (US-10.07).
+ */
+export function runSimulationWithState(options: SimOptions): SimRun {
   const { seed, bot, durationMs, sampleEveryMs } = options;
   const { stepMs = DEFAULT_SIM_STEP_MS, startTimeMs = 0 } = options;
   assertOptions(durationMs, sampleEveryMs, stepMs);
@@ -563,7 +645,7 @@ export function runSimulation(options: SimOptions): SimResult {
       for (const command of bot.decide(state, viewAt(state, timeMs))) {
         const result = applyCommand(state, command, params);
         if (result.state !== state) {
-          recorder.command(command, timeMs);
+          recorder.command(command, timeMs, result.state);
           recorder.gameEvents(result.events, state, result.state);
           state = result.state;
         }
@@ -606,7 +688,7 @@ export function runSimulation(options: SimOptions): SimResult {
     timeMs = stopMs;
   }
 
-  return {
+  const result: SimResult = {
     seed,
     bot: bot.name,
     durationMs,
@@ -619,4 +701,5 @@ export function runSimulation(options: SimOptions): SimResult {
     events: recorder.events,
     metrics: recorder.metrics(durationMs, state),
   };
+  return { result, state };
 }

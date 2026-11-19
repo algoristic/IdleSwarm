@@ -1,4 +1,5 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
+import type { GameState } from '@app/engine/domain/models/game-state.model';
 import type {
   SimEvent,
   SimMetrics,
@@ -9,6 +10,8 @@ import type {
 import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
 
 import type { BotKind } from './models/sim.model';
+import { ProgressMetrics, progressMetrics } from './progress-logic';
+import { UpgradeRow, upgradeTable } from './upgrade-logic';
 
 /** Zielgröße der Zeitreihen; die Obergrenze fängt abweichende Abtastungen ab. */
 const TARGET_SAMPLE_INTERVALS = 1440;
@@ -20,11 +23,15 @@ export const MAX_SITES = 1000;
 /**
  * Ereignisarten, die das Ergebnis behält und die Diagramme markieren. `departed` fällt weg: Beim
  * Auto-Weiterziehen mit Schwelle 0 fällt es mit `siteEmpty` zusammen, und `arrived` zeigt den Zug.
+ * `evolved` ist „Adaption gekauft“, `found` der Fund (US-10.02), `gland` der Drüsenpunkt.
  */
 export const EVENT_TYPES = [
   'buy',
   'siteEmpty',
   'arrived',
+  'evolved',
+  'found',
+  'gland',
 ] as const satisfies readonly SimEvent['type'][];
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -60,6 +67,10 @@ export interface ReducedRun {
   /** Ereignisse je Art vor dem Ausdünnen. */
   readonly eventTotals: Readonly<Record<EventType, number>>;
   readonly metrics: ReducedMetrics;
+  /** Freischalt-Zeitpunkte und Progression aus den vollständigen Ereignissen. */
+  readonly progress: ProgressMetrics;
+  /** Upgrade-Tabelle am Endzustand des Laufs (US-10.07); leer ohne Endzustand. */
+  readonly upgrades: readonly UpgradeRow[];
 }
 
 /**
@@ -106,8 +117,16 @@ export function summarizeSites(sites: readonly SiteMetric[]): SiteSummary {
   };
 }
 
-/** Verkleinert ein Ergebnis vor dem Senden; ein Aktiv-Lauf über 24 h hätte roh rund 12,7 MB. */
-export function reduceResult(result: SimResult, bot: BotKind, computeMs: number): ReducedRun {
+/**
+ * Verkleinert ein Ergebnis vor dem Senden; ein Aktiv-Lauf über 24 h hätte roh rund 12,7 MB. Der
+ * Endzustand `final` ist der Referenzzustand der Upgrade-Tabelle; ohne ihn bleibt sie leer.
+ */
+export function reduceResult(
+  result: SimResult,
+  bot: BotKind,
+  computeMs: number,
+  final: GameState | null = null,
+): ReducedRun {
   const byType = new Map<SimEvent['type'], SimEvent[]>(EVENT_TYPES.map((type) => [type, []]));
   for (const event of result.events) {
     byType.get(event.type)?.push(event);
@@ -126,15 +145,16 @@ export function reduceResult(result: SimResult, bot: BotKind, computeMs: number)
     computeMs,
     samples: thinEvenly(result.samples, MAX_SAMPLES),
     events,
-    eventTotals: {
-      buy: count('buy'),
-      siteEmpty: count('siteEmpty'),
-      arrived: count('arrived'),
-    },
+    eventTotals: Object.fromEntries(EVENT_TYPES.map((type) => [type, count(type)])) as Record<
+      EventType,
+      number
+    >,
     metrics: {
       ...result.metrics,
       sites: summarizeSites(result.metrics.sites),
       siteList: thinEvenly(result.metrics.sites, MAX_SITES),
     },
+    progress: progressMetrics(result.events, result.metrics.sites),
+    upgrades: final === null ? [] : upgradeTable(final, result.params),
   };
 }

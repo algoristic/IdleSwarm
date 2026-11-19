@@ -18,6 +18,9 @@ const MARKER_GLYPHS: Readonly<Record<EventType, string>> = {
   buy: '▲',
   siteEmpty: '◆',
   arrived: '●',
+  evolved: '■',
+  found: '◇',
+  gland: '○',
 };
 
 /** Dieselben Tokens wie die Markierungen im Diagramm (`readChartPalette`). */
@@ -25,6 +28,9 @@ const MARKER_CLASSES: Readonly<Record<EventType, string>> = {
   buy: 'text-fg-muted',
   siteEmpty: 'text-danger',
   arrived: 'text-violet',
+  evolved: 'text-magenta',
+  found: 'text-warning',
+  gland: 'text-accent',
 };
 
 /** Reiter, Achsenwahl und Markierungen um das Diagramm. */
@@ -97,6 +103,7 @@ export class ModelChartsComponent {
     { id: 'resources', label: $localize`:@@uiModel-modelCharts-tab-resources:Ressourcen` },
     { id: 'rates', label: $localize`:@@uiModel-modelCharts-tab-rates:Raten` },
     { id: 'decisions', label: $localize`:@@uiModel-modelCharts-tab-decisions:Entscheidungen` },
+    { id: 'dna', label: $localize`:@@uiModel-modelCharts-tab-dna:DNA-Fluss` },
     {
       id: 'siteDuration',
       label: $localize`:@@uiModel-modelCharts-tab-siteDuration:Dauer je Futterstelle`,
@@ -112,6 +119,9 @@ export class ModelChartsComponent {
     buy: $localize`:@@uiModel-modelCharts-marker-buy:Kauf`,
     siteEmpty: $localize`:@@uiModel-modelCharts-marker-siteEmpty:Futterstelle leer`,
     arrived: $localize`:@@uiModel-modelCharts-marker-arrived:Weitergezogen`,
+    evolved: $localize`:@@uiModel-modelCharts-marker-evolved:Adaption gekauft`,
+    found: $localize`:@@uiModel-modelCharts-marker-found:Fund`,
+    gland: $localize`:@@uiModel-modelCharts-marker-gland:Drüsenpunkt`,
   };
 
   onToggleMarker(type: EventType): void {

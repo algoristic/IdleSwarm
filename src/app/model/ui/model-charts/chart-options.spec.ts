@@ -51,8 +51,39 @@ describe('buildChartOption', () => {
     ['resources', 5],
     ['rates', 3],
     ['decisions', 4],
+    ['dna', 5],
   ] as const)('zeichnet im Reiter %s jede Größe je Bot', (tab, metrics) => {
     expect(lines({ ...base, tab })).toHaveLength(metrics * 2);
+  });
+
+  it('blendet das Zielband der Kauflücken an der Gesamtzeit von Aktiv und Idle ein (US-10.08)', () => {
+    const series = lines({ ...base, tab: 'decisions' });
+    const banded = series.filter((entry) => entry.markArea !== undefined);
+    expect(banded.map((entry) => entry.name)).toEqual(['Aktiv · Gesamt', 'Idle · Gesamt']);
+    // Aktiv 5–60 s, Idle < 5 min, jeweils über die ersten 30 min.
+    expect(banded[0].markArea?.data).toEqual([
+      [
+        { xAxis: 0, yAxis: 5_000 },
+        { xAxis: 1_800_000, yAxis: 60_000 },
+      ],
+    ]);
+    expect(banded[1].markArea?.data).toEqual([
+      [{ xAxis: 0 }, { xAxis: 1_800_000, yAxis: 300_000 }],
+    ]);
+    const analysis = lines({
+      ...base,
+      tab: 'decisions',
+      runs: [{ ...active, bot: 'drone-heavy' }],
+    });
+    expect(analysis.some((entry) => entry.markArea !== undefined)).toBe(false);
+    expect(lines(base).some((entry) => entry.markArea !== undefined)).toBe(false);
+  });
+
+  it('zeigt im DNA-Fluss die offenen Genomkosten', () => {
+    const open = lines({ ...base, tab: 'dna', logScale: false }).find((entry) =>
+      entry.name.startsWith('Aktiv · Verfügbare Ausgaben'),
+    );
+    expect((open?.data[0] as ChartPoint)[2]).toBe(3498);
   });
 
   it('schaltet die Achse um', () => {
@@ -92,6 +123,17 @@ describe('buildChartOption', () => {
     expect(buys[0].yAxisIndex).toBe(1);
     const legend = buildChartOption({ ...base, markers: new Set<EventType>(['buy']) }).legend.data;
     expect(legend).toHaveLength(10);
+  });
+
+  it('markiert Adaptionen, Funde und Drüsenpunkte mit eigenen Symbolen (US-10.02)', () => {
+    const types = new Set<EventType>(['evolved', 'found', 'gland']);
+    const series = marks({ ...base, runs: [active], markers: types });
+    expect(series.map((entry) => [entry.name, entry.symbol, entry.color])).toEqual([
+      ['Aktiv · evolved', 'rect', 'color--sw-magenta'],
+      ['Aktiv · found', 'emptyDiamond', 'color--sw-warning'],
+      ['Aktiv · gland', 'emptyCircle', 'color--sw-accent'],
+    ]);
+    expect(series[2].data).toHaveLength(active.events.filter((e) => e.type === 'gland').length);
   });
 
   it('übernimmt den Zoom in beide Regler', () => {

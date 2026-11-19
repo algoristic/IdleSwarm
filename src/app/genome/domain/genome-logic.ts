@@ -252,7 +252,17 @@ export function nodeEffectPreview(
 ): readonly EffectPreview[] {
   const before = modifiersOf({ ...state, genome: withOwned(state.genome, id, false) });
   const after = modifiersOf({ ...state, genome: withOwned(state.genome, id, true) });
-  return GENOME_NODE_BY_ID[id].effects.map(({ target }): EffectPreview => {
+  return effectPreviews(GENOME_NODE_BY_ID[id].effects, state, params, before, after);
+}
+
+function effectPreviews(
+  effects: readonly EffectSpec[],
+  state: GameState,
+  params: BalanceParams,
+  before: Modifiers,
+  after: Modifiers,
+): readonly EffectPreview[] {
+  return effects.map(({ target }): EffectPreview => {
     if (isUnlockTarget(target)) {
       return { target, before: before[target], after: after[target] };
     }
@@ -262,4 +272,33 @@ export function nodeEffectPreview(
       after: targetValue(target, state, params, after),
     };
   });
+}
+
+/** Zustand mit genau `count` Fragmenten der einzigartigen Adaption; die übrigen Funde bleiben. */
+export function withFragments(state: GameState, id: UniqueAdaptationId, count: number): GameState {
+  const { finds } = state;
+  const fragment = UNIQUE_ADAPTATION_BY_ID[id].fragment;
+  return { ...state, finds: { ...finds, collected: { ...finds.collected, [fragment]: count } } };
+}
+
+/**
+ * „Effekt vorher → nachher“ einer einzigartigen Adaption (Game-Design §4.14): ohne Fragmente und
+ * mit allen benötigten, bei allen übrigen Quellen des Zustands; `modifiersOf` wie bei
+ * {@link nodeEffectPreview}.
+ */
+export function uniqueAdaptationEffectPreview(
+  state: GameState,
+  id: UniqueAdaptationId,
+  params: BalanceParams,
+  modifiersOf: (state: GameState) => Modifiers,
+): readonly EffectPreview[] {
+  const required = params[UNIQUE_ADAPTATION_PARAMS[id].fragments];
+  const before = modifiersOf(withFragments(state, id, 0));
+  const after = modifiersOf(withFragments(state, id, required));
+  return effectPreviews(UNIQUE_ADAPTATION_BY_ID[id].effects, state, params, before, after);
+}
+
+/** `owned` mit bzw. ohne den Knoten, für Vergleiche „ohne → mit“ (Modell-Seite, US-10.07). */
+export function withNode(state: GameState, id: GenomeNodeId, owned: boolean): GameState {
+  return { ...state, genome: withOwned(state.genome, id, owned) };
 }

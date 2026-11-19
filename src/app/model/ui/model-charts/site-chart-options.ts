@@ -8,6 +8,7 @@ import type { ReducedRun } from '../../domain/reduce-result-logic';
 import { BOT_LABELS } from '../bot-labels/bot-labels';
 import type { ChartPalette } from '../echart/chart-theme';
 import type { SiteTab } from './model-charts.model';
+import { BandArea, targetBandArea } from './target-band-options';
 
 const TRAVEL_OPACITY = 0.45;
 const OPEN_STAY_OPACITY = 0.55;
@@ -66,6 +67,8 @@ export interface SiteSeries {
   readonly lineStyle?: { readonly width: number; readonly type: 'solid' | 'dashed' | 'dotted' };
   readonly emphasis: { readonly disabled: boolean };
   readonly data: readonly SiteValue[];
+  /** Zielband „Dauer pro Futterstelle“ am Aufenthalt (US-10.08). */
+  readonly markArea?: BandArea;
 }
 
 /** Nummern aller Futterstellen der Läufe, aufsteigend; ausgedünnte Listen haben Lücken. */
@@ -91,7 +94,13 @@ function soldierValue(value: number | null, logScale: boolean): number | null {
   return value !== null && logScale && value <= 0 ? null : value;
 }
 
-function durationSeries(run: ReducedRun, indices: readonly number[], color: string): SiteSeries[] {
+function durationSeries(
+  run: ReducedRun,
+  indices: readonly number[],
+  color: string,
+  palette: ChartPalette,
+): SiteSeries[] {
+  const band = targetBandArea(run, 'siteDuration', palette, (ms) => ms / MS_PER_MINUTE, false);
   const sites = sitesByIndex(run);
   const bot = BOT_LABELS[run.bot];
   const bar = { type: 'bar' as const, stack: run.bot, color, emphasis: { disabled: true } };
@@ -109,6 +118,7 @@ function durationSeries(run: ReducedRun, indices: readonly number[], color: stri
     {
       ...bar,
       name: `${bot} · ${T.stay}`,
+      ...(band === null ? {} : { markArea: band }),
       data: indices.map((index): SiteValue => {
         const site = sites.get(index);
         if (site === undefined) {
@@ -226,7 +236,7 @@ export function buildSiteChartOption(input: SiteChartInput) {
   const series = runs.flatMap((run, botIndex): SiteSeries[] => {
     const color = palette.series[botIndex % palette.series.length];
     return isDuration
-      ? durationSeries(run, indices, color)
+      ? durationSeries(run, indices, color, palette)
       : soldierSeries(run, indices, color, logScale);
   });
   const useLog = !isDuration && logScale;

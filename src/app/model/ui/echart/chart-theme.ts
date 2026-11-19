@@ -1,5 +1,7 @@
 import { DOCUMENT, inject, InjectionToken } from '@angular/core';
 
+import type { PacingBot } from '@app/balance/domain/targets';
+
 import type { EventType } from '../../domain/reduce-result-logic';
 
 /** Farben der Diagramme, gelesen aus den `--sw-*`-Tokens in `styles.css`. */
@@ -13,6 +15,8 @@ export interface ChartPalette {
   /** Feste Reihenfolge der Linien eines Reiters. */
   readonly series: readonly string[];
   readonly markers: Readonly<Record<EventType, string>>;
+  /** Flächen der Zielbänder je Bot (US-10.08). */
+  readonly bands: Readonly<Record<PacingBot, string>>;
 }
 
 const SERIES_TOKENS = [
@@ -37,6 +41,13 @@ export function readChartPalette(token: (name: string) => string): ChartPalette 
       buy: token('--sw-fg-muted'),
       siteEmpty: token('--sw-danger'),
       arrived: token('--sw-violet'),
+      evolved: token('--sw-magenta'),
+      found: token('--sw-warning'),
+      gland: token('--sw-accent'),
+    },
+    bands: {
+      active: token('--sw-accent'),
+      idle: token('--sw-violet'),
     },
   };
 }

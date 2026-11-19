@@ -57,6 +57,25 @@
         >Je Bot ein Balken: blass die Reise zur Futterstelle, kräftig der Aufenthalt von Ankunft bis
         Aufbruch (halb blass: bis Laufende). Ertrag im Tooltip.</small
       >
+      <small class="text-xs text-fg-muted" i18n="@@uiModel-modelCharts-hint-siteDurationBand"
+        >Fläche: Zielband „Dauer pro Futterstelle“ für Aktiv und Idle.</small
+      >
+    } @else if (tab() === 'decisions') {
+      <small
+        class="text-xs text-fg-muted"
+        data-testid="model.charts.hint-decisions"
+        i18n="@@uiModel-modelCharts-hint-decisions"
+        >Fläche: Zielband „Zeit zwischen zwei sinnvollen Käufen“ der ersten 30 min für Aktiv und
+        Idle.</small
+      >
+    } @else if (tab() === 'dna') {
+      <small
+        class="text-xs text-fg-muted"
+        data-testid="model.charts.hint-dna"
+        i18n="@@uiModel-modelCharts-hint-dna"
+        >Kumulierte DNA-Einnahmen aus Kampf und Funden gegen die Ausgaben für das Genom; „verfügbare
+        Ausgaben“ sind die Kosten der noch nicht entwickelten Knoten.</small
+      >
     } @else if (tab() === 'soldiers') {
       <small
         class="text-xs text-fg-muted"

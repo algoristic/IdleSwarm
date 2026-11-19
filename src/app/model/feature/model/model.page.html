@@ -59,12 +59,14 @@
         [zoom]="facade.zoom()"
         (changedZoom)="facade.setZoom($event)"
       />
+      <app-model-pacing class="min-w-0" [pacing]="facade.pacing()" />
       <app-model-stalls
         class="min-w-0"
         [stalls]="facade.stalls()"
         [(thresholdModel)]="facade.stallThreshold"
       />
       <app-model-metrics class="min-w-0" [runs]="runs" [range]="facade.zoom()" />
+      <app-model-upgrades class="min-w-0" [runs]="runs" />
     }
   </div>
 </main>

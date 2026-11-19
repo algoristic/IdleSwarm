@@ -224,8 +224,23 @@ describe('runSimulation', () => {
         durationMs: 3 * MINUTE_MS,
       });
       expect(events.filter((event) => event.type === 'evolved')).toEqual([
-        { timeMs: 60_000, type: 'evolved', node: 'cilia-1' },
+        { timeMs: 60_000, type: 'evolved', node: 'cilia-1', cost: 0 },
       ]);
+    });
+
+    it('hält Drüsenpunkte als eigenes Ereignis fest, nicht als Kauf', () => {
+      const gland: Command = { type: 'strengthenGland' };
+      const { events, metrics } = run(scripted({ 0: [gland], 60_000: [gland] }), {
+        params: { startFood: 1e6 },
+        durationMs: 2 * MINUTE_MS,
+      });
+      expect(events.filter((event) => event.type === 'gland')).toEqual([
+        { timeMs: 0, type: 'gland', glands: 1 },
+        { timeMs: 60_000, type: 'gland', glands: 2 },
+      ]);
+      expect(metrics.firstBuyMs).toBeNull();
+      expect(metrics.longestNoBuyMs).toBe(2 * MINUTE_MS);
+      expect(metrics.longestNoBuyFromMs).toBe(0);
     });
 
     /** Ohne Platzbedarf kommen alle Drohnen mit; fünf Drohnen sammeln 1 Nahrung/s. */
@@ -293,9 +308,40 @@ describe('runSimulation', () => {
         entry: 'foreign-dna',
         kind: 'dna',
         replaced: null,
+        dna: expect.any(Number),
+        unlocked: null,
+        badge: null,
       });
+      expect(found[0].type === 'found' && found[0].dna).toBeGreaterThan(0);
+      const fromFinds = found.reduce(
+        (sum, event) => sum + (event.type === 'found' ? event.dna : 0),
+        0,
+      );
+      const { samples } = run(scripted({ 0: FIVE_DRONES, 120_000: [{ type: 'depart', target }] }), {
+        params: { ...MOVING, ventFindChance: 1, algalMatFindChance: 1 },
+        durationMs: 5 * MINUTE_MS,
+        stepMs: 30_000,
+      });
+      expect(samples.at(-1)?.dnaFromFinds).toBeCloseTo(fromFinds, 6);
       const arrival = events.findIndex((event) => event.type === 'arrived');
       expect(events[arrival + 1]).toMatchObject({ type: 'found', site: 1 });
+    });
+
+    it('kumuliert DNA aus Funden und Ausgaben für das Genom in den Abtastpunkten (US-10.07)', () => {
+      // Der erste Fund ist DNA (Game-Design §4.16); danach reicht sie für den ersten Knoten.
+      const evolveCilia: Command = { type: 'evolve', node: 'cilia-1' };
+      const { samples, events } = run(scripted({ 0: FIVE_DRONES, 30_000: [evolveCilia] }), {
+        params: { ...MOVING, ventFindChance: 1 },
+        durationMs: MINUTE_MS,
+      });
+      const cost = DEFAULT_BALANCE.genomeCost;
+      expect(events.find((event) => event.type === 'evolved')).toMatchObject({ cost });
+      expect(samples[0]).toMatchObject({ dna: 0, dnaSpent: 0, dnaFromFinds: 0, dnaFromCombat: 0 });
+      const last = samples[samples.length - 1];
+      expect(last.dnaFromFinds).toBeGreaterThan(cost);
+      expect(last.dnaSpent).toBe(cost);
+      expect(last.dna).toBeCloseTo(last.dnaFromFinds - cost, 6);
+      expect(last.dnaFromCombat).toBe(0);
     });
 
     it('misst die Dauer je Futterstelle bis zum Aufbruch und die Reise getrennt', () => {
@@ -432,7 +478,11 @@ describe('runSimulation', () => {
         durationMs: 20 * MINUTE_MS,
       });
       const cycle = events.filter(
-        (event) => event.type !== 'buy' && event.type !== 'found' && event.type !== 'evolved',
+        (event) =>
+          event.type !== 'buy' &&
+          event.type !== 'found' &&
+          event.type !== 'evolved' &&
+          event.type !== 'gland',
       );
       expect(metrics.sites.length).toBeGreaterThan(2);
       const order = ['siteEmpty', 'departed', 'arrived'] as const;
@@ -567,6 +617,7 @@ describe('runSimulation', () => {
       expect(
         run(scripted({ 590_000: [BUY_DRONE] }), { params: SIMPLE }).metrics.longestNoBuyMs,
       ).toBe(590_000);
+      expect(buys().longestNoBuyFromMs).toBe(100_000);
       expect(run(scripted({ 0: [BUY_DRONE] }), { params: SIMPLE }).metrics.longestNoBuyMs).toBe(
         10 * MINUTE_MS,
       );
@@ -600,12 +651,16 @@ describe('runSimulation', () => {
 
       it('nimmt die längste zusammenhängende Strecke', () => {
         // 1 Nahrung/s: wartet 0–5 s, ist bis 8 s versorgt, wartet nach dem Kauf 8–15 s.
-        const { longestWaitMs, waitShare } = run(scripted({ 8000: [BUY_DRONE] }), {
-          params: { ...STATIC, baseFoodRate: 1, startFood: 5 },
-          durationMs: 40_000,
-          sampleEveryMs: 40_000,
-        }).metrics;
+        const { longestWaitMs, longestWaitFromMs, waitShare } = run(
+          scripted({ 8000: [BUY_DRONE] }),
+          {
+            params: { ...STATIC, baseFoodRate: 1, startFood: 5 },
+            durationMs: 40_000,
+            sampleEveryMs: 40_000,
+          },
+        ).metrics;
         expect(longestWaitMs).toBe(7000);
+        expect(longestWaitFromMs).toBe(8000);
         expect(waitShare).toBeCloseTo(12 / 40, 10);
       });
 

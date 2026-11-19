@@ -2,12 +2,15 @@ import type { SimEvent, SimSample } from '@app/engine/domain/runner-logic';
 import { formatAxisValue, formatElapsed } from '@app/shared/util/format/elapsed-format';
 import { formatNum, formatRate } from '@app/shared/util/format/format';
 
+import { dnaFlowPoint } from '../../domain/dna-flow-logic';
 import type { BotKind } from '../../domain/models/sim.model';
+import { genomeCostTotal } from '../../domain/progress-logic';
 import type { EventType, ReducedRun } from '../../domain/reduce-result-logic';
 import type { TimeRange } from '../../domain/wait-share-logic';
 import { BOT_LABELS } from '../bot-labels/bot-labels';
 import type { ChartPalette } from '../echart/chart-theme';
 import type { SampleTab } from './model-charts.model';
+import { targetBandArea } from './target-band-options';
 
 const NO_VALUE = '–';
 const SOON = $localize`:@@uiModel-chartOptions-soon:sofort`;
@@ -27,11 +30,24 @@ const SERIES_LABELS = {
   nextDrone: $localize`:@@uiModel-chartOptions-series-nextDrone:Drohne`,
   nextSoldier: $localize`:@@uiModel-chartOptions-series-nextSoldier:Soldat`,
   nextTotal: $localize`:@@uiModel-chartOptions-series-nextTotal:Gesamt`,
+  dna: $localize`:@@uiModel-chartOptions-series-dna:DNA-Bestand`,
+  dnaFromCombat: $localize`:@@uiModel-chartOptions-series-dnaFromCombat:Einnahmen Kampf`,
+  dnaFromFinds: $localize`:@@uiModel-chartOptions-series-dnaFromFinds:Einnahmen Funde`,
+  dnaSpent: $localize`:@@uiModel-chartOptions-series-dnaSpent:Ausgaben Genom`,
+  dnaOpen: $localize`:@@uiModel-chartOptions-series-dnaOpen:Verfügbare Ausgaben (offenes Genom)`,
 } as const;
+
+/** Was eine Größe außer dem Abtastpunkt braucht; einmal je Lauf berechnet. */
+interface MetricContext {
+  /** Summe aller Knotenkosten des Laufs (DNA-Fluss). */
+  readonly genomeCost: number;
+}
 
 interface Metric {
   readonly label: string;
-  readonly value: (sample: SimSample) => number | null;
+  readonly value: (sample: SimSample, context: MetricContext) => number | null;
+  /** Zielband, das an dieser Reihe hängt (US-10.08). */
+  readonly band?: 'buyInterval';
 }
 
 interface TabDefinition {
@@ -78,7 +94,26 @@ export const CHART_TABS: Readonly<Record<SampleTab, TabDefinition>> = {
       { label: SERIES_LABELS.nextQueen, value: (sample) => sample.nextBuyMs.queens },
       { label: SERIES_LABELS.nextDrone, value: (sample) => sample.nextBuyMs.drones },
       { label: SERIES_LABELS.nextSoldier, value: (sample) => sample.nextBuyMs.soldiers },
-      { label: SERIES_LABELS.nextTotal, value: (sample) => sample.nextBuyMs.total },
+      // Zielband „Zeit zwischen zwei sinnvollen Käufen“ der ersten 30 min an der Gesamtzeit.
+      {
+        label: SERIES_LABELS.nextTotal,
+        value: (sample) => sample.nextBuyMs.total,
+        band: 'buyInterval',
+      },
+    ],
+  },
+  dna: {
+    formatValue: orDash(formatNum),
+    formatAxis: formatAxisValue,
+    metrics: [
+      { label: SERIES_LABELS.dnaFromCombat, value: (sample) => sample.dnaFromCombat },
+      { label: SERIES_LABELS.dnaFromFinds, value: (sample) => sample.dnaFromFinds },
+      { label: SERIES_LABELS.dnaSpent, value: (sample) => sample.dnaSpent },
+      {
+        label: SERIES_LABELS.dnaOpen,
+        value: (sample, { genomeCost }) => dnaFlowPoint(sample, genomeCost).openGenomeCost,
+      },
+      { label: SERIES_LABELS.dna, value: (sample) => sample.dna },
     ],
   },
 };
@@ -87,8 +122,18 @@ const MARKER_SYMBOLS: Readonly<Record<EventType, string>> = {
   buy: 'triangle',
   siteEmpty: 'diamond',
   arrived: 'circle',
+  evolved: 'rect',
+  found: 'emptyDiamond',
+  gland: 'emptyCircle',
 };
-const MARKER_ORDER: readonly EventType[] = ['buy', 'siteEmpty', 'arrived'];
+const MARKER_ORDER: readonly EventType[] = [
+  'buy',
+  'siteEmpty',
+  'arrived',
+  'evolved',
+  'found',
+  'gland',
+];
 /**
  * Lage der Markierungen auf der verdeckten 0–1-Achse, unabhängig von der Wertachse. Je Art eine
  * Zeile, darin je Bot ein Versatz; die Zeile wächst mit der Zahl der Bots, damit sich Arten nicht
@@ -153,6 +198,7 @@ function lineSeries(
   const bot = BOT_LABELS[run.bot];
   const prefix = isBaseline ? `${BASELINE_PREFIX} ${bot}` : bot;
   const line = BOT_LINES[run.bot];
+  const context: MetricContext = { genomeCost: genomeCostTotal(run.params) };
   return {
     name: `${prefix} · ${metric.label}`,
     type: 'line' as const,
@@ -166,8 +212,13 @@ function lineSeries(
     },
     emphasis: { disabled: true },
     data: run.samples.map((sample) =>
-      chartPoint(sample.timeMs, metric.value(sample), logScale),
+      chartPoint(sample.timeMs, metric.value(sample, context), logScale),
     ) as ChartPoint[],
+    // Die Achse der Entscheidungen zählt in Millisekunden; der Basislauf zeigt kein Band.
+    markArea:
+      metric.band === undefined || isBaseline
+        ? undefined
+        : (targetBandArea(run, metric.band, palette, (ms) => ms, true) ?? undefined),
   };
 }
 

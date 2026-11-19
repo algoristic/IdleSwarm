@@ -7,6 +7,7 @@ import { defaultModelParams, sameSimConfig, toSimConfig } from '../../domain/mod
 import type { ModelParamsValue } from '../../domain/models/model-params.model';
 import type { SimConfig } from '../../domain/models/sim.model';
 import type { StallThresholdValue } from '../../domain/models/stall.model';
+import { pacingWarnings } from '../../domain/pacing-targets-logic';
 import type { ReducedRun } from '../../domain/reduce-result-logic';
 import { botStalls, defaultStallThreshold, stallThresholdMs } from '../../domain/stall-logic';
 import type { TimeRange } from '../../domain/wait-share-logic';
@@ -38,6 +39,9 @@ export class ModelFacade {
     const thresholdMs = this.#stallThresholdMs();
     return thresholdMs === null ? null : botStalls(this.runs(), thresholdMs);
   });
+
+  /** Abweichungen von den Zielbändern (US-10.08); reine Auswertung, startet keinen Lauf. */
+  pacing = computed(() => pacingWarnings(this.runs()));
 
   baseline = signal<readonly ReducedRun[] | null>(null);
   baselineSeed = computed(() => this.baseline()?.[0]?.seed ?? null);

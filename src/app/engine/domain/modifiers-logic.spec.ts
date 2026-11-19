@@ -16,7 +16,13 @@ import { candidateInfos } from '@app/site/domain/map-logic';
 
 import { createInitialState } from './game-state-logic';
 import type { GameState } from './models/game-state.model';
-import { effectSiteType, genomeNodePreview, stateEffects, stateModifiers } from './modifiers-logic';
+import {
+  effectSiteType,
+  genomeNodePreview,
+  stateEffects,
+  stateModifiers,
+  uniqueAdaptationPreview,
+} from './modifiers-logic';
 
 const params = DEFAULT_BALANCE;
 
@@ -168,5 +174,25 @@ describe('stateModifiers (Game-Design §4.13)', () => {
     expect(
       genomeNodePreview(withOwned(['cilia-1', 'cilia-2', 'filter-feeder']), 'chemotaxis', params),
     ).toEqual([{ target: 'range', before: 5, after: 6 }]);
+  });
+});
+
+describe('uniqueAdaptationPreview (US-10.07)', () => {
+  it('vergleicht ohne und mit allen Fragmenten, am Schlot mit Bedingung', () => {
+    const initial = createInitialState({ seed: 'effekte', now: 1000 });
+    // Startfutterstelle ist ein Schlot; Thermosynthese wirkt dort auf die Sammelleistung.
+    expect(initial.site.type).toBe('vent');
+    const [preview] = uniqueAdaptationPreview(initial, 'thermosynthesis', params);
+    expect(preview).toEqual({
+      target: 'collectRate',
+      before: params.droneCollectRate,
+      after: params.droneCollectRate * (1 + params.thermosynthesisEffect),
+    });
+    // Die Algensymbiose wirkt nur an Algenmatten: am Schlot ohne Änderung.
+    const [algal] = uniqueAdaptationPreview(initial, 'algal-symbiosis', params);
+    expect(algal).toMatchObject({
+      before: params.droneCollectRate,
+      after: params.droneCollectRate,
+    });
   });
 });
