@@ -23,9 +23,13 @@ const BUDGET_MS = 5000;
 const SITE_TOLERANCE = 0.005;
 /**
  * Jeder Weiterzug verschiebt den Verlauf um die kleine Abweichung der Futterstelle davor; die
- * letzte Futterstelle sammelt darum unterschiedlich lange. Ohne Weiterziehen reichte 1 %.
+ * letzte Futterstelle sammelt darum unterschiedlich lange. Ohne Weiterziehen reichte 1 %, ohne
+ * Drüsenpunkte 2 %. Seit M1.3 kauft „Aktiv“ Drüsenpunkte, bis die Brut durch die Nahrung begrenzt
+ * ist; dann konkurrieren Käufe (jede Sekunde) und Brut (jeder Schritt) im groben Schritt anders um die
+ * Nahrung. Bei Seed `runner` liegt die letzte Ankunft kurz vor dem Laufende, wo die Drohnen nach dem
+ * Transport schnell nachwachsen: 8 s Versatz ergeben dort rund 12 %.
  */
-const UNIT_TOLERANCE = 0.02;
+const UNIT_TOLERANCE = 0.15;
 
 const BUY_DRONE: Command = { type: 'buy', unit: 'drones' };
 
@@ -427,7 +431,9 @@ describe('runSimulation', () => {
         params: { siteSize: 500 },
         durationMs: 20 * MINUTE_MS,
       });
-      const cycle = events.filter((event) => event.type !== 'buy' && event.type !== 'found');
+      const cycle = events.filter(
+        (event) => event.type !== 'buy' && event.type !== 'found' && event.type !== 'evolved',
+      );
       expect(metrics.sites.length).toBeGreaterThan(2);
       const order = ['siteEmpty', 'departed', 'arrived'] as const;
       cycle.forEach((event, index) => {

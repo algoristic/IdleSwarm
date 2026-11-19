@@ -123,6 +123,16 @@ describe('stateModifiers (Game-Design §4.13)', () => {
     ]);
   });
 
+  it('verwendet die letzte Rechnung nur bei denselben Quellen wieder', () => {
+    const owned = withOwned(['cilia-1']);
+    const first = stateModifiers(owned, params);
+    expect(stateModifiers({ ...owned, time: { ...owned.time, played: 5000 } }, params)).toBe(first);
+    const stronger = { ...params, cilia1Effect: 0.5 };
+    expect(modifierFactor(stateModifiers(owned, stronger).collectRate)).toBeCloseTo(1.5, 12);
+    expect(modifierFactor(stateModifiers(withOwned([]), params).collectRate)).toBe(1);
+    expect(modifierFactor(stateModifiers(owned, params).collectRate)).toBeCloseTo(1.2, 12);
+  });
+
   it('schaltet einzigartige Adaptionen über die gefundenen Fragmente frei', () => {
     const before: GameState = {
       ...initial,

@@ -2,7 +2,8 @@ import type { BalanceParams } from '@app/balance/domain/constants';
 import { combineEffects } from '@app/balance/domain/effects-logic';
 import type { Effect, Modifiers } from '@app/balance/domain/models/effect.model';
 import { badgeEffects } from '@app/finds/domain/collection-logic';
-import { buffEffects } from '@app/finds/domain/finds-logic';
+import { buffEffects, isBuffActive } from '@app/finds/domain/finds-logic';
+import type { FindBuff } from '@app/finds/domain/models/finds.model';
 import type { EffectPreview } from '@app/genome/domain/genome-logic';
 import { genomeEffects, nodeEffectPreview } from '@app/genome/domain/genome-logic';
 import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
@@ -38,7 +39,42 @@ export function effectSiteType(state: GameState): SiteTypeId | null {
  * neue Quellen überall sofort wirken (US-05.03).
  */
 export function stateModifiers(state: GameState, params: BalanceParams): Modifiers {
-  return combineEffects(stateEffects(state, params), effectSiteType(state));
+  const { genome, finds, time } = state;
+  const siteType = effectSiteType(state);
+  const activeBuffs = finds.buffs.filter((buff) => isBuffActive(buff, time.played));
+  const last = lastModifiers;
+  if (
+    last !== null &&
+    last.genome === genome &&
+    last.collected === finds.collected &&
+    last.params === params &&
+    last.siteType === siteType &&
+    sameItems(last.activeBuffs, activeBuffs)
+  ) {
+    return last.modifiers;
+  }
+  const modifiers = combineEffects(stateEffects(state, params), siteType);
+  lastModifiers = { genome, collected: finds.collected, params, siteType, activeBuffs, modifiers };
+  return modifiers;
+}
+
+/**
+ * Letzte Rechnung von {@link stateModifiers}. Die Modifikatoren hängen nur von Genom, gefundenen
+ * Fragmenten und Sammelobjekten, laufenden Buffs, `params` und dem Futterstellentyp ab; Schritt,
+ * Runner und Bots fragen sie je Zustand mehrfach ab, meist ohne dass sich eine Quelle ändert. Der
+ * Zwischenspeicher vergleicht nur Referenzen und ändert kein Ergebnis.
+ */
+let lastModifiers: {
+  readonly genome: GameState['genome'];
+  readonly collected: GameState['finds']['collected'];
+  readonly params: BalanceParams;
+  readonly siteType: SiteTypeId | null;
+  readonly activeBuffs: readonly FindBuff[];
+  readonly modifiers: Modifiers;
+} | null = null;
+
+function sameItems<T>(a: readonly T[], b: readonly T[]): boolean {
+  return a.length === b.length && a.every((item, index) => item === b[index]);
 }
 
 /**

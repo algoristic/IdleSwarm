@@ -4,11 +4,13 @@ import { apply, Command } from '@app/engine/domain/commands-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { runSimulation } from '@app/engine/domain/runner-logic';
+import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
 
 import { createActiveBot } from './active-bot-logic';
 import { createDroneHeavyBot } from './drone-heavy-bot-logic';
 import { createIdleBot, IDLE_VISIT_EVERY_MS } from './idle-bot-logic';
+import { closestSplit } from './pheromone-bot-logic';
 import { createSoldierHeavyBot } from './soldier-heavy-bot-logic';
 
 /**
@@ -190,11 +192,13 @@ function recorded(bot: Bot): { bot: Bot; commands: Command[] } {
 const buys = (unit: string, count: number): Command[] =>
   Array.from({ length: count }, () => ({ type: 'buy', unit }) as Command);
 
-const isSetting = (command: Command): boolean => command.type !== 'buy';
+/** Einmalige Einstellungen; die Pheromon-Verteilung ändert sich auch mit jedem freien Punkt. */
+const isSetting = (command: Command): boolean =>
+  command.type === 'setTransportPriority' || command.type === 'setAutoMove';
 
-/** Käufe einer Entscheidung; die einmaligen Einstellungen prüft der Block darüber. */
+/** Einheitenkäufe einer Entscheidung; die einmaligen Einstellungen prüft der Block darüber. */
 const buysOf = (commands: readonly Command[]): Command[] =>
-  commands.filter((command) => !isSetting(command));
+  commands.filter((command) => command.type === 'buy');
 
 describe.each([
   {
@@ -204,7 +208,8 @@ describe.each([
       { type: 'setTransportPriority', priority: 'drones-first' },
       { type: 'setAutoMove', strategy: 'least-resistance' },
       ENABLE_AUTO_MOVE,
-    ],
+      { type: 'setPheromones', drones: 4, soldiers: 0 },
+    ] as Command[],
     forbidden: 'soldiers',
   },
   {
@@ -214,7 +219,8 @@ describe.each([
       { type: 'setTransportPriority', priority: 'soldiers-first' },
       { type: 'setAutoMove', strategy: 'battle-hardened' },
       ENABLE_AUTO_MOVE,
-    ],
+      { type: 'setPheromones', drones: 2, soldiers: 2 },
+    ] as Command[],
     forbidden: 'drones',
   },
 ])('$name', ({ name, create, settings, forbidden }) => {
@@ -224,7 +230,7 @@ describe.each([
     expect(actionTimes(create({ decideEveryMs: 2500 }), 5000)).toEqual([2500, 5000]);
   });
 
-  it('stellt in einem neuen Spiel Priorität, Strategie und Auto-Weiterziehen ein', () => {
+  it('stellt in einem neuen Spiel Priorität, Strategie, Auto-Weiterziehen und Verteilung ein', () => {
     expect(setup({ startFood: 0 }, autoOff).decide(create(), 0)).toEqual(settings);
   });
 
@@ -254,7 +260,7 @@ describe.each([
       return { result, commands };
     };
     const first = run();
-    expect(first.commands.filter(isSetting)).toEqual(settings);
+    expect(first.commands.filter(isSetting)).toEqual(settings.filter(isSetting));
     expect(first.result.events).not.toContainEqual(
       expect.objectContaining({ type: 'buy', unit: forbidden }),
     );
@@ -318,5 +324,279 @@ describe('createSoldierHeavyBot', () => {
     const { decide } = setup({ queenCost: 0, soldierCost: 0 });
     const commands = buysOf(decide(createSoldierHeavyBot(), 0));
     expect(commands).toHaveLength(1000);
+  });
+});
+
+/** Alle vier Bots mit Zielanteil `a*` und Startverteilung (Game-Design §6.3). */
+const ALL_BOTS = [
+  { name: 'active', create: () => createActiveBot(), start: [3, 1] },
+  { name: 'idle', create: () => createIdleBot(), start: [3, 1] },
+  { name: 'drone-heavy', create: () => createDroneHeavyBot(), start: [4, 0] },
+  { name: 'soldier-heavy', create: () => createSoldierHeavyBot(), start: [2, 2] },
+] as const;
+
+const withPheromones =
+  (drones: number, soldiers: number, glands: number) =>
+  (state: GameState): GameState => ({ ...state, pheromones: { drones, soldiers, glands } });
+
+const withGenome =
+  (dna: number, owned: readonly GenomeNodeId[] = []) =>
+  (state: GameState): GameState => ({
+    ...state,
+    res: { ...state.res, dna: Num.from(dna) },
+    genome: { owned },
+  });
+
+/** Käufe in Nahrung: Einheiten und Drüsenpunkte, ohne Einstellungen und Verteilung. */
+const purchasesOf = (commands: readonly Command[]): Command[] =>
+  commands.filter((command) => command.type === 'buy' || command.type === 'strengthenGland');
+
+const evolved = (commands: readonly Command[]): GenomeNodeId[] =>
+  commands.flatMap((command) => (command.type === 'evolve' ? [command.node] : []));
+
+const pheromoneCommands = (commands: readonly Command[]): Command[] =>
+  commands.filter((command) => command.type === 'setPheromones');
+
+const COLLECT_AND_BROOD: readonly GenomeNodeId[] = [
+  'cilia-1',
+  'cilia-2',
+  'filter-feeder',
+  'chemotaxis',
+  'flagellum',
+  'yolk-reserve',
+  'brood-combs',
+  'second-gland',
+  'nurse-cells',
+  'budding',
+];
+
+describe('closestSplit', () => {
+  it.each([
+    [4, 3 / 4, 3, 1],
+    [4, 1, 4, 0],
+    [4, 1 / 2, 2, 2],
+    [5, 3 / 4, 4, 1],
+    // Gleichstand: 4,5 bzw. 2,5 Drohnenpunkte, also mehr Drohnen.
+    [6, 3 / 4, 5, 1],
+    [5, 1 / 2, 3, 2],
+    [7, 3 / 4, 5, 2],
+    [0, 3 / 4, 0, 0],
+  ])('teilt %d Punkte bei a* = %d in %d : %d', (points, share, drones, soldiers) => {
+    expect(closestSplit(points, share)).toEqual({ drones, soldiers });
+  });
+});
+
+describe('Pheromon-Verteilung der Bots', () => {
+  it.each(ALL_BOTS)('$name setzt in einem neuen Spiel die Startverteilung', ({ create, start }) => {
+    const commands = setup({ startFood: 0 }, autoOff).decide(create(), 0);
+    const [drones, soldiers] = start;
+    const expected =
+      drones === 3 && soldiers === 1 ? [] : [{ type: 'setPheromones', drones, soldiers }];
+    expect(pheromoneCommands(commands)).toEqual(expected);
+  });
+
+  it.each([
+    ['active', createActiveBot, 3, 1, 4, 1],
+    ['idle', createIdleBot, 3, 1, 4, 1],
+    ['drone-heavy', createDroneHeavyBot, 4, 0, 5, 0],
+    // |3 − 2,5| = |2 − 2,5|: Gleichstand, also auf Drohnen.
+    ['soldier-heavy', createSoldierHeavyBot, 2, 2, 3, 2],
+  ])('%s verteilt einen freien Punkt sofort', (_name, create, drones, soldiers, toD, toS) => {
+    const { decide } = setup({ startFood: 0 }, withPheromones(drones, soldiers, 1));
+    expect(pheromoneCommands(decide(create(), 0))).toEqual([
+      { type: 'setPheromones', drones: toD, soldiers: toS },
+    ]);
+  });
+
+  it('verteilt mehrere freie Punkte einzeln', () => {
+    // 3 : 1 → 4 : 1 (0,8 statt 0,6) → 5 : 1 (|5 − 4,5| = |4 − 4,5|, Gleichstand: Drohnen).
+    const { decide } = setup({ startFood: 0 }, withPheromones(3, 1, 2));
+    expect(pheromoneCommands(decide(createActiveBot(), 0))).toEqual([
+      { type: 'setPheromones', drones: 5, soldiers: 1 },
+    ]);
+  });
+
+  it('verteilt auch den Punkt der Zweiten Drüse', () => {
+    const owned: GenomeNodeId[] = ['yolk-reserve', 'brood-combs', 'second-gland'];
+    const { decide } = setup({ startFood: 0 }, withGenome(0, owned));
+    expect(pheromoneCommands(decide(createActiveBot(), 0))).toEqual([
+      { type: 'setPheromones', drones: 4, soldiers: 1 },
+    ]);
+  });
+
+  it('setzt ohne freien Punkt nichts', () => {
+    const { decide } = setup({ startFood: 0 }, withPheromones(4, 1, 1));
+    expect(decide(createActiveBot(), 0)).toEqual([]);
+  });
+});
+
+describe('Genom der Bots', () => {
+  it('entwickelt den günstigsten Knoten, bei gleichen Kosten nach der Ast-Reihenfolge', () => {
+    const { decide } = setup({ startFood: 0 }, withGenome(16));
+    expect(evolved(decide(createActiveBot(), 0))).toEqual(['cilia-1', 'yolk-reserve']);
+  });
+
+  it.each([
+    ['idle', createIdleBot, ['cilia-1', 'yolk-reserve', 'acid-vacuole']],
+    ['drone-heavy', createDroneHeavyBot, ['cilia-1', 'yolk-reserve']],
+    ['soldier-heavy', createSoldierHeavyBot, ['acid-vacuole', 'yolk-reserve']],
+  ])('%s entwickelt nach seinen bevorzugten Ästen', (_name, create, nodes) => {
+    // 24 DNA reichen für drei Knoten der ersten Stufe (je 8). Sind die bevorzugten Äste nicht voll,
+    // spart der Bot danach auf deren nächste Stufe (25) und lässt die übrigen liegen.
+    const { decide } = setup({ startFood: 0 }, withGenome(24));
+    expect(evolved(decide(create(), 0))).toEqual(nodes);
+  });
+
+  it('kauft bei genug DNA auch die nächste Stufe', () => {
+    const owned: GenomeNodeId[] = ['cilia-1', 'yolk-reserve', 'acid-vacuole'];
+    const { decide } = setup({ startFood: 0 }, withGenome(50, owned));
+    expect(evolved(decide(createActiveBot(), 0))).toEqual(['cilia-2', 'brood-combs']);
+  });
+
+  it('spart auf den günstigsten Knoten der bevorzugten Äste', () => {
+    // Drohnen-lastig: Cilien-Schlag II und Brutwaben kosten 25; die bezahlbare Säurevakuole (8)
+    // liegt im Kampf-Ast und bleibt liegen.
+    const { decide } = setup({ startFood: 0 }, withGenome(24, ['cilia-1', 'yolk-reserve']));
+    expect(evolved(decide(createDroneHeavyBot(), 0))).toEqual([]);
+  });
+
+  it('spart auch, wenn nur der nächste Knoten zu teuer ist', () => {
+    const owned: GenomeNodeId[] = ['cilia-1', 'yolk-reserve', 'acid-vacuole'];
+    const { decide } = setup({ startFood: 0 }, withGenome(24, owned));
+    expect(decide(createActiveBot(), 0)).toEqual([]);
+  });
+
+  it('nimmt die übrigen Äste, wenn die bevorzugten voll sind', () => {
+    const { decide } = setup({ startFood: 0 }, withGenome(8, COLLECT_AND_BROOD));
+    expect(evolved(decide(createDroneHeavyBot(), 0))).toEqual(['acid-vacuole']);
+  });
+
+  it('entwickelt ohne DNA nichts', () => {
+    expect(evolved(setup({ startFood: 0 }).decide(createActiveBot(), 0))).toEqual([]);
+  });
+
+  it('lässt die Nahrungskäufe unberührt', () => {
+    // Säurevakuole ändert nur den Angriff, die Kaufentscheidung bleibt also gleich.
+    const food = setup({ startFood: 300 });
+    const both = setup({ startFood: 300 }, withGenome(8));
+    const bot = createSoldierHeavyBot();
+    expect(evolved(both.decide(bot, 0))).toEqual(['acid-vacuole']);
+    expect(buysOf(both.decide(bot, 0))).toEqual(buysOf(food.decide(bot, 0)));
+  });
+});
+
+describe('Drüsenpunkt der Bots', () => {
+  /** Zehn Königinnen, Drohnen für Zufluss; die nächste Königin kostet 60 · 1,2⁹ ≈ 309,6. */
+  const tenQueens =
+    (food: number) =>
+    (state: GameState): GameState => ({
+      ...withCounts(500, 30, 9, food)(state),
+      units: { ...state.units, queens: Num.from(10), drones: Num.from(500) },
+    });
+
+  it.each([
+    ['active', createActiveBot, 4, 1],
+    ['drone-heavy', createDroneHeavyBot, 5, 0],
+  ])('%s kauft den Drüsenpunkt als dritte Option der Amortisation', (_n, create, toD, toS) => {
+    // Drüse: 100 / (10/4 · Ertrag einer Königin) schlägt Königin (309,6) und Drohne (76,12 / 0,2).
+    const commands = setup({}, tenQueens(100)).decide(create(), 0);
+    expect(purchasesOf(commands)[0]).toEqual({ type: 'strengthenGland' });
+    expect(pheromoneCommands(commands)).toEqual([
+      { type: 'setPheromones', drones: toD, soldiers: toS },
+    ]);
+  });
+
+  it('spart auf den Drüsenpunkt, statt eine schlechtere Drohne zu kaufen', () => {
+    // 99 Nahrung: Die Drohne (76,12) wäre bezahlbar, der bessere Drüsenpunkt (100) nicht.
+    const { decide } = setup({}, tenQueens(99));
+    expect(decide(createActiveBot(), 0)).toEqual([]);
+  });
+
+  it('wählt bei wenigen Königinnen weiter die Königin', () => {
+    // Eine Königin: Der Drüsenpunkt bringt ein Viertel ihres Ertrags und kostet mehr.
+    const { decide } = setup({}, withCounts(50, 30, 0, 100));
+    expect(decide(createActiveBot(), 0)[0]).toEqual({ type: 'buy', unit: 'queens' });
+  });
+
+  it('idle kauft Drüsenpunkte nach den Königinnen und vor den Drohnen', () => {
+    // 200 Nahrung: Königinnen zu 60 und 72, Drüse zu 50 (die nächste kostet 100), Drohne zu 10.
+    const commands = setup({ startFood: 200, glandCost: 50 }).decide(createIdleBot(), 0);
+    expect(commands).toEqual([
+      { type: 'buy', unit: 'queens' },
+      { type: 'buy', unit: 'queens' },
+      { type: 'strengthenGland' },
+      { type: 'buy', unit: 'drones' },
+      { type: 'setPheromones', drones: 4, soldiers: 1 },
+    ]);
+  });
+
+  it('idle kauft alle bezahlbaren Drüsenpunkte', () => {
+    // Ohne Königin und Drohne (Preis über der Nahrung): Drüsen zu 10, 20, 40 = 70.
+    const params = { startFood: 100, glandCost: 10, queenCost: 1000, droneCost: 1000 };
+    const commands = setup(params).decide(createIdleBot(), 0);
+    expect(commands.filter((command) => command.type === 'strengthenGland')).toHaveLength(3);
+    // 3 : 1 → 4 : 1 → 5 : 1 → 5 : 2.
+    expect(pheromoneCommands(commands)).toEqual([
+      { type: 'setPheromones', drones: 5, soldiers: 2 },
+    ]);
+  });
+
+  /** Gekaufte Soldaten und Königinnen; Soldat 25 · 1,08ⁿ, Königin 60 · 1,2ⁿ. */
+  const soldierHeavyPrices =
+    (soldiers: number, queens: number, food: number) =>
+    (state: GameState): GameState => ({
+      ...state,
+      res: { ...state.res, food: Num.from(food) },
+      bought: { ...state.bought, soldiers: Num.from(soldiers), queens: Num.from(queens) },
+    });
+
+  it('soldier-heavy kauft den Drüsenpunkt, wenn er die günstigste Option ist', () => {
+    // Soldat 25 · 1,08¹⁹ ≈ 107,9, Königin 60 · 1,2⁴ ≈ 124,4, Drüse 100.
+    // Die erste Entscheidung setzt 2 : 2, der neue Punkt geht bei Gleichstand auf Drohnen.
+    const commands = setup({}, soldierHeavyPrices(19, 4, 100)).decide(createSoldierHeavyBot(), 0);
+    expect(purchasesOf(commands)).toEqual([{ type: 'strengthenGland' }]);
+    expect(pheromoneCommands(commands)).toEqual([
+      { type: 'setPheromones', drones: 3, soldiers: 2 },
+    ]);
+  });
+
+  it('soldier-heavy spart auf den günstigeren Drüsenpunkt', () => {
+    const { decide } = setup({}, soldierHeavyPrices(19, 4, 99));
+    expect(purchasesOf(decide(createSoldierHeavyBot(), 0))).toEqual([]);
+  });
+
+  it.each([
+    [
+      'Soldat vor Königin und Drüse',
+      { soldierCost: 60, glandCost: 60 },
+      { type: 'buy', unit: 'soldiers' },
+    ],
+    ['Königin vor Drüse', { soldierCost: 200, glandCost: 60 }, { type: 'buy', unit: 'queens' }],
+  ])('soldier-heavy nimmt bei gleichem Preis %s', (_name, overrides, expected) => {
+    const { decide } = setup({ startFood: 60, ...overrides });
+    expect(purchasesOf(decide(createSoldierHeavyBot(), 0))[0]).toEqual(expected);
+  });
+});
+
+describe('Bots über eine Stunde', () => {
+  it.each(ALL_BOTS)('$name ist reproduzierbar und nutzt Genom und Drüse', ({ create }) => {
+    const run = () => {
+      const { bot, commands } = recorded(create());
+      const result = runSimulation({
+        seed: 'modell',
+        bot,
+        durationMs: 3_600_000,
+        sampleEveryMs: 60_000,
+      });
+      return { result, commands };
+    };
+    const first = run();
+    const types = new Set(first.commands.map((command) => command.type));
+    expect(types).toContain('strengthenGland');
+    expect(types).toContain('setPheromones');
+    expect(first.result.events.some((event) => event.type === 'evolved')).toBe(true);
+    const second = run();
+    expect(second.result).toEqual(first.result);
+    expect(second.commands).toEqual(first.commands);
   });
 });

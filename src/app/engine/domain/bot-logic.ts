@@ -2,11 +2,15 @@ import type { BalanceParams } from '@app/balance/domain/constants';
 import {
   eggsPerMinute,
   foodPerSecond,
+  glandPrice,
   isAffordable,
   netFoodPerSecond,
+  totalPheromonePoints,
   unitPrice,
 } from '@app/balance/domain/formulas';
 import type { Modifiers } from '@app/balance/domain/models/effect.model';
+import { canEvolve } from '@app/genome/domain/genome-logic';
+import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
 import type { Num } from '@app/shared/util/num/num';
 import type { StrategyId } from '@app/site/domain/models/auto-move.model';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
@@ -35,6 +39,10 @@ export interface BotView {
   /** Nahrung/s gesamt minus Brutkosten bei voller Eierrate. */
   readonly netFoodPerSecond: Num;
   readonly eggsPerMinute: Num;
+  /** Preis des nächsten Drüsenpunkts in Nahrung (Game-Design §4.15). */
+  readonly glandPrice: Num;
+  /** Pheromonpunkte gesamt `P_ges`, mit `P_bonus` aus den Effekten (Game-Design §4.15). */
+  readonly pheromonePoints: number;
   /** Dieselbe Sicht auf einen anderen Zustand, etwa nach einem geplanten Kauf. */
   forState(state: GameState): BotView;
 }
@@ -79,8 +87,12 @@ class LazyBotView implements BotView {
     return this.pricesFor(this.state.bought);
   }
 
+  #modifiers: Modifiers | null = null;
+
+  /** Einmal je Sicht; die Bots fragen die Modifikatoren je Entscheidung oft ab. */
   get modifiers(): Modifiers {
-    return stateModifiers(this.state, this.params);
+    this.#modifiers ??= stateModifiers(this.state, this.params);
+    return this.#modifiers;
   }
 
   get foodPerSecond(): Num {
@@ -95,6 +107,14 @@ class LazyBotView implements BotView {
   get eggsPerMinute(): Num {
     const { units, pheromones } = this.state;
     return eggsPerMinute(units, pheromones, this.params, this.modifiers);
+  }
+
+  get glandPrice(): Num {
+    return glandPrice(this.state.pheromones, this.params);
+  }
+
+  get pheromonePoints(): number {
+    return totalPheromonePoints(this.state.pheromones, this.params, this.modifiers);
   }
 
   forState(state: GameState): BotView {
@@ -180,5 +200,35 @@ export class CommandPlan {
   buy(unit: UnitType): void {
     this.#buys++;
     this.add({ type: 'buy', unit });
+  }
+
+  canStrengthenGland(): boolean {
+    return (
+      this.#buys < MAX_BUYS_PER_DECISION &&
+      isAffordable(this.#view.glandPrice, this.current.res.food)
+    );
+  }
+
+  /** Kauft einen Drüsenpunkt; der neue Punkt bleibt frei, bis `setPheromones` ihn verteilt. */
+  strengthenGland(): void {
+    this.#buys++;
+    this.add({ type: 'strengthenGland' });
+  }
+
+  /** Setzt die Pheromon-Verteilung, nur wenn sie sich ändert. */
+  setPheromones(drones: number, soldiers: number): void {
+    const { pheromones } = this.current;
+    if (pheromones.drones !== drones || pheromones.soldiers !== soldiers) {
+      this.add({ type: 'setPheromones', drones, soldiers });
+    }
+  }
+
+  canEvolve(node: GenomeNodeId): boolean {
+    return canEvolve(this.current, node, this.#view.params);
+  }
+
+  /** Entwickelt einen Genom-Knoten für DNA; DNA und Nahrung sind getrennt. */
+  evolve(node: GenomeNodeId): void {
+    this.add({ type: 'evolve', node });
   }
 }
