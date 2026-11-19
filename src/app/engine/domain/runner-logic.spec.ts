@@ -4,6 +4,7 @@ import { createIdleBot } from '@app/model/domain/bots/idle-bot-logic';
 
 import type { Bot } from './bot-logic';
 import type { Command } from './commands-logic';
+import { stallSpans } from './cycle-metrics-logic';
 import { createInitialState } from './game-state-logic';
 import {
   BUY_GAP_WINDOW_MS,
@@ -257,26 +258,43 @@ describe('runSimulation', () => {
       expect(events[8].timeMs).toBeCloseTo(120_000 + travelMs + secondSiteMs, 3);
     });
 
-    it('misst die Dauer je Futterstelle ab der Ankunft ohne die Zeit bis zum Aufbruch', () => {
-      const { sites, firstSiteMs } = manual().metrics;
-      expect(firstSiteMs).toBe(100_000);
+    it('misst die Dauer je Futterstelle bis zum Aufbruch und die Reise getrennt', () => {
+      const { sites, firstSiteMs, longestSiteStayMs } = manual().metrics;
+      // Leer nach 100 s, Aufbruch erst bei 120 s.
+      expect(firstSiteMs).toBe(120_000);
       expect(sites).toHaveLength(2);
-      expect(sites[0]).toEqual({
+      expect(sites[0]).toMatchObject({
         index: 0,
         siteType: 'vent',
         startMs: 0,
+        travelMs: 0,
         emptyMs: 100_000,
-        durationMs: 100_000,
+        departureMs: 120_000,
+        durationMs: 120_000,
+        size: 100,
+        collected: 100,
       });
-      expect(sites[1]).toMatchObject({ index: 1, siteType: 'algal-mat' });
+      expect(sites[1]).toMatchObject({
+        index: 1,
+        siteType: 'algal-mat',
+        departureMs: null,
+        durationMs: null,
+        defense: 0,
+        fought: false,
+        dna: 0,
+      });
+      expect(sites[1].travelMs).toBeCloseTo(travelMs, 3);
       expect(sites[1].startMs).toBeCloseTo(120_000 + travelMs, 3);
-      expect(sites[1].durationMs).toBeCloseTo(secondSiteMs, 3);
+      expect(sites[1].emptyMs).toBeCloseTo(120_000 + travelMs + secondSiteMs, 3);
+      expect(sites[1].collected).toBeCloseTo(size.toNumber(), 8);
+      // Die offene Futterstelle reicht bis zum Laufende.
+      expect(longestSiteStayMs).toBeCloseTo(5 * MINUTE_MS - 120_000 - travelMs, 3);
     });
 
     it.each([30_000, TICK_MS])(
       'bricht mit Auto-Weiterziehen bei Schrittweite %d ms genau am leeren Vorrat auf',
       (stepMs) => {
-        const { events } = run(scripted({ 0: [...FIVE_DRONES, ENABLE_AUTO_MOVE] }), {
+        const { events, metrics } = run(scripted({ 0: [...FIVE_DRONES, ENABLE_AUTO_MOVE] }), {
           params: MOVING,
           durationMs: 5 * MINUTE_MS,
           stepMs,
@@ -304,6 +322,10 @@ describe('runSimulation', () => {
         // Der Runner teilt den Schritt an der nächsten ganzen Millisekunde.
         expect(departedAgain.timeMs - emptied.timeMs).toBeGreaterThanOrEqual(0);
         expect(departedAgain.timeMs - emptied.timeMs).toBeLessThanOrEqual(1);
+        const [, second] = metrics.sites;
+        expect(second.travelMs).toBeCloseTo(travelMs, 3);
+        expect(second.departureMs).toBe(departedAgain.timeMs);
+        expect(second.durationMs).toBeCloseTo(secondSiteMs, 0);
       },
     );
 
@@ -311,7 +333,25 @@ describe('runSimulation', () => {
       const { sites, firstSiteMs } = run(scripted({}), { params: SIMPLE }).metrics;
       expect(firstSiteMs).toBeNull();
       expect(sites).toEqual([
-        { index: 0, siteType: 'vent', startMs: 0, emptyMs: null, durationMs: null },
+        {
+          index: 0,
+          siteType: 'vent',
+          startMs: 0,
+          travelMs: 0,
+          emptyMs: null,
+          departureMs: null,
+          durationMs: null,
+          size: 1e9,
+          collected: 0,
+          defense: 0,
+          fought: false,
+          dna: 0,
+          soldiersBeforeDeparture: null,
+          soldiersCarried: null,
+          soldiersAtArrival: 0,
+          losses: 0,
+          soldiersAfterCapture: 0,
+        },
       ]);
     });
 
@@ -322,7 +362,9 @@ describe('runSimulation', () => {
         stepMs: 7000,
       });
       expect(events).toEqual([{ timeMs: 20_000, type: 'siteEmpty', site: 0 }]);
-      expect(metrics.firstSiteMs).toBe(20_000);
+      expect(metrics.sites[0].emptyMs).toBe(20_000);
+      // Ohne Aufbruch bleibt die Dauer offen.
+      expect(metrics.firstSiteMs).toBeNull();
     });
 
     it('ignoriert wirkungslose Kommandos', () => {
@@ -358,6 +400,79 @@ describe('runSimulation', () => {
       });
       const times = events.map((event) => event.timeMs);
       expect(times).toEqual([...times].sort((a, b) => a - b));
+    });
+  });
+
+  describe('Kampf und Stillstand', () => {
+    /**
+     * Ohne Brut bleiben die Soldaten konstant; eine Königin bietet 50 Plätze für 100 Soldaten,
+     * „ausgewogen“ nimmt also die Hälfte mit. Die niedrige Abwehr macht ein Kampfziel einnehmbar.
+     */
+    const COMBAT: Partial<BalanceParams> = {
+      ...SIMPLE,
+      startQueens: 1,
+      queenEggsPerMin: 0,
+      queenSpace: 50,
+      soldierSpace: 1,
+      soldierCostGrowth: 1,
+      startFood: 1e6,
+      siteDefenseBase: 5,
+    };
+    const params = { ...DEFAULT_BALANCE, ...COMBAT };
+    const { candidates } = createInitialState({ seed: 'runner', now: 0 }, params).map;
+    const target = candidates.findIndex(
+      (candidate) =>
+        candidate.defense.gt(0) &&
+        Math.hypot(candidate.position.x, candidate.position.y) <= params.baseRange &&
+        candidate.defense.lte(50),
+    );
+    const defense = candidates[target]?.defense.toNumber() ?? NaN;
+    const BUY_SOLDIERS: readonly Command[] = Array(100).fill({ type: 'buy', unit: 'soldiers' });
+
+    const fight = () =>
+      run(scripted({ 0: BUY_SOLDIERS, 60_000: [{ type: 'depart', target }] }), {
+        params: COMBAT,
+        durationMs: 10 * MINUTE_MS,
+      });
+
+    it('hält die Soldaten-Bilanz eines Kampfziels fest', () => {
+      expect(target).toBeGreaterThanOrEqual(0);
+      const { sites } = fight().metrics;
+      expect(sites).toHaveLength(2);
+      const [first, second] = sites;
+      expect(first).toMatchObject({ departureMs: 60_000, durationMs: 60_000, emptyMs: null });
+      // L = S · λ · (B / A)²  mit S = A = 50, λ = 0,5; DNA = B^0,8.
+      const losses = 50 * 0.5 * (defense / 50) ** 2;
+      expect(second).toMatchObject({
+        fought: true,
+        soldiersBeforeDeparture: 100,
+        soldiersCarried: 50,
+        soldiersAtArrival: 50,
+      });
+      expect(second.defense).toBeCloseTo(defense, 10);
+      expect(second.losses).toBeCloseTo(losses, 8);
+      expect(second.soldiersAfterCapture).toBeCloseTo(50 - losses, 8);
+      expect(second.dna).toBeCloseTo(defense ** 0.8, 8);
+    });
+
+    it('misst die Strecken ohne Kampfziel und ohne Aufbruch bis zum Laufende', () => {
+      const { sites, longestNoCombatCaptureMs, longestSiteStayMs } = fight().metrics;
+      const arrivalMs = sites[1].startMs;
+      expect(longestNoCombatCaptureMs).toBeCloseTo(
+        Math.max(arrivalMs, 10 * MINUTE_MS - arrivalMs),
+        6,
+      );
+      expect(longestSiteStayMs).toBeCloseTo(10 * MINUTE_MS - arrivalMs, 6);
+      const stalls = stallSpans(sites, 10 * MINUTE_MS, 5 * MINUTE_MS);
+      expect(stalls.noDeparture).toEqual([{ fromMs: arrivalMs, toMs: 10 * MINUTE_MS, open: true }]);
+      expect(stalls.noCombatCapture).toEqual([
+        { fromMs: arrivalMs, toMs: 10 * MINUTE_MS, open: true },
+      ]);
+    });
+
+    it('zählt ohne Kampfziel den ganzen Lauf als eine Strecke', () => {
+      const { longestNoCombatCaptureMs } = run(scripted({}), { params: SIMPLE }).metrics;
+      expect(longestNoCombatCaptureMs).toBe(10 * MINUTE_MS);
     });
   });
 

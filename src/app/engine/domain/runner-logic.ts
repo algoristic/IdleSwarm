@@ -2,6 +2,7 @@ import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { isAffordable, secondsUntilAffordable, siteMsLeft } from '@app/balance/domain/formulas';
 import { Num } from '@app/shared/util/num/num';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
+import type { ArrivedEvent, DepartedEvent } from '@app/site/domain/models/site-event.model';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 import {
@@ -12,6 +13,7 @@ import {
   createPriceLookup,
 } from './bot-logic';
 import { applyCommand, Command } from './commands-logic';
+import { longestSpanMs, noCombatCaptureSpans, siteStaySpans } from './cycle-metrics-logic';
 import { createInitialState } from './game-state-logic';
 import type { GameEvent } from './models/game-event.model';
 import { GameState } from './models/game-state.model';
@@ -95,15 +97,40 @@ export type SimEvent =
     };
 
 /**
- * Futterstelle von ihrem Beginn (Ankunft, die erste bei 0) bis zum leeren Vorrat; ohne Ende
- * bleiben die Felder `null`.
+ * Futterstelle von der Ankunft (die erste bei 0) bis zum Aufbruch. Die Felder zu Reise, Kampf und
+ * Soldaten beschreiben den Weg zu dieser Futterstelle; bei der ersten gibt es keinen.
  */
 export interface SiteMetric {
   readonly index: number;
   readonly siteType: SiteTypeId;
+  /** Ankunft; die erste Futterstelle beginnt bei 0. */
   readonly startMs: number;
+  /** Reise vom Aufbruch an der vorigen Futterstelle bis zur Ankunft; bei der ersten 0. */
+  readonly travelMs: number;
+  /** Vorrat leer gesammelt; `null`, solange er nicht leer ist. */
   readonly emptyMs: number | null;
+  /** Aufbruch; `null`, wenn der Schwarm bis zum Laufende bleibt. */
+  readonly departureMs: number | null;
+  /** Ankunft bis Aufbruch ohne die Reise; `null` ohne Aufbruch. */
   readonly durationMs: number | null;
+  readonly size: number;
+  /** Abgebaut: Größe minus Restvorrat beim Aufbruch bzw. am Laufende. */
+  readonly collected: number;
+  /** Abwehr `B` des Ziels; bei der ersten 0. */
+  readonly defense: number;
+  /** Einnahme mit Kampf (`B > 0`); Algenmatten zählen nicht. */
+  readonly fought: boolean;
+  readonly dna: number;
+  /** Soldaten `S` beim Aufbruch von der vorigen Futterstelle, vor dem Transport. */
+  readonly soldiersBeforeDeparture: number | null;
+  /** Mitgekommene Soldaten `S'` direkt nach dem Aufbruch. */
+  readonly soldiersCarried: number | null;
+  /** Soldaten bei der Ankunft vor dem Kampf, mit Brut der Reise; bei der ersten der Start. */
+  readonly soldiersAtArrival: number;
+  /** Gefallene Soldaten `L`. */
+  readonly losses: number;
+  /** Soldaten direkt nach dem Kampf. */
+  readonly soldiersAfterCapture: number;
 }
 
 export interface GapMetric {
@@ -124,6 +151,7 @@ export interface SimMetrics {
   /** Lücken zwischen Kaufzeitpunkten; Käufe im selben Moment zählen als einer. */
   readonly buyGaps: GapMetric;
   readonly sites: readonly SiteMetric[];
+  /** Dauer der ersten Futterstelle (`durationMs`, Ankunft bis Aufbruch). */
   readonly firstSiteMs: number | null;
   /** Längste Strecke ohne Kauf, einschließlich Laufbeginn und Laufende. */
   readonly longestNoBuyMs: number;
@@ -136,6 +164,10 @@ export interface SimMetrics {
   readonly longestWaitMs: number;
   /** Verdopplungen der Nahrung/s, zwischen den Abtastpunkten logarithmisch interpoliert. */
   readonly foodRateDoubling: DoublingMetric;
+  /** Längste Strecke ohne Einnahme mit Kampf, einschließlich Laufbeginn und Laufende. */
+  readonly longestNoCombatCaptureMs: number;
+  /** Längster Aufenthalt an einer Futterstelle; ohne Aufbruch bis zum Laufende. */
+  readonly longestSiteStayMs: number;
 }
 
 /**
@@ -222,6 +254,13 @@ function doublingMetric(samples: readonly SimSample[]): DoublingMetric {
   };
 }
 
+interface PendingDeparture {
+  readonly timeMs: number;
+  readonly defense: Num;
+  readonly soldiersBefore: Num;
+  readonly soldiersCarried: Num;
+}
+
 /** Sammelt Zeitreihen, Ereignisse und Futterstellen eines Laufs. */
 class Recorder {
   readonly samples: SimSample[] = [];
@@ -232,9 +271,38 @@ class Recorder {
   private currentWaitMs = 0;
   private longestWaitMs = 0;
 
-  constructor(firstSiteType: SiteTypeId) {
+  /** Größe der aktuellen Futterstelle; `collected` rechnet in `Num`, bevor es gewandelt wird. */
+  private siteSize: Num;
+  /** Letzter Aufbruch, bis die Ankunft die nächste Futterstelle anlegt. */
+  private departure: PendingDeparture | null = null;
+
+  constructor(
+    initial: GameState,
+    private readonly params: BalanceParams,
+  ) {
+    const { site, units } = initial;
+    this.siteSize = site.size;
+    const soldiers = this.wire(units.soldiers);
     this.sites = [
-      { index: 0, siteType: firstSiteType, startMs: 0, emptyMs: null, durationMs: null },
+      {
+        index: 0,
+        siteType: site.type,
+        startMs: 0,
+        travelMs: 0,
+        emptyMs: null,
+        departureMs: null,
+        durationMs: null,
+        size: this.wire(site.size),
+        collected: 0,
+        defense: 0,
+        fought: false,
+        dna: 0,
+        soldiersBeforeDeparture: null,
+        soldiersCarried: null,
+        soldiersAtArrival: soldiers,
+        losses: 0,
+        soldiersAfterCapture: soldiers,
+      },
     ];
   }
 
@@ -302,19 +370,21 @@ class Recorder {
     }
   }
 
-  /** Übernimmt Ereignisse aus Kommandos und Schritten; `playedMs` zählt wie `timeMs` ab Laufbeginn. */
-  gameEvents(events: readonly GameEvent[]): void {
+  /**
+   * Übernimmt Ereignisse aus Kommandos und Schritten; `playedMs` zählt wie `timeMs` ab Laufbeginn.
+   * `before` und `after` sind die Zustände vor und nach dem Kommando bzw. Schritt.
+   */
+  gameEvents(events: readonly GameEvent[], before: GameState, after: GameState): void {
     for (const event of events) {
       const last = this.sites.length - 1;
       const timeMs = event.playedMs;
       switch (event.type) {
-        case 'siteDepleted': {
-          const current = this.sites[last];
-          this.sites[last] = { ...current, emptyMs: timeMs, durationMs: timeMs - current.startMs };
+        case 'siteDepleted':
+          this.sites[last] = { ...this.sites[last], emptyMs: timeMs };
           this.events.push({ timeMs, type: 'siteEmpty', site: last });
           break;
-        }
         case 'departed':
+          this.departed(event, after);
           this.events.push({
             timeMs,
             type: 'departed',
@@ -326,7 +396,7 @@ class Recorder {
         case 'arrived': {
           const index = last + 1;
           const { siteType } = event;
-          this.sites.push({ index, siteType, startMs: timeMs, emptyMs: null, durationMs: null });
+          this.arrived(event, before);
           this.events.push({ timeMs, type: 'arrived', site: index, siteType });
           break;
         }
@@ -334,8 +404,82 @@ class Recorder {
     }
   }
 
-  metrics(durationMs: number): SimMetrics {
+  /**
+   * Schließt die aktuelle Futterstelle ab. Ein Aufbruch ist immer das letzte Ereignis seines
+   * Kommandos oder Schritts, `after` zeigt also den Zustand direkt danach: `S'` und das Ziel.
+   */
+  private departed(event: DepartedEvent, after: GameState): void {
+    const last = this.sites.length - 1;
+    const current = this.sites[last];
+    const timeMs = event.playedMs;
+    this.sites[last] = {
+      ...current,
+      departureMs: timeMs,
+      durationMs: timeMs - current.startMs,
+      collected: this.wire(this.siteSize.sub(event.forfeitedStock)),
+    };
+    const carried = after.units.soldiers;
+    this.departure = {
+      timeMs,
+      defense: after.travel?.target.defense ?? Num.ZERO,
+      soldiersBefore: carried.add(event.leftBehind.soldiers),
+      soldiersCarried: carried,
+    };
+  }
+
+  /**
+   * Legt die neue Futterstelle an. Der Runner beendet den Schritt erst an der nächsten ganzen
+   * Millisekunde nach der Ankunft; den Bestand direkt nach dem Kampf liefert darum ein eigener
+   * Schritt von `before` genau bis zur Ankunft (dieselbe Rechnung wie der Reiseteil von `step`).
+   */
+  private arrived(event: ArrivedEvent, before: GameState): void {
+    const atArrival =
+      before.travel === null
+        ? { state: before, events: [] }
+        : step(before, before.travel.remainingMs, this.params);
+    const { site, units } = atArrival.state;
+    let soldiers = units.soldiers;
+    // Bricht das Auto-Weiterziehen sofort wieder auf, zählen die Zurückgelassenen noch mit.
+    for (const late of atArrival.events) {
+      if (late.type === 'departed') {
+        soldiers = soldiers.add(late.leftBehind.soldiers);
+      }
+    }
+    const { departure } = this;
+    const timeMs = event.playedMs;
+    const defense = departure?.defense ?? Num.ZERO;
+    this.siteSize = site.size;
+    this.departure = null;
+    this.sites.push({
+      index: this.sites.length,
+      siteType: event.siteType,
+      startMs: timeMs,
+      travelMs: departure === null ? 0 : timeMs - departure.timeMs,
+      emptyMs: null,
+      departureMs: null,
+      durationMs: null,
+      size: this.wire(site.size),
+      collected: 0,
+      defense: this.wire(defense),
+      fought: defense.gt(Num.ZERO),
+      dna: this.wire(event.dna),
+      soldiersBeforeDeparture: departure === null ? null : this.wire(departure.soldiersBefore),
+      soldiersCarried: departure === null ? null : this.wire(departure.soldiersCarried),
+      soldiersAtArrival: this.wire(soldiers.add(event.losses)),
+      losses: this.wire(event.losses),
+      soldiersAfterCapture: this.wire(soldiers),
+    });
+  }
+
+  metrics(durationMs: number, final: GameState): SimMetrics {
     const times = buyTimes(this.events);
+    const last = this.sites.length - 1;
+    if (this.sites[last].departureMs === null) {
+      this.sites[last] = {
+        ...this.sites[last],
+        collected: this.wire(this.siteSize.sub(final.site.stock)),
+      };
+    }
     return {
       firstBuyMs: times.length > 0 ? times[0] : null,
       buyGaps: buyGapMetric(times),
@@ -345,6 +489,8 @@ class Recorder {
       waitShare: durationMs > 0 ? this.waitMs / durationMs : 0,
       longestWaitMs: this.longestWaitMs,
       foodRateDoubling: doublingMetric(this.samples),
+      longestNoCombatCaptureMs: longestSpanMs(noCombatCaptureSpans(this.sites, durationMs)),
+      longestSiteStayMs: longestSpanMs(siteStaySpans(this.sites, durationMs)),
     };
   }
 }
@@ -399,7 +545,7 @@ export function runSimulation(options: SimOptions): SimResult {
   const viewAt = (current: GameState, atMs: number): BotView =>
     createBotView(current, atMs, params, pricesFor);
   let state = createInitialState({ seed, now: startTimeMs }, params);
-  const recorder = new Recorder(state.site.type);
+  const recorder = new Recorder(state, params);
   let timeMs = 0;
   let nextActionMs = 0;
   let sampleIndex = 0;
@@ -410,7 +556,7 @@ export function runSimulation(options: SimOptions): SimResult {
         const result = applyCommand(state, command, params);
         if (result.state !== state) {
           recorder.command(command, timeMs);
-          recorder.gameEvents(result.events);
+          recorder.gameEvents(result.events, state, result.state);
           state = result.state;
         }
       }
@@ -447,7 +593,7 @@ export function runSimulation(options: SimOptions): SimResult {
     );
 
     const result = step(state, dtMs, params);
-    recorder.gameEvents(result.events);
+    recorder.gameEvents(result.events, state, result.state);
     state = result.state;
     timeMs = stopMs;
   }
@@ -463,6 +609,6 @@ export function runSimulation(options: SimOptions): SimResult {
     saturated: recorder.saturated,
     samples: recorder.samples,
     events: recorder.events,
-    metrics: recorder.metrics(durationMs),
+    metrics: recorder.metrics(durationMs, state),
   };
 }

@@ -18,8 +18,20 @@ function site(index: number, durationMs: number | null): SiteMetric {
     index,
     siteType: 'algal-mat',
     startMs: index * 100,
-    emptyMs: durationMs === null ? null : index * 100 + durationMs,
+    travelMs: 0,
+    emptyMs: null,
+    departureMs: durationMs === null ? null : index * 100 + durationMs,
     durationMs,
+    size: 100,
+    collected: 100,
+    defense: 0,
+    fought: false,
+    dna: 0,
+    soldiersBeforeDeparture: null,
+    soldiersCarried: null,
+    soldiersAtArrival: 0,
+    losses: 0,
+    soldiersAfterCapture: 0,
   };
 }
 
