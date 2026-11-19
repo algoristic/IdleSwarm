@@ -5,16 +5,16 @@
 
 ## Kontext
 
-Heute hat jede Komponente eigenes Plain CSS (rund 560 Zeilen für HUD und Modell-Seite) mit Variablen `--hud-*` in `src/styles.css`. Ab M1.4 kommen viele Oberflächenteile hinzu: HUD im K2-Stil, Schubladen, Detailpanels, Log, Bottom-Sheets und drei Breakpoints ([Konzept §8.4](../technisches-konzept.md#84-responsives-layout)). Dazu kommen die K2-Ebenen mit Kamera-Übergängen (`transform`, `clip-path: circle()`, `filter`), die aus dem Platz berechnete Größe `--ms` und SVG-Animationen ([Mockup K2](../mockups/k2-zoom.html), ADR-006).
+Heute hat jede Komponente eigenes Plain CSS (rund 560 Zeilen für HUD und Modell-Seite) mit Variablen `--hud-*` in `src/styles.css`. Ab M1.4 kommen viele Oberflächenteile hinzu: HUD im K2-Stil, Schubladen, Detailpanels, Log, Bottom-Sheets und drei Breakpoints ([Konzept §8.4](../technisches-konzept.md#84-responsives-layout)). Dazu kommen die K2-Ebenen mit Kamera-Übergängen (`transform`, `clip-path: circle()`, `filter`), die aus dem Platz berechnete Größe `--ms` und SVG-Animationen ([Mockup K2](../mockups/k2-zoom.html), Grafik nach [K2-K](../mockups/k2-kurzgesagt.html), ADR-006).
 
 Als Vorbild dient PortfoliGo: Tailwind v4, semantische Tokens, keine Arbitrary Values, Komponenten-Styles nur für Sonderfälle.
 
 ## Entscheidung
 
 - Styling verwendet **Tailwind CSS v4** (Entwicklungsabhängigkeit, eingebunden über PostCSS im Angular-Build).
-- `src/styles.css` ist das einzige globale Stylesheet. Es definiert die **`--sw-*`-Tokens** aus der K2-Palette, bildet sie über `@theme inline` auf Tailwind-Farben ab und schaltet die Standardpalette ab. Die bisherigen `--hud-*`-Variablen gehen darin auf.
+- `src/styles.css` ist das einzige globale Stylesheet. Es definiert die **`--sw-*`-Tokens** aus der Palette des UI-Leitbilds ([K2-K](../mockups/k2-kurzgesagt.html)), bildet sie über `@theme inline` auf Tailwind-Farben ab und schaltet die Standardpalette ab. Die bisherigen `--hud-*`-Variablen gehen darin auf.
 - Templates verwenden Utilities; Farben nur aus Tokens, **keine Arbitrary Values** für HUD, Panels, Schubladen und Formulare.
-- **Ausnahme K2:** Ebenen, Kamera, Moduswechsel, `--ms`, SVG-Animationen und Canvas-Container stehen in Komponenten-CSS, auch mit freien Werten. Wiederkehrende Werte (Dauern, Easing, Glow) werden zu Tokens. Utilities reagieren auf den Modus über eigene Varianten (`@custom-variant`, z. B. `mode-map:` für `[data-mode=map]`).
+- **Ausnahme K2:** Ebenen, Kamera, Moduswechsel, `--ms`, SVG-Animationen und Canvas-Container stehen in Komponenten-CSS, auch mit freien Werten. Wiederkehrende Werte (Dauern, Easing, Schlagschatten, Cel-Schatten) werden zu Tokens. Utilities reagieren auf den Modus über eigene Varianten (`@custom-variant`, z. B. `mode-map:` für `[data-mode=map]`).
 - Der Canvas liest Farben aus den Token-Variablen, nicht aus Literalen.
 - Details stehen in [`CLAUDE.md` §4](../../CLAUDE.md#4-styling).
 
@@ -26,7 +26,7 @@ Als Vorbild dient PortfoliGo: Tailwind v4, semantische Tokens, keine Arbitrary V
 - HUD und Modell-Seite verwenden nur Utilities; es gibt keine Komponenten-CSS-Dateien mehr. Zustände wie die Platzwarnung laufen über `data-*`-Attribute und Varianten (`data-warning:`).
 - Die Diagramme der Modell-Seite lesen ihre Farben über das Token `CHART_PALETTE` einmal aus den CSS-Variablen ([`chart-theme.ts`](../../src/app/model/ui/echart/chart-theme.ts)).
 
-**Offen:** K2-Ebenen, Kamera und Moduswechsel kommen mit der Shell ab M1.4.
+**Offen:** K2-Ebenen, Kamera und Moduswechsel kommen mit der Shell ab M1.4. Die Token-Werte stammen noch aus der Neon-Palette von K2; sie werden mit AP 1.4.3 auf die Palette von K2-K umgestellt (Namen bleiben, Kontrast und `--sw-chart-*` neu prüfen).
 
 ## Konsequenzen
 

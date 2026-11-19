@@ -1,6 +1,6 @@
 # IdleSwarm · Projektplan
 
-> Stand: 19.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2 · Kamera-Zoom](mockups/k2-zoom.html)
+> Stand: 19.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 
 ## 1. Ziel und Rahmen
 
@@ -9,7 +9,7 @@ IdleSwarm ist ein Idle-Browserspiel für eine Person, ohne Multiplayer. Der Spie
 | Rahmen | Festlegung |
 |---|---|
 | Plattform | Browser, **Desktop und Mobile von Anfang an** |
-| Optik | Mockup **K2 · Kamera-Zoom**: Sonar-Karte ⊖ · Schwarm-Szene ✺ · Genom ⊕ als eine zusammenhängende Welt |
+| Optik | Mockup **K2-K · Kurzgesagt-Stil** (Bedienung und Ebenen aus K2 · Kamera-Zoom): Sonar-Karte ⊖ · Schwarm-Szene ✺ · Genom ⊕ als eine zusammenhängende Welt, flache Farbflächen statt Glow |
 | Technik | Angular (zoneless, Signals), Spiellogik als reines TypeScript, kein Backend (Details: [Technisches Konzept](technisches-konzept.md)) |
 | Team | 1 Entwickler + KI-Unterstützung |
 | Planung | Aufwand in **Personentagen (PT)**, Meilensteine **ohne Termine** |
@@ -21,7 +21,7 @@ Idle-Spiele stehen und fallen mit ihrer Wachstumskurve: Wird die Wartezeit zu la
 
 ### Leitprinzip: Strategie statt Klicken
 
-Es gibt keine Klick-Mechanik für Ressourcen. Ein fester [Grundertrag](game-design.md#41-grundertrag) trägt den Start, danach zählen Käufe und Entscheidungen. Das Spiel wird mit jeder Ära strategischer: In der Ursuppe wählt man Käufe und Ziele, im Urmeer verteilt man den Schwarm auf 2–3 Standorte, an Land erobert man Gebiete an mehreren Fronten, und im Weltraum steuert man die Ausbreitung über eine globale Übersicht. Das [Mockup K2](mockups/k2-zoom.html) bleibt die optische Vorlage, sein Klick-Verhalten gilt aber nicht mehr.
+Es gibt keine Klick-Mechanik für Ressourcen. Ein fester [Grundertrag](game-design.md#41-grundertrag) trägt den Start, danach zählen Käufe und Entscheidungen. Das Spiel wird mit jeder Ära strategischer: In der Ursuppe wählt man Käufe und Ziele, im Urmeer verteilt man den Schwarm auf 2–3 Standorte, an Land erobert man Gebiete an mehreren Fronten, und im Weltraum steuert man die Ausbreitung über eine globale Übersicht. Das [Mockup K2-K](mockups/k2-kurzgesagt.html) ist die optische Vorlage, sein Klick-Verhalten gilt aber nicht mehr.
 
 ## 2. Ausbaustufen im Überblick
 
@@ -324,7 +324,7 @@ Diese Zielbänder werden auf der Modell-Seite überwacht und in AP 1.5.5 feinjus
 
 ## 4. Spätere Ausbaustufen (grob)
 
-Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Beginnt mit der Stufe eine neue Ära (AS3–AS5), gehört zum Konzept-Meilenstein eine **Mockup-Runde**: Es entstehen mehrere UI-Mockups für die Ära, eines davon wird ausgewählt und dient wie [Mockup K2](mockups/k2-zoom.html) für Ära I als UI-Leitbild. Erst danach werden die Arbeitspakete detailliert. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
+Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Beginnt mit der Stufe eine neue Ära (AS3–AS5), gehört zum Konzept-Meilenstein eine **Mockup-Runde**: Es entstehen mehrere UI-Mockups für die Ära, eines davon wird ausgewählt und dient wie [Mockup K2-K](mockups/k2-kurzgesagt.html) für Ära I als UI-Leitbild. Erst danach werden die Arbeitspakete detailliert. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
 
 ### AS2 · Evolution: große Ascension und Langzeitmotivation
 
@@ -442,5 +442,5 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 - **Iterativ je Meilenstein:** Am Meilenstein-Ende stehen ein spielbarer Stand auf GitHub Pages, ein kurzer Spieltest und ein Blick auf die Modell-Seite.
 - **Definition of Done (AP):** Code folgt den Regeln aus [`CLAUDE.md`](../CLAUDE.md), Tests für die wesentliche Logik (siehe „Tests bis M5.0“), CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen), Umsetzungsstand in ADRs, technischem Konzept und Regeldateien nachgezogen.
 - **Planung späterer Stufen:** Vor jeder neuen Ausbaustufe wird dieser Plan um die Detaillierung der Stufe ergänzt, nachdem der Konzept-Meilenstein abgeschlossen ist.
-- **Mockup-Runde vor jeder neuen Ära:** Bevor die Arbeitspakete einer neuen Ära detailliert werden, entstehen im Konzept-Meilenstein mehrere UI-Mockups. Eines wird ausgewählt und als UI-Leitbild der Ära festgehalten (für Ära I: [Mockup K2](mockups/k2-zoom.html)).
+- **Mockup-Runde vor jeder neuen Ära:** Bevor die Arbeitspakete einer neuen Ära detailliert werden, entstehen im Konzept-Meilenstein mehrere UI-Mockups. Eines wird ausgewählt und als UI-Leitbild der Ära festgehalten (für Ära I: [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html), Ebenen und Bedienung aus [K2](mockups/k2-zoom.html)).
 - **Tests bis M5.0:** Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan. Getestet werden nur die **wesentliche** Logik (z. B. Formeln, `apply`/`step`, Determinismus, Migrationen) und die **wesentlichen** E2E-Abläufe. Hauptziel der Tests ist bis dahin, unbeabsichtigte Regressionen zu vermeiden, nicht Vollständigkeit. Der vollständige Testplan entsteht in M5.0.

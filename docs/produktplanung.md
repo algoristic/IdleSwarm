@@ -1,6 +1,6 @@
 # IdleSwarm · Produktplanung
 
-> Stand: 18.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Technisches Konzept](technisches-konzept.md) · UI-Leitbild: [Mockup K2](mockups/k2-zoom.html)
+> Stand: 19.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Technisches Konzept](technisches-konzept.md) · UI-Leitbild: [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 
 ## 1. Produktvision
 

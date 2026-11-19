@@ -5,7 +5,7 @@
 
 ## Kontext
 
-Die Oberfläche folgt dem Mockup [K2](../mockups/k2-zoom.html): drei Ebenen, zwischen denen gezoomt wird. Die Szene zeigt einige hundert Sprites mit Glow; Karte und Genom bestehen aus interaktiven Knoten ([Konzept §2](../technisches-konzept.md#2-technologie-stack), [§8](../technisches-konzept.md#8-rendering--umsetzung-von-k2)).
+Die Oberfläche folgt dem Mockup [K2](../mockups/k2-zoom.html) in der Grafik von [K2-K · Kurzgesagt-Stil](../mockups/k2-kurzgesagt.html): drei Ebenen, zwischen denen gezoomt wird. Die Szene zeigt einige hundert flach schattierte Sprites; Karte und Genom bestehen aus interaktiven Knoten ([Konzept §2](../technisches-konzept.md#2-technologie-stack), [§8](../technisches-konzept.md#8-rendering--umsetzung-von-k2)).
 
 ## Entscheidung
 

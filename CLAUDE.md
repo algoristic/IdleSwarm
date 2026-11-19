@@ -246,7 +246,7 @@ Neue Formulare verwenden **Signal Forms** (`@angular/forms/signals`). Keine Reac
 
 Styling verwendet **Tailwind CSS v4** mit semantischen Tokens ([ADR-010](docs/adr/010-tailwind-tokens.md)). `src/styles.css` ist das einzige globale Stylesheet:
 
-- Es importiert Tailwind und definiert die `--sw-*`-Tokens aus der K2-Palette ([Mockup K2](docs/mockups/k2-zoom.html)).
+- Es importiert Tailwind und definiert die `--sw-*`-Tokens aus der Palette des UI-Leitbilds ([Mockup K2-K · Kurzgesagt-Stil](docs/mockups/k2-kurzgesagt.html)).
 - Es bildet die Tokens über `@theme inline` auf Tailwind-Farben ab. Die Standardpalette ist abgeschaltet.
 - Es enthält die eigenen Varianten (`@custom-variant`).
 
@@ -267,7 +267,7 @@ Das Spiel hat nur ein dunkles Thema; ein helles ist nicht geplant.
   - Canvas-Container
   - `env(safe-area-inset-*)`
 
-  Werte, die mehrfach vorkommen (Dauern, Easing, Glow), werden zu Tokens. Der Modus steht als `data-mode` am Shell-Container; Utilities reagieren darauf über eigene Varianten (`mode-map:`, `mode-scene:`, `mode-gen:`).
+  Werte, die mehrfach vorkommen (Dauern, Easing, Schlagschatten, Cel-Schatten), werden zu Tokens. Der Modus steht als `data-mode` am Shell-Container; Utilities reagieren darauf über eigene Varianten (`mode-map:`, `mode-scene:`, `mode-gen:`).
 - **Canvas** liest seine Farben einmal beim Start bzw. bei einem Themenwechsel aus den Token-Variablen (`getComputedStyle`), nicht pro Frame und nicht als Literal.
 - Eigene Klassennamen in CSS folgen BEM (`block__element--modifier`).
 - Keine weiteren UI-Frameworks (Angular Material, Bootstrap usw.). Für Icons wird eine Bibliothek per ADR gewählt, sobald welche gebraucht werden.

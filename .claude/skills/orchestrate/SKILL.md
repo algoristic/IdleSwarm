@@ -75,7 +75,7 @@ Save-Version nicht stillschweigend anpassen. Arbeite am Rest weiter und führe d
    frag in der Klärungsrunde, wie damit umzugehen ist; committe sie nie ungefragt mit.
 2. **Aufgabe verstehen:** Lies die CLAUDE.md, die betroffenen Abschnitte aus `docs/projektplan.md`,
    `docs/produktplanung.md` (User Stories mit Akzeptanzkriterien), `docs/technisches-konzept.md`,
-   gegebenenfalls `docs/game-design.md` und `docs/adr/`, das UI-Leitbild `docs/mockups/k2-zoom.html` bei
+   gegebenenfalls `docs/game-design.md` und `docs/adr/`, das UI-Leitbild `docs/mockups/k2-kurzgesagt.html` (Ebenen und Bedienung aus `k2-zoom.html`) bei
    UI-Aufgaben und den betroffenen Code. Für breite Suchen darfst du `Explore`-Agents einsetzen.
    Ist die Aufgabe ein Arbeitspaket aus `docs/projektplan.md` §3.3: Sind die Abhängigkeiten erledigt
    (Meilenstein-Reihenfolge §3.2)? Welche Entscheidungen aus §3.4 betrifft es? Welche Tests verlangen die

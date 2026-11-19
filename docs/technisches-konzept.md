@@ -1,6 +1,6 @@
 # IdleSwarm · Technisches Konzept
 
-> Stand: 19.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md) · UI-Referenz: [Mockup K2](mockups/k2-zoom.html)
+> Stand: 19.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md) · UI-Referenz: [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 
 ## 1. Rahmenbedingungen
 
@@ -19,7 +19,7 @@
 | Framework | **Angular** (aktuelle Version, mind. 21), standalone Components, **zoneless**, **Signals** | Dem Entwickler vertraut, dadurch gut nachvollziehbar; Signals passen zu einem sich ständig ändernden Spielzustand; zoneless vermeidet Change-Detection-Last durch den 60-fps-Renderloop |
 | Sprache | TypeScript, `strict` | Typsichere Spieldaten und Formeln |
 | Große Zahlen | **`break_infinity.js`** (Decimal), gekapselt hinter eigenem Typ `Num` | Idle-Zahlen sprengen spätestens ab AS2 den Bereich von `number` (~1,8·10³⁰⁸); schnell, in Idle-Spielen verbreitet; der Wrapper erlaubt späteren Tausch |
-| Rendering Szene | **Canvas 2D** | Wie im Mockup; ausreichend für einige hundert Sprites mit Glow |
+| Rendering Szene | **Canvas 2D** | Wie im Mockup; ausreichend für einige hundert flach schattierte Sprites |
 | Rendering Karte & Genom | **SVG** in Angular-Templates | Interaktive Knoten, Klickflächen und Styling über CSS; im Mockup erprobt |
 | Übergänge | **CSS** (transform, clip-path, filter, opacity) | `@angular/animations` ist veraltet; die K2-Übergänge sind ohnehin CSS-Übergänge |
 | Styling | **Tailwind CSS v4** mit semantischen `--sw-*`-Tokens; K2-Ebenen und Kamera in Komponenten-CSS ([ADR-010](adr/010-tailwind-tokens.md)) | Viele HUD-Teile, Schubladen und Breakpoints ab M1.4; Farben zentral, Ära-Paletten als Token-Werte |
@@ -291,7 +291,7 @@ export const GENOME_ERA1: GenomeNode[] = [
 
 ### 8.1 Ebenen und Kamera
 
-Die Umsetzung folgt [`docs/mockups/k2-zoom.html`](mockups/k2-zoom.html) (`setMode`, `applyCamera`):
+Die Umsetzung folgt [`docs/mockups/k2-kurzgesagt.html`](mockups/k2-kurzgesagt.html) (`setMode`, `applyCamera`). Ebenen, Kamera und Bedienung sind dieselben wie in [K2](mockups/k2-zoom.html); K2-K legt die Grafik fest (§8.6).
 
 | Ebene | Inhalt | Technik |
 |---|---|---|
@@ -306,7 +306,7 @@ Die Umsetzung folgt [`docs/mockups/k2-zoom.html`](mockups/k2-zoom.html) (`setMod
 
 - **Agenten-Budget:** maximal ~300 Sprites (mobil ~150). Bei mehr Einheiten steht ein Sprite für `n` Einheiten, die Verteilung auf die Typen bleibt proportional.
 - **DPR:** Die Canvas-Größe wird mit `devicePixelRatio` skaliert (gedeckelt auf 2).
-- Glow (`shadowBlur`) ist teuer. Deshalb werden Sprites vorgerendert (Offscreen-Canvas) und nur kopiert.
+- Einheiten sind flach schattierte Zellen aus mehreren Flächen (Körper, Cel-Schatten als Sichel, Kern). Damit das pro Frame billig bleibt, werden Sprites je Typ vorgerendert (Offscreen-Canvas) und nur kopiert.
 - Ertrags-Partikel und Ereigniszahlen, etwa bei Einnahmen oder Funden: Partikel im Canvas, Zahlen als DOM-Elemente.
 
 ### 8.3 Eingabe
@@ -332,6 +332,16 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 - `prefers-reduced-motion` und eine Einstellung ersetzen Zoom-Übergänge durch Überblendungen, reduzieren Partikel und stoppen Dauer-Animationen (Sonar-Sweep, Membran).
 - Alle Aktionen sind per Tastatur erreichbar; sichtbarer Fokus; ARIA-Labels für Icon-Knöpfe.
 - Farben sind nicht der einzige Informationsträger (z. B. „✓ einnehmbar“ / „✗ zu stark“ als Text).
+
+### 8.6 Grafikstil (K2-K)
+
+Das UI-Leitbild ist [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html). Es ersetzt die Neon-Optik von [K2](mockups/k2-zoom.html), Ebenen und Bedienung bleiben gleich.
+
+- **Flächen statt Leuchten:** satte, konturlose Farbflächen auf tiefem Blauviolett; kein Glow (`shadowBlur`, `drop-shadow`-Leuchten).
+- **Schatten:** Cel-Schatten als Sichel auf Zellen und Knoten; Panels und Knöpfe als massive, abgerundete Flächen mit flachem Schlagschatten (`--drop`, `--shade` im Mockup).
+- **Tiefe:** Lichtkegel und Hügel in Luftperspektive in der Szene; leichte Körnung als Overlay über den Ebenen, unter dem HUD.
+- **Typografie:** abgerundete, kräftige Sans-Serif (im Mockup Nunito mit Systemschriften als Fallback). Ob eine Webfont eingebunden wird, entscheidet AP 1.4.3.
+- **Palette:** Die Farben des Mockups (`:root`) werden zu `--sw-*`-Tokens in `src/styles.css` ([ADR-010](adr/010-tailwind-tokens.md)); Textkontrast ≥ 4,5:1 bleibt Pflicht.
 
 ## 9. Zahlenformatierung
 
