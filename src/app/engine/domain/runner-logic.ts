@@ -1,5 +1,5 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
-import { isAffordable, secondsUntilAffordable, siteMsLeft } from '@app/balance/domain/formulas';
+import { isAffordable, secondsUntilAffordable } from '@app/balance/domain/formulas';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
@@ -19,6 +19,7 @@ import { createInitialState } from './game-state-logic';
 import type { GameEvent } from './models/game-event.model';
 import { GameState } from './models/game-state.model';
 import { step } from './step-logic';
+import { nextSplitMs } from './step-split-logic';
 
 /** Standard-Schrittweite; gegen den 100-ms-Takt abgesichert in `runner.spec.ts`. */
 export const DEFAULT_SIM_STEP_MS = MS_PER_SECOND;
@@ -492,25 +493,6 @@ class Recorder {
       longestSiteStayMs: longestSpanMs(siteStaySpans(this.sites, durationMs)),
     };
   }
-}
-
-/**
- * Nächster Zeitpunkt, an dem der Runner den Schritt teilt: die Ankunft oder der vorhergesagte
- * Auslöser des Auto-Weiterziehens (`V = θ · G`), auf die nächste ganze Millisekunde aufgerundet. Im
- * Schritt ist die Abbaurate konstant, die Vorhersage also exakt; so bricht der Schwarm nicht erst
- * am Ende eines großen Schritts auf.
- */
-function nextSplitMs(state: GameState, timeMs: number, params: BalanceParams): number {
-  const { auto, site, travel, units } = state;
-  if (travel !== null) {
-    return timeMs + Math.max(1, Math.ceil(travel.remainingMs));
-  }
-  if (!auto.enabled) {
-    return Infinity;
-  }
-  const msLeft = siteMsLeft(units, site.stock.sub(site.size.mul(auto.threshold)), params);
-  // Ist der Auslöser schon erreicht, fand die Strategie kein Ziel; dann gibt es nichts zu teilen.
-  return msLeft !== null && msLeft > 0 ? timeMs + Math.ceil(msLeft) : Infinity;
 }
 
 function assertOptions(durationMs: number, sampleEveryMs: number, stepMs: number): void {
