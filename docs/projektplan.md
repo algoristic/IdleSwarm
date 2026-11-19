@@ -77,7 +77,7 @@ Die Spalte **Stories** verweist auf die User Stories in der [Produktplanung](pro
 
 #### Abhängigkeiten der Arbeitspakete
 
-Ein Pfeil bedeutet: Das Arbeitspaket am Pfeilanfang muss fertig sein, bevor das am Pfeilende abgeschlossen werden kann. Indirekte Abhängigkeiten sind nicht eingezeichnet. Die Abhängigkeiten sind aus den Inhalten der Arbeitspakete, den User Stories und dem bisherigen Code abgeleitet. AP 1.0.7 hängt mit keinem anderen Arbeitspaket zusammen.
+Ein Pfeil bedeutet: Das Arbeitspaket am Pfeilanfang muss fertig sein, bevor das am Pfeilende abgeschlossen werden kann. Indirekte Abhängigkeiten sind nicht eingezeichnet. Die Abhängigkeiten sind aus den Inhalten der Arbeitspakete, den User Stories und dem bisherigen Code abgeleitet. AP 1.0.7 hängt mit keinem anderen Arbeitspaket zusammen. Abgeschlossene Arbeitspakete sind grün hinterlegt.
 
 ```mermaid
 flowchart TB
@@ -213,6 +213,10 @@ flowchart TB
     ap155 --> ap158
     ap156 --> ap158
     ap157 --> ap158
+
+    classDef done fill:#d4edda,stroke:#2e7d32,color:#1b4d20
+    class ap101,ap102,ap103,ap104,ap105,ap106,ap107 done
+    class ap111,ap112,ap113,ap114,ap115,ap116,ap117,ap118,ap119,ap1110 done
 ```
 
 #### M1.0 · Fundament
