@@ -1,7 +1,7 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { Num } from '@app/shared/util/num/num';
 
-import { apply, Command } from './commands-logic';
+import { apply, applyCommand, Command } from './commands-logic';
 import { createInitialState } from './game-state-logic';
 import { GameState } from './models/game-state.model';
 
@@ -107,6 +107,64 @@ describe('apply', () => {
       // @ts-expect-error: `queens-first` ist keine Mitnahme-Priorität.
       const cmd: Command = { type: 'setTransportPriority', priority: 'queens-first' };
       expect(apply(state, cmd)).toBe(state);
+    });
+  });
+
+  describe('depart', () => {
+    // Der Seed „idleswarm“ erzeugt als ersten Kandidaten eine Algenmatte bei (−1,3355; −2,3790).
+    const travelMs = Math.hypot(1.3355202136, 2.3790464258) * 10_000;
+
+    it('bricht auf und meldet departed mit Auslöser manuell', () => {
+      const { state: next, events } = applyCommand(state, { type: 'depart', target: 0 });
+      expect(next.travel?.target).toBe(state.map.candidates[0]);
+      expect(next.travel?.remainingMs).toBeCloseTo(travelMs, 4);
+      expect(next.site.stock.isZero()).toBe(true);
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({
+        type: 'departed',
+        playedMs: 0,
+        siteType: 'algal-mat',
+        auto: false,
+      });
+    });
+
+    it('liefert über apply denselben Zustand ohne Ereignisse', () => {
+      expect(apply(state, { type: 'depart', target: 0 })).toEqual(
+        applyCommand(state, { type: 'depart', target: 0 }).state,
+      );
+    });
+
+    it.each([-1, 6, 0.5, Number.NaN])('bleibt beim Ziel %d ohne Wirkung', (target) => {
+      expect(applyCommand(state, { type: 'depart', target })).toEqual({ state, events: [] });
+      expect(apply(state, { type: 'depart', target })).toBe(state);
+    });
+
+    it('bleibt während einer Reise ohne Wirkung, auch für „Neue Futterstelle“', () => {
+      const traveling = Object.freeze(apply(state, { type: 'depart', target: 0 }));
+      expect(apply(traveling, { type: 'depart', target: 0 })).toBe(traveling);
+      expect(apply(traveling, { type: 'newSite' })).toBe(traveling);
+    });
+
+    it('liefert für Kommandos ohne Ereignis eine leere Liste', () => {
+      expect(applyCommand(state, { type: 'buy', unit: 'drones' }).events).toEqual([]);
+    });
+  });
+
+  describe('setAutoMove', () => {
+    it('setzt die Einstellungen und begrenzt die Schwelle', () => {
+      const next = apply(
+        state,
+        { type: 'setAutoMove', enabled: true, strategy: 'least-resistance', threshold: 2 },
+        DEFAULT_BALANCE,
+      );
+      expect(next.auto).toEqual({ enabled: true, strategy: 'least-resistance', threshold: 0.9 });
+    });
+
+    it('bleibt bei ungültigen Werten ohne Wirkung', () => {
+      // @ts-expect-error: `greedy` ist keine Strategie.
+      const cmd: Command = { type: 'setAutoMove', strategy: 'greedy' };
+      expect(apply(state, cmd)).toBe(state);
+      expect(apply(state, { type: 'setAutoMove', threshold: Number.NaN })).toBe(state);
     });
   });
 });

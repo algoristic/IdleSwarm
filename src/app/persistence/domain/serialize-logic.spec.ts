@@ -2,6 +2,7 @@ import { compressToBase64, decompressFromBase64 } from 'lz-string';
 
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState, STATE_VERSION } from '@app/engine/domain/models/game-state.model';
+import { step } from '@app/engine/domain/step-logic';
 import { Num } from '@app/shared/util/num/num';
 
 import { decodeSave, encodeSave, SaveError } from './serialize-logic';
@@ -19,6 +20,27 @@ const FROZEN_V1_SAVE =
  */
 const FROZEN_V2_SAVE =
   'N4IgbgpgTgzglgewHYgFwCYA0IYQgEzRDnwBsIYB3AQygFsRsokBzAZQBdqOI0BGAMwB2ABxi+ABgBsfbBzh1eqUEgSV+QiVu0SArNuylqMDm2qRCqPpp22J2AA5GAngTT6tAX2zRqRAK6w/g4OvEwUaKAAZggIliB8AHToIgAsEAKMIPhIfqggQom6EBIg3iD+SHAcMJEgAI7+eEi1+QIlWfhQyBH5qckQfFkwCKT4cNCtCUUd5fA8dRzOoUSQSBzDcABeSiDoEKnDHAgAxgDWREnoAqnFmeUARgj+LAAWG8oNTRAtRPul2C6PSm6SG2BGYwmsCIElmniAA';
+
+/**
+ * Eingefrorener Spielstand der Version 3 mitten in der zweiten Reise (AP 1.2.6), mit Route,
+ * Einstellungen und Mitnahme-Priorität. Nicht anpassen: Vorlage für künftige Migrationen.
+ */
+const FROZEN_V3_SAVE =
+  'N4IgbgpgTgzglgewHYgFwGYA0IYQgEzRDnwBsIYB3AQygFsRsokBzAZQBdqOI10AOAJz8AbABYA7GLEBGbBzh1eqUEgS' +
+  'U0MiQAZde9IL3ZS1GBzbVIhVFr37Du7AAcTATwJ8H2gL7Zo1IgBXWECnJ14mCjRQADMEBGsQdAA6ACYRbUl0mQBWdBF+' +
+  'CFTGEHwkANQQbQhtEF8QQKQ4DhhokABHQLwkVsqZGpL8KGQoypTBVJyB7BgEUnw4aF6QGWTBCSna+vgeNo5XcKJqUhZj' +
+  'gFo6bhL4AC9lFeSJQREdWTyBQRzCsWuOBABjADWRGqW2wACMEIEWAALDhtTrdZagwbDJCjFbTHBzBZLIj9MEgS5ONpOB' +
+  'A7RAoFQgAAeaDOq3Q6ByOVS2lSMny6AkT1y2Fc9NSyW5hjE4kmPIEYnS9X+1CQC3w3FGAG1QPtDpVIEh4c5yc1KW06ag' +
+  'zkKNuhtPwJEI2etUhN+WgxGlWWJ+Kk3TIZG6OTltnA7kQRMkXkycpyJNyvSIID9sPgIDEID17jlklMZHVMOqDvdjqdSB' +
+  'crnqKcgjfTxqkmfxtDkRF88ql7Y7UNp02yeTJtBIZIJBF33RJ/YHKkLtMIcoJ0LkRBMxOhY4NE8ncCCBr4c5qiRAODD5' +
+  'RAzrgICSSway9TjW3OTIrZGZCIXtbJFIW2cUlJXWL2W6JBz0MP7lWJsmXNaQxByHt+hyJckxTIg0zECBMw3EANXucFqH' +
+  '+HgoDgc5Ll1EAyVLKlQGNM422nbRcnSKcHzFL0sBAAUTX4NZu1nD1xw9GsOQAogJGSedxAMVJBwEdBELjUplzgvpBKmY' +
+  'oULQogMKw6BcMLfCSiIs8SNpQUQybURRO9fIIPWHIW2decvXAqjpRybQClrPjKlYi1+05V1WVnBcpITWDVzkyQiizTc8' +
+  'xOPDi0I/UFHPUi0DHesdCo0QJOtCdXxSHIxAs/h+C9dIxWeVyQCFCT8p9Kj7y0VJF3jGSgqqdcAF0mChXZUDVVDcyIbU' +
+  'CJ0uK9MvFsfCU3rKnzKKBtiw0L3pRlmVZdlOREbleUspiDJFTJxQgyN+GlERvG8NqiQQSBehkeoOCgSwIFIPZaBYHc9g' +
+  'mkAps06LBrmhKTUrata3rfhG2bLbW3bbse27Xt+0tVIhxmAN7jHCcpxnOc/Jgld7hReooAgS44CaVgAFlegqh9hS8Q6n' +
+  'nyepqECP42mTahwXIawYmOXAZlu5UWGYkByFMDgzgJ+AzHlf4IlQmFxZhHE0DbSZ6icHCEBw/YiFmeZFlgM4YjgWB4W8' +
+  'IA==';
 
 const NOW = 1_700_000_000_000;
 
@@ -240,6 +262,57 @@ describe('eingefrorener Spielstand der Version 2', () => {
 
   it('lässt sich wieder speichern und laden', () => {
     const state = decodeSave(FROZEN_V2_SAVE);
+    expectSameState(decodeSave(encodeSave(state)), state);
+  });
+});
+
+describe('eingefrorener Spielstand der Version 3', () => {
+  it('wird unverändert geladen', () => {
+    const state = decodeSave(FROZEN_V3_SAVE);
+    expect(state.version).toBe(STATE_VERSION);
+    expect(JSON.parse(JSON.stringify(state))).toMatchObject({
+      version: 3,
+      seed: 'idleswarm',
+      rngState: 3898647441,
+      time: { now: 1700000039000, lastSaved: 1700000039000, played: 39000 },
+      era: 'ursuppe',
+      res: { food: '3.260472615368e2', dna: '0e0' },
+      units: { queens: '1e0', drones: '3.925e0', soldiers: '1.975e0' },
+      site: { type: 'algal-mat', size: '1.79670415338958e4', stock: '0e0' },
+      bought: { queens: '0e0', drones: '1e0', soldiers: '1e0' },
+      map: {
+        position: { x: -1.3355202136377915, y: -2.3790464257738426 },
+        route: [
+          { type: 'vent', position: { x: 0, y: 0 } },
+          { type: 'algal-mat', position: { x: -1.3355202136377915, y: -2.3790464257738426 } },
+        ],
+        moves: 1,
+      },
+      travel: {
+        target: {
+          type: 'algal-mat',
+          position: { x: -3.923380565853229, y: 0.5207710719910827 },
+          size: '2.0985931569243e4',
+          defense: '0e0',
+        },
+        remainingMs: 34866.39000847936,
+      },
+      auto: { enabled: false, strategy: 'least-resistance', threshold: 0.25 },
+      priority: 'soldiers-first',
+    });
+    expect(state.map.candidates).toHaveLength(6);
+  });
+
+  it('lässt sich weiterspielen bis zur Ankunft', () => {
+    const { state, events } = step(decodeSave(FROZEN_V3_SAVE), 35_000);
+    expect(state.travel).toBeNull();
+    expect(state.map.moves).toBe(2);
+    expect(state.site.type).toBe('algal-mat');
+    expect(events.map((event) => event.type)).toEqual(['arrived']);
+  });
+
+  it('lässt sich wieder speichern und laden', () => {
+    const state = decodeSave(FROZEN_V3_SAVE);
     expectSameState(decodeSave(encodeSave(state)), state);
   });
 });

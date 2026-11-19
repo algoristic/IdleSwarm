@@ -5,7 +5,7 @@ import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
 
-import { applyCollect } from './collect-logic';
+import { applyCollect, collectStep } from './collect-logic';
 
 interface Setup {
   readonly drones?: number;
@@ -180,5 +180,40 @@ describe('applyCollect', () => {
       expect(state.site.stock).toBe(Num.ZERO);
       expect(state.res.food.toNumber()).toBeCloseTo(50, 9);
     });
+  });
+});
+
+describe('collectStep', () => {
+  it('meldet ohne Leeren kein Ereignis', () => {
+    const input = createState({ drones: 10, stock: 1000 });
+    const { state, events } = collectStep(input, TICK_MS, 0, DEFAULT_BALANCE);
+    expect(state).toEqual(collect(input));
+    expect(events).toEqual([]);
+  });
+
+  it('meldet siteDepleted mit dem Zeitpunkt, an dem der Vorrat leer wurde', () => {
+    // 3,5 Nahrung/s leeren 0,7 nach 200 ms eines 1000-ms-Schritts ab Spielzeit 5000.
+    const input = createState({ drones: 10, stock: 0.7 });
+    const { state, events } = collectStep(input, 1000, 5000, DEFAULT_BALANCE);
+    expect(state.site.stock).toBe(Num.ZERO);
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe('siteDepleted');
+    expect(events[0].siteType).toBe('vent');
+    expect(events[0].playedMs).toBeCloseTo(5200, 9);
+  });
+
+  it('legt den Zeitpunkt bei genau passendem Rest auf das Schrittende', () => {
+    const { events } = collectStep(
+      createState({ drones: 10, stock: 0.35 }),
+      TICK_MS,
+      0,
+      DEFAULT_BALANCE,
+    );
+    expect(events[0].playedMs).toBeCloseTo(TICK_MS, 9);
+  });
+
+  it('meldet einen schon leeren Vorrat nicht erneut', () => {
+    const input = createState({ drones: 10, stock: 0 });
+    expect(collectStep(input, TICK_MS, 0, DEFAULT_BALANCE)).toEqual({ state: input, events: [] });
   });
 });

@@ -1,8 +1,16 @@
-import { DEFAULT_BALANCE, TICK_MS, TICKS_PER_SECOND } from '@app/balance/domain/constants';
+import {
+  BalanceParams,
+  DEFAULT_BALANCE,
+  TICK_MS,
+  TICKS_PER_SECOND,
+} from '@app/balance/domain/constants';
 import { Num } from '@app/shared/util/num/num';
+import { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
+import { SiteCandidate } from '@app/site/domain/models/map.model';
 
-import { apply } from './commands-logic';
+import { apply, applyCommand } from './commands-logic';
 import { createInitialState } from './game-state-logic';
+import { GameEvent } from './models/game-event.model';
 import { GameState } from './models/game-state.model';
 import { step, syncClock } from './step-logic';
 
@@ -168,12 +176,15 @@ describe('step', () => {
     const input = createState();
     const ticks = 3600 * TICKS_PER_SECOND;
     let state = input;
+    const events: GameEvent[] = [];
     for (let i = 0; i < ticks; i++) {
       const result = step(state, TICK_MS);
-      expect(result.events).toHaveLength(0);
+      events.push(...result.events);
       state = deepFreeze(result.state);
     }
     expect(state.time).toEqual({ now: NOW + 3_600_000, lastSaved: NOW, played: 3_600_000 });
+    // Die Brut lässt die Drohnen wachsen; ohne Auto-Weiterziehen bleibt es beim leeren Vorrat.
+    expect(events.map((event) => event.type)).toEqual(['siteDepleted']);
     expect(state.rngState).toBe(input.rngState);
   });
 });
@@ -197,5 +208,205 @@ describe('syncClock', () => {
 
   it.each([-1, Number.NaN, Infinity, -Infinity])('wirft bei ungültigem nowMs %d', (nowMs) => {
     expect(() => syncClock(createState(), nowMs)).toThrow(RangeError);
+  });
+});
+
+describe('step mit Weiterziehen', () => {
+  const candidate = (
+    type: SiteTypeId,
+    x: number,
+    y: number,
+    size: number,
+    defense: number,
+  ): SiteCandidate => ({
+    type,
+    position: { x, y },
+    size: Num.from(size),
+    defense: Num.from(defense),
+  });
+
+  /** Kandidaten aus Game-Design §4.6, Beispiel 3 (K1 bis K4 in Reichweite). */
+  const EXAMPLE_3: readonly SiteCandidate[] = [
+    candidate('vent', 3, 0, 30_240, 26),
+    candidate('bacterial-mat', 0, 3, 55_440, 52),
+    candidate('algal-mat', -2, 0, 16_940, 0),
+    candidate('vent', 0, -1, 28_000, 20),
+    candidate('whale-fall', 5.8, 0, 124_320, 103),
+    candidate('methane-seep', 0, 6.5, 108_500, 73),
+  ];
+
+  // Beispiel 7 nimmt S = 34 bei Q = 1 mit; dafür braucht es 68 Plätze statt 10.
+  const params = { ...DEFAULT_BALANCE, queenSpace: 70 };
+
+  function swarm(candidates: readonly SiteCandidate[] = EXAMPLE_3): GameState {
+    const base = createInitialState({ seed: 'reise', now: NOW });
+    return deepFreeze({
+      ...base,
+      res: { ...base.res, food: Num.from(100) },
+      units: { queens: Num.ONE, drones: Num.ZERO, soldiers: Num.from(34) },
+      site: { ...base.site, stock: Num.from(500) },
+      map: { ...base.map, candidates },
+    });
+  }
+
+  function departed(target: number, input: GameState = swarm()): GameState {
+    const { state, events } = applyCommand(input, { type: 'depart', target }, params);
+    expect(events.map((event) => event.type)).toEqual(['departed']);
+    return deepFreeze(state);
+  }
+
+  function run(
+    input: GameState,
+    totalMs: number,
+    dtMs: number,
+    runParams: BalanceParams = params,
+  ): { state: GameState; events: GameEvent[] } {
+    let state = input;
+    const events: GameEvent[] = [];
+    for (let t = 0; t < totalMs; t += dtMs) {
+      const result = step(state, Math.min(dtMs, totalMs - t), runParams);
+      state = deepFreeze(result.state);
+      events.push(...result.events);
+    }
+    return { state, events };
+  }
+
+  it('rechnet Beispiel 7 aus Game-Design §4.11', () => {
+    const { state, events } = run(departed(0), 30_000, TICK_MS);
+    // Unterwegs schlüpfen 0,75 Soldaten, gekämpft wird mit S = 34,75.
+    expect(state.units.soldiers.toNumber()).toBeCloseTo(34.75 - 9.73, 2);
+    expect(state.units.drones.toNumber()).toBeCloseTo(2.25, 10);
+    expect(state.res.dna.toNumber()).toBeCloseTo(13.55, 2);
+    // Ohne Sammeln unterwegs: nur die Brutkosten von 3 Eiern · 13,75.
+    expect(state.res.food.toNumber()).toBeCloseTo(100 - 41.25, 10);
+    expect(state.site).toEqual({ type: 'vent', size: Num.from(30_240), stock: Num.from(30_240) });
+    expect(state.map.moves).toBe(1);
+    expect(state.map.position).toEqual({ x: 3, y: 0 });
+    expect(state.travel).toBeNull();
+    expect(events).toHaveLength(1);
+    const [arrived] = events;
+    if (arrived.type !== 'arrived') {
+      throw new Error('arrived erwartet');
+    }
+    expect(arrived.playedMs).toBe(30_000);
+    expect(arrived.losses.toNumber()).toBeCloseTo(9.73, 2);
+  });
+
+  it('zählt die Restdauer herunter und ruht unterwegs beim Sammeln', () => {
+    const input = departed(0);
+    // Auch ein (provisorisch) gefüllter Vorrat bringt unterwegs nichts.
+    const filled = deepFreeze({ ...input, site: { ...input.site, stock: Num.from(1000) } });
+    const { state, events } = step(filled, 1000, params);
+    expect(state.travel?.remainingMs).toBe(29_000);
+    expect(state.site.stock.eq(1000)).toBe(true);
+    expect(state.res.food.toNumber()).toBeCloseTo(100 - 0.1 * 13.75, 10);
+    expect(state.units.soldiers.toNumber()).toBeCloseTo(34.025, 10);
+    expect(events).toEqual([]);
+  });
+
+  it('kommt unabhängig von der Schrittweite zum selben Zeitpunkt an', () => {
+    // d = ‖(1,2345; 2)‖ ≈ 2,3503, also keine ganze Zahl von Ticks.
+    const input = departed(0, swarm([candidate('vent', 1.2345, 2, 30_000, 10)]));
+    const travelMs = input.travel?.remainingMs ?? 0;
+    expect(travelMs % TICK_MS).not.toBe(0);
+    // Ohne Sammelrate der Drohnen: Im feinen Raster sammeln frisch geschlüpfte Drohnen sonst schon mit.
+    const exact = { ...params, droneCollectRate: 0 };
+    const runs = [TICK_MS, 1000, 7000, 40_000].map((dtMs) => run(input, 40_000, dtMs, exact));
+    const [fine] = runs;
+    for (const { state, events } of runs) {
+      expect(events).toHaveLength(1);
+      expect(events[0].type).toBe('arrived');
+      expect(events[0].playedMs).toBeCloseTo(travelMs, 6);
+      expect(state.time.played).toBeCloseTo(40_000, 6);
+      for (const value of [
+        (s: GameState) => s.res.food,
+        (s: GameState) => s.res.dna,
+        (s: GameState) => s.units.drones,
+        (s: GameState) => s.units.soldiers,
+        (s: GameState) => s.site.stock,
+      ]) {
+        const expected = value(fine.state).toNumber();
+        expect(Math.abs(value(state).toNumber() - expected)).toBeLessThan(1e-9 * expected + 1e-9);
+      }
+      expect(state.map).toEqual(fine.state.map);
+    }
+  });
+
+  it('sammelt im Ankunftsschritt erst ab der Ankunft', () => {
+    const input = departed(0);
+    const { state } = step(input, 31_000, params);
+    expect(state.travel).toBeNull();
+    // Nach der Ankunft 1 s Grundertrag und Sammeln mit 2,25 Drohnen.
+    expect(state.site.stock.toNumber()).toBeCloseTo(30_240 - (1.5 + 2.25 * 0.2), 6);
+  });
+
+  it('meldet siteDepleted, wenn der Vorrat durch Sammeln leer wird, nicht beim Aufbruch', () => {
+    const base = swarm();
+    const input = deepFreeze({ ...base, site: { ...base.site, stock: Num.from(0.1) } });
+    const { state, events } = step(input, TICK_MS, params);
+    expect(state.site.stock).toBe(Num.ZERO);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ type: 'siteDepleted', siteType: 'vent' });
+    expect(events[0].playedMs).toBeCloseTo((0.1 / 1.5) * 1000, 6);
+    expect(step(deepFreeze(state), TICK_MS, params).events).toEqual([]);
+    expect(run(departed(0), 1000, TICK_MS).events).toEqual([]);
+  });
+
+  describe('Auto-Weiterziehen', () => {
+    function withAuto(
+      stock: number,
+      settings: { enabled?: boolean; threshold?: number },
+    ): GameState {
+      const base = swarm();
+      const state = apply(base, { type: 'setAutoMove', enabled: true, ...settings }, params);
+      return deepFreeze({
+        ...state,
+        site: { ...state.site, size: Num.from(1000), stock: Num.from(stock) },
+      });
+    }
+
+    it('bricht mit Schwelle 0 im Schritt auf, in dem der Vorrat leer wird', () => {
+      const { state, events } = step(withAuto(0.1, { threshold: 0 }), TICK_MS, params);
+      expect(events.map((event) => event.type)).toEqual(['siteDepleted', 'departed']);
+      const departure = events[1];
+      if (departure.type !== 'departed') {
+        throw new Error('departed erwartet');
+      }
+      expect(departure.auto).toBe(true);
+      expect(departure.playedMs).toBe(TICK_MS);
+      expect(departure.forfeitedStock.isZero()).toBe(true);
+      // „Ausgewogen“ wählt K4 (Beispiel 8).
+      expect(state.travel).toEqual({ target: EXAMPLE_3[3], remainingMs: 10_000 });
+    });
+
+    it('bricht mit Schwelle 0 bei Restvorrat nicht auf', () => {
+      const { state, events } = step(withAuto(100, { threshold: 0 }), TICK_MS, params);
+      expect(state.travel).toBeNull();
+      expect(events).toEqual([]);
+    });
+
+    it('bricht mit Schwelle 0,5 auf, sobald V ≤ θ · G', () => {
+      expect(step(withAuto(500.2, { threshold: 0.5 }), TICK_MS, params).state.travel).toBeNull();
+      const { state, events } = step(withAuto(500.1, { threshold: 0.5 }), TICK_MS, params);
+      expect(state.travel?.target).toBe(EXAMPLE_3[3]);
+      const [departure] = events;
+      expect(departure.type === 'departed' && departure.forfeitedStock.toNumber()).toBeCloseTo(
+        500.1 - 0.15,
+        10,
+      );
+    });
+
+    it('bricht ausgeschaltet nicht auf', () => {
+      const { state, events } = step(withAuto(0.1, { enabled: false }), TICK_MS, params);
+      expect(state.travel).toBeNull();
+      expect(events.map((event) => event.type)).toEqual(['siteDepleted']);
+    });
+
+    it('bricht nach der Ankunft erst wieder auf, wenn die neue Futterstelle leer ist', () => {
+      const traveling = departed(2, withAuto(0, { threshold: 0 }));
+      const { state, events } = run(traveling, 20_000 + 2 * TICK_MS, TICK_MS);
+      expect(events.map((event) => event.type)).toEqual(['arrived']);
+      expect(state.travel).toBeNull();
+    });
   });
 });

@@ -1,7 +1,9 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { collectGain } from '@app/balance/domain/formulas';
+import { collectGain, siteMsLeft } from '@app/balance/domain/formulas';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
+
+import type { SiteResult } from './models/site-event.model';
 
 /** Grundertrag und Sammeln im Simulationsschritt; ohne Ertrag kommt derselbe Zustand zurück. */
 export function applyCollect(state: GameState, dtMs: number, params: BalanceParams): GameState {
@@ -21,4 +23,25 @@ export function applyCollect(state: GameState, dtMs: number, params: BalancePara
     res: { ...res, food: res.food.add(gain) },
     site: { ...site, stock },
   };
+}
+
+/**
+ * Wie {@link applyCollect}, meldet aber `siteDepleted`, wenn der Vorrat im Schritt auf 0 fällt. Der
+ * Zeitpunkt liegt exakt im Schritt, weil die Abbaurate im Schritt konstant ist. `playedMs` ist die
+ * Spielzeit zu Beginn des Schritts.
+ */
+export function collectStep(
+  state: GameState,
+  dtMs: number,
+  playedMs: number,
+  params: BalanceParams,
+): SiteResult {
+  const next = applyCollect(state, dtMs, params);
+  const { site, units } = state;
+  if (next === state || !next.site.stock.isZero()) {
+    return { state: next, events: [] };
+  }
+  const msLeft = siteMsLeft(units, site.stock, params);
+  const atMs = playedMs + (msLeft === null ? dtMs : Math.min(dtMs, msLeft));
+  return { state: next, events: [{ type: 'siteDepleted', playedMs: atMs, siteType: site.type }] };
 }

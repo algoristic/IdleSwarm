@@ -133,6 +133,12 @@ export function siteSecondsLeft(units: Units, stock: Num, params: BalanceParams)
   return rate.gt(Num.ZERO) ? stock.div(rate) : null;
 }
 
+/** Restzeit der Futterstelle in Millisekunden; `null` wie bei {@link siteSecondsLeft}. */
+export function siteMsLeft(units: Units, stock: Num, params: BalanceParams): number | null {
+  const seconds = siteSecondsLeft(units, stock, params);
+  return seconds === null ? null : seconds.toNumber() * MS_PER_SECOND;
+}
+
 /** Eier/min: `Q · e_q · M_brut` mit `M_brut = 1` bis M1.3 (Game-Design §4.5). */
 export function eggsPerMinute(units: Units, params: BalanceParams): Num {
   return units.queens.mul(params.queenEggsPerMin);
