@@ -52,6 +52,14 @@ describe('nextSplitMs', () => {
     expect(nextSplitMs(swarm({ stock: 20.0013 }), NOW_MS, params)).toBe(NOW_MS + 1);
   });
 
+  it('wendet eine geladene Schwelle über θ_max höchstens mit θ_max an', () => {
+    // (100 − 0,5 · 100) / 2 = 25 s statt (100 − 90) / 2 = 5 s
+    const capped = { ...params, maxAutoThreshold: 0.5 };
+    expect(nextSplitMs(swarm({ threshold: 0.9 }), NOW_MS, capped)).toBe(
+      NOW_MS + 25 * MS_PER_SECOND,
+    );
+  });
+
   it('teilt nicht ohne Auto-Weiterziehen', () => {
     expect(nextSplitMs(swarm({ enabled: false }), NOW_MS, params)).toBe(Infinity);
   });

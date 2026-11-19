@@ -215,6 +215,11 @@ describe('toSonarView', () => {
     });
   });
 
+  it('zeigt eine geladene Schwelle über θ_max als wirksames θ_max', () => {
+    const sonar = view(state({ auto: { enabled: true, strategy: 'balanced', threshold: 1 } }));
+    expect(sonar.settings.thresholdPercent).toBe(90);
+  });
+
   describe('Sonar-Karte', () => {
     // Kandidaten bis Distanz 6,5: sieben Ringe.
     const unit = MAP_RADIUS / 7;

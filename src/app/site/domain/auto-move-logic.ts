@@ -38,10 +38,15 @@ export function setAutoMove(
   return unchanged ? state : { ...state, auto: next };
 }
 
-/** Auslöser des Auto-Weiterziehens: Auto an, keine Reise, `V ≤ θ · G` (Game-Design §4.12). */
-export function isAutoMoveDue(state: GameState): boolean {
+/**
+ * Auslöser des Auto-Weiterziehens: Auto an, keine Reise, `V ≤ θ · G` (Game-Design §4.12). Ein
+ * geladener Spielstand darf eine Schwelle über `θ_max` haben; wirksam ist höchstens `θ_max`, der
+ * gespeicherte Wert bleibt.
+ */
+export function isAutoMoveDue(state: GameState, params: BalanceParams): boolean {
   const { auto, site, travel } = state;
-  return auto.enabled && travel === null && site.stock.lte(site.size.mul(auto.threshold));
+  const threshold = clampAutoThreshold(auto.threshold, params);
+  return auto.enabled && travel === null && site.stock.lte(site.size.mul(threshold));
 }
 
 /**
@@ -49,7 +54,7 @@ export function isAutoMoveDue(state: GameState): boolean {
  * `auto: true`. Ohne Auslöser oder Ziel kommt derselbe Zustand ohne Ereignis zurück.
  */
 export function applyAutoMove(state: GameState, params: BalanceParams): SiteResult {
-  if (!isAutoMoveDue(state)) {
+  if (!isAutoMoveDue(state, params)) {
     return { state, events: [] };
   }
   const target = strategyTarget(state, state.auto.strategy, params);

@@ -1,5 +1,6 @@
 import { type BalanceParams } from '@app/balance/domain/constants';
 import {
+  clampAutoThreshold,
   distanceBetween,
   siteSecondsLeft,
   swarmRange,
@@ -312,7 +313,8 @@ function toSettingsView({ auto, priority }: GameState, params: BalanceParams): M
     priority,
     strategy: auto.strategy,
     autoEnabled: auto.enabled,
-    thresholdPercent: thresholdToPercent(auto.threshold),
+    // Ein geladener Stand darf über θ_max liegen; angezeigt wird, was wirkt.
+    thresholdPercent: thresholdToPercent(clampAutoThreshold(auto.threshold, params)),
     maxThresholdPercent: maxThresholdPercent(params),
   };
 }

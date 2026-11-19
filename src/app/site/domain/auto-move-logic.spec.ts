@@ -71,19 +71,29 @@ describe('setAutoMove', () => {
 
 describe('isAutoMoveDue und applyAutoMove (Game-Design §4.12)', () => {
   it('löst mit Schwelle 0 erst bei leerem Vorrat aus', () => {
-    expect(isAutoMoveDue(stateWith(0.001))).toBe(false);
-    expect(isAutoMoveDue(stateWith(0))).toBe(true);
+    expect(isAutoMoveDue(stateWith(0.001), DEFAULT_BALANCE)).toBe(false);
+    expect(isAutoMoveDue(stateWith(0), DEFAULT_BALANCE)).toBe(true);
   });
 
   it('löst mit Schwelle 0,5 bei V ≤ θ · G aus', () => {
-    expect(isAutoMoveDue(stateWith(500.001, { threshold: 0.5 }))).toBe(false);
-    expect(isAutoMoveDue(stateWith(500, { threshold: 0.5 }))).toBe(true);
+    expect(isAutoMoveDue(stateWith(500.001, { threshold: 0.5 }), DEFAULT_BALANCE)).toBe(false);
+    expect(isAutoMoveDue(stateWith(500, { threshold: 0.5 }), DEFAULT_BALANCE)).toBe(true);
+  });
+
+  it('wendet eine geladene Schwelle über θ_max höchstens mit θ_max an', () => {
+    // Die Ladeprüfung lässt [0; 1] zu; gespeichert bleibt 0,9.
+    const params = { ...DEFAULT_BALANCE, maxAutoThreshold: 0.5 };
+    expect(isAutoMoveDue(stateWith(600, { threshold: 0.9 }), params)).toBe(false);
+    expect(isAutoMoveDue(stateWith(500, { threshold: 0.9 }), params)).toBe(true);
+    const input = stateWith(600, { threshold: 0.9 });
+    expect(applyAutoMove(input, params).state).toBe(input);
+    expect(input.auto.threshold).toBe(0.9);
   });
 
   it('löst ausgeschaltet und während einer Reise nicht aus', () => {
-    expect(isAutoMoveDue(stateWith(0, { enabled: false }))).toBe(false);
+    expect(isAutoMoveDue(stateWith(0, { enabled: false }), DEFAULT_BALANCE)).toBe(false);
     const traveling = { ...stateWith(0), travel: { target: CANDIDATES[1], remainingMs: 1 } };
-    expect(isAutoMoveDue(traveling)).toBe(false);
+    expect(isAutoMoveDue(traveling, DEFAULT_BALANCE)).toBe(false);
   });
 
   it('bricht zum Ziel der Strategie auf und meldet auto: true', () => {
