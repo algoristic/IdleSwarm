@@ -12,7 +12,7 @@ paths:
 | --- | --- |
 | `shared/util/num/num.ts` | `Num` (einziger Zugang zu `break_infinity.js`, ADR-002) |
 | `shared/util/format/format.ts` | `formatNum`, `formatRate` (de-DE, Kurzformen, wissenschaftlich) |
-| `shared/util/format/display-format.ts` | gerichtete Anzeigerundung (`roundDownForDisplay`, `roundUpForDisplay`), `formatDown`, `formatUp`, `formatDuration`, `barPercent` |
+| `shared/util/format/display-format.ts` | gerichtete Anzeigerundung (`roundDownForDisplay`, `roundUpForDisplay`), `formatDown`, `formatUp`, `formatDuration`, `barPercent`, `splitPercents` (ganze Prozent, die zusammen genau 100 ergeben; ohne Summe alle 0) |
 | `shared/util/format/elapsed-format.ts` | Zeitspannen und Achsenwerte der Modell-Seite |
 | `shared/util/format/date-format.ts` | `formatDateTime`, `formatIsoDateTime`, `isValidTimestamp` |
 | `shared/util/time/time-units.ts` | `SECONDS_PER_MINUTE`, `SECONDS_PER_HOUR`, `MS_PER_SECOND`, `MS_PER_MINUTE`, `MS_PER_HOUR`; der Spieltakt (`TICK_MS`, `TICKS_PER_SECOND`) steht in `balance/domain` |
@@ -20,7 +20,7 @@ paths:
 | `shared/util/rng/rng.ts` | `seedToRngState`, `nextRandom` (Mulberry32); Algorithmen nicht ändern |
 | `shared/ui/pipes/<name>/` | eine Pipe je Formatierungsfunktion (`formatNum`, `formatRate`, `formatDown`, `formatUp`, `formatDuration`, `formatElapsed`, `formatDateTime`, `formatIsoDateTime`) |
 | `shared/data-access/platform/platform.tokens.ts` | `CLOCK` (`now`, `monotonic`), `ANIMATION_FRAME` |
-| `src/styles.css` | Tailwind-Import, Varianten, `--sw-*`-Tokens, `@theme` (Farben, Rasterspalten) |
+| `src/styles.css` | Tailwind-Import, Varianten, `--sw-*`-Tokens, `@theme` (Farben, Rasterspalten, Schriftgröße `--text-2xs` für die Kostenschilder im Genom); seit AP 1.3.3 Genom-Tokens `--sw-branch-{collect,brood,combat,unique}`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked`, `--sw-locked-fg`, `--sw-cost-muted`, `--sw-cost-muted-fg` (Utilities `bg-nucleus`, `stroke-locked` …) |
 
 ## Besonderheiten
 

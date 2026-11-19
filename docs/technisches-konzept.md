@@ -86,28 +86,39 @@ src/app/
     ui/pipes/                   # formatNum, formatRate, formatDown, formatDuration …
     data-access/platform/       # CLOCK, ANIMATION_FRAME
   balance/
-    domain/constants.ts, formulas.ts, targets.ts (geplant)
+    domain/constants.ts, formulas.ts, targets.ts   # Konstanten, Formeln, Pacing-Zielbänder
+    domain/models/effect.model.ts, effects-logic.ts # Effekt-System (Modifikatoren)
   engine/
     domain/models/game-state.model.ts   # Zusammensetzung aus den Fachdomänen
     domain/models/game-event.model.ts   # GameEvent, StepResult
-    domain/game-state-logic.ts, commands-logic.ts, step-logic.ts, random-logic.ts
+    domain/game-state-logic.ts, commands-logic.ts, step-logic.ts, step-split-logic.ts, random-logic.ts
+    domain/modifiers-logic.ts           # stateEffects, stateModifiers: Effekte aller Quellen
     domain/runner-logic.ts, cycle-metrics-logic.ts, bot-logic.ts, catch-up (geplant)
     data-access/game-store/, game-loop/, game-core/   # provideGameCore(), Ereignis-Log
   swarm/
-    domain/models/units.model.ts, transport-priority.model.ts
-    domain/units-logic.ts, brood-logic.ts, transport-logic.ts, sacrifice-logic.ts
+    domain/models/units.model.ts, transport-priority.model.ts, pheromones.model.ts
+    domain/units-logic.ts, brood-logic.ts, transport-logic.ts, sacrifice-logic.ts, pheromone-logic.ts
   site/
     domain/models/site.model.ts, map.model.ts, travel.model.ts, auto-move.model.ts, site-event.model.ts
     domain/data/sites-era1.data.ts, collect-logic.ts, generator-logic.ts, map-logic.ts
     domain/combat-logic.ts, move-logic.ts, strategy-logic.ts, auto-move-logic.ts
     ui/site-type-labels/        # Namen der Futterstellentypen für HUD, Log und Umgebung
+  genome/                       # Genom Ära I und Genom-Ansicht /genom (lazy)
+    domain/models/genome.model.ts, genome-event.model.ts, data/genome-era1.data.ts
+    domain/genome-logic.ts, genome-tree-logic.ts   # Status, evolve, Vorschau; Geometrie des radialen Baums
+    feature/genome.routes.ts, genome/genome.page.ts, state/genome.facade.ts, state/genome.utils.ts
+    ui/genome-tree/, genome-detail/, genome-labels/, genome-descriptions/, models/
+  finds/
+    domain/models/finds.model.ts, finds-event.model.ts, collection.model.ts, data/finds-era1.data.ts
+    domain/finds-logic.ts, collection-logic.ts     # Ziehung, Buffs, Abbau-Schwellen; Sets, Badges, Schublade
+    ui/finds-labels/            # Namen der Funde, Sets und Badges
   persistence/
     domain/serialize-logic.ts, slots-logic.ts, migrations/
     data-access/persistence/    # PersistenceService, KEY_VALUE_STORE
   hud/
     domain/sacrifice-count-logic.ts   # Eingabeprüfung „Drohnen opfern“
     feature/hud.routes.ts, hud/hud.page.ts, state/hud.facade.ts, state/hud.utils.ts
-    ui/buy-button/, feeding-site/, hud-meter/, event-log/, form-sacrifice-drones/
+    ui/buy-button/, feeding-site/, hud-meter/, event-log/, form-sacrifice-drones/, pheromone-panel/, finds-panel/
   sonar/                        # Umgebung /umgebung (lazy): SVG-Sonar-Karte (AP 1.2.8), darunter die Zielliste
     domain/auto-threshold-logic.ts    # Eingabeprüfung der Schwelle
     domain/sonar-map-logic.ts         # Geometrie der Sonar-Karte (Maßstab, Route, Reiselinie)
@@ -115,16 +126,17 @@ src/app/
     ui/sonar-map/, target-list/, target-detail/, form-move-settings/, sonar-labels/, models/
   model/                        # Modell-Seite (lazy)
     feature/model.routes.ts, model/model.page.ts, state/model.facade.ts, state/model.guards.ts
-    ui/form-model-params/, form-stall-threshold/, model-charts/, model-metrics/, model-stalls/, echart/, bot-labels/
+    ui/form-model-params/, form-stall-threshold/, model-charts/, model-metrics/, model-stalls/, model-pacing/, model-upgrades/, echart/, bot-labels/
     data-access/sim/            # SimService, sim.worker.ts, Protokoll
-    domain/bots/, models/, params-logic.ts, model-params-logic.ts, reduce-result-logic.ts, stall-logic.ts …
+    domain/bots/, models/, params-logic.ts, model-params-logic.ts, reduce-result-logic.ts, stall-logic.ts,
+    domain/progress-logic.ts, pacing-targets-logic.ts, upgrade-logic.ts, dna-flow-logic.ts …
   # geplant
   shell/                        # Ebenen-Layout, Modus/Kamera (K2)
   scene/                        # Canvas-Renderer
-  genome/, finds/, settings/
+  settings/
 ```
 
-Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `applyCommand`/`apply` und `step` daraus zusammen. Eine `domain`-Schicht in einer Oberflächen-Domäne (`hud/domain`, `sonar/domain`) enthält nur reine Eingabeprüfung ohne Spielregeln, damit Formular-Schemas in `ui` sie nutzen können.
+Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `applyCommand`/`apply` und `step` daraus zusammen. Eine `domain`-Schicht in einer Oberflächen-Domäne (`hud/domain`, `sonar/domain`) enthält nur reine Eingabeprüfung ohne Spielregeln, damit Formular-Schemas in `ui` sie nutzen können; `sonar/domain` und `genome/domain` enthalten außerdem die reine Geometrie ihrer SVG-Ansicht. `genome` und `finds` sind Fachdomänen mit eigenem Teil des Zustands (`genome`, `finds`). `finds/domain` nutzt `genome/domain` zur Laufzeit, umgekehrt nur über Typen, damit kein Laufzeitzyklus entsteht.
 
 ### 3.3 Datenfluss
 
@@ -146,8 +158,8 @@ GameLoop (fester Takt) ──► GameStore.tick(dt) ──► engine: step(state
 ```
 
 - **Unveränderlicher Zustand:** `applyCommand` und `step` liefern neue Objekte (flache Kopien der geänderten Teile). Das passt zu Signals und macht Tests einfach.
-- **Abgeleitete Werte** (Raten, Preise, Einnehmbarkeit) werden nicht im State gespeichert. Sie entstehen über reine Funktionen in `balance/domain` und werden in den Facades als `computed()`-Viewmodels gekapselt. Komponenten lesen nur diese Viewmodels.
-- **Ereignisse:** `applyCommand` und `step` liefern `StepResult` = `{ state, events }`. Die Ereignisse (`GameEvent`, seit M1.2 `departed`, `arrived`, `siteDepleted`) sind Codes mit IDs, Rohwerten und der Spielzeit `playedMs`; die Texte setzt die Oberfläche. `apply` ist die Kurzform ohne Ereignisse. Später lesen auch Effekte und die Rückkehr-Zusammenfassung sie (Einheit gefallen, Fund).
+- **Abgeleitete Werte** (Raten, Preise, Einnehmbarkeit, seit M1.3 auch alle Modifikatoren aus dem Effekt-System) werden nicht im State gespeichert. Sie entstehen über reine Funktionen in `balance/domain` und werden in den Facades als `computed()`-Viewmodels gekapselt. Komponenten lesen nur diese Viewmodels.
+- **Ereignisse:** `applyCommand` und `step` liefern `StepResult` = `{ state, events }`. Die Ereignisse (`GameEvent`, seit M1.2 `departed`, `arrived`, `siteDepleted`, seit M1.3 `evolved` aus `genome` und `found` aus `finds`) sind Codes mit IDs, Rohwerten und der Spielzeit `playedMs`; die Texte setzt die Oberfläche. `apply` ist die Kurzform ohne Ereignisse. Funde hebt das HUD-Log hervor. Später lesen auch Effekte und die Rückkehr-Zusammenfassung sie (Einheit gefallen, Fund).
 - **Ereignis-Log:** Der `GameStore` hängt die Ereignisse aus `dispatch` und `tick` an sein Signal `log` an, höchstens 50 Einträge (`LOG_MAX_ENTRIES`), älteste zuerst. Das Log liegt nur im Arbeitsspeicher und gehört nicht zum Spielstand. `load` (Laden, neues Spiel) leert es immer, `replace` (Speichern, Uhrabgleich) nie; die Log-IDs zählen über `load` hinweg weiter.
 
 ### 3.4 Zustandsmodell (Entwurf)
@@ -174,7 +186,20 @@ interface GameState {
 }
 ```
 
-Save-Version 3 enthält `version`, `seed`, `rngState`, `time`, `era`, `res`, `units`, `site`, `bought`, `map`, `travel`, `auto` und `priority` ([Game-Design §5](game-design.md#5-spielstand-version-3)). Die Reichweite steht nicht im Zustand, sie wird abgeleitet. `pheromones`, `genome`, `finds`, `stats` und `settings` sind Entwurf und kommen mit den jeweiligen Mechaniken über Migrationen.
+Save-Version 4 (seit AP 1.3.4) enthält `version`, `seed`, `rngState`, `time`, `era`, `res`, `units`, `site`, `bought`, `map`, `travel`, `auto` und `priority` ([Game-Design §5](game-design.md#5-spielstand-version-3)) sowie `pheromones`, `genome` und `finds` ([Game-Design §5.1](game-design.md#51-spielstand-version-4)). Umgesetzt weichen diese drei vom Entwurf oben ab:
+
+```ts
+pheromones: { drones: number; soldiers: number; glands: number };   // verteilte Punkte, gekaufte Drüsenpunkte
+genome: { owned: GenomeNodeId[] };            // reguläre Knoten in der Reihenfolge der Spieldaten, ohne root
+finds: {
+  rngState: number;                           // eigener Fund-RNG, aus seed + '#finds'
+  total: number;                              // Fundzähler
+  collected: Partial<Record<CollectedId, number>>;   // Fragmente und Sammelobjekte
+  buffs: { id: BuffId; expiresAtMs: number }[];      // Ablauf in Spielzeit
+};
+```
+
+Die Reichweite steht nicht im Zustand, sie wird abgeleitet; ebenso `P_ges`, Effekte und Modifikatoren, einzigartige Adaptionen und Badges (sie folgen aus `collected`). `badges`, `stats` und `settings` sind weiter Entwurf und kommen mit den jeweiligen Mechaniken über Migrationen.
 
 IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil**. Spielstände speichern nur IDs, keine Texte oder Werte.
 
@@ -188,7 +213,7 @@ IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil*
 | Rendering | `requestAnimationFrame`, liest nur den State; pausiert bei `document.hidden` |
 | Eingaben | Kommandos wie Käufe werden sofort angewendet, nicht erst im nächsten Tick |
 | Determinismus | Zufall nur über den seeded RNG im State (z. B. mulberry32). Gleicher Seed + gleiche Kommandos an gleicher Position zwischen den Ticks ⇒ gleiches Ergebnis. Grundlage für Tests, Modell-Seite und gegen Save-Scumming |
-| Offline-Catch-up | Beim Laden wird `Δt = now − lastSaved` (gedeckelt, Start 24 h) nachgeholt. Das geschieht in **adaptiven Schritten**: große Schritte (z. B. 10 s), die an Ereignisgrenzen (Futterstelle leer, Nahrung reicht für Brut, Auto-Weiterziehen) verkürzt werden. Die Teilung an Ankunft und vorhergesagtem Auto-Auslöser gibt es schon: `nextSplitMs` in `engine/domain/step-split-logic.ts`, heute vom Headless-Runner genutzt. Ergebnis ≈ Echtzeit-Simulation; ein Test sichert die Toleranz ab |
+| Offline-Catch-up | Beim Laden wird `Δt = now − lastSaved` (gedeckelt, Start 24 h) nachgeholt. Das geschieht in **adaptiven Schritten**: große Schritte (z. B. 10 s), die an Ereignisgrenzen (Futterstelle leer, Nahrung reicht für Brut, Auto-Weiterziehen) verkürzt werden. Die Teilung gibt es schon: `nextSplitMs` in `engine/domain/step-split-logic.ts` liefert Ankunft, nächste Abbau-Schwelle der Funde, nächsten Buff-Ablauf und vorhergesagten Auto-Auslöser, heute vom Headless-Runner genutzt. `step` teilt selbst exakt an Ankunft, Abbau-Schwellen und Buff-Ablauf (seit M1.3). Ergebnis ≈ Echtzeit-Simulation; ein Test sichert die Toleranz ab ([§10](#10-qualitätssicherung)) |
 | Hintergrund-Tab | Browser drosseln Timer, daher erkennt der GameLoop große Zeitsprünge und nutzt dafür ebenfalls den Catch-up |
 | Performance-Budget | `step` < 2 ms auf einem Mittelklasse-Smartphone; Catch-up für 24 h < 1 s |
 
@@ -200,7 +225,7 @@ Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `balance/domain`. Spi
 
 ### 5.2 Modellgrößen (Entwurf für spätere Größen)
 
-> Für M1.1 und M1.2 ist die [Game-Design-Spezifikation](game-design.md) maßgeblich, auch für Platz, Kampf (Verluste-Formel `L = S · λ · (B / A)^κ`), DNA-Belohnung (`d_0 · B^δ`), Futterstellen-Generator, Transport und Opfern. Die Tabelle bleibt als Entwurf für spätere Größen stehen (z. B. Pheromone, `M_platz`, `M_angriff`); bei Abweichungen gilt die Spezifikation.
+> Für M1.1 bis M1.3 ist die [Game-Design-Spezifikation](game-design.md) maßgeblich, auch für Platz, Kampf (Verluste-Formel `L = S · λ · (B / A)^κ`), DNA-Belohnung (`d_0 · B^δ`), Futterstellen-Generator, Transport, Opfern und seit M1.3 Effekt-System, Pheromone, Genom und Funde ([Game-Design §4.13–4.17](game-design.md#413-effekt-system)). Der Pheromon-Entwurf `g = 1 + 0,1 · P_gesamt` unten ist verworfen: Die Brutrate folgt den verteilten Punkten (`f = P_v / P_0`, [Game-Design §4.15](game-design.md#415-pheromone)). Statt `M_platz` und `M_angriff` gibt es die Effektziele `spacePerQueen` und `attackPerSoldier`. Die Tabelle bleibt als Entwurf für spätere Größen stehen; bei Abweichungen gilt die Spezifikation.
 
 | Größe | Formel (Entwurf) |
 |---|---|
@@ -215,7 +240,7 @@ Es gibt **eine einzige Quelle der Wahrheit** für Formeln: `balance/domain`. Spi
 | DNA-Belohnung | `DNA = d_0 · Abwehr^β` (β < 1) |
 | Futterstellen | Größe, Abwehr und Belohnung skalieren mit der Anzahl bisheriger Weiterzüge `z`, z. B. `Größe ∝ s_0 · γ^z` |
 
-`M_*` sind Modifikatoren aus Genom, Funden und Buffs. Sie werden im Effekt-System gesammelt (additive Summen werden zuerst gebildet, dann multipliziert).
+`M_*` sind Modifikatoren aus Genom, Funden und Buffs. Sie werden im Effekt-System gesammelt (additive Summen werden zuerst gebildet, dann multipliziert). Umgesetzt seit AP 1.3.1 in `balance/domain/effects-logic.ts` (`combineEffects`) und `engine/domain/modifiers-logic.ts` (`stateModifiers`).
 
 ### 5.3 Headless-Runner und Bots
 
@@ -232,9 +257,11 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 - Der Runner läuft im **Web Worker**, damit die Modell-Seite flüssig bleibt; in Vitest läuft er direkt.
 - `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Käufe liegen also exakt auf ihrer Zeit.
 - Der Runner wendet Kommandos über `applyCommand` an und übernimmt die Ereignisse aus Kommandos und Schritten (`siteDepleted` → `siteEmpty`, `departed`, `arrived`). Daraus entstehen die Futterstellen der Kennzahlen: Seit AP 1.2.9 dauert eine Futterstelle von der Ankunft bis zum Aufbruch, die Reise dorthin zählt getrennt. Je Futterstelle erfasst der Runner außerdem Ertrag, Abwehr, Kampf, DNA und die Soldaten-Bilanz (vor dem Aufbruch, mitgekommen, bei Ankunft, Verluste, nach der Einnahme). Den Bestand direkt nach dem Kampf rechnet er mit einem eigenen Schritt genau bis zur Ankunft nach, weil der Runner-Schritt erst danach endet.
-- Er teilt die Schritte zusätzlich an der Ankunft und am vorhergesagten Auslöser des Auto-Weiterziehens (`V = θ · G`, exakt, weil die Abbaurate im Schritt konstant ist). `step` selbst teilt einen Schritt an der Ankunft ([Game-Design §4.3](game-design.md#43-simulationsschritt)).
+- Er teilt die Schritte zusätzlich an der Ankunft, an den Abbau-Schwellen der Funde, am Ablauf eines Buffs und am vorhergesagten Auslöser des Auto-Weiterziehens (`V = θ · G`, exakt, weil die Abbaurate im Schritt konstant ist). `step` selbst teilt einen Schritt an der Ankunft, an den Abbau-Schwellen und am Buff-Ablauf ([Game-Design §4.3](game-design.md#43-simulationsschritt), [§4.16](game-design.md#416-funde)).
+- **Seit M1.3** meldet der Runner zusätzlich die `SimEvent`s `evolved` (Knoten, Kosten), `found` (Futterstelle, Eintrag, Art, ersetzter Eintrag, DNA, freigeschaltete Adaption, Badge) und `gland` (gekaufter Drüsenpunkt mit der Zahl `k` danach). Die Abtastpunkte (`SimSample`) enthalten DNA-Bestand, DNA aus Kampf, DNA aus Funden und die für das Genom ausgegebene DNA. `runSimulationWithState` liefert neben dem Ergebnis den Endzustand, aus dem die Modell-Seite die Upgrade-Tabelle rechnet.
+- **Modifikatoren:** Schritt, Kommandos, Teilung, Bots und Viewmodels holen die Modifikatoren nur über `stateModifiers(state, params)`. Die Funktion merkt sich die letzte Rechnung und vergleicht dafür nur Referenzen (Genom, gefundene Fragmente und Sammelobjekte, `params`, Futterstellentyp, laufende Buffs); das ändert kein Ergebnis und hält den 24-h-Lauf im Zeitbudget.
 - Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten. Die Futterstellen werden zusammengefasst (Anzahl, Mediane, Kämpfe, DNA) und für Diagramme und Stillstände als Liste mitgeschickt, ab 1.000 Futterstellen gleichmäßig ausgedünnt.
-- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Seit AP 1.2.7 schalten beide bei ihrer ersten Entscheidung das Auto-Weiterziehen ein (`CommandPlan.enableAutoMove`) und ziehen damit weiter. Seit AP 1.2.9 zusätzlich, beide im Takt von „Aktiv“ und mit Auto-Weiterziehen: **Drohnen-lastig** (kauft Königinnen und Drohnen wie „Aktiv“, keine Soldaten; Mitnahme „Drohnen zuerst“, Strategie „Geringster Widerstand“) und **Soldaten-lastig** (kauft die günstigere von Soldat und Königin, keine Drohnen; Mitnahme „Soldaten zuerst“, Strategie „Kampfgehärtet“). Ihre Einstellungen setzen sie bei der ersten Entscheidung (`CommandPlan.setTransportPriority`, `setStrategy`).
+- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Seit AP 1.2.7 schalten beide bei ihrer ersten Entscheidung das Auto-Weiterziehen ein (`CommandPlan.enableAutoMove`) und ziehen damit weiter. Seit AP 1.2.9 zusätzlich, beide im Takt von „Aktiv“ und mit Auto-Weiterziehen: **Drohnen-lastig** (kauft Königinnen und Drohnen wie „Aktiv“, keine Soldaten; Mitnahme „Drohnen zuerst“, Strategie „Geringster Widerstand“) und **Soldaten-lastig** (kauft die günstigere von Soldat und Königin, keine Drohnen; Mitnahme „Soldaten zuerst“, Strategie „Kampfgehärtet“). Ihre Einstellungen setzen sie bei der ersten Entscheidung (`CommandPlan.setTransportPriority`, `setStrategy`). **Ab M1.3** entwickeln alle vier das Genom (günstigster Knoten der bevorzugten Äste, sonst sparen), kaufen Drüsenpunkte und verteilen die Pheromone auf einen Zielanteil ([Game-Design §6.3](game-design.md#63-bots-ab-m13); `genome-bot-logic.ts`, `pheromone-bot-logic.ts` in `model/domain/bots/`).
 - Die Pacing-Zielbänder ([Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig)) gelten nur für **Aktiv** und **Idle**. **Drohnen-lastig** und **Soldaten-lastig** sind Analyse-Bots ohne Zielband. Die Wartezeit-Kennzahlen bleiben spielbezogen (weder Königin noch Drohne bezahlbar, [Game-Design §6](game-design.md#6-messwerte-v1)), auch für die Analyse-Bots.
 - `params` überschreibt Konstanten aus `balance/domain`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
 
@@ -249,8 +276,9 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 | Dauer und Ertrag je Futterstelle | Rhythmus der kleinen Ascension |
 | Soldaten-Bilanz | Soldaten vor/nach Einnahme, Verluste; erkennt Sackgassen |
 | Stillstand | Strecken über einer Schwelle ohne Einnahme mit Kampf bzw. ohne Aufbruch |
-| Amortisation je Upgrade | Kosten ÷ zusätzlicher Ertrag/s |
-| Freischalt-Zeitpunkte | Wann wird welche Mechanik erstmals relevant |
+| Amortisation je Upgrade | Kosten ÷ zusätzlicher Ertrag/s; seit AP 1.3.7 in der Upgrade-Tabelle, nur für Nahrungskosten (`model/domain/upgrade-logic.ts`) |
+| Freischalt-Zeitpunkte | Wann wird welche Mechanik erstmals relevant; seit AP 1.3.7 erster Drüsenpunkt, erster Fund, erste Adaption, erster Weiterzug, erste Einnahme mit Kampf, Genom komplett und der größte Abstand neuer Optionen in der ersten Stunde (`model/domain/progress-logic.ts`, [Game-Design §6.5](game-design.md#65-messung-m13)) |
+| DNA-Fluss | DNA aus Kampf und aus Funden gegen die Ausgaben für das Genom (seit AP 1.3.7) |
 
 ### 5.5 Aufbau der Modell-Seite
 
@@ -260,7 +288,7 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 │ Dauer 1h…7d    │ │                                                 │
 │ Bots ☑☑☐☐      │ │  ▁▂▃▅▇  log ▾  Zoom                             │
 │ Konstanten …   │ │  Markierungen: ▲ Kauf ◆ leer ● Weitergezogen    │
-│ [Basislauf] [▶]│ ├ Stillstände (Schwelle 60 min) ──────────────────┤
+│ [Basislauf] [▶]│ ├ Stillstände (Schwelle 60 min) · Zielbänder ─────┤
 │ [JSON export]  │ │ je Bot: Kein Kampfziel · Kein Aufbruch          │
 │                │ ├ Kennzahlen ─────────────────────────────────────┤
 │                │ │ je Bot: Käufe, Wartezeit, Futterstellen, …      │
@@ -268,12 +296,13 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 ```
 
 - Erreichbar unter `/modell`. Im Produktiv-Build ist die Seite nur mit `?dev` erreichbar und nicht verlinkt.
-- **Reiter in M1.1:** Ressourcen (Nahrung, Vorrat, Einheiten), Raten (Nahrung/s, Netto/s, Eier/min) und Entscheidungen (Zeit bis zum nächsten Kauf je Einheit und gesamt). Seit AP 1.2.9 je Futterstelle: „Dauer je Futterstelle“ (Reise und Aufenthalt gestapelt) und „Soldaten vor/nach Einnahme“, ohne Markierungen, mit eigenem Zoom über die Futterstellen (seit M1.2), der nicht an die Facade geht. Upgrades folgen ab AP 1.3.7.
-- **Kennzahlen je Bot:** erster Kauf, Kauflücken und längste Wartezeit der ersten 30 min, erste Futterstelle, Anzahl und Median der Futterstellen, Median der Reisezeit, Einnahmen mit Kampf, DNA gesamt, längste Strecke ohne Kampfziel, längster Aufenthalt an einer Futterstelle, längste Strecke ohne Kauf, Verdopplungszeit, Anteil Wartezeit, Käufe gesamt und Rechendauer.
+- **Reiter in M1.1:** Ressourcen (Nahrung, Vorrat, Einheiten), Raten (Nahrung/s, Netto/s, Eier/min) und Entscheidungen (Zeit bis zum nächsten Kauf je Einheit und gesamt). Seit AP 1.2.9 je Futterstelle: „Dauer je Futterstelle“ (Reise und Aufenthalt gestapelt) und „Soldaten vor/nach Einnahme“, ohne Markierungen, mit eigenem Zoom über die Futterstellen (seit M1.2), der nicht an die Facade geht. Seit AP 1.3.7 der Reiter „DNA-Fluss“ (kumulierte Einnahmen aus Kampf und Funden gegen Ausgaben und noch verfügbare Ausgaben für das Genom) und die Markierungen ■ Adaption gekauft, ◇ Fund und ○ Drüsenpunkt.
+- **Upgrade-Tabelle (seit AP 1.3.7):** je Bot alle Genom-Knoten, einzigartigen Adaptionen, der nächste Drüsenpunkt sowie Königin und Drohne mit Kosten, „vorher → nachher“, zusätzlicher Nahrung/s und Amortisation, bewertet am Endzustand des Laufs.
+- **Kennzahlen je Bot:** erster Kauf, Kauflücken und längste Wartezeit der ersten 30 min, erste Futterstelle, Anzahl und Median der Futterstellen, Median der Reisezeit, Einnahmen mit Kampf, DNA gesamt (Kampf und Funde), längste Strecke ohne Kampfziel, längster Aufenthalt an einer Futterstelle, längste Strecke ohne Kauf, Verdopplungszeit, Anteil Wartezeit, Käufe gesamt und Rechendauer; seit AP 1.3.7 die Progressions-Kennzahlen aus §5.4 (Freischalt-Zeitpunkte, Knoten nach 1 h und am Laufende, DNA aus Kampf und Funden, Funde je Art, einzigartige Adaptionen, Badges, Drüsenpunkte).
 - **Stillstände (seit AP 1.2.9):** Warnungen je Bot für „Kein Kampfziel“ (keine Einnahme eines Ziels mit Abwehr > 0, also keine DNA) und „Kein Aufbruch“, beide mit derselben Schwelle (Standard 60 min). Die Schwelle ist ein Analyse-Parameter der Modell-Seite, keine Konstante in `BalanceParams`; eine Änderung wertet das vorhandene Ergebnis rein neu aus und startet keinen Lauf.
 - **Bots:** Standardmäßig laufen „Aktiv“ und „Idle“; „Drohnen-lastig“ und „Soldaten-lastig“ werden zugeschaltet.
 - **Vergleich:** Ein gespeicherter Basislauf und der aktuelle Lauf liegen übereinander.
-- **Zielbänder (ab AP 1.3.7):** Die Pacing-Ziele aus dem [Projektplan](projektplan.md#35-pacing-ziele-vorläufig) liegen dann als Konfiguration in `balance/domain/targets.ts` und werden als Flächen angezeigt, nur für die Bots „Aktiv“ und „Idle“ (§5.3). Verletzungen landen in einer Warnliste.
+- **Zielbänder (seit AP 1.3.7):** Die Pacing-Ziele aus dem [Projektplan](projektplan.md#35-pacing-ziele-vorläufig) liegen als Konfiguration in `balance/domain/targets.ts` und werden als Flächen angezeigt (Reiter „Entscheidungen“ für die ersten 30 min und „Dauer je Futterstelle“), nur für die Bots „Aktiv“ und „Idle“ (§5.3). Verletzungen landen in einer Warnliste je Bot mit Zeitraum bzw. Futterstelle (`model/domain/pacing-targets-logic.ts`). Lesart der Grenzen und Mess-Definitionen: [Game-Design §6.5](game-design.md#65-messung-m13).
 
 ### 5.6 Balancing als Test
 
@@ -295,8 +324,9 @@ export const GENOME_ERA1: GenomeNode[] = [
 ];
 ```
 
+- **Umgesetzt (M1.3):** Anders als im Beispiel oben enthalten die Spieldaten keine Zahlen. Sie sind nur Struktur (IDs, Ast, Stufe, Vorgänger, Anker, Effektziel, Operation, Bedingung, Fundorte, Fundart, Zuordnungen), z. B. `GENOME_NODES` in `genome/domain/data/genome-era1.data.ts` und `FIND_ENTRIES` in `finds/domain/data/finds-era1.data.ts`. Jede Zahl ist ein eigener Schlüssel in `BalanceParams` je ID; die Zuordnung steht in `balance/domain/formulas.ts` (`SITE_TYPE_PARAMS`, `GENOME_NODE_PARAMS`, `UNIQUE_ADAPTATION_PARAMS`, `FIND_ENTRY_PARAMS`, `BADGE_PARAMS`). So sind alle Werte über `params` überschreibbar ([ADR-007](adr/007-modell-seite-echarts-balancing.md), [Game-Design §2.3](game-design.md#23-konstanten)).
 - Spieldaten enthalten keine Texte. Texte entstehen in `feature` bzw. `ui` über `$localize` und sind über die stabile ID verknüpft ([ADR-011](adr/011-i18n-localize.md)).
-- Die Positionen im radialen Genom (Winkel, Radius) gehören zu den UI-Daten in `genome/ui`, nicht in `genome/domain`.
+- Die Positionen im radialen Genom (Winkel, Radius) gehören zu den UI-Daten in `genome/ui`, nicht in `genome/domain`; umgesetzt in `genome/ui/genome-tree/genome-tree.layout.ts`.
 
 ## 7. Persistenz
 
@@ -305,7 +335,7 @@ export const GENOME_ERA1: GenomeNode[] = [
 | Speicherort | `localStorage`, Schlüssel `idleswarm.save`; zusätzlich ein Backup-Slot des vorletzten Stands und der Slot `idleswarm.save.unreadable`: Ein unlesbarer Primär-Stand wird beim nächsten Speichern dorthin verschoben statt überschrieben |
 | Format | JSON → komprimiert (`lz-string`) → Base64; `Num` als String serialisiert |
 | Autosave | alle 30 s (einstellbar), bei `visibilitychange` (hidden) und `pagehide` |
-| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/migrations-logic.ts` (aktuell Version 3, mit den Migrationen 1→2 und 2→3; beide setzen den Spielstand bis auf Seed, RNG-Zustand und Zeiten auf die Startwerte) |
+| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/migrations-logic.ts` (aktuell Version 4, mit den Migrationen 1→2, 2→3 und 3→4; alle setzen den Spielstand bis auf Seed, RNG-Zustand und Zeiten auf die Startwerte, 3→4 leitet dazu den Fund-RNG aus dem Seed ab) |
 | Robustheit | Validierung beim Laden. Bei einem Fehler wird der Backup-Slot geladen und der Spieler informiert |
 | Export/Import | derselbe String zum Kopieren; Import validiert und migriert |
 | Später | Cloud-Sync optional (Querschnittsthema), ohne Änderung am Format |
@@ -322,7 +352,7 @@ Die Umsetzung folgt [`docs/mockups/k2-kurzgesagt.html`](mockups/k2-kurzgesagt.ht
 | `#world` (z = 2) | Schwarm-Szene | Canvas; im Kartenmodus per `scale` und `clip-path: circle()` zum Punkt verkleinert |
 | `#genome` (z = 3) | Zellkern mit radialem Genom | SVG; im Genommodus wird die Welt vergrößert, `blur` und abgedunkelt |
 
-- **Umsetzungsstand:** Die SVG-Sonar-Karte gibt es seit AP 1.2.8 als Komponente oben auf `/umgebung` (SVG im Angular-Template, keine neue Abhängigkeit; Geometrie rein in `sonar/domain`). Die Zielliste bleibt bis M1.4 darunter als tippbare, barrierearme Alternative. Ebenen, Kamera und Moduswechsel folgen ab AP 1.4.1.
+- **Umsetzungsstand:** Die SVG-Sonar-Karte gibt es seit AP 1.2.8 als Komponente oben auf `/umgebung` (SVG im Angular-Template, keine neue Abhängigkeit; Geometrie rein in `sonar/domain`). Die Zielliste bleibt bis M1.4 darunter als tippbare, barrierearme Alternative. Das SVG-Genom gibt es seit AP 1.3.3 als eigene Seite `/genom` (§8.6). Ebenen, Kamera und Moduswechsel folgen ab AP 1.4.1.
 - Der Modus ist ein Signal im GameStore (`'map' | 'scene' | 'gen'`). Die Shell-Komponente setzt `data-mode` am Container, CSS übernimmt die Übergänge.
 - Zoom-Leiste, Titel je Modus und Detailpanels hängen am Modus-Signal.
 
@@ -366,6 +396,7 @@ Das UI-Leitbild ist [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 - **Tiefe:** Lichtkegel und Hügel in Luftperspektive in der Szene; leichte Körnung als Overlay über den Ebenen, unter dem HUD.
 - **Typografie:** abgerundete, kräftige Sans-Serif (im Mockup Nunito mit Systemschriften als Fallback). Ob eine Webfont eingebunden wird, entscheidet AP 1.4.3.
 - **Palette:** Die Farben des Mockups (`:root`) werden zu `--sw-*`-Tokens in `src/styles.css` ([ADR-010](adr/010-tailwind-tokens.md)); Textkontrast ≥ 4,5:1 bleibt Pflicht.
+- **Genom (umgesetzt in AP 1.3.3):** radialer SVG-Baum im Zellkern nach Mockup K2-K, ohne neue Abhängigkeit. Gewellte Membran, Organellen, gebogene Äste in den Astfarben (Tokens `--sw-branch-*`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked*`, `--sw-cost-muted*`), Knoten mit Cel-Glanz, Kostenschild und Statusdarstellung; verfügbare Knoten pulsieren. Die Geometrie rechnet `genome/domain/genome-tree-logic.ts` rein, die Positionen stehen als UI-Daten in `genome/ui` (§6). Membran-Drehung und Puls sind CSS-Animationen nach der K2-Ausnahme und stehen bei `prefers-reduced-motion` still. Bis M1.4 ist das Genom eine eigene Seite, keine K2-Ebene.
 
 ## 9. Zahlenformatierung
 
@@ -385,7 +416,7 @@ Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan ([Projek
 |---|---|
 | Core | Unit-Tests mit Vitest für die wesentlichen Regeln und Formeln; Untergrenze 70 % Abdeckung in den `domain`- und `util`-Schichten als Sicherheitsnetz, kein Ziel |
 | Determinismus | Test: gleicher Seed + gleiche Kommandos ⇒ identischer State |
-| Offline-Catch-up | Test: Catch-up vs. Echtzeit-Simulation innerhalb einer Toleranz |
+| Offline-Catch-up | Test: Catch-up vs. Echtzeit-Simulation innerhalb einer Toleranz. **Risiko (seit M1.3):** Im Runner-Test „1-s- gegen 100-ms-Schritt“ musste die Toleranz der Einheiten von 2 % auf 15 % geweitet werden, weil die Brut bei begrenzter Nahrung mit den Käufen der Bots (Drüsenpunkte) konkurriert und der grobe Schritt die Nahrung anders verteilt. Für den Offline-Catch-up in AP 1.5.1 ist zu prüfen, ob große Schritte an weiteren Ereignisgrenzen (z. B. „Nahrung reicht für Brut“) geteilt werden müssen |
 | Saves | Test je Migration mit eingefrorenen Beispiel-Spielständen |
 | Balancing | Snapshot-Tests der Kennzahlen (Abschnitt 5.6) |
 | UI | Komponententests nur für Komponenten und Seiten mit eigener Logik (z. B. Formular-Parsing); rein darstellende Komponenten deckt der E2E-Smoke ab |

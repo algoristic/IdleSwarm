@@ -38,6 +38,8 @@
 | [`hud`](.claude/rules/hud.md) | `src/app/hud/**` | Prototyp-HUD: Facade, Viewmodel, Kaufknopf, Futterstelle |
 | [`model`](.claude/rules/model.md) | `src/app/model/**` | Modell-Seite: Bots, Worker, Parameterformular, Diagramme, Kennzahlen, Stillstände |
 | [`sonar`](.claude/rules/sonar.md) | `src/app/sonar/**` | Umgebung (`/umgebung`): Sonar-Karte, Zielliste, Detailpanel, Aufbruch, Strategie und Auto-Weiterziehen |
+| [`genome`](.claude/rules/genome.md) | `src/app/genome/**` | Genom Ära I: Knoten, einzigartige Adaptionen, `evolve`; Genom-Ansicht (`/genom`) mit SVG-Baum und Detailpanel |
+| [`finds`](.claude/rules/finds.md) | `src/app/finds/**` | Funde: Fundtabelle, eigener Fund-RNG, Ziehung, Buffs, Fragmente, Sammlung und Badges |
 | [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
 
 **Regeln, die überall gelten:**
@@ -92,15 +94,17 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 | Domäne | Inhalt |
 | --- | --- |
 | `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`) |
-| `balance` | `domain`: Konstanten, Formeln, später Zielbänder (`targets`) |
+| `balance` | `domain`: Konstanten, Formeln, Effekt-System, Zielbänder (`targets`) |
 | `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
-| `swarm` | Einheiten, Brut, Transport, Drohnen opfern, später Pheromone |
+| `swarm` | Einheiten, Brut, Transport, Drohnen opfern, Pheromone |
 | `site` | Futterstellen, Sammeln, Generator, Reichweite, Kampf, Weiterziehen, Strategien, Auto-Weiterziehen (`domain`); Typnamen (`ui`) |
 | `persistence` | `domain`: Serialisierung, Slots, Migrationen; `data-access`: `PersistenceService`, `KEY_VALUE_STORE` |
 | `hud` | Prototyp-HUD (`feature`, `ui`, `domain` für Eingabeprüfung) |
 | `sonar` | Umgebung: Viewmodel, Facade und Seite (`feature`), Sonar-Karte (SVG), Zielliste, Detailpanel, Einstellungsformular (`ui`), Eingabeprüfung und Kartengeometrie (`domain`) |
+| `genome` | Genom Ära I: Knoten, einzigartige Adaptionen, Status, `evolve`, Effektvorschau, Baumgeometrie (`domain`); Namen, Beschreibungen, SVG-Baum und Detailpanel (`ui`); Seite `/genom` und `GenomeFacade` (`feature`) |
+| `finds` | Fundtabelle, eigener Fund-RNG, Ziehung, Buffs, Fragmente, Sammlung und Badges (`domain`); Namen der Funde, Sets und Badges (`ui`) |
 | `model` | Modell-Seite: Bots, Parameter, Laufauswertung (`domain`), Sim-Worker und `SimService` (`data-access`), Parameterformular, Diagramme, Kennzahlen (`ui`), Seite und `ModelFacade` (`feature`) |
-| später | `shell` (K2-Ebenen, Modus, Kamera), `scene` (Canvas), `genome`, `finds`, `settings` |
+| später | `shell` (K2-Ebenen, Modus, Kamera), `scene` (Canvas), `settings` |
 
 Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `Units` in `swarm/domain/models`, `Site` in `site/domain/models`) und ihre Regeln. `engine/domain` setzt daraus `GameState`, `apply` und `step` zusammen. Zusätzliche Standorte ab AS3 bleiben damit eine Sache von `site` und `engine`.
 

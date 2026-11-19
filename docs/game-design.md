@@ -10,7 +10,7 @@ Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilenste
 - **Alle Konstanten sind über Parameter überschreibbar** ([ADR-007](adr/007-modell-seite-echarts-balancing.md)). So testet die Modell-Seite Varianten ohne Codeänderung.
 - **Nicht enthalten:** die Darstellung der Sonar-Karte (AP 1.2.8), die Zyklen-Auswertung der Modell-Seite (AP 1.2.9) und Mechaniken ab M1.4 (siehe [Abschnitt 7](#7-ausblick)). Die Fundchance wird in M1.2 nur erzeugt und angezeigt, gezogen wird erst ab M1.3.
 - **Kein Klick:** Seit [AP 1.1.9](projektplan.md#m11--kernschleife--modell) kennt das Spiel keinen Klick mehr, an seine Stelle tritt der [Grundertrag](#41-grundertrag).
-- **M1.3 (entschieden mit M1.3):** Die Abschnitte [4.13](#413-effekt-system) bis [4.17](#417-sammlung-und-badges), [5.1](#51-spielstand-version-4), [6.3](#63-bots-ab-m13) und [6.4](#64-abschätzung-m13) sowie die M1.3-Zeilen in [2.1](#21-startzustand) und [2.3](#23-konstanten) legen Formeln, Startwerte, Kostenkurven und Spieldaten für AP 1.3.1–1.3.7 fest. Umgesetzt wird ein AP nach dem anderen. Wie überall sind die Zahlen Werte v1 und dürfen bis AP 1.5.5 nachjustiert werden; jede Zahl ist über `params` überschreibbar ([2.3](#23-konstanten), Parameter je ID).
+- **M1.3 (entschieden mit M1.3):** Die Abschnitte [4.13](#413-effekt-system) bis [4.17](#417-sammlung-und-badges), [5.1](#51-spielstand-version-4), [6.3](#63-bots-ab-m13) und [6.4](#64-abschätzung-m13) sowie die M1.3-Zeilen in [2.1](#21-startzustand) und [2.3](#23-konstanten) legen Formeln, Startwerte, Kostenkurven und Spieldaten für AP 1.3.1–1.3.7 fest. Sie sind mit AP 1.3.1–1.3.7 umgesetzt; wo die Umsetzung eine Lücke mit einer Annahme gefüllt hat, steht diese als „entschieden mit M1.3“ im jeweiligen Abschnitt. Die Messung steht in [6.5](#65-messung-m13). Wie überall sind die Zahlen Werte v1 und dürfen bis AP 1.5.5 nachjustiert werden; jede Zahl ist über `params` überschreibbar ([2.3](#23-konstanten), Parameter je ID).
 
 | Thema | Abschnitt | Stories |
 |---|---|---|
@@ -31,7 +31,7 @@ Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilenste
 | Pheromone | [4.15](#415-pheromone) | US-03.01–03.03 |
 | Funde, einzigartige Adaptionen | [4.16](#416-funde) | US-06.01, 06.02 |
 | Sammlung und Badges | [4.17](#417-sammlung-und-badges) | US-06.03, 06.04 |
-| Bots und Abschätzung | [6.3](#63-bots-ab-m13), [6.4](#64-abschätzung-m13) | US-10.07, 10.08 |
+| Bots, Abschätzung und Messung | [6.3](#63-bots-ab-m13), [6.4](#64-abschätzung-m13), [6.5](#65-messung-m13) | US-10.07, 10.08 |
 
 ## 2. Startwerte und Konstanten
 
@@ -86,7 +86,7 @@ Jeder Einheitentyp hat eigene Nahrungskosten. Eier/min ist nur eine Rate, keine 
 | `w_q` | `queenCostGrowth` | 1,20 | Preisfaktor Königin |
 | `e_q` | `queenEggsPerMin` | 6 | Eier/min je Königin |
 | `p_q` | `queenSpace` | 10 | Platzangebot je Königin |
-| `a` | `broodDroneShare` | 3/4 | Drohnenanteil der Brut (Drohnen : Soldaten = 3 : 1) |
+| `a` | ~~`broodDroneShare`~~ | entfallen (bis M1.2: 3/4) | Drohnenanteil der Brut; seit M1.3 kein Parameter mehr, sondern `a = P_d / P_v` aus der Pheromon-Verteilung ([4.15](#415-pheromone)) |
 | – | `startFood` | 15 | Nahrung beim Start |
 | – | `startQueens` | 1 | Königinnen beim Start |
 | `s_0` | `siteSize` | 20.000 | Größe der ersten Futterstelle und Basis der Größe aller weiteren |
@@ -125,7 +125,7 @@ Weitere Symbole: `Q`, `D`, `S` sind die Anzahl Königinnen, Drohnen und Soldaten
 | `c_P` | `glandCost` | 100 | Basispreis eines Drüsenpunkts in Nahrung |
 | `w_P` | `glandCostGrowth` | 2 | Preisfaktor der Drüse |
 | `c_G` | `genomeCost` | 8 | DNA-Kosten eines Knotens der Stufe 1 ([4.14](#414-genom-ära-i)) |
-| `w_G` | `genomeCostGrowth` | √10 ≈ 3,1623 | Kostenfaktor je Stufe; Stufen 1–5 kosten 8, 25, 80, 253, 800 DNA |
+| `w_G` | `genomeCostGrowth` | √10 ≈ 3,1623 (exakt `√10`, im Code `Math.sqrt(10)`) | Kostenfaktor je Stufe; Stufen 1–5 kosten 8, 25, 80, 253, 800 DNA |
 | `ρ` | `fallenRecycleYield` | 0,5 | Anteil von `c_s`, der je gefallenem Soldat als Nahrung zurückkommt (Autophagie, [4.13](#413-effekt-system)) |
 | `n_A` | `findHarvestDraws` | 4 | Abbau-Ziehungen je Futterstelle, je eine bei 25 %, 50 %, 75 % und 100 % abgebautem Vorrat ([4.16](#416-funde)) |
 | `σ_F` | `findSpread` | 0,2 | Streuung des Zufallsfaktors `u_F` der Fundmengen um 1 |
@@ -141,7 +141,7 @@ Benannt wird `<idCamel><Rolle>`, wobei `<idCamel>` die stabile ID in camelCase i
 |---|---|---|---|
 | reguläre Adaption ([4.14](#414-genom-ära-i)) | `GENOME_NODE_PARAMS` | `<id>Effect`: Betrag bzw. Faktor des Effekts mit Zahl | `cilia1Effect` (0,2), `flagellumEffect` (1,5), `autophagyEffect` (0,4) |
 | einzigartige Adaption ([4.14](#414-genom-ära-i)) | `UNIQUE_ADAPTATION_PARAMS` | `<id>Effect`, `<id>Fragments` (benötigte Fragmente) | `sulfurShellEffect` (1), `sulfurShellFragments` (5) |
-| Eintrag der Fundtabelle ([4.16](#416-funde)) | `FIND_ENTRY_PARAMS` | `<id>Weight` für jeden Eintrag; dazu für DNA `foreignDnaFactor` (`φ_D`), für Nahrung `nutrientBubbleShare` (`φ_N`), für Buffs `<id>Factor` (`μ_B`) und `<id>Seconds` (`T_B`) | `foreignDnaWeight` (30), `planktonBloomSeconds` (600), `sulfurPearlWeight` (5), `pumiceWeight` (3) |
+| Eintrag der Fundtabelle ([4.16](#416-funde)) | `FIND_ENTRY_PARAMS` | `<id>Weight` für jeden Eintrag; dazu für DNA `foreignDnaFactor` (`φ_D`), für Nahrung `nutrientBubbleShare` (`φ_N`), für Buffs `<id>Factor` (`μ_B`) und `<id>Seconds` (`T_B`) | `foreignDnaWeight` (30), `foreignDnaFactor` (1), `nutrientBubbleShare` (0,05), `planktonBloomSeconds` (600), `sulfurPearlWeight` (5), `pumiceWeight` (3) |
 | Badge ([4.17](#417-sammlung-und-badges)) | `BADGE_PARAMS` | `<setId>BadgeEffect` | `matRelicsBadgeEffect` (0,05), `whaleRelicsBadgeEffect` (0,95) |
 | Futterstellentyp ([2.3](#23-konstanten)) | `SITE_TYPE_PARAMS` (besteht) | `<id>FindChance` (besteht) | `algalMatFindChance` (0,15) |
 
@@ -308,7 +308,7 @@ Je Schritt der Dauer `dt` laufen nacheinander (0) Reise, (1) Grundertrag und Sam
 - **Ankunft:** Kampf, DNA, neue Futterstelle und neue Kandidaten ([4.11](#411-weiterziehen-und-reise)).
 - **Rest des Schritts** (nach der Ankunft): läuft wie ein Schritt ohne Reise, also mit (1) und (2) an der neuen Futterstelle.
 
-So hängt das Ergebnis nicht von der Schrittweite ab, und die Ankunft liegt exakt.
+So hängt das Ergebnis nicht von der Schrittweite ab, und die Ankunft liegt exakt. Seit M1.3 teilt `step` einen Schritt außerdem an jeder Abbau-Schwelle der Funde und an jedem Ablauf eines Buffs und zieht dort die Funde ([4.16](#416-funde)).
 
 **(1) Grundertrag und Sammeln:** Entfällt, solange eine Reise läuft, also auch im Reiseteil des Ankunftsschritts.
 
@@ -673,10 +673,12 @@ M = (1 + Σ add) · Π mul                   // für die Modifikatoren M_*
 
 - Erst werden alle `add` summiert, dann wird mit allen `mul` multipliziert ([Technisches Konzept §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen)). Die Reihenfolge der Quellen spielt keine Rolle.
 - Jede Quelle zählt höchstens einmal: eine Adaption einmal, ein Badge einmal, ein Buff je ID einmal ([4.16](#416-funde)).
+- **Umsetzung** (AP 1.3.1): Die verrechneten Modifikatoren (`Modifiers`) halten je Ziel die Summen `add` (Σ add) und `mul` (Π mul), je Freischaltung einen Schalter; den Wert `X` bzw. `M` bildet erst die jeweilige Formel. Abgeleitet werden sie nur über `stateModifiers` aus dem Zustand ([Technisches Konzept §5.3](technisches-konzept.md#53-headless-runner-und-bots)).
+- **Bedingte Effekte bei der Ankunft** (entschieden mit M1.3): Der Kampf bei der Ankunft gehört zum Reiseteil des Schritts ([4.3](#43-simulationsschritt)) und rechnet mit dessen Modifikatoren, also ohne bedingte Effekte. Erst danach gelten die bedingten Effekte des neuen Typs, auch für die Fundziehung der Ankunft. In Ära I gibt es bedingte Effekte nur für `collectRate`, der Kampf ist davon nicht betroffen.
 
 **Grenzen**
 
-- **Datenregel:** `add ≥ 0` und `mul > 0`. Senkende Effekte gibt es nur als `mul < 1`, in Ära I nur für `combatLoss`. Damit wird kein Wert negativ; `max(0, ·)` sichert nur abweichende Daten ab. Die Verluste sind also nie negativ und wegen `M_verlust ≤ 1` höchstens `λ · S` ([4.8](#48-kampf)).
+- **Datenregel:** `add ≥ 0` und `mul > 0`. Senkende Effekte gibt es nur als `mul < 1`, in Ära I nur für `combatLoss`. Damit wird kein Wert negativ; `max(0, ·)` sichert nur abweichende Daten ab. Die Verluste sind also nie negativ und wegen `M_verlust ≤ 1` höchstens `λ · S` ([4.8](#48-kampf)). Umgesetzt als `isValidEffect` (`balance/domain/effects-logic.ts`), geprüft in den Tests der Spieldaten: nur die Operationen des Ziels laut Tabelle, `add ≥ 0` (bei `pheromonePoints` ganzzahlig), `mul` bei `combatLoss` in `(0; 1)`, sonst `≥ 1`, Bedingungen nur bei `collectRate`, `unlock` ohne Bedingung.
 - **Opfern:** `η = min(η_0 · M_ausbeute, 1 − v_min)` bleibt wie in [4.10](#410-drohnen-opfern). Der Umwandlungsverlust sinkt also nie unter `v_min = 10 %`, egal wie viele Effekte `M_ausbeute` erhöhen.
 - **Fundchance:** `p = min(1, p_Typ · M_fund)` ([4.16](#416-funde)).
 - **Nur steigend:** Reichweite, Angriff je Soldat, Platz je Königin, Pheromonpunkte und Verlust-Modifikator kommen nur aus dauerhaften Quellen, und dauerhafte Quellen gehen nie verloren. Damit steigt `R` nur, und die Garantie der Algenmatte in Reichweite ([4.6](#46-futterstellen-generator)) bleibt bis zur nächsten Erzeugung erhalten. Ebenso kann der Angriff unterwegs nur steigen und `M_verlust` nur sinken: Das Urteil „einnehmbar“ und die angezeigten Verluste vor dem Aufbruch bleiben gültig ([4.8](#48-kampf)), und `P_ges` sinkt nie unter die verteilten Punkte ([4.15](#415-pheromone)).
@@ -838,6 +840,15 @@ owned += ID
 
 - Der Kauf wird sofort angewendet, auch während einer Reise. Es gibt keine Rückerstattung und kein Verlernen.
 - Ist eine Bedingung verletzt, bleibt das Kommando ohne Wirkung.
+- `owned += ID` sortiert den Knoten in der Reihenfolge der Spieldaten ein, nicht in der Reihenfolge der Käufe ([5.1](#51-spielstand-version-4)).
+
+**Ereignis fürs Log** (ergänzt [4.11](#411-weiterziehen-und-reise)):
+
+| Code | Daten |
+|---|---|
+| `evolved` | ID des entwickelten Knotens, abgezogene DNA (Kosten), Spielzeit `playedMs` |
+
+Ein wirkungsloses `evolve` erzeugt kein Ereignis. Einzigartige Adaptionen melden ihre Freischaltung über das Ereignis `found` des Funds, der sie vervollständigt ([4.16](#416-funde)).
 
 **Knotenstatus** (abgeleitet; US-05.02, US-05.04):
 
@@ -897,7 +908,7 @@ Preis_P = c_P · w_P^k                  // v1: 100 · 2^k
 |---|---|---|---|---|---|---|
 | Preis | 100 | 200 | 400 | 3.200 | 102.400 | ≈ 1,05 · 10⁸ |
 
-Zum Vergleich kostet die 74. Königin (`n = 73`) rund 3,6 · 10⁷ Nahrung ([6.1](#61-messung-m12)). Ein Drüsenpunkt bringt `Q / P_v`-mal so viele Eier wie eine weitere Königin, aber keinen Platz.
+Zum Vergleich kostet die 74. Königin (`n = 73`) rund 3,6 · 10⁷ Nahrung ([6.1](#61-messung-m12-historisch)). Ein Drüsenpunkt bringt `Q / P_v`-mal so viele Eier wie eine weitere Königin, aber keinen Platz.
 
 **Anzeige vor dem Kauf** (US-03.03): Preis, Punkte `P_ges → P_ges + 1` und die Wirkung „+`Q · e_q · M_brut / P_0` Eier/min, sobald verteilt“. Die Verteilung zeigt `a` und `1 − a` in Prozent als geteilten Balken (US-03.01).
 
@@ -914,8 +925,9 @@ Zum Vergleich kostet die 74. Königin (`n = 73`) rund 3,6 · 10⁷ Nahrung ([6.1
 - Abbau-Ziehungen entstehen nur durch Grundertrag und Sammeln in Schritt (1). Der Aufbruch setzt `V = 0`, löst aber keine Ziehung aus. Wer mit einer Schwelle `θ > 0` weiterzieht, erreicht nur die Abbau-Schwellen bis `1 − θ` und verzichtet auf die übrigen.
 - Je Futterstelle wird also höchstens `1 + n_A = 5`-mal gezogen. Welche Abbau-Schwellen schon erreicht sind, folgt aus `V` und `G` und wird nicht gespeichert.
 - **Schrittweite:** `step` teilt einen Schritt an jeder Abbau-Schwelle und an jedem Ablauf eines Buffs, wie an der Ankunft ([4.3](#43-simulationsschritt)). Weil die Abbaurate im Schritt konstant ist, liegt der Zeitpunkt exakt, und das Ergebnis hängt nicht von der Schrittweite ab. Der Headless-Runner und später der Offline-Catch-up übernehmen dieselben Teilungspunkte (`nextSplitMs`).
+- **Umsetzung** (entschieden mit M1.3): Die Ziehungen ruft `step` (`engine/domain/step-logic.ts`) auf, nicht das Kommando oder der Runner. Die Ziehung der Einnahme folgt unmittelbar auf die Ankunft, also nach dem Ereignis `arrived`, und rechnet mit den Modifikatoren nach der Ankunft (Typ der neuen Futterstelle, [4.13](#413-effekt-system)). An der Schwelle 100 % steht zuerst `siteDepleted`, dann `found`.
 
-**Ziehung** (deterministisch): Funde ziehen aus einem **eigenen RNG-Strom** `finds.rngState` (entschieden mit M1.3), der beim Start aus dem Seed entsteht. So bleibt die Zufallsfolge des Generators unberührt; die Kandidaten hängen weiter nur vom Seed und den Weiterzügen ab, und die Messungen aus M1.2 bleiben vergleichbar. Jede Ziehung verbraucht genau drei Zufallszahlen, auch ohne Fund:
+**Ziehung** (deterministisch): Funde ziehen aus einem **eigenen RNG-Strom** `finds.rngState` (entschieden mit M1.3), der beim Start aus dem Seed entsteht: `finds.rngState = seedToRngState(seed + '#finds')`, also derselbe FNV-1a-Hash wie für `rngState`, über den Seed mit dem festen Zusatz `#finds` (entschieden mit M1.3). Ohne den Zusatz begänne der Strom beim selben Zustand wie der Generator und wiederholte dessen Zufallsfolge. Spielstände hängen von der Ableitung ab; sie darf sich nicht ändern. So bleibt die Zufallsfolge des Generators unberührt; die Kandidaten hängen weiter nur vom Seed und den Weiterzügen ab, und die Messungen aus M1.2 bleiben vergleichbar. Jede Ziehung verbraucht genau drei Zufallszahlen, auch ohne Fund:
 
 ```
 r_1, r_2, r_3 aus finds.rngState, in dieser Reihenfolge
@@ -926,11 +938,11 @@ u_F    = 1 − σ_F + 2σ_F · r_3                       // v1 in [0,8; 1,2)
 ```
 
 - Die gewichtete Ziehung arbeitet wie beim Generator ([4.6](#46-futterstellen-generator)) in der Reihenfolge der Fundtabelle.
-- **Erster Fund** (entschieden mit M1.3): Ist der Fundzähler noch 0, wird der Fund unabhängig von `r_2` zu `foreign-dna`. So bringt der erste Fund jedes Spiels die erste Adaption ([6.4](#64-abschätzung-m13)).
+- **Erster Fund** (entschieden mit M1.3): Ist der Fundzähler noch 0, wird der Fund unabhängig von `r_2` zu `foreign-dna`. So bringt der erste Fund jedes Spiels die erste Adaption ([6.4](#64-abschätzung-m13)). Er gilt nicht als Ersatz: Das Ereignis hat keinen ersetzten Eintrag (`replaced = null`).
 - **Ziel schon erreicht:** Ist ein gezogenes Fragment schon vollständig (Adaption frei) oder ein Sammelobjekt schon gesammelt, wird der Fund zu `foreign-dna` mit demselben `u_F`. Das Ereignis nennt den ursprünglichen Eintrag. So bleiben späte Funde wertvoll.
 - Jeder Fund erhöht den Fundzähler um 1, auch ein Ersatz.
 
-**Wirkung je Fundart** (`φ_D = foreignDnaFactor`, `φ_N = nutrientBubbleShare`; `μ_B` und `T_B` hat jeder Buff selbst als `<id>Factor` und `<id>Seconds`, Werte v1 1,5 und 600 s):
+**Wirkung je Fundart** (`φ_D = foreignDnaFactor`, Wert v1 1; `φ_N = nutrientBubbleShare`, Wert v1 0,05; `μ_B` und `T_B` hat jeder Buff selbst als `<id>Factor` und `<id>Seconds`, Werte v1 1,5 und 600 s):
 
 | Art | Wirkung | Skalierung |
 |---|---|---|
@@ -981,7 +993,7 @@ Jeder Eintrag hat sein Gewicht als eigenen Schlüssel `<id>Weight` in `BalancePa
 |---|---|
 | `found` | Typ der Futterstelle, Auslöser `arrival` oder `harvest` (mit Schwelle `j`), Eintrag (ID, Art), ggf. ersetzter Eintrag, Menge (DNA oder Nahrung), Ablauf des Buffs, Fortschritt des Fragments (x / benötigt), freigeschaltete Adaption, erhaltenes Badge |
 
-Ziehungen ohne Fund erzeugen kein Ereignis. Bei der Ankunft steht `found` nach `arrived`.
+Ziehungen ohne Fund erzeugen kein Ereignis. Bei der Ankunft steht `found` nach `arrived`, an der Schwelle 100 % nach `siteDepleted`. Der ersetzte Eintrag fehlt beim ersten Fund und bei jedem Fund, der kein Ersatz ist (`replaced = null`).
 
 ### 4.17 Sammlung und Badges
 
@@ -1007,7 +1019,7 @@ Das passt zum Mockup („3 / 24“ mit zwei Schwefelperlen und einem Urzeitkrist
 
 ## 5. Spielstand Version 3
 
-Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler ergänzt, Version 3 ergänzt Karte, Reise und Einstellungen. Die Feldnamen sind so umgesetzt (`STATE_VERSION = 3`, AP 1.2.1–1.2.7).
+Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler ergänzt, Version 3 ergänzt Karte, Reise und Einstellungen. Die Feldnamen sind so umgesetzt (Version 3 mit AP 1.2.1–1.2.7). Aktuell ist Version 4 ([5.1](#51-spielstand-version-4)); sie übernimmt alle Felder dieser Tabelle unverändert.
 
 | Feld | Inhalt | seit |
 |---|---|---|
@@ -1028,29 +1040,33 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 
 ### 5.1 Spielstand Version 4
 
-> **Entschieden mit M1.3.** Version 3 oben bleibt der umgesetzte Stand, bis M1.3 umgesetzt ist. Version 4 ergänzt Pheromone, Genom und Funde (`STATE_VERSION = 4`).
+> **Entschieden mit M1.3, umgesetzt** mit AP 1.3.4 (`STATE_VERSION = 4`). Version 4 ergänzt Pheromone, Genom und Funde; die Felder sind so umgesetzt.
 
 | Feld | Inhalt | seit |
 |---|---|---|
 | `pheromones` | verteilte Punkte `drones` (`P_d`) und `soldiers` (`P_s`), gekaufte Drüsenpunkte `glands` (`k`); alle ganzzahlig | 4 |
-| `genome` | `owned`: IDs der entwickelten regulären Adaptionen in der Reihenfolge der Spieldaten, ohne `root` | 4 |
-| `finds` | `rngState` (Fund-RNG, uint32), `total` (Fundzähler), `collected` (ID eines Fragments oder Sammelobjekts → Anzahl), `buffs` (je `id` und Ablauf `expiresAtMs` in Spielzeit `time.played`) | 4 |
+| `genome` | `owned`: IDs der entwickelten regulären Adaptionen in der Reihenfolge der Spieldaten, ohne `root`; `evolve` sortiert neue Knoten dort ein ([4.14](#414-genom-ära-i)) | 4 |
+| `finds` | `rngState` (Fund-RNG, uint32; beim neuen Spiel `seedToRngState(seed + '#finds')`, [4.16](#416-funde)), `total` (Fundzähler), `collected` (ID eines Fragments oder Sammelobjekts → Anzahl; nicht gefundene IDs fehlen), `buffs` (je `id` und Ablauf `expiresAtMs` in Spielzeit `time.played`, in der Reihenfolge der Buff-IDs) | 4 |
 
 - **Abgeleitet und nicht gespeichert:** `P_ges`, `P_frei`, alle Effekte und Modifikatoren, Reichweite, Angriff je Soldat, Platz je Königin, freigeschaltete einzigartige Adaptionen, Badges, Knotenstatus, Fortschritt der Sammlung, Restdauer der Buffs und die schon erreichten Abbau-Schwellen der Futterstelle. Die Entwürfe `badges`, `stats` und `settings` aus dem [Technischen Konzept §3.4](technisches-konzept.md#34-zustandsmodell-entwurf) gehören nicht zu Version 4.
 - **Ladeprüfung** (wie bei der Schwelle hängt sie nicht von Balance-Werten ab, damit ein späteres Ändern von `params` gespeicherte Stände nicht ungültig macht):
   - `pheromones`: `drones`, `soldiers` und `glands` sind ganze Zahlen ≥ 0. Ob `P_v ≤ P_ges` gilt, prüft das Laden nicht; wirksam sind höchstens `P_ges` Punkte ([4.15](#415-pheromone)).
-  - `genome.owned`: nur bekannte IDs regulärer Knoten, keine doppelt, und zu jedem Knoten ist sein Vorgänger enthalten (Datenregel, kein Balance-Wert).
+  - `genome.owned`: nur bekannte IDs regulärer Knoten, keine doppelt, und zu jedem Knoten ist sein Vorgänger enthalten (Datenregel, kein Balance-Wert). Die Reihenfolge prüft das Laden nicht.
   - `finds.rngState` ist ein uint32, `finds.total` eine ganze Zahl ≥ 0. `collected` enthält nur bekannte IDs mit ganzen Zahlen ≥ 1; ein Zähler über der benötigten Zahl wirkt wie die benötigte Zahl und bleibt gespeichert.
   - `finds.buffs`: nur bekannte Buff-IDs, jede höchstens einmal, `expiresAtMs` endlich und ≥ 0. Abgelaufene Einträge sind zulässig; der nächste Schritt entfernt sie.
 - Wie bisher speichert der Spielstand nur IDs und Rohwerte, keine Texte.
 
-**Migration von Version 3** (PO-Entscheidung): wie bei den Migrationen 1→2 und 2→3. Seed, RNG-Zustand und Zeiten bleiben erhalten, alles andere wird auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt. Die Startkandidaten entstehen deterministisch aus dem übernommenen RNG-Zustand, der migrierte Spielstand enthält den danach fortgeschriebenen RNG-Zustand. `finds.rngState` entsteht wie beim neuen Spiel aus dem Seed. Wie in `v2-to-v3.ts` verwendet die Migration feste Startwerte statt `DEFAULT_BALANCE`.
+**Migration von Version 3** (PO-Entscheidung): wie bei den Migrationen 1→2 und 2→3. Seed, RNG-Zustand und Zeiten bleiben erhalten, alles andere wird auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt. Die Startkandidaten entstehen deterministisch aus dem übernommenen RNG-Zustand, der migrierte Spielstand enthält den danach fortgeschriebenen RNG-Zustand. `finds.rngState` entsteht wie beim neuen Spiel aus dem Seed. Wie in `v2-to-v3.ts` verwendet die Migration feste Startwerte statt `DEFAULT_BALANCE` (`V4_START`; für die Kandidaten die Generatorwerte `V3_GENERATOR_PARAMS` aus `v2-to-v3.ts`).
+
+- **Stand der Version 2 oder älter** (entschieden mit M1.3, folgt aus der PO-Entscheidung „Migration setzt zurück“): Er durchläuft die Kette und wird zweimal zurückgesetzt, erst 2→3, dann 3→4. Seine Kandidaten entstehen deshalb aus dem RNG-Zustand nach der Migration 2→3, nicht aus dem ursprünglich gespeicherten.
 
 ## 6. Messwerte v1
 
-Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert, und zwar nur für die Bots „Aktiv“ und „Idle“. „Drohnen-lastig“ und „Soldaten-lastig“ sind Analyse-Bots ohne Zielband (entschieden mit M1.2). Die Wartezeit-Kennzahlen bleiben spielbezogen definiert wie bisher ([6.2](#62-messung-m11-historisch): weder Königin noch Drohne bezahlbar), auch für die Analyse-Bots. Aktuell ist die [Messung M1.2](#61-messung-m12); die [Messung M1.1](#62-messung-m11-historisch) bleibt als historischer Stand stehen.
+Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert, und zwar nur für die Bots „Aktiv“ und „Idle“. „Drohnen-lastig“ und „Soldaten-lastig“ sind Analyse-Bots ohne Zielband (entschieden mit M1.2). Die Wartezeit-Kennzahlen bleiben spielbezogen definiert wie bisher ([6.2](#62-messung-m11-historisch): weder Königin noch Drohne bezahlbar), auch für die Analyse-Bots. Aktuell ist die [Messung M1.3](#65-messung-m13); die Messungen [M1.2](#61-messung-m12-historisch) und [M1.1](#62-messung-m11-historisch) bleiben als historische Stände stehen. Die Abschnittsnummern 6.1 bis 6.4 bleiben unverändert, weil Code und Dokumente auf sie verweisen.
 
-### 6.1 Messung M1.2
+### 6.1 Messung M1.2 (historisch)
+
+> **Hinweis M1.3:** Diese Messungen stammen aus M1.2, ohne Effekt-System, Genom, Pheromone und Funde. Ihre Mess-Definitionen gelten weiter. Aktuell ist die [Messung M1.3](#65-messung-m13).
 
 > **Gemessen** mit dem Headless-Runner (Stand AP 1.2.9, mit Weiterziehen, Kampf, Transport und den vier Bots). **Die Mess-Definitionen ([6.2](#62-messung-m11-historisch)) sind entschieden (M1.2).** Die Bewertung „Aktiv ≤ 60 s über die längste Wartezeit“ wird im Balancing (AP 1.5.5) neu bewertet, weil die längste Wartezeit von Aktiv am Spielbeginn eher die Kaufkraft misst als das Warten.
 
@@ -1140,9 +1156,9 @@ Die letzte Strecke „Kein Aufbruch“ ist jeweils offen bis zum Laufende.
 
 ### 6.2 Messung M1.1 (historisch)
 
-> **Hinweis M1.2:** Diese Messungen stammen aus M1.1 und nutzen das inzwischen entfallene [Provisorium aus §4.4](#44-leere-futterstelle-provisorium-bis-m12). Aktuell ist die [Messung M1.2](#61-messung-m12).
+> **Hinweis M1.2:** Diese Messungen stammen aus M1.1 und nutzen das inzwischen entfallene [Provisorium aus §4.4](#44-leere-futterstelle-provisorium-bis-m12). Aktuell ist die [Messung M1.3](#65-messung-m13).
 
-> **Gemessen** mit dem Headless-Runner (Stand AP 1.1.9, ohne Klick, mit Grundertrag `g_0 = 1,5`). Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. Die Mess-Definitionen unten waren damals vorläufig; heute sind sie entschieden, siehe [6.1](#61-messung-m12).
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.1.9, ohne Klick, mit Grundertrag `g_0 = 1,5`). Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. Die Mess-Definitionen unten waren damals vorläufig; heute sind sie entschieden, siehe [6.1](#61-messung-m12-historisch).
 
 **Messaufbau**
 
@@ -1151,7 +1167,7 @@ Die letzte Strecke „Kein Aufbruch“ ist jeweils offen bis zum Laufende.
 - **Idle:** schaut alle 5 min vorbei und kauft dann alles Bezahlbare, Königin vor Drohne. Soldaten kauft er nicht.
 - Beide lösen bei leerem Vorrat „Neue Futterstelle“ aus: Aktiv bei der nächsten Entscheidung, Idle beim nächsten Besuch.
 
-**Mess-Definitionen (entschieden mit M1.2, siehe [6.1](#61-messung-m12))**
+**Mess-Definitionen (entschieden mit M1.2, siehe [6.1](#61-messung-m12-historisch))**
 
 - Kauflücken und längste Wartezeit der ersten 30 min werden mit `siteSize: 1e12` gemessen, damit das [Provisorium](#44-leere-futterstelle-provisorium-bis-m12) sie nicht verfälscht. Die Futterstellen werden mit der echten Größe 20.000 gemessen.
 - **Längste Wartezeit** (`longestWaitMs`): längste zusammenhängende Strecke der ersten 30 min, in der nach den Entscheidungen des Bots weder Königin noch Drohne bezahlbar ist.
@@ -1199,7 +1215,7 @@ Ergänzend, ohne Zielband: Der Anteil Wartezeit beträgt in den ersten 30 min 15
 
 ### 6.3 Bots ab M1.3
 
-> **Entschieden mit M1.3**, Grundlage für AP 1.3.7. Die Bots bleiben einfach und deterministisch. Takt, Auto-Weiterziehen, Strategie, Mitnahme-Priorität und Einheitenkäufe bleiben wie in [6.1](#61-messung-m12); neu sind Genom, Drüse und Verteilung.
+> **Entschieden mit M1.3**, Grundlage für AP 1.3.7. Die Bots bleiben einfach und deterministisch. Takt, Auto-Weiterziehen, Strategie, Mitnahme-Priorität und Einheitenkäufe bleiben wie in [6.1](#61-messung-m12-historisch); neu sind Genom, Drüse und Verteilung.
 
 Je Entscheidung in dieser Reihenfolge:
 
@@ -1214,14 +1230,23 @@ Je Entscheidung in dieser Reihenfolge:
 | Drohnen-lastig | 1 | 4 : 0 | Sammeln, Brut; Kampf zuletzt | wie Aktiv |
 | Soldaten-lastig | 1/2 | 2 : 2 | Kampf, Brut; Sammeln zuletzt | günstigste Option von Soldat, Königin und Drüsenpunkt (Gleichstand: Soldat, dann Königin) |
 
-- Aktiv bewertet eine Königin heute mit dem festen Drohnenanteil `a`; ab M1.3 nimmt er `a` aus der Verteilung.
+- Aktiv bewertet eine Königin seit M1.3 mit dem Drohnenanteil `a` aus der Verteilung statt mit dem festen Anteil aus M1.2.
 - Soldaten-lastig bekommt Drohnen nur aus der Brut. Mit `a* = 1/4` hätte er kaum Einkommen, deshalb 1/2.
 
-**Zusätzliche Kennzahlen für AP 1.3.7** (entschieden mit M1.3): Zeitpunkt des ersten Drüsenpunkts, des ersten Funds und der ersten Adaption; Funde gesamt und je Art; DNA aus Kampf und aus Funden über die Zeit (US-10.07); Zeitpunkte aller entwickelten Knoten. Für das Zielband „Neue Mechanik/Ansicht alle 5–15 min in der ersten Stunde“ zählt als neue Option: der erste Drüsenpunkt, der erste Weiterzug, der erste Fund, jede Adaption, jede einzigartige Adaption und jedes Badge.
+**Annahmen der Umsetzung** (entschieden mit M1.3, AP 1.3.7; die Regeln oben ließen sie offen):
+
+- **Gleichstand der Amortisation:** Drohne vor Königin vor Drüsenpunkt (Aktiv, Drohnen-lastig).
+- **Ertrag eines Drüsenpunkts** wörtlich nach der Tabelle: `Q / P_v` × Ertrag einer weiteren Königin, so wie Aktiv ihn bewertet (über gesparte Drohnenkäufe). Ohne verteilte Punkte (`P_v = 0`) bringt er nichts.
+- **Neue Drüsenpunkte** aus Schritt 2 bleiben frei, bis der Bot sie im Schritt 3 „Pheromone“ derselben Entscheidung verteilt.
+- **„Spart“ beim Genom** heißt: Ist das Ziel zu teuer, entwickelt der Bot keinen anderen Knoten, auch keinen aus anderen Ästen, bis die DNA für das Ziel reicht.
+- **Startverteilungen:** Die Regel „nächste ganzzahlige Aufteilung von `P_v = 4`“ ergibt Drohnen-lastig 4 : 0 und Soldaten-lastig 2 : 2; Aktiv und Idle bleiben bei 3 : 1. Der Bot setzt sie bei seiner ersten Entscheidung, der Startzustand des Spiels bleibt 3 : 1.
+- **Kauf-Kennzahlen:** Drüsenpunkte und Adaptionen zählen nicht als Kauf (Kauflücken, Strecke ohne Kauf); die Wartezeit zählt weiter nur Königin und Drohne ([6.2](#62-messung-m11-historisch)).
+
+**Zusätzliche Kennzahlen für AP 1.3.7** (entschieden mit M1.3, umgesetzt): Zeitpunkt des ersten Drüsenpunkts, des ersten Funds und der ersten Adaption; Funde gesamt und je Art; DNA aus Kampf und aus Funden über die Zeit (US-10.07); Zeitpunkte aller entwickelten Knoten. Für das Zielband „Neue Mechanik/Ansicht alle 5–15 min in der ersten Stunde“ zählt als neue Option: der erste Drüsenpunkt, der erste Weiterzug, der erste Fund, jede Adaption, jede einzigartige Adaption und jedes Badge.
 
 ### 6.4 Abschätzung M1.3
 
-> **Grobe Abschätzung, keine Messung.** Grundlage sind die Messwerte aus [6.1](#61-messung-m12) mit Seed `modell`. Angenommen ist, dass die Bots wie in M1.2 weiterziehen (Aktiv und Idle 27-mal zur Algenmatte, Soldaten-lastig wie gemessen) und die Effekte die Zahl der Weiterzüge nicht ändern. Gerechnet ist mit Erwartungswerten. Die Messung folgt in AP 1.3.7.
+> **Grobe Abschätzung, keine Messung.** Grundlage sind die Messwerte aus [6.1](#61-messung-m12-historisch) mit Seed `modell`. Angenommen ist, dass die Bots wie in M1.2 weiterziehen (Aktiv und Idle 27-mal zur Algenmatte, Soldaten-lastig wie gemessen) und die Effekte die Zahl der Weiterzüge nicht ändern. Gerechnet ist mit Erwartungswerten. Die Messung aus AP 1.3.7 steht in [6.5](#65-messung-m13), der Vergleich am Ende dieses Abschnitts.
 
 **Ziehungen.** Aktiv ist nach 1 h etwa an der 9. Futterstelle: Die Dauern wachsen ab der 4. um rund 18 % je Weiterzug (5,42; 6,4; 7,5; 8,9; 10,5 min …), dazu je rund 20 s Reise. Bis 1 h kommen so die 4 Abbau-Ziehungen am Schlot, 8 Ankünfte und 7 × 4 Abbau-Ziehungen an vollständig abgebauten Algenmatten zusammen, also 40 Ziehungen. Idle kommt auf 35 (4 + 7 + 6 × 4), Soldaten-lastig auf 20 (4 + 4 + 3 × 4), davon 13 an Kampfzielen. In 24 h sind es bei Aktiv und Idle rund 135 (4 + 27 + 26 × 4).
 
@@ -1259,17 +1284,113 @@ Im Mittel kommt damit alle 5–10 min eine neue Option, also im Zielband. Die St
 
 **Nach 24 h** (Aktiv, Variante c): ≈ 20–25 Funde, davon zunächst rund ein Drittel DNA. Später werden doppelte Sammelobjekte und Fragmente zu DNA, der Anteil steigt gegen 60 %. Weil die DNA je Fund mit `1,27^z` wächst, kommen ≈ 10.000–15.000 DNA zusammen, mehr als drei Viertel davon in den letzten 8 h. Das reguläre Genom (3.498 DNA) ist nach etwa 10–12 h vollständig.
 
-**Wirkung auf die späten Futterstellen:** Die Dauer wächst etwa mit `√(G / (Q · f · M_sammeln · M_brut))` ([6.1](#61-messung-m12)). Mit vollem Genom (`M_sammeln = 2,25`, `M_brut = 1,5`) und rund 15 gekauften Drüsenpunkten (`f = 20/4 = 5`, Preis des 15. Punkts ≈ 1,6 Mio. Nahrung) sinkt sie um den Faktor `√16,9 ≈ 4,1`, die 27. Futterstelle von Aktiv also von 207 auf rund 50 min. Dazu kommen mit 15 Platz je Königin 50 % mehr Einheiten mit. Das verschiebt die Stillstände „Kein Aufbruch“ nach hinten, erhöht aber auch die Zahl der Weiterzüge und damit `z`.
+**Wirkung auf die späten Futterstellen:** Die Dauer wächst etwa mit `√(G / (Q · f · M_sammeln · M_brut))` ([6.1](#61-messung-m12-historisch)). Mit vollem Genom (`M_sammeln = 2,25`, `M_brut = 1,5`) und rund 15 gekauften Drüsenpunkten (`f = 20/4 = 5`, Preis des 15. Punkts ≈ 1,6 Mio. Nahrung) sinkt sie um den Faktor `√16,9 ≈ 4,1`, die 27. Futterstelle von Aktiv also von 207 auf rund 50 min. Dazu kommen mit 15 Platz je Königin 50 % mehr Einheiten mit. Das verschiebt die Stillstände „Kein Aufbruch“ nach hinten, erhöht aber auch die Zahl der Weiterzüge und damit `z`.
 
 **Folgerungen**
 
 - Ohne höhere Fundchancen trägt M1.3 die erste Stunde nicht. Mit Variante c liegen Aktiv und Idle im Mittel im Zielband „Neue Mechanik alle 5–15 min“.
 - **Rückkopplung Kampf:** Schon Säurevakuole (`a_s* = 1,2`) senkt den Verlustanteil um den Faktor `1/1,44`. Beim 2. Aufbruch von Aktiv fiele der Schlot von 25,4 % auf 17,6 % und läge damit unter `ℓ_max = 25 %`. Ob Aktiv und Idle dadurch kämpfen, hängt von der Kaufreihenfolge ab (Kampf ist bei ihnen der dritte Ast). Das misst AP 1.3.7.
-- **Offener Punkt für AP 1.5.5 – DNA-Senke:** Ab etwa 12 h hat Aktiv das Genom vollständig, danach fehlt der DNA eine Senke bis AS2. Mögliche Mittel: `w_G` erhöhen, `foreignDnaFactor` senken, die DNA je Fund schwächer mit `z` wachsen lassen oder eine neue Senke einführen. Entschieden wird im Balancing (AP 1.5.5) nach der Messung in AP 1.3.7.
+- **Offener Punkt für AP 1.5.5 – DNA-Senke:** Ab etwa 12 h hat Aktiv das Genom vollständig, danach fehlt der DNA eine Senke bis AS2. Mögliche Mittel: `w_G` erhöhen, `foreignDnaFactor` senken, die DNA je Fund schwächer mit `z` wachsen lassen oder eine neue Senke einführen. Entschieden wird im Balancing (AP 1.5.5). Gemessen ist das Genom schon nach knapp 3 h vollständig (Vergleich unten).
+
+**Vergleich Abschätzung ↔ Messung M1.3** (Seed `modell`, [6.5](#65-messung-m13))
+
+| Größe | Abschätzung | Messung |
+|---|---|---|
+| Weiterzüge in 24 h (Aktiv / Idle) | 27 / 27 (wie M1.2 angenommen) | 37 / 36 |
+| Erster Drüsenpunkt (Aktiv) | ≈ 4–5 min | 3 min 22 s |
+| Erster Fund und erste Adaption (Aktiv) | bis 10,6 min mit 59 % | 6 min 21 s |
+| Erster Weiterzug (Aktiv) | 10,6 min | 9 min 18 s |
+| Funde in 1 h (Aktiv / Idle / Soldaten-lastig) | 6,2 / 5,45 / 5,9 | 12 / 11 / 5 |
+| DNA nach 1 h (Aktiv / Idle / Soldaten-lastig) | ≈ 80 / ≈ 65 / ≈ 210 | 80,4 / 80,4 / 156,3 (118,1 aus Kampf) |
+| Knoten nach 1 h (Aktiv / Idle / Soldaten-lastig) | ≈ 5 / ≈ 4 / ≈ 7 | 5 / 5 / 5 |
+| Größter Abstand neuer Optionen, erste 60 min (Aktiv) | im Mittel 5–10 min | 30 min 56 s (ab 29 min 04 s) |
+| Funde in 24 h (Aktiv) | ≈ 20–25 | 44 |
+| DNA aus Funden in 24 h (Aktiv) | ≈ 10.000–15.000 | 36.074,52 |
+| Reguläres Genom vollständig (Aktiv / Idle) | nach etwa 10–12 h | nach 2 h 53 min / 3 h 00 min |
+| Kampf bei Aktiv und Idle (Rückkopplung) | offen | kein Kampf in 24 h |
+
+- **Ursache:** Genom und Drüse beschleunigen das Sammeln. Die Bots ziehen deshalb öfter weiter (Aktiv 37 statt 27), es gibt mehr Ziehungen, und `z` steigt höher. Weil die DNA je Fund mit `≈ 1,27^z` wächst, liegt die Fund-DNA nach 24 h beim 2,4- bis 3,6-Fachen der Abschätzung.
+- **Folge:** Das Genom ist nach etwa 3 h statt nach 10–12 h vollständig. Danach sammeln sich über 32.000 DNA ohne Senke an. Die offene DNA-Senke wird damit dringlicher; sie gehört zum Balancing in AP 1.5.5 ([Abschnitt 7](#7-ausblick)).
+- **Erste Stunde:** Die ersten Optionen kommen früher als abgeschätzt (Drüse, Fund, Adaption und Weiterzug bis 9 min 18 s), danach nur noch zwei Adaptionen bei 24 min 49 s und 29 min 04 s und bis 60 min keine weitere. Der größte Abstand liegt damit über dem Zielband ([6.5](#65-messung-m13)).
+
+### 6.5 Messung M1.3
+
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.3.7, mit Effekt-System, Genom, Pheromonen, Funden, Sammlung und den Bots aus [6.3](#63-bots-ab-m13)). Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Mess-Definitionen aus [6.1](#61-messung-m12-historisch) und [6.2](#62-messung-m11-historisch) gelten weiter, ergänzt um die unten.
+
+**Messaufbau**
+
+- `runSimulation` mit Seed `modell`, `stepMs` 1000, Standardwerte aus [Abschnitt 2](#2-startwerte-und-konstanten) mit den Werten v1 für M1.3, Dauer 24 h; die Kennzahlen „1 h“ aus einem eigenen Lauf über 1 h. Abgetastet wird alle 60 s wie im Worker der Modell-Seite. Generator und Funde ziehen Zufall, das Ergebnis hängt also vom Seed ab.
+- Die Bots entscheiden wie in [6.3](#63-bots-ab-m13): Takt, Auto-Weiterziehen (Schwelle 0 %), Strategie, Mitnahme-Priorität und Einheitenkäufe wie in [6.1](#61-messung-m12-historisch), dazu Genom, Drüse und Verteilung der Pheromone.
+- Wie in M1.2 sind Drohnen- und Soldaten-lastig Analyse-Bots ohne Zielband; Fettdruck misst sie nur zum Vergleich gegen das Band für „aktiv“.
+
+**Mess-Definitionen** (entschieden mit M1.3, ergänzen [6.1](#61-messung-m12-historisch) und [6.2](#62-messung-m11-historisch))
+
+- **Abstand neuer Optionen** (Zielband „Neue Mechanik/Ansicht alle 5–15 min in der ersten Stunde“): Neue Optionen sind die Freischaltungen nach [6.3](#63-bots-ab-m13), also der erste Drüsenpunkt, der erste Weiterzug, der erste Fund, jede Adaption, jede einzigartige Adaption und jedes Badge. Gemessen wird der größte Abstand im Fenster [0; 60 min], einschließlich der Strecken ab Laufbeginn und bis zum Fensterende.
+- **Bandgrenzen:** Bei „x–y“ und „≤“ sind die Grenzen eingeschlossen, bei „<“ ausgeschlossen. Ein fehlender Messwert (z. B. nie gekauft) gilt als Abweichung.
+- **Upgrade-Bewertung** (Upgrade-Tabelle, US-10.07): am Endzustand des Bots, ohne und mit dem Upgrade bei allen übrigen Quellen. Eine Amortisation gibt es nur für Nahrungskosten (Drüsenpunkt, Königin, Drohne), nicht für DNA und Fragmente.
+- **Kein Kauf:** Drüsenpunkte und Adaptionen zählen nicht als Kauf. Kauflücken, erster Kauf und Strecke ohne Kauf messen weiter nur Einheitenkäufe; die Wartezeit zählt nur Königin und Drohne.
+- **DNA gesamt** ist DNA aus Kampf plus DNA aus Funden der Art DNA.
+
+| Kennzahl | Ziel aktiv | Aktiv | Drohnen-lastig | Soldaten-lastig | Ziel idle | Idle |
+|---|---|---|---|---|---|---|
+| Erster Kauf | < 10 s | 0 s | 0 s | **1 min 17 s** | – | 0 s |
+| Längste Wartezeit, erste 30 min | ≤ 60 s | **2 min 14 s** (ab 19 min 27 s) | **1 min 25 s** (ab 15 min 38 s) | **7 min 02 s** (ab 17 min 56 s)¹ | < 5 min | 1 min 07 s (ab 5 min) |
+| Kauflücken, erste 30 min: Anzahl / Median / Maximum | Median 5–60 s | 58 / 14 s / 3 min 17 s | 57 / 18 s / 3 min 16 s | 65 / 17 s / 8 min 00 s | – | 6 / 5 min / 5 min |
+| Weiterzüge in 24 h (davon auto) | – | 37 (37) | 38 (38) | 34 (34) | – | 36 (36) |
+| Gewählte Typen | – | 37 × Algenmatte | 38 × Algenmatte | 28 × Algenmatte, je 2 × Bakterienrasen und Walsturz, je 1 × Methanquelle und Schlot | – | 36 × Algenmatte |
+| Erste Futterstelle (Schlot) | 3–15 min | 9,30 min | 7,73 min | **17,84 min** | 10–60 min | 12,57 min |
+| 2. / 3. / 4. Futterstelle | 3–15 min | **2,9995 / 2,76** / 3,57 min | **2,27 / 2,05 / 2,76** min | 12,43 / **16,70** / 14,11 min | 10–60 min | **3,55 / 2,63 / 3,66 min** |
+| Letzte fünf abgeschlossene Futterstellen | 3–15 min | **93,3 / 108,2 / 142,6 / 179,6 / 187,7 min** (33.–37.) | **91,2 / 122,0 / 152,7 / 163,4 / 171,5 min** (34.–38.) | **89,7 / 80,9 / 110,5 / 117,8 / 136,3 min** (30.–34.) | 10–60 min | **89,0 / 96,7 / 110,9 / 146,6 / 186,8 min** (32.–36.) |
+| Futterstellen im Zielband | – | **17 von 37** (1., 4.–19.) | **15 von 38** (1., 5., 7.–19.) | **11 von 34** (2., 4.–13.) | – | **16 von 36** (1., 15.–29.) |
+| Längste Strecke ohne Kauf, 1 h | < 10 min | 5,18 min | 4,12 min | 8,60 min | < 60 min | 5,00 min |
+| Längste Strecke ohne Kauf, 24 h | < 10 min | **177,38 min** (ab 1.210,75 min) | **153,37 min** | **56,43 min** | < 60 min | **60,00 min** (1.255–1.315 min) |
+
+Fett: außerhalb des Zielbands (bei Drohnen- und Soldaten-lastig nur zum Vergleich gegen „aktiv“). ¹ Die Wartezeit zählt nur Königin und Drohne; bei Soldaten-lastig misst sie also nicht seine Käufe.
+
+**Progression** (ohne Zielband, bis auf den Abstand neuer Optionen bei Aktiv)
+
+| Kennzahl | Aktiv | Drohnen-lastig | Soldaten-lastig | Idle |
+|---|---|---|---|---|
+| Erster Drüsenpunkt | 3 min 22 s | 2 min 31 s | 10 min 11 s | 10 min 00 s |
+| Erster Fund | 6 min 21 s | 5 min 22 s | 11 min 55 s | 8 min 36 s |
+| Erste Adaption | 6 min 21 s | 5 min 22 s | 11 min 56 s | 10 min 00 s |
+| Erster Weiterzug | 9 min 18 s | 7 min 44 s | 17 min 50 s | 12 min 34 s |
+| Erste Einnahme mit Kampf | – | – | 18 min 20 s | – |
+| Genom-Knoten nach 1 h / am Laufende | 5 / 15 | 4 / 15 | 5 / 15 | 5 / 15 |
+| Genom komplett | 2 h 53 min | 2 h 21 min | 5 h 29 min | 3 h 00 min |
+| DNA aus Kampf / Funden, 1 h | 0 / 80,4 | 0 / 80,4 | 118,13 / 38,18 | 0 / 80,4 |
+| DNA aus Kampf / Funden, 24 h | 0 / 36.074,52 | 0 / 36.074,52 | 305,56 / 36.804,24 | 0 / 36.074,52 |
+| DNA-Einnahmen über den Genomkosten (3.498) ab | 2 h 54 min | 2 h 22 min | 5 h 30 min | 2 h 59 min |
+| DNA-Bestand nach 24 h | 32.576,5 | 32.576,5 | 33.611,8 | 32.576,5 |
+| Funde in 1 h | 12 | 13 | 5 | 11 |
+| Funde in 24 h (DNA / Nahrung / Buff / Fragment / Sammelobjekt) | 44 (13 / 12 / 12 / 2 / 5) | 44 (13 / 12 / 12 / 2 / 5) | 46 (15 / 12 / 11 / 3 / 5) | 44 (13 / 12 / 12 / 2 / 5) |
+| Einzigartige Adaptionen / Badges, 24 h | 1 (Algensymbiose, 7 h 34 min) / 0 | 1 (6 h 23 min) / 0 | 1 (11 h 44 min) / 0 | 1 (7 h 52 min) / 0 |
+| Drüsenpunkte, 24 h | 25 | 25 | 21 | 22 |
+| Größter Abstand neuer Optionen, erste 60 min (Ziel aktiv 5–15 min) | **30 min 56 s** (29 min 04 s – 60 min) | 37 min 17 s | 28 min 13 s | 25 min (35–60 min), ohne Zielband |
+
+Freischaltungen von Aktiv in der ersten Stunde: Drüsenpunkt 3 min 22 s, Fund und erste Adaption 6 min 21 s, Weiterzug 9 min 18 s, je zwei Adaptionen bei 24 min 49 s und 29 min 04 s, danach bis 60 min keine.
+
+**Zielband-Warnungen über 24 h** (Warnliste der Modell-Seite, US-10.08)
+
+- **Aktiv:** 23 von 42 Messungen außerhalb. Die 2. und 3. Futterstelle liegen unter 3 min (2 min 59,97 s und 2 min 45 s), die längste Wartezeit über 60 s (2 min 14 s), der größte Abstand neuer Optionen über 15 min (30 min 56 s), die 20. bis 37. Futterstelle über 15 min (17 min 34 s bis 3 h 07 min, ab 2 h 25 min Spielzeit), die längste Strecke ohne Kauf über 10 min (2 h 57 min).
+- **Idle:** 21 von 38 Messungen außerhalb. Die 2. bis 14. Futterstelle liegen unter 10 min (2 min 38 s bis 8 min 05 s), die 30. bis 36. über 60 min (1 h 05 min bis 3 h 06 min). Die längste Strecke ohne Kauf trifft mit genau 60,00 min die Grenze; das Band „< 60 min“ schließt sie aus.
+
+**Auffälligkeiten**
+
+- **Mehr Weiterzüge als in M1.2:** Genom und Drüse erhöhen die Sammelrate. Aktiv zieht 37-mal weiter statt 27-mal, die anderen Bots ähnlich; dadurch wird `z` größer, und die späten Futterstellen sind größer.
+- **Frühe Futterstellen zu kurz:** Mit der höheren Sammelrate sind die 2. bis 4. Algenmatte bei Aktiv, Drohnen-lastig und Idle schneller leer als in M1.2 und liegen teils unter dem Band. Späte Futterstellen dauern weiter bis über 3 h.
+- **Fund-DNA bei drei Bots gleich:** Aktiv, Idle und Drohnen-lastig ziehen dieselbe Folge von Algenmatten. Weil Funde aus dem eigenen Fund-RNG ziehen, sind ihre Funde und die DNA daraus identisch.
+- **Genom nach rund 3 h komplett:** Danach wachsen mehr als 32.000 DNA ohne Senke an. Die Abschätzung in [6.4](#64-abschätzung-m13) nannte 10–12 h und 10.000–15.000 DNA.
+- **Kein Kampf bei Aktiv und Idle:** Trotz Säurevakuole kämpfen beide nie. Die Rückkopplung aus [6.4](#64-abschätzung-m13) tritt beim Seed `modell` nicht ein. Nur Soldaten-lastig kämpft (erste Einnahme mit Kampf bei 18 min 20 s, 305,56 DNA aus Kampf in 24 h).
+- **Upgrade-Tabelle** (Aktiv, Endzustand nach 24 h): Cilien-Schlag I bringt +12,9 % Nahrung/s, Cilien-Schlag II +20,7 %, Geißelschlag +50 %. Der nächste Drüsenpunkt amortisiert sich in 10,7 s, die nächste Königin in 6,4 s.
+- **Rechendauer:** Ein Lauf über 24 h dauert 1,1–1,7 s je Bot.
 
 ## 7. Ausblick
 
-- **M1.2, erledigt:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer und Ertrag je Futterstelle, Reisezeit, Soldaten-Bilanz, Stillstands-Warnungen) und hat die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Alle vier Bots ziehen über das Auto-Weiterziehen weiter; die Messwerte stehen in [Abschnitt 6.1](#61-messung-m12).
-- **M1.3, entschieden:** Das Effekt-System ([4.13](#413-effekt-system)) füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust`, `M_ausbeute` und `M_fund` sowie Reichweite, Angriff je Soldat, Platz je Königin und Pheromonpunkte. Das Genom der Ära I ([4.14](#414-genom-ära-i)) gibt DNA für 15 reguläre Adaptionen aus; vier einzigartige Adaptionen entstehen aus Fragmenten. Pheromone ([4.15](#415-pheromone)) lösen das feste Brutverhältnis ab, die Drüse kostet Nahrung. Funde ([4.16](#416-funde)) werden bei jeder Einnahme und an vier Abbau-Schwellen gezogen und bringen neben dem Kampf die einzige DNA. Dazu kommen Sammlung und Badges ([4.17](#417-sammlung-und-badges)), Spielstand Version 4 ([5.1](#51-spielstand-version-4)) und die Bots für AP 1.3.7 ([6.3](#63-bots-ab-m13)). Umgesetzt wird in AP 1.3.1 bis 1.3.7.
-- **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder. Offener Punkt aus M1.3: Nach vollständigem Genom (bei Aktiv nach etwa 12 h) hat DNA keine Senke mehr bis AS2 ([6.4](#64-abschätzung-m13)).
+- **M1.2, erledigt:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer und Ertrag je Futterstelle, Reisezeit, Soldaten-Bilanz, Stillstands-Warnungen) und hat die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Alle vier Bots ziehen über das Auto-Weiterziehen weiter; die Messwerte stehen in [Abschnitt 6.1](#61-messung-m12-historisch).
+- **M1.3, erledigt:** Das Effekt-System ([4.13](#413-effekt-system)) füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust`, `M_ausbeute` und `M_fund` sowie Reichweite, Angriff je Soldat, Platz je Königin und Pheromonpunkte. Das Genom der Ära I ([4.14](#414-genom-ära-i)) gibt DNA für 15 reguläre Adaptionen aus; vier einzigartige Adaptionen entstehen aus Fragmenten. Pheromone ([4.15](#415-pheromone)) lösen das feste Brutverhältnis ab, die Drüse kostet Nahrung. Funde ([4.16](#416-funde)) werden bei jeder Einnahme und an vier Abbau-Schwellen gezogen und bringen neben dem Kampf die einzige DNA. Dazu kommen Sammlung und Badges ([4.17](#417-sammlung-und-badges)), Spielstand Version 4 ([5.1](#51-spielstand-version-4)) und die Bots für AP 1.3.7 ([6.3](#63-bots-ab-m13)). Umgesetzt in AP 1.3.1 bis 1.3.7; die Modell-Seite zeigt Upgrade-Wirkung, DNA-Fluss, Zielbänder und Warnungen, die Messwerte stehen in [Abschnitt 6.5](#65-messung-m13).
+- **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder. Offene Punkte aus M1.3:
+  - **DNA-Senke:** Gemessen ist das reguläre Genom bei Aktiv nach 2 h 53 min vollständig, nach 24 h liegen rund 32.600 DNA ungenutzt ([6.4](#64-abschätzung-m13), [6.5](#65-messung-m13)). Bis AS2 fehlt der DNA eine Senke.
+  - **Pacing-Abweichungen aus der Messung M1.3:** frühe Futterstellen unter dem Band (Aktiv 2. und 3., Idle 2. bis 14.), späte über dem Band (Aktiv ab der 20., Idle ab der 30.), größter Abstand neuer Optionen in der ersten Stunde 30 min 56 s statt höchstens 15 min, längste Strecke ohne Kauf über 24 h (Aktiv 2 h 57 min, Idle genau 60 min) und die längste Wartezeit von Aktiv (2 min 14 s).
+  - Kein Kampf bei Aktiv und Idle trotz Kampf-Ast; die Rückkopplung aus [6.4](#64-abschätzung-m13) bleibt aus.
 - **Nach Ära I:** Weitere Effektziele (z. B. Grundertrag, Reisedauer, Preise) und Bedingungen kommen mit späteren Mechaniken dazu, ohne die Verrechnungsregel aus 4.13 zu ändern.

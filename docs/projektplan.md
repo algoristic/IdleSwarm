@@ -218,6 +218,7 @@ flowchart TB
     class ap101,ap102,ap103,ap104,ap105,ap106,ap107 done
     class ap111,ap112,ap113,ap114,ap115,ap116,ap117,ap118,ap119,ap1110 done
     class ap121,ap122,ap123,ap124,ap125,ap126,ap127,ap128,ap129 done
+    class ap131,ap132,ap133,ap134,ap135,ap136,ap137 done
 ```
 
 #### M1.0 · Fundament
@@ -313,7 +314,7 @@ Diese Punkte aus der Projektidee werden in AP 1.1.1 bzw. im jeweiligen AP entsch
 
 ### 3.5 Pacing-Ziele (vorläufig)
 
-Diese Zielbänder werden auf der Modell-Seite überwacht und in AP 1.5.5 feinjustiert:
+Diese Zielbänder werden auf der Modell-Seite überwacht und in AP 1.5.5 feinjustiert. Seit AP 1.3.7 stehen sie als Konfiguration in `balance/domain/targets.ts`, die Modell-Seite zeigt sie als Flächen und Warnliste; die aktuelle Messung steht in [Game-Design §6.5](game-design.md#65-messung-m13).
 
 | Kennzahl | Ziel (aktiv) | Ziel (idle) |
 |---|---|---|

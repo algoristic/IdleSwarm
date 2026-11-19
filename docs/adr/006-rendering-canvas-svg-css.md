@@ -20,12 +20,12 @@ Die Oberfläche folgt dem Mockup [K2](../mockups/k2-zoom.html) in der Grafik von
 **Umgesetzt:**
 
 - SVG-Sonar-Karte (AP 1.2.8): [`sonar-map.component.html`](../../src/app/sonar/ui/sonar-map/sonar-map.component.html) zeichnet Distanzringe, Reichweite, Sweep, bisherige Route, Ziele, Route und Reiselinie als SVG im Angular-Template, ohne neue Abhängigkeit. Die Geometrie rechnet [`sonar-map-logic.ts`](../../src/app/sonar/domain/sonar-map-logic.ts) rein und Angular-frei; Ziele sind fokussierbare Knöpfe. Sweep und Routenfluss sind CSS-Animationen in Komponenten-CSS (K2-Ausnahme) und stehen bei `prefers-reduced-motion` still. Die Karte liegt noch auf der Seite `/umgebung`, nicht in einer K2-Ebene.
+- SVG-Genom (AP 1.3.3): [`genome-tree.component.html`](../../src/app/genome/ui/genome-tree/genome-tree.component.html) zeichnet den radialen Baum im Zellkern (Membran, Organellen, gebogene Äste, Knoten mit Statusdarstellung, Kostenschilder) als SVG im Angular-Template, ohne neue Abhängigkeit. Die Geometrie rechnet [`genome-tree-logic.ts`](../../src/app/genome/domain/genome-tree-logic.ts) rein und Angular-frei, die Positionen stehen als UI-Daten in [`genome-tree.layout.ts`](../../src/app/genome/ui/genome-tree/genome-tree.layout.ts). Knoten sind fokussierbare Knöpfe. Membran-Drehung und Puls verfügbarer Knoten sind CSS-Animationen in Komponenten-CSS (K2-Ausnahme) und stehen bei `prefers-reduced-motion` still. Das Genom liegt noch auf der Seite `/genom`, nicht in einer K2-Ebene.
 
 **Geplant:**
 
 | Teil | Umsetzung |
 |---|---|
-| SVG-Genom | ab AP 1.3.3 |
 | Ebenen, Kamera, CSS-Übergänge | ab AP 1.4.1 |
 | Szene-Canvas | ab AP 1.4.2 |
 

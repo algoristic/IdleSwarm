@@ -40,6 +40,12 @@ Als Vorbild dient die Architektur aus PortfoliGo (Domäne × Schicht, Facades, N
 - `site/ui` ([`site-type-labels`](../../src/app/site/ui/site-type-labels/site-type-labels.ts)): Namen der Futterstellentypen, die HUD, Log und Umgebung gemeinsam nutzen.
 - `domain`-Schicht in Oberflächen-Domänen nur für reine Eingabeprüfung: [`hud/domain/sacrifice-count-logic.ts`](../../src/app/hud/domain/sacrifice-count-logic.ts) und [`sonar/domain/auto-threshold-logic.ts`](../../src/app/sonar/domain/auto-threshold-logic.ts); die Formular-Schemas in `ui` nutzen sie.
 
+**Umgesetzt** in M1.3 (AP 1.3.1–1.3.7):
+
+- Neue Fachdomänen `genome` (Knoten, einzigartige Adaptionen, `evolve`; lazy Route `/genom` mit [`GenomeFacade`](../../src/app/genome/feature/state/genome.facade.ts) und reinem Viewmodel `toGenomeView`) und `finds` (Fundtabelle, Ziehung, Buffs, Sammlung, Badges; nur `domain` und `ui`). Pheromone liegen in `swarm/domain`, das Effekt-System in `balance/domain`; `engine/domain` setzt die Effekte aller Quellen in [`modifiers-logic.ts`](../../src/app/engine/domain/modifiers-logic.ts) zusammen.
+- `finds/domain` nutzt `genome/domain` zur Laufzeit, `genome/domain` nutzt `finds/domain` nur über Typen; so entsteht kein Laufzeitzyklus zwischen den beiden Fachdomänen.
+- Das HUD zeigt Pheromone und Funde über präsentationale Panels; die `HudFacade` bekommt dafür nur Kommandos (`setPheromones`, `strengthenGland`).
+
 ## Konsequenzen
 
 - Fachliche Grenzen sind im Ordnerbaum sichtbar; neue Mechaniken bekommen eine eigene Domäne statt eines weiteren Ordners in `core/`.

@@ -25,6 +25,7 @@ Als Vorbild dient PortfoliGo: Tailwind v4, semantische Tokens, keine Arbitrary V
 - Tailwind CSS 4.3.5 über [`.postcssrc.json`](../../.postcssrc.json). [`src/styles.css`](../../src/styles.css) definiert die `--sw-*`-Tokens der K2-Palette, die Diagrammfarben `--sw-chart-*`, die Varianten `mode-map:`, `mode-scene:`, `mode-gen:` und `current:` sowie Rasterspalten als Theme-Werte (`grid-cols-stats`, `grid-cols-model` …).
 - HUD und Modell-Seite verwenden nur Utilities; es gibt keine Komponenten-CSS-Dateien mehr. Zustände wie die Platzwarnung laufen über `data-*`-Attribute und Varianten (`data-warning:`).
 - Die Diagramme der Modell-Seite lesen ihre Farben über das Token `CHART_PALETTE` einmal aus den CSS-Variablen ([`chart-theme.ts`](../../src/app/model/ui/echart/chart-theme.ts)).
+- Seit AP 1.3.3 gibt es die Genom-Tokens aus dem Mockup K2-K (`--sw-branch-*`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked*`, `--sw-cost-muted*`) und die Schriftgröße `--text-2xs`. Die Genom-Ansicht nutzt Utilities; nur Membran, Pulsring und Beschriftungskontur stehen nach der K2-Ausnahme in [`genome-tree.component.css`](../../src/app/genome/ui/genome-tree/genome-tree.component.css), wie Sweep und Routenfluss der Sonar-Karte.
 
 **Offen:** K2-Ebenen, Kamera und Moduswechsel kommen mit der Shell ab M1.4. Die Token-Werte stammen noch aus der Neon-Palette von K2; sie werden mit AP 1.4.3 auf die Palette von K2-K umgestellt (Namen bleiben, Kontrast und `--sw-chart-*` neu prüfen).
 
