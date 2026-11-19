@@ -593,63 +593,90 @@ Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbän
 
 ### 6.1 Messung M1.2
 
-> **Gemessen** mit dem Headless-Runner (Stand AP 1.2.7, mit Weiterziehen, Kampf und Transport). **Die Mess-Definitionen sind weiterhin vorläufig, die Entscheidung des Product Owners ist offen.**
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.2.9, mit Weiterziehen, Kampf, Transport und den vier Bots). **Die Mess-Definitionen sind weiterhin vorläufig, die Entscheidung des Product Owners ist offen.**
 
 **Messaufbau**
 
-- `runSimulation` mit Seed `modell`, `stepMs` 1000, Standardwerte aus [Abschnitt 2](#2-startwerte-und-konstanten), Dauer 24 h; die Kennzahl „1 h“ aus einem eigenen Lauf über 1 h. Der Generator zieht jetzt Zufall, das Ergebnis hängt also vom Seed ab.
-- **Aktiv** und **Idle** kaufen wie in M1.1 (Soldaten nie) und schalten bei ihrer ersten Entscheidung das Auto-Weiterziehen ein. Strategie „Ausgewogen“, Schwelle 0 % und Mitnahme-Priorität „ausgewogen“ bleiben auf den Startwerten. Jeder Aufbruch ist also ein Auto-Aufbruch bei leerem Vorrat.
-- Alle Kennzahlen mit der echten Futterstellengröße; `siteSize: 1e12` entfällt mit dem Provisorium.
-- **Dauer einer Futterstelle:** von der Ankunft (die erste ab 0) bis zum leeren Vorrat, ohne die Reise. Die übrigen Definitionen wie in [6.2](#62-messung-m11-historisch).
+- `runSimulation` mit Seed `modell`, `stepMs` 1000, Standardwerte aus [Abschnitt 2](#2-startwerte-und-konstanten), Dauer 24 h; die Kennzahl „1 h“ aus einem eigenen Lauf über 1 h. Der Generator zieht Zufall, das Ergebnis hängt also vom Seed ab.
+- Alle vier Bots schalten bei ihrer ersten Entscheidung das Auto-Weiterziehen ein, Schwelle 0 %. Jeder Aufbruch ist also ein Auto-Aufbruch bei leerem Vorrat.
+  - **Aktiv** und **Idle** kaufen wie in M1.1 (Soldaten nie). Strategie „Ausgewogen“ und Mitnahme-Priorität „ausgewogen“ bleiben auf den Startwerten.
+  - **Drohnen-lastig** entscheidet im Takt von Aktiv und kauft wie Aktiv nur Königinnen und Drohnen nach Amortisation; Mitnahme „Drohnen zuerst“, Strategie „Geringster Widerstand“.
+  - **Soldaten-lastig** entscheidet im Takt von Aktiv und kauft die günstigere von Soldat und Königin (Gleichstand: Soldat), keine Drohnen; Mitnahme „Soldaten zuerst“, Strategie „Kampfgehärtet“.
+- Drohnen- und Soldaten-lastig werden gegen die Zielbänder für „aktiv“ gelesen, weil sie im selben Takt entscheiden.
+- Alle Kennzahlen mit der echten Futterstellengröße.
 
-| Kennzahl | Ziel aktiv | Aktiv | Ziel idle | Idle |
+**Mess-Definitionen** (ergänzen [6.2](#62-messung-m11-historisch))
+
+- **Dauer einer Futterstelle** (seit AP 1.2.9): von der Ankunft (die erste ab 0) bis zum Aufbruch, ohne die Reise. Die Reise vom Aufbruch bis zur Ankunft zählt getrennt als **Reisezeit**. So wird auch das Zielband „Dauer pro Futterstelle“ gelesen. Bei Schwelle 0 % fällt der Aufbruch auf den Moment des leeren Vorrats; die Werte gleichen deshalb denen der bisherigen Definition (bis zum leeren Vorrat).
+- **Längster Aufenthalt:** längste Dauer einer Futterstelle; ohne Aufbruch bis zum Laufende.
+- **Einnahme mit Kampf:** Ankunft an einem Ziel mit Abwehr `B > 0`. Algenmatten zählen nicht. **Längste Strecke ohne Kampfziel:** längste Strecke zwischen Laufbeginn, den Einnahmen mit Kampf und dem Laufende.
+- **Stillstand** (US-10.06): „Kein Kampfziel“ ist eine Strecke ohne Einnahme mit Kampf, „Kein Aufbruch“ ein Aufenthalt, jeweils strikt länger als die Schwelle; offene Strecken am Laufende zählen mit. Die Schwelle (Standard 60 min) ist ein Analyse-Parameter der Modell-Seite, keine Spielkonstante.
+
+| Kennzahl | Ziel aktiv | Aktiv | Drohnen-lastig | Soldaten-lastig | Ziel idle | Idle |
+|---|---|---|---|---|---|---|
+| Erster Kauf | < 10 s | 0 s | 0 s | **30 s** | – | 0 s |
+| Längste Wartezeit, erste 30 min | ≤ 60 s | **1 min 49 s** | **1 min 49 s** | **1 min 49 s**¹ | < 5 min | 1 min 07 s |
+| Kauflücken, erste 30 min: Anzahl / Median / Maximum | Median 5–60 s | 62 / 17,5 s / 4 min 05 s | 65 / 14 s / 3 min 32 s | 80 / 16 s / 3 min 36 s | – | 6 / 5 min / 5 min |
+| Weiterzüge in 24 h (davon auto) | – | 27 (27) | 27 (27) | 26 (26) | – | 27 (27) |
+| Gewählte Typen | – | 27 × Algenmatte | 27 × Algenmatte | 20 × Algenmatte, 3 × Methanquelle, je 1 × Bakterienrasen, Walsturz, Schlot | – | 27 × Algenmatte |
+| Erste Futterstelle (Schlot) | 3–15 min | 10,57 min | 10,57 min | 14,65 min | 10–60 min | 13,11 min |
+| 2. / 3. / 4. Futterstelle | 3–15 min | 4,16 / 4,02 / 5,42 min | 3,60 / 3,37 / 4,71 min | 10,07 / **15,47 / 15,71** min | 10–60 min | **4,45 / 4,02 / 5,45 min** |
+| Letzte fünf abgeschlossene Futterstellen | 3–15 min | **104,7 / 122,8 / 145,0 / 152,7 / 206,9 min** (23.–27.) | **103,9 / 122,0 / 144,2 / 151,9 / 206,0 min** (23.–27.) | **81,4 / 110,3 / 128,9 / 151,8 / 159,4 min** (22.–26.) | 10–60 min | **108,3 / 126,9 / 149,7 / 157,5 / 214,4 min** (23.–27.) |
+| Futterstellen im Zielband | – | **10 von 27** (1.–10.) | **11 von 27** (1.–11.) | **7 von 26** (1., 2., 5., 7.–10.) | – | **13 von 27** (1., 9.–20.) |
+| Längste Strecke ohne Kauf, 1 h | < 10 min | 5,30 min | 6,10 min | 4,82 min | < 60 min | 5,00 min |
+| Längste Strecke ohne Kauf, 24 h | < 10 min | **119,43 min** | **130,52 min** | **70,92 min** | < 60 min | 55,00 min |
+
+Fett: außerhalb des Zielbands. ¹ Wartezeit und Anteil Wartezeit zählen nur Königin und Drohne; bei Soldaten-lastig messen sie also nicht seine Käufe.
+
+**Zyklen und Stillstand** (ohne Zielband)
+
+| Kennzahl | Aktiv | Drohnen-lastig | Soldaten-lastig | Idle |
 |---|---|---|---|---|
-| Erster Kauf | < 10 s | 0 s | – | 0 s |
-| Längste Wartezeit, erste 30 min | ≤ 60 s | **1 min 49 s** | < 5 min | 1 min 07 s |
-| Kauflücken, erste 30 min: Anzahl / Median / Maximum | Median 5–60 s | 62 / 17,5 s / 4 min 05 s | – | 6 / 5 min / 5 min |
-| Weiterzüge in 24 h (davon auto) | – | 27 (27) | – | 27 (27) |
-| Gewählte Typen | – | 27 × Algenmatte | – | 27 × Algenmatte |
-| Erste Futterstelle (Schlot) | 3–15 min | 10,57 min | 10–60 min | 13,11 min |
-| 2. / 3. / 4. Futterstelle | 3–15 min | 4,16 / 4,02 / 5,42 min | 10–60 min | **4,45 / 4,02 / 5,45 min** |
-| Letzte fünf abgeschlossene Futterstellen (23.–27.) | 3–15 min | **104,7 / 122,8 / 145,0 / 152,7 / 206,9 min** | 10–60 min | **108,3 / 126,9 / 149,7 / 157,5 / 214,4 min** |
-| Futterstellen im Zielband | – | **10 von 27** (1.–10.) | – | **13 von 27** (1., 9.–20.) |
-| Längste Strecke ohne Kauf, 1 h | < 10 min | 5,30 min | < 60 min | 5,00 min |
-| Längste Strecke ohne Kauf, 24 h | < 10 min | **119,43 min** | < 60 min | 55,00 min |
+| Reisezeit Median (kürzeste–längste) | 19,9 s (11,4–48,8 s) | 19,9 s (11,4–48,8 s) | 23,5 s (11,5–49,6 s) | 19,9 s (11,4–48,8 s) |
+| Einnahmen mit Kampf / DNA | 0 / 0 | 0 / 0 | 6 (2.–7. Futterstelle) / 259,46 | 0 / 0 |
+| Soldaten mitgekommen `S'` (erster / letzter Aufbruch) | 38,4 / 148 | 0 / 0 | 75 / 335 | 31,6 / 138 |
+| Längste Strecke ohne Kampfziel | 24 h (ganzer Lauf) | 24 h | 22 h 29 min (ab 1 h 31 min, bis Laufende) | 24 h |
+| Längster Aufenthalt | 206,9 min | 206,0 min | 203,6 min (27., bis Laufende) | 214,4 min |
+| Stillstand „Kein Kampfziel“ über 60 min | 1 (ganzer Lauf) | 1 (ganzer Lauf) | 1 (ab 1 h 31 min) | 1 (ganzer Lauf) |
+| Stillstand „Kein Aufbruch“ über 60 min | 8, ab der 21. Futterstelle (7 h 15 min) | 8, ab der 21. (7 h 00 min) | 8, ab der 20. (7 h 43 min) | 8, ab der 21. (7 h 29 min) |
 
-Fett: außerhalb des Zielbands. Die Reisen dauern 11 bis 49 s.
+Die letzte Strecke „Kein Aufbruch“ ist jeweils offen bis zum Laufende.
 
 **Platz und Transport** (ohne Zielband)
 
-| Kennzahl | Aktiv | Idle |
-|---|---|---|
-| Warnschwelle erreicht / Platz überschritten | 40 s / 47 s | 1 min 04 s / 1 min 13 s |
-| Belegung beim ersten Aufbruch | 756 von 200 (378 %) | 705 von 160 (441 %) |
-| Zurückgelassen beim ersten Aufbruch (Drohnen / Soldaten) | 343,0 / 106,7 (73,5 % der Einheiten) | 330,0 / 107,9 (77,3 %) |
-| Zurückgelassen in 24 h (Drohnen / Soldaten) | 366.792 / 122.202 | 355.216 / 118.337 |
-| Gefallene Soldaten, DNA in 24 h | 0, 0 | 0, 0 |
+| Kennzahl | Aktiv | Drohnen-lastig | Soldaten-lastig | Idle |
+|---|---|---|---|---|
+| Warnschwelle erreicht / Platz überschritten | 40 s / 47 s | 40 s / 47 s | 56 s / 1 min 03 s | 1 min 04 s / 1 min 13 s |
+| Belegung beim ersten Aufbruch | 756 von 200 (378 %) | 756 von 200 (378 %) | 724 von 150 (483 %) | 705 von 160 (441 %) |
+| Zurückgelassen beim ersten Aufbruch (Drohnen / Soldaten) | 343,0 / 106,7 (73,5 % der Einheiten) | 266,3 / 145,1 (67 %) | 382,2 / 96,4 (87 %) | 330,0 / 107,9 (77,3 %) |
+| Zurückgelassen in 24 h (Drohnen / Soldaten) | 366.792 / 122.202 | 362.066 / 120.873 | 301.818 / 100.202 | 355.216 / 118.337 |
+| Gefallene Soldaten, DNA in 24 h | 0, 0 | 0, 0 | 236,5, 259,46 | 0, 0 |
 
 **Endbestand nach 24 h**
 
-| Größe | Aktiv | Idle |
-|---|---|---|
-| Königinnen (gekauft) | 74 (73) | 69 (68) |
-| Drohnen (gekauft) | 40.223 (194) | 23.681 (208) |
-| Soldaten | 13.405 | 7.893 |
-| Nahrung | 30,10 Mio. | 7,34 Mio. |
-| DNA | 0 | 0 |
-| Zugzähler `z` | 27 | 27 |
-| Platz belegt / verfügbar | 67.034 / 740 (9.059 %) | 39.468 / 690 (5.720 %) |
-| Anteil Wartezeit über 24 h | 20,3 % | 70,8 % |
+| Größe | Aktiv | Drohnen-lastig | Soldaten-lastig | Idle |
+|---|---|---|---|---|
+| Königinnen (gekauft) | 74 (73) | 75 (74) | 69 (68) | 69 (68) |
+| Drohnen (gekauft) | 40.223 (194) | 47.679 (194) | 62.084 (0) | 23.681 (208) |
+| Soldaten (gekauft) | 13.405 (0) | 15.644 (0) | 21.034 (171) | 7.893 (0) |
+| Nahrung | 30,10 Mio. | 5,60 Mio. | 10,84 Mio. | 7,34 Mio. |
+| DNA | 0 | 0 | 259,46 | 0 |
+| Zugzähler `z` | 27 | 27 | 26 | 27 |
+| Platz belegt / verfügbar | 67.034 / 740 (9.059 %) | 78.966 / 750 (10.529 %) | 104.151 / 690 (15.094 %) | 39.468 / 690 (5.720 %) |
+| Anteil Wartezeit über 24 h | 20,3 % | 21,6 % | 0,3 %¹ | 70,8 % |
 
 **Auffälligkeiten**
 
-- **Nur Algenmatten:** Beide Bots ziehen 27-mal zur Algenmatte. Nur bei zwei Aufbrüchen (2. und 3.) lag überhaupt ein anderes Ziel einnehmbar in Reichweite, jeweils ein Schlot. „Ausgewogen“ verwirft es, weil der erwartete Verlustanteil über `ℓ_max = 25 %` liegt (Aktiv: 25,4 % und 43,8 % beim 2., 40,0 % beim 3. Aufbruch; Idle: 31,5 % beim 2., 43,7 % beim 3. Aufbruch). Alle übrigen Ziele sind mit `S'` zu stark. Damit fallen nie Soldaten, und es gibt in 24 h keine DNA.
-- **`S'` nach Transport begrenzt den Angriff:** Weil der Platz ab 47 s bzw. 73 s überläuft, nimmt „ausgewogen“ nur den Anteil `C / O` mit. Bei einer Brut von 3 : 1 ist `S' ≈ C / 5 = 2 · Q`, beim ersten Aufbruch 38,4 (Aktiv) bzw. 31,6 (Idle), gegen Abwehr 59 und 66 der Bakterienrasen. Mit „Soldaten zuerst“ wären es beim ersten Aufbruch von Aktiv `S' = min(144,9; 200 / 2) = 100`, der Bakterienrasen mit `B = 59` wäre einnehmbar (Verlustanteil `0,5 · 0,59² ≈ 17,4 %`), und „Ausgewogen“ wählte ihn (Größe 53.715 statt 16.952). Die Bots ändern die Priorität nicht.
-- **Abwehr wächst schneller als der Angriff:** `z` steigt mit jedem Weiterzug, auch zur Algenmatte, und mit ihm die Abwehr um `γ_B = 1,35`. Der Angriff nach Transport ist höchstens `C · a_s / p_s = 5 · Q` und wächst nur mit den Königinnen. Beim letzten Aufbruch (Aktiv, `Q = 74`) stehen höchstens 370 gegen Abwehrwerte ab 97.194 der anderen Typen in Reichweite. Spätestens dann ist der Schwarm unabhängig von der Priorität auf die Algenmatte festgelegt; mit „ausgewogen“ schon ab dem 4. Aufbruch.
-- **Späte Futterstellen dauern über 3 h:** Die Größe der Algenmatte wächst je Weiterzug um `γ_G = 1,4`. Nach jedem Aufbruch bleiben nur `D' ≲ 10 · Q` Drohnen (beim letzten Aufbruch 444 von 68.249), die Sammelrate baut sich danach fast nur über die Brut wieder auf (`a · Q · e_q = 4,5 · Q` Drohnen/min). Über `T` Minuten sammelt der Schwarm damit rund `27 · Q · T²` Nahrung, die Dauer wächst also etwa mit `√(G / Q)`. Für die 27. Futterstelle (Aktiv, `G ≈ 85,0 Mio.`, `Q = 72` beim Aufbruch) ergibt das ≈ 209 min, gemessen 206,9 min. Die Dauer steigt je Weiterzug um etwa 18 %; ab der 11. (Aktiv) bzw. 21. Futterstelle (Idle) liegt sie über dem Zielband. Die 2. bis 8. Futterstelle von Idle sind dagegen kürzer als 10 min, weil die kleine Algenmatte (`f_G = 0,5`) mit dem mitgenommenen Schwarm schnell leer ist.
-- **Transport vernichtet fast den ganzen Schwarm:** Beim letzten Aufbruch kommen 0,65 % der Einheiten mit (Aktiv: 444 Drohnen, 148 Soldaten von 68.249 bzw. 22.749). Die Bots kaufen keine Königinnen gezielt für den Platz und wandeln keine Drohnen um.
-- **Strecke ohne Kauf über 24 h (Aktiv):** Die längste Strecke liegt am Laufende (1.320,6 bis 1.440 min) und beginnt mit dem letzten Aufbruch. Aktiv spart auf die nächste Königin (Preis ≈ 3,6 · 10⁷), obwohl Drohnen bezahlbar sind, wie schon in M1.1. Idle hält das Zielband jetzt ein (55 statt 95 min).
-- **Unverändert gegenüber M1.1:** Bis zum ersten Aufbruch verläuft das Spiel wie in M1.1. Erste Futterstelle, erster Kauf, längste Wartezeit und Platzüberlauf stimmen deshalb überein.
+- **Aktiv und Idle unverändert:** Ihre Werte gleichen denen aus AP 1.2.7. Die neue Dauer-Definition ändert bei Schwelle 0 % nichts.
+- **Nur Algenmatten ohne Soldaten-Priorität:** Aktiv, Idle und Drohnen-lastig ziehen 27-mal zur Algenmatte. Bei Aktiv und Idle lag nur beim 2. und 3. Aufbruch überhaupt ein anderes Ziel einnehmbar in Reichweite, jeweils ein Schlot. „Ausgewogen“ verwirft es, weil der erwartete Verlustanteil über `ℓ_max = 25 %` liegt (Aktiv: 25,4 % und 43,8 % beim 2., 40,0 % beim 3. Aufbruch; Idle: 31,5 % beim 2., 43,7 % beim 3. Aufbruch). Drohnen-lastig nimmt mit „Drohnen zuerst“ keinen einzigen Soldaten mit (`S' = 0`), und „Geringster Widerstand“ wählt ohnehin das Ziel mit `L = 0`. Damit fallen bei diesen drei Bots nie Soldaten, es gibt in 24 h keine DNA, und „Kein Kampfziel“ umfasst den ganzen Lauf.
+- **`S'` nach Transport begrenzt den Angriff:** Weil der Platz ab 47 s bzw. 73 s überläuft, nimmt „ausgewogen“ nur den Anteil `C / O` mit. Bei einer Brut von 3 : 1 ist `S' ≈ C / 5 = 2 · Q`, beim ersten Aufbruch 38,4 (Aktiv) bzw. 31,6 (Idle), gegen Abwehr 59 und 66 der Bakterienrasen. Aktiv und Idle ändern die Priorität nicht. Soldaten-lastig nimmt mit „Soldaten zuerst“ `S' = C / p_s = 5 · Q` mit (75 beim ersten Aufbruch).
+- **Soldaten-lastig kämpft nur in der ersten Stunde:** Er nimmt an der 2. bis 7. Futterstelle Ziele mit Abwehr 66, 104, 128, 103, 163 und 106 ein (Bakterienrasen, Walsturz, dreimal Methanquelle, Schlot), verliert dabei zusammen 236,5 Soldaten und erhält 259,46 DNA. Beim ersten Kampf: 171 Soldaten vor dem Aufbruch, 75 mitgekommen, 85 bei der Ankunft, 26 gefallen, 59 nach der Einnahme. Die letzte Einnahme mit Kampf liegt bei 1 h 31 min; danach wächst die Abwehr mit `γ_B` schneller als `S' ≤ 5 · Q` (beim letzten Aufbruch 335 gegen Abwehr ab 80.343 der anderen Typen in Reichweite), und „Kampfgehärtet“ fällt auf die Algenmatte zurück. Die Kampfziele dauern 10 bis 18 min und liegen damit teils über dem Zielband.
+- **Soldaten-lastig kauft spät zum ersten Mal:** Weil er keine Drohnen kauft, spart er am Start auf die günstigere von Soldat und Königin; der erste Kauf liegt bei 30 s statt bei 0 s.
+- **Abwehr wächst schneller als der Angriff:** `z` steigt mit jedem Weiterzug, auch zur Algenmatte, und mit ihm die Abwehr um `γ_B = 1,35`. Der Angriff nach Transport ist höchstens `C · a_s / p_s = 5 · Q` und wächst nur mit den Königinnen. Beim letzten Aufbruch (Aktiv, `Q = 74`) stehen höchstens 370 gegen Abwehrwerte ab 97.194 der anderen Typen in Reichweite. Spätestens dann ist jeder Bot unabhängig von der Priorität auf die Algenmatte festgelegt; mit „ausgewogen“ schon ab dem 4. Aufbruch, mit „Soldaten zuerst“ ab dem 7.
+- **Späte Futterstellen dauern über 3 h:** Die Größe der Algenmatte wächst je Weiterzug um `γ_G = 1,4`. Nach jedem Aufbruch bleiben nur `D' ≲ 10 · Q` Drohnen (beim letzten Aufbruch von Aktiv 444 von 68.249), die Sammelrate baut sich danach fast nur über die Brut wieder auf (`a · Q · e_q = 4,5 · Q` Drohnen/min). Über `T` Minuten sammelt der Schwarm damit rund `27 · Q · T²` Nahrung, die Dauer wächst also etwa mit `√(G / Q)`. Für die 27. Futterstelle (Aktiv, `G ≈ 85,0 Mio.`, `Q = 72` beim Aufbruch) ergibt das ≈ 209 min, gemessen 206,9 min. Die Dauer steigt je Weiterzug um etwa 18 %; ab der 11. (Aktiv), 12. (Drohnen-lastig) bzw. 21. Futterstelle (Idle) liegt sie über dem Zielband. Ab der 20. bzw. 21. Futterstelle (nach 7 h bis 7 h 43 min) dauert bei allen Bots jeder Aufenthalt länger als 60 min, daher die acht Stillstände „Kein Aufbruch“. Drohnen-lastig ist früh etwas schneller als Aktiv, weil er mehr Drohnen mitnimmt; Soldaten-lastig liegt spät unter den anderen, weil er einen Weiterzug weniger hat. Die 2. bis 8. Futterstelle von Idle sind kürzer als 10 min, weil die kleine Algenmatte (`f_G = 0,5`) mit dem mitgenommenen Schwarm schnell leer ist.
+- **Transport vernichtet fast den ganzen Schwarm:** Beim letzten Aufbruch kommen 0,65 % der Einheiten mit (Aktiv: 444 Drohnen, 148 Soldaten von 68.249 bzw. 22.749). Kein Bot kauft Königinnen gezielt für den Platz oder wandelt Drohnen um.
+- **Strecke ohne Kauf über 24 h:** Bei Aktiv (1.320,6 bis 1.440 min) und Drohnen-lastig (1.299,2 bis 1.429,7 min) beginnt die längste Strecke mit dem letzten Aufbruch; beide sparen auf die nächste Königin (Preis ≈ 3,6 · 10⁷), obwohl Drohnen bezahlbar sind, wie schon in M1.1. Soldaten-lastig verfehlt das Ziel mit 70,9 min (1.233,2 bis 1.304,1 min) knapper. Idle hält es ein.
+- **Unverändert gegenüber M1.1:** Bis zum ersten Aufbruch verlaufen Aktiv und Idle wie in M1.1, Drohnen-lastig wie Aktiv. Erste Futterstelle, erster Kauf, längste Wartezeit und Platzüberlauf stimmen deshalb überein.
 
 ### 6.2 Messung M1.1 (historisch)
 
@@ -712,6 +739,6 @@ Ergänzend, ohne Zielband: Der Anteil Wartezeit beträgt in den ersten 30 min 15
 
 ## 7. Ausblick
 
-- **M1.2, weitere APs:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer pro Futterstelle, Soldaten-Bilanz, Warnung bei Stillstand) und bekommt die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Die Bots „Aktiv“ und „Idle“ ziehen seit AP 1.2.7 über das Auto-Weiterziehen weiter; die Messwerte stehen in [Abschnitt 6.1](#61-messung-m12).
+- **M1.2, erledigt:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer und Ertrag je Futterstelle, Reisezeit, Soldaten-Bilanz, Stillstands-Warnungen) und hat die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Alle vier Bots ziehen über das Auto-Weiterziehen weiter; die Messwerte stehen in [Abschnitt 6.1](#61-messung-m12).
 - **M1.3:** Das Genom gibt DNA aus und füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust` und `M_ausbeute`; Adaptionen wie „Chemotaxis“ erhöhen die Reichweite. Pheromone lösen das feste Brutverhältnis ab. Funde werden bei der Ankunft mit der Fundchance des Typs gezogen.
 - **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder.

@@ -24,7 +24,8 @@ Zielwerte, Toleranzen und Snapshot-Inhalte legt dieses ADR nicht fest. Die Pacin
 - [`balance/domain/constants.ts`](../../src/app/balance/domain/constants.ts): alle Konstanten aus dem Game-Design als `BalanceParams` mit den Standardwerten `DEFAULT_BALANCE`; [`formulas.ts`](../../src/app/balance/domain/formulas.ts) enthält die Formeln. Seit M1.2 auch Generator, Reichweite, Kampf, DNA, Opfern, Reise, Strategie und Auto-Schwelle; die Typtabelle ist als flache Felder je Typ überschreibbar (z. B. `ventSizeFactor`, `ventDefenseFactor`, `ventFindChance`, `ventWeight`).
 - Parameter-Panel ([`form-model-params.component.ts`](../../src/app/model/ui/form-model-params/form-model-params.component.ts)): Die neuen Konstanten erscheinen automatisch, mit Hinweistexten je Feld.
 - [`engine/domain/runner-logic.ts`](../../src/app/engine/domain/runner-logic.ts): Headless-Runner `runSimulation` mit Teil-Overrides über `params`, Standard-Schrittweite 1000 ms.
-- [`model/domain/bots/`](../../src/app/model/domain/bots/): Bots „Aktiv“ und „Idle“; seit AP 1.2.7 schalten beide das Auto-Weiterziehen ein. Der Runner übernimmt die Ereignisse aus Kommandos und Schritten und teilt die Schritte an Ankunft und Auto-Auslöser; die Diagramme markieren Kauf, leere Futterstelle und Weiterzug (`arrived`). Messung M1.2 in [Game-Design §6.1](../game-design.md#61-messung-m12).
+- [`model/domain/bots/`](../../src/app/model/domain/bots/): Bots „Aktiv“ und „Idle“, seit AP 1.2.9 auch „Drohnen-lastig“ und „Soldaten-lastig“; alle schalten das Auto-Weiterziehen ein. Der Runner übernimmt die Ereignisse aus Kommandos und Schritten und teilt die Schritte an Ankunft und Auto-Auslöser; die Diagramme markieren Kauf, leere Futterstelle und Weiterzug (`arrived`). Messung M1.2 in [Game-Design §6.1](../game-design.md#61-messung-m12).
+- Zyklen und Stillstand (AP 1.2.9): Der Runner erfasst je Futterstelle Aufenthalt (Ankunft bis Aufbruch), Reise, Ertrag, Kampf, DNA und Soldaten-Bilanz ([`cycle-metrics-logic.ts`](../../src/app/engine/domain/cycle-metrics-logic.ts)). Die Modell-Seite zeigt die Reiter „Dauer je Futterstelle“ und „Soldaten vor/nach Einnahme“ und Stillstands-Warnungen je Bot ([`stall-logic.ts`](../../src/app/model/domain/stall-logic.ts)) mit einstellbarer Schwelle, die das vorhandene Ergebnis ohne neuen Lauf auswertet. Dafür nutzt der Wrapper zusätzlich das Modul `BarChart` aus ECharts; eine neue Abhängigkeit entsteht nicht.
 - [`model/feature/model/model.page.ts`](../../src/app/model/feature/model/model.page.ts): lazy Route `/modell` mit Parameter-Panel, Basislauf, JSON-Export, Diagrammen und Kennzahlen.
 - [`model/feature/state/model.guards.ts`](../../src/app/model/feature/state/model.guards.ts): Im Produktiv-Build ist die Route nur mit `?dev` erreichbar, im Entwicklungs-Build immer. Das Spiel verlinkt sie nicht.
 - [`model/ui/echart/echart.component.ts`](../../src/app/model/ui/echart/echart.component.ts): eigener Wrapper um Apache ECharts (`6.1.0`); Farben aus den `--sw-*`-Tokens.
@@ -34,7 +35,6 @@ Zielwerte, Toleranzen und Snapshot-Inhalte legt dieses ADR nicht fest. Die Pacin
 
 | Teil | Umsetzung |
 |---|---|
-| Zyklen und Stillstand | ab AP 1.2.9 |
 | Upgrade-Wirkung, Zielband, Warnungen | ab AP 1.3.7 |
 | Balancing-Snapshots | ab AP 1.5.5 |
 

@@ -36,8 +36,8 @@
 | [`simulation`](.claude/rules/simulation.md) | `src/app/{balance,engine,swarm,site}/**` | Formeln, `GameState`, Kommandos, `step`, Runner, GameStore und GameLoop |
 | [`persistence`](.claude/rules/persistence.md) | `src/app/persistence/**` | Spielstand-Format, Slots, Migrationen, Autosave |
 | [`hud`](.claude/rules/hud.md) | `src/app/hud/**` | Prototyp-HUD: Facade, Viewmodel, Kaufknopf, Futterstelle |
-| [`model`](.claude/rules/model.md) | `src/app/model/**` | Modell-Seite: Bots, Worker, Parameterformular, Diagramme, Kennzahlen |
-| [`sonar`](.claude/rules/sonar.md) | `src/app/sonar/**` | Umgebung (`/umgebung`): Zielliste, Detailpanel, Aufbruch, Strategie und Auto-Weiterziehen |
+| [`model`](.claude/rules/model.md) | `src/app/model/**` | Modell-Seite: Bots, Worker, Parameterformular, Diagramme, Kennzahlen, Stillstände |
+| [`sonar`](.claude/rules/sonar.md) | `src/app/sonar/**` | Umgebung (`/umgebung`): Sonar-Karte, Zielliste, Detailpanel, Aufbruch, Strategie und Auto-Weiterziehen |
 | [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
 
 **Regeln, die überall gelten:**
@@ -98,7 +98,7 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 | `site` | Futterstellen, Sammeln, Generator, Reichweite, Kampf, Weiterziehen, Strategien, Auto-Weiterziehen (`domain`); Typnamen (`ui`) |
 | `persistence` | `domain`: Serialisierung, Slots, Migrationen; `data-access`: `PersistenceService`, `KEY_VALUE_STORE` |
 | `hud` | Prototyp-HUD (`feature`, `ui`, `domain` für Eingabeprüfung) |
-| `sonar` | Umgebung: Viewmodel, Facade und Seite (`feature`), Zielliste, Detailpanel, Einstellungsformular (`ui`), Eingabeprüfung (`domain`); ab AP 1.2.8 die Sonar-Karte |
+| `sonar` | Umgebung: Viewmodel, Facade und Seite (`feature`), Sonar-Karte (SVG), Zielliste, Detailpanel, Einstellungsformular (`ui`), Eingabeprüfung und Kartengeometrie (`domain`) |
 | `model` | Modell-Seite: Bots, Parameter, Laufauswertung (`domain`), Sim-Worker und `SimService` (`data-access`), Parameterformular, Diagramme, Kennzahlen (`ui`), Seite und `ModelFacade` (`feature`) |
 | später | `shell` (K2-Ebenen, Modus, Kamera), `scene` (Canvas), `genome`, `finds`, `settings` |
 

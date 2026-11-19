@@ -17,13 +17,14 @@ Die Oberfläche folgt dem Mockup [K2](../mockups/k2-zoom.html) in der Grafik von
 
 ### Umsetzungsstand
 
-**Umgesetzt:** noch nichts davon.
+**Umgesetzt:**
+
+- SVG-Sonar-Karte (AP 1.2.8): [`sonar-map.component.html`](../../src/app/sonar/ui/sonar-map/sonar-map.component.html) zeichnet Distanzringe, Reichweite, Sweep, bisherige Route, Ziele, Route und Reiselinie als SVG im Angular-Template, ohne neue Abhängigkeit. Die Geometrie rechnet [`sonar-map-logic.ts`](../../src/app/sonar/domain/sonar-map-logic.ts) rein und Angular-frei; Ziele sind fokussierbare Knöpfe. Sweep und Routenfluss sind CSS-Animationen in Komponenten-CSS (K2-Ausnahme) und stehen bei `prefers-reduced-motion` still. Die Karte liegt noch auf der Seite `/umgebung`, nicht in einer K2-Ebene.
 
 **Geplant:**
 
 | Teil | Umsetzung |
 |---|---|
-| SVG-Sonar-Karte | ab AP 1.2.8 |
 | SVG-Genom | ab AP 1.3.3 |
 | Ebenen, Kamera, CSS-Übergänge | ab AP 1.4.1 |
 | Szene-Canvas | ab AP 1.4.2 |

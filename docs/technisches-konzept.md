@@ -91,7 +91,7 @@ src/app/
     domain/models/game-state.model.ts   # Zusammensetzung aus den Fachdomänen
     domain/models/game-event.model.ts   # GameEvent, StepResult
     domain/game-state-logic.ts, commands-logic.ts, step-logic.ts, random-logic.ts
-    domain/runner-logic.ts, bot-logic.ts, catch-up (geplant)
+    domain/runner-logic.ts, cycle-metrics-logic.ts, bot-logic.ts, catch-up (geplant)
     data-access/game-store/, game-loop/, game-core/   # provideGameCore(), Ereignis-Log
   swarm/
     domain/models/units.model.ts, transport-priority.model.ts
@@ -108,15 +108,16 @@ src/app/
     domain/sacrifice-count-logic.ts   # Eingabeprüfung „Drohnen opfern“
     feature/hud.routes.ts, hud/hud.page.ts, state/hud.facade.ts, state/hud.utils.ts
     ui/buy-button/, feeding-site/, hud-meter/, event-log/, form-sacrifice-drones/
-  sonar/                        # Umgebung /umgebung (lazy), Prototyp bis zur Sonar-Karte (AP 1.2.8)
+  sonar/                        # Umgebung /umgebung (lazy): SVG-Sonar-Karte (AP 1.2.8), darunter die Zielliste
     domain/auto-threshold-logic.ts    # Eingabeprüfung der Schwelle
+    domain/sonar-map-logic.ts         # Geometrie der Sonar-Karte (Maßstab, Route, Reiselinie)
     feature/sonar.routes.ts, sonar/sonar.page.ts, state/sonar.facade.ts, state/sonar.utils.ts
-    ui/target-list/, target-detail/, form-move-settings/, sonar-labels/, models/
+    ui/sonar-map/, target-list/, target-detail/, form-move-settings/, sonar-labels/, models/
   model/                        # Modell-Seite (lazy)
     feature/model.routes.ts, model/model.page.ts, state/model.facade.ts, state/model.guards.ts
-    ui/form-model-params/, model-charts/, model-metrics/, echart/, bot-labels/
+    ui/form-model-params/, form-stall-threshold/, model-charts/, model-metrics/, model-stalls/, echart/, bot-labels/
     data-access/sim/            # SimService, sim.worker.ts, Protokoll
-    domain/bots/, models/, params-logic.ts, model-params-logic.ts, reduce-result-logic.ts …
+    domain/bots/, models/, params-logic.ts, model-params-logic.ts, reduce-result-logic.ts, stall-logic.ts …
   # geplant
   shell/                        # Ebenen-Layout, Modus/Kamera (K2)
   scene/                        # Canvas-Renderer
@@ -230,10 +231,10 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 
 - Der Runner läuft im **Web Worker**, damit die Modell-Seite flüssig bleibt; in Vitest läuft er direkt.
 - `decide` läuft bei `t = 0` und danach zu den Zeiten aus `nextActionMs`. `stepMs` (Standard 1000 ms) begrenzt die Schrittweite; Bot-Aktionen und Abtastpunkte teilen die Schritte zusätzlich, Käufe liegen also exakt auf ihrer Zeit.
-- Der Runner wendet Kommandos über `applyCommand` an und übernimmt die Ereignisse aus Kommandos und Schritten (`siteDepleted` → `siteEmpty`, `departed`, `arrived`). Daraus entstehen die Futterstellen der Kennzahlen (Beginn bei der Ankunft, Ende bei leerem Vorrat).
+- Der Runner wendet Kommandos über `applyCommand` an und übernimmt die Ereignisse aus Kommandos und Schritten (`siteDepleted` → `siteEmpty`, `departed`, `arrived`). Daraus entstehen die Futterstellen der Kennzahlen: Seit AP 1.2.9 dauert eine Futterstelle von der Ankunft bis zum Aufbruch, die Reise dorthin zählt getrennt. Je Futterstelle erfasst der Runner außerdem Ertrag, Abwehr, Kampf, DNA und die Soldaten-Bilanz (vor dem Aufbruch, mitgekommen, bei Ankunft, Verluste, nach der Einnahme). Den Bestand direkt nach dem Kampf rechnet er mit einem eigenen Schritt genau bis zur Ankunft nach, weil der Runner-Schritt erst danach endet.
 - Er teilt die Schritte zusätzlich an der Ankunft und am vorhergesagten Auslöser des Auto-Weiterziehens (`V = θ · G`, exakt, weil die Abbaurate im Schritt konstant ist). `step` selbst teilt einen Schritt an der Ankunft ([Game-Design §4.3](game-design.md#43-simulationsschritt)).
-- Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten, die Futterstellen werden zusammengefasst.
-- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Seit AP 1.2.7 schalten beide bei ihrer ersten Entscheidung das Auto-Weiterziehen ein (`CommandPlan.enableAutoMove`) und ziehen damit weiter. Ab AP 1.2.9: **Drohnen-lastig**, **Soldaten-lastig**.
+- Bots sind nicht übertragbar: Der Worker erzeugt sie aus einer Beschreibung. Vor dem Senden verkleinert er das Ergebnis auf höchstens 2.000 Abtastpunkte und 500 Ereignisse je Art; die Gesamtzahl der Ereignisse bleibt erhalten. Die Futterstellen werden zusammengefasst (Anzahl, Mediane, Kämpfe, DNA) und für Diagramme und Stillstände als Liste mitgeschickt, ab 1.000 Futterstellen gleichmäßig ausgedünnt.
+- Bots ab AP 1.1.9: **Aktiv** (entscheidet häufig und kauft das Beste), **Idle** (schaut alle 5 min vorbei und kauft alles Bezahlbare). Seit AP 1.2.7 schalten beide bei ihrer ersten Entscheidung das Auto-Weiterziehen ein (`CommandPlan.enableAutoMove`) und ziehen damit weiter. Seit AP 1.2.9 zusätzlich, beide im Takt von „Aktiv“ und mit Auto-Weiterziehen: **Drohnen-lastig** (kauft Königinnen und Drohnen wie „Aktiv“, keine Soldaten; Mitnahme „Drohnen zuerst“, Strategie „Geringster Widerstand“) und **Soldaten-lastig** (kauft die günstigere von Soldat und Königin, keine Drohnen; Mitnahme „Soldaten zuerst“, Strategie „Kampfgehärtet“). Ihre Einstellungen setzen sie bei der ersten Entscheidung (`CommandPlan.setTransportPriority`, `setStrategy`).
 - `params` überschreibt Konstanten aus `balance/domain`. So testet die Modell-Seite Varianten, ohne Code zu ändern.
 
 ### 5.4 Kennzahlen
@@ -246,6 +247,7 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 | Anteil Wartezeit | Anteil der Zeit, in der der Aktiv-Bot nichts tun kann |
 | Dauer und Ertrag je Futterstelle | Rhythmus der kleinen Ascension |
 | Soldaten-Bilanz | Soldaten vor/nach Einnahme, Verluste; erkennt Sackgassen |
+| Stillstand | Strecken über einer Schwelle ohne Einnahme mit Kampf bzw. ohne Aufbruch |
 | Amortisation je Upgrade | Kosten ÷ zusätzlicher Ertrag/s |
 | Freischalt-Zeitpunkte | Wann wird welche Mechanik erstmals relevant |
 
@@ -253,18 +255,22 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 
 ```
 ┌ Parameter ─────┐ ┌ Diagramme ──────────────────────────────────────┐
-│ Seed           │ │ [Ressourcen] [Raten] [Entscheidungen]           │
+│ Seed           │ │ [Ressourcen] [Raten] [Entscheidungen] [Zyklen…] │
 │ Dauer 1h…7d    │ │                                                 │
-│ Bots ☑☑        │ │  ▁▂▃▅▇  log ▾  Zoom                             │
+│ Bots ☑☑☐☐      │ │  ▁▂▃▅▇  log ▾  Zoom                             │
 │ Konstanten …   │ │  Markierungen: ▲ Kauf ◆ leer ● Weitergezogen    │
-│ [Basislauf] [▶]│ ├ Kennzahlen ─────────────────────────────────────┤
-│ [JSON export]  │ │ je Bot: Käufe, Wartezeit, Futterstellen, …      │
+│ [Basislauf] [▶]│ ├ Stillstände (Schwelle 60 min) ──────────────────┤
+│ [JSON export]  │ │ je Bot: Kein Kampfziel · Kein Aufbruch          │
+│                │ ├ Kennzahlen ─────────────────────────────────────┤
+│                │ │ je Bot: Käufe, Wartezeit, Futterstellen, …      │
 └────────────────┘ └─────────────────────────────────────────────────┘
 ```
 
 - Erreichbar unter `/modell`. Im Produktiv-Build ist die Seite nur mit `?dev` erreichbar und nicht verlinkt.
-- **Reiter in M1.1:** Ressourcen (Nahrung, Vorrat, Einheiten), Raten (Nahrung/s, Netto/s, Eier/min) und Entscheidungen (Zeit bis zum nächsten Kauf je Einheit und gesamt). Zyklen folgen ab AP 1.2.9, Upgrades ab AP 1.3.7.
-- **Kennzahlen je Bot:** erster Kauf, Kauflücken und längste Wartezeit der ersten 30 min, erste Futterstelle, Anzahl und Median der Futterstellen, längste Strecke ohne Kauf, Verdopplungszeit, Anteil Wartezeit, Käufe gesamt und Rechendauer.
+- **Reiter in M1.1:** Ressourcen (Nahrung, Vorrat, Einheiten), Raten (Nahrung/s, Netto/s, Eier/min) und Entscheidungen (Zeit bis zum nächsten Kauf je Einheit und gesamt). Seit AP 1.2.9 je Futterstelle: „Dauer je Futterstelle“ (Reise und Aufenthalt gestapelt) und „Soldaten vor/nach Einnahme“, ohne Zoom und Markierungen. Upgrades folgen ab AP 1.3.7.
+- **Kennzahlen je Bot:** erster Kauf, Kauflücken und längste Wartezeit der ersten 30 min, erste Futterstelle, Anzahl und Median der Futterstellen, Median der Reisezeit, Einnahmen mit Kampf, DNA gesamt, längste Strecke ohne Kampfziel, längster Aufenthalt an einer Futterstelle, längste Strecke ohne Kauf, Verdopplungszeit, Anteil Wartezeit, Käufe gesamt und Rechendauer.
+- **Stillstände (seit AP 1.2.9):** Warnungen je Bot für „Kein Kampfziel“ (keine Einnahme eines Ziels mit Abwehr > 0, also keine DNA) und „Kein Aufbruch“, beide mit derselben Schwelle (Standard 60 min). Die Schwelle ist ein Analyse-Parameter der Modell-Seite, keine Konstante in `BalanceParams`; eine Änderung wertet das vorhandene Ergebnis rein neu aus und startet keinen Lauf.
+- **Bots:** Standardmäßig laufen „Aktiv“ und „Idle“; „Drohnen-lastig“ und „Soldaten-lastig“ werden zugeschaltet.
 - **Vergleich:** Ein gespeicherter Basislauf und der aktuelle Lauf liegen übereinander.
 - **Zielbänder (ab AP 1.3.7):** Die Pacing-Ziele aus dem [Projektplan](projektplan.md#35-pacing-ziele-vorläufig) liegen dann als Konfiguration in `balance/domain/targets.ts` und werden als Flächen angezeigt. Verletzungen landen in einer Warnliste.
 
@@ -315,6 +321,7 @@ Die Umsetzung folgt [`docs/mockups/k2-kurzgesagt.html`](mockups/k2-kurzgesagt.ht
 | `#world` (z = 2) | Schwarm-Szene | Canvas; im Kartenmodus per `scale` und `clip-path: circle()` zum Punkt verkleinert |
 | `#genome` (z = 3) | Zellkern mit radialem Genom | SVG; im Genommodus wird die Welt vergrößert, `blur` und abgedunkelt |
 
+- **Umsetzungsstand:** Die SVG-Sonar-Karte gibt es seit AP 1.2.8 als Komponente oben auf `/umgebung` (SVG im Angular-Template, keine neue Abhängigkeit; Geometrie rein in `sonar/domain`). Die Zielliste bleibt bis M1.4 darunter als tippbare, barrierearme Alternative. Ebenen, Kamera und Moduswechsel folgen ab AP 1.4.1.
 - Der Modus ist ein Signal im GameStore (`'map' | 'scene' | 'gen'`). Die Shell-Komponente setzt `data-mode` am Container, CSS übernimmt die Übergänge.
 - Zoom-Leiste, Titel je Modus und Detailpanels hängen am Modus-Signal.
 
