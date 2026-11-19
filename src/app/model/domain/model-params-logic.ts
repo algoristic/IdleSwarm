@@ -1,16 +1,20 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
+import { MS_PER_HOUR } from '@app/shared/util/time/time-units';
 
 import type { ModelParamsValue } from './models/model-params.model';
 import { BOT_KINDS, SimConfig } from './models/sim.model';
 import { changedParams, formatParam, ParamKey, paramFields } from './params-logic';
 
-const HOUR_MS = 3_600_000;
-
 /** Wählbare Laufdauern: 1 h, 6 h, 24 h, 7 d. */
-export const DURATIONS_MS = [HOUR_MS, 6 * HOUR_MS, 24 * HOUR_MS, 7 * 24 * HOUR_MS] as const;
+export const DURATIONS_MS = [
+  MS_PER_HOUR,
+  6 * MS_PER_HOUR,
+  24 * MS_PER_HOUR,
+  7 * 24 * MS_PER_HOUR,
+] as const;
 
 const DEFAULT_SEED = 'modell';
-const DEFAULT_DURATION_MS = 24 * HOUR_MS;
+const DEFAULT_DURATION_MS = 24 * MS_PER_HOUR;
 
 /** Startwerte: fester Seed, 24 h, Aktiv und Idle, alle Konstanten auf Standard. */
 export function defaultModelParams(defaults: BalanceParams): ModelParamsValue {

@@ -1,4 +1,4 @@
-import { type BalanceParams, TICK_MS, TICKS_PER_SECOND } from '@app/balance/domain/constants';
+import { type BalanceParams } from '@app/balance/domain/constants';
 import {
   distanceBetween,
   siteSecondsLeft,
@@ -12,6 +12,7 @@ import {
   roundUpForDisplay,
 } from '@app/shared/util/format/display-format';
 import { Num } from '@app/shared/util/num/num';
+import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import { assessTargets, type CombatAssessment } from '@app/site/domain/combat-logic';
 import { candidateInfos, type CandidateInfo } from '@app/site/domain/map-logic';
 import type { SiteCandidate } from '@app/site/domain/models/map.model';
@@ -49,7 +50,6 @@ import type {
 import type { MapNodeView, SonarMapView } from '../../ui/sonar-map/sonar-map.component.model';
 import type { CurrentSiteView, SonarSource, SonarView, TravelView } from './sonar.model';
 
-const MS_PER_SECOND = TICK_MS * TICKS_PER_SECOND;
 const PERCENT = 100;
 
 export function toSonarView(source: SonarSource, params: BalanceParams): SonarView {

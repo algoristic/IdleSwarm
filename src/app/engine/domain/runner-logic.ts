@@ -1,6 +1,7 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { isAffordable, secondsUntilAffordable, siteMsLeft } from '@app/balance/domain/formulas';
 import { Num } from '@app/shared/util/num/num';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { ArrivedEvent, DepartedEvent } from '@app/site/domain/models/site-event.model';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
@@ -20,15 +21,13 @@ import { GameState } from './models/game-state.model';
 import { step } from './step-logic';
 
 /** Standard-Schrittweite; gegen den 100-ms-Takt abgesichert in `runner.spec.ts`. */
-export const DEFAULT_SIM_STEP_MS = 1000;
+export const DEFAULT_SIM_STEP_MS = MS_PER_SECOND;
 
 /** Fenster der Kauflücken (Projektplan §3.5: „erste 30 min“). */
-export const BUY_GAP_WINDOW_MS = 30 * 60_000;
+export const BUY_GAP_WINDOW_MS = 30 * MS_PER_MINUTE;
 
 /** Schützt Worker und Diagramme vor versehentlich riesigen Zeitreihen. */
 const MAX_SAMPLES = 100_000;
-
-const MS_PER_SECOND = 1000;
 
 /** Soldaten nützen in M1.1 nichts; „gesamt“ und die Wartezeit zählen nur sinnvolle Käufe. */
 const USEFUL_UNITS: readonly UnitType[] = ['queens', 'drones'];

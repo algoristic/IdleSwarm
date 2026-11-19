@@ -4,9 +4,10 @@ import {
   CommandPlan,
   nextMultipleMs,
 } from '@app/engine/domain/bot-logic';
+import { MS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
-export const IDLE_VISIT_EVERY_MS = 5 * 60_000;
+export const IDLE_VISIT_EVERY_MS = 5 * MS_PER_MINUTE;
 
 /** Kaufreihenfolge beim Vorbeischauen: Königin vor Drohne; Soldaten nützen in M1.1 nichts. */
 const BUY_ORDER: readonly UnitType[] = ['queens', 'drones'];

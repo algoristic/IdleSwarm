@@ -1,4 +1,5 @@
 import { Num } from '@app/shared/util/num/num';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { CandidateStatus, Position } from '@app/site/domain/models/map.model';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
@@ -9,8 +10,6 @@ import type { BalanceParams } from './constants';
 /** Ab diesem Anteil des verfügbaren Platzes wird gewarnt (Game-Design §4.5, US-02.04). */
 const SPACE_WARNING_SHARE = 0.9;
 
-const MS_PER_SECOND = 1000;
-const MS_PER_MINUTE = 60_000;
 const SECONDS_PER_MINUTE = 60;
 
 /** Parameter der Kostenkurve je Einheitentyp (Game-Design §2.3). */

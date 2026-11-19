@@ -1,4 +1,4 @@
-import { BalanceParams, TICK_MS, TICKS_PER_SECOND } from '@app/balance/domain/constants';
+import { BalanceParams } from '@app/balance/domain/constants';
 import {
   baseFoodPerSecond,
   droneFoodPerSecond,
@@ -25,6 +25,7 @@ import {
   roundUpForDisplay,
 } from '@app/shared/util/format/display-format';
 import { Num } from '@app/shared/util/num/num';
+import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 import { canBuy } from '@app/swarm/domain/units-logic';
 
@@ -33,9 +34,6 @@ import type { LogEntryView } from '../../ui/event-log/event-log.component.model'
 import type { SiteView } from '../../ui/feeding-site/feeding-site.component.model';
 import type { SacrificeView } from '../../ui/form-sacrifice-drones/form-sacrifice-drones.component.model';
 import type { HudNotice, HudSource, HudView, SpaceView } from './hud.model';
-
-/** Millisekunden je Sekunde Spielzeit, aus dem Logik-Takt abgeleitet. */
-const MS_PER_SECOND = TICK_MS * TICKS_PER_SECOND;
 
 /** Reihenfolge der Aktionsleiste, vom ersten Kauf zur teuersten Einheit. */
 export const BUY_ORDER: readonly UnitType[] = ['drones', 'soldiers', 'queens'];

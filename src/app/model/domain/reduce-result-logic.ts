@@ -6,6 +6,7 @@ import type {
   SimSample,
   SiteMetric,
 } from '@app/engine/domain/runner-logic';
+import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
 
 import type { BotKind } from './models/sim.model';
 
@@ -15,8 +16,6 @@ export const MAX_SAMPLES = 2000;
 export const MAX_EVENTS_PER_TYPE = 500;
 /** Ein Lauf über 7 Tage hat einige Hundert Futterstellen; die Grenze fängt Ausreißer ab. */
 export const MAX_SITES = 1000;
-
-const MS_PER_SECOND = 1000;
 
 /**
  * Ereignisarten, die das Ergebnis behält und die Diagramme markieren. `departed` fällt weg: Beim

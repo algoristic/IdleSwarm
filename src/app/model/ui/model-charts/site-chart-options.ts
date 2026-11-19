@@ -1,6 +1,7 @@
 import type { SiteMetric } from '@app/engine/domain/runner-logic';
 import { formatAxisValue, formatElapsed } from '@app/shared/util/format/elapsed-format';
 import { formatNum } from '@app/shared/util/format/format';
+import { MS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels';
 
 import type { ReducedRun } from '../../domain/reduce-result-logic';
@@ -8,8 +9,6 @@ import { BOT_LABELS } from '../bot-labels/bot-labels';
 import type { ChartPalette } from '../echart/chart-theme';
 import type { SiteTab } from './model-charts.model';
 
-/** Die Dauer-Achse zählt in Minuten; der Tooltip zeigt die genaue Zeit. */
-const MS_PER_MINUTE = 60_000;
 const TRAVEL_OPACITY = 0.45;
 const OPEN_STAY_OPACITY = 0.55;
 const SYMBOL_SIZE = 6;
@@ -96,6 +95,7 @@ function durationSeries(run: ReducedRun, indices: readonly number[], color: stri
   const sites = sitesByIndex(run);
   const bot = BOT_LABELS[run.bot];
   const bar = { type: 'bar' as const, stack: run.bot, color, emphasis: { disabled: true } };
+  // Die Dauer-Achse zählt in Minuten; der Tooltip zeigt die genaue Zeit.
   return [
     {
       ...bar,

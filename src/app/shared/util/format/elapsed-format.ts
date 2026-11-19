@@ -1,6 +1,6 @@
+import { MS_PER_SECOND } from '../time/time-units';
 import { formatNum, formatRate } from './format';
 
-const MS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 3600;
 

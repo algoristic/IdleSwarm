@@ -1,4 +1,5 @@
 import { spanMs, stallSpans, TimeSpan } from '@app/engine/domain/cycle-metrics-logic';
+import { MS_PER_MINUTE } from '@app/shared/util/time/time-units';
 
 import type { BotStalls, Stall, StallKind, StallThresholdValue } from './models/stall.model';
 import { parseParam } from './params-logic';
@@ -7,7 +8,6 @@ import type { ReducedRun } from './reduce-result-logic';
 /** Analyse-Parameter der Modell-Seite, keine Spielkonstante (US-10.06). */
 export const DEFAULT_STALL_THRESHOLD_MINUTES = 60;
 
-const MS_PER_MINUTE = 60_000;
 const MIN_THRESHOLD = { min: 1 };
 
 export function defaultStallThreshold(): StallThresholdValue {
