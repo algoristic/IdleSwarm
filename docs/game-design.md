@@ -402,6 +402,8 @@ R = R_0                        // v1: 5; ab M1.3 mit Adaptionen
 
 **Beispiel:** Mit `R = 5` und `m = 1` liegen in Beispiel 3 K1 bis K4 in Reichweite, K5 (`d = 5,8`) ist außer Reichweite, K6 (`d = 6,5`) ist unerforscht. Mit `R = 6` wäre K5 wählbar (sofern einnehmbar) und K6 außer Reichweite, aber sichtbar.
 
+**Lesart „wählbar“ (entschieden mit M1.2):** Ziele außer Reichweite kann der Spieler ansehen, aber nicht ansteuern. Das Detailpanel zeigt sie mit allen Werten, „Aufbrechen“ ist gesperrt und nennt den Grund. Unerforschte Ziele sind ebenso auswählbar, zeigen aber nur „?“.
+
 ### 4.8 Kampf
 
 Der Kampf ist binär: Ein Ziel ist einnehmbar, wenn der Angriff seine Abwehr erreicht. Sonst ist kein Aufbruch dorthin möglich.
@@ -553,6 +555,9 @@ Auslöser:  Auto an  ∧  keine Reise  ∧  V ≤ θ · G
 → Aufbruch zum Ziel der Strategie, Auslöser auto
 ```
 
+- **Eingabe:** Die Schwelle wird in ganzen Prozent eingegeben (0 bis `θ_max`, mit dem Standardwert also 0 bis 90 %; entschieden mit M1.2) und als Anteil gespeichert.
+- **Geladene Schwelle über `θ_max`:** Die Ladeprüfung lässt `[0; 1]` zu ([5](#5-spielstand-version-3)). Wirksam ist höchstens `θ_max`, also `V ≤ min(θ, θ_max) · G`; der gespeicherte Wert bleibt unverändert. Die Umgebung zeigt den wirksamen Wert.
+
 Strategie, Schwelle, Auto an/aus und Mitnahme-Priorität sind Spielereinstellungen und werden im Spielstand gespeichert ([5](#5-spielstand-version-3)).
 
 **Beispiel 8** mit den Kandidaten aus Beispiel 3, `S = S' = 34` (genug Platz):
@@ -580,7 +585,7 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 | `priority` | ID der Mitnahme-Priorität | 3 |
 
 - Gespeichert werden je Kandidat nur Typ-ID, Position, Größe und Abwehr. Distanz, Status, DNA, Fundchance, Einnehmbarkeit und Verluste sind abgeleitet, ebenso die Reichweite.
-- **Ladeprüfung:** Die Route muss mindestens einen und darf höchstens 50 Punkte enthalten. Die Schwelle `threshold` wird in `[0; 1]` akzeptiert, nicht nur bis `θ_max`: `θ_max` ist ein Balance-Wert, und ein späteres Absenken soll gespeicherte Spielstände nicht ungültig machen. Das Kommando zum Einstellen begrenzt die Schwelle weiterhin auf `[0; θ_max]`.
+- **Ladeprüfung:** Die Route muss mindestens einen und darf höchstens 50 Punkte enthalten. Die Schwelle `threshold` wird in `[0; 1]` akzeptiert, nicht nur bis `θ_max`: `θ_max` ist ein Balance-Wert, und ein späteres Absenken soll gespeicherte Spielstände nicht ungültig machen. Das Kommando zum Einstellen begrenzt die Schwelle weiterhin auf `[0; θ_max]`; eine geladene Schwelle über `θ_max` wirkt höchstens mit `θ_max` ([4.12](#412-strategien-und-auto-weiterziehen)).
 - Die stabile ID der ersten Futterstelle ist `vent` (Schlot). Wie überall speichert der Spielstand nur IDs, keine Texte ([Technisches Konzept §3.4](technisches-konzept.md#34-zustandsmodell-entwurf)).
 
 **Migration von Version 1:** Seed, RNG-Zustand und Zeiten bleiben erhalten. Futterstelle, Kaufzähler, Ressourcen und Einheiten werden auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt.
@@ -589,7 +594,7 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 
 ## 6. Messwerte v1
 
-Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. Aktuell ist die [Messung M1.2](#61-messung-m12); die [Messung M1.1](#62-messung-m11-historisch) bleibt als historischer Stand stehen.
+Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert, und zwar nur für die Bots „Aktiv“ und „Idle“. „Drohnen-lastig“ und „Soldaten-lastig“ sind Analyse-Bots ohne Zielband (entschieden mit M1.2). Die Wartezeit-Kennzahlen bleiben spielbezogen definiert wie bisher ([6.2](#62-messung-m11-historisch): weder Königin noch Drohne bezahlbar), auch für die Analyse-Bots. Aktuell ist die [Messung M1.2](#61-messung-m12); die [Messung M1.1](#62-messung-m11-historisch) bleibt als historischer Stand stehen.
 
 ### 6.1 Messung M1.2
 
@@ -602,7 +607,7 @@ Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbän
   - **Aktiv** und **Idle** kaufen wie in M1.1 (Soldaten nie). Strategie „Ausgewogen“ und Mitnahme-Priorität „ausgewogen“ bleiben auf den Startwerten.
   - **Drohnen-lastig** entscheidet im Takt von Aktiv und kauft wie Aktiv nur Königinnen und Drohnen nach Amortisation; Mitnahme „Drohnen zuerst“, Strategie „Geringster Widerstand“.
   - **Soldaten-lastig** entscheidet im Takt von Aktiv und kauft die günstigere von Soldat und Königin (Gleichstand: Soldat), keine Drohnen; Mitnahme „Soldaten zuerst“, Strategie „Kampfgehärtet“.
-- Drohnen- und Soldaten-lastig werden gegen die Zielbänder für „aktiv“ gelesen, weil sie im selben Takt entscheiden.
+- Drohnen- und Soldaten-lastig sind Analyse-Bots ohne Zielband. Ihre Spalten stehen zum Vergleich neben „Aktiv“, weil sie im selben Takt entscheiden; Fettdruck und „im Zielband“ messen sie nur gegen das Band für „aktiv“ und bewerten sie nicht.
 - Alle Kennzahlen mit der echten Futterstellengröße.
 
 **Mess-Definitionen** (ergänzen [6.2](#62-messung-m11-historisch))
@@ -610,6 +615,7 @@ Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbän
 - **Dauer einer Futterstelle** (seit AP 1.2.9): von der Ankunft (die erste ab 0) bis zum Aufbruch, ohne die Reise. Die Reise vom Aufbruch bis zur Ankunft zählt getrennt als **Reisezeit**. So wird auch das Zielband „Dauer pro Futterstelle“ gelesen. Bei Schwelle 0 % fällt der Aufbruch auf den Moment des leeren Vorrats; die Werte gleichen deshalb denen der bisherigen Definition (bis zum leeren Vorrat).
 - **Längster Aufenthalt:** längste Dauer einer Futterstelle; ohne Aufbruch bis zum Laufende.
 - **Einnahme mit Kampf:** Ankunft an einem Ziel mit Abwehr `B > 0`. Algenmatten zählen nicht. **Längste Strecke ohne Kampfziel:** längste Strecke zwischen Laufbeginn, den Einnahmen mit Kampf und dem Laufende.
+- **Liste je Futterstelle:** Eine Futterstelle entsteht erst bei der Ankunft. Endet ein Lauf während einer Reise, hat diese letzte Reise keinen Eintrag in der Liste je Futterstelle (Reisezeit, Diagramme „Dauer je Futterstelle“ und „Soldaten vor/nach Einnahme“).
 - **Stillstand** (US-10.06): „Kein Kampfziel“ ist eine Strecke ohne Einnahme mit Kampf, „Kein Aufbruch“ ein Aufenthalt, jeweils strikt länger als die Schwelle; offene Strecken am Laufende zählen mit. Die Schwelle (Standard 60 min) ist ein Analyse-Parameter der Modell-Seite, keine Spielkonstante.
 
 | Kennzahl | Ziel aktiv | Aktiv | Drohnen-lastig | Soldaten-lastig | Ziel idle | Idle |
@@ -626,7 +632,7 @@ Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbän
 | Längste Strecke ohne Kauf, 1 h | < 10 min | 5,30 min | 6,10 min | 4,82 min | < 60 min | 5,00 min |
 | Längste Strecke ohne Kauf, 24 h | < 10 min | **119,43 min** | **130,52 min** | **70,92 min** | < 60 min | 55,00 min |
 
-Fett: außerhalb des Zielbands. ¹ Wartezeit und Anteil Wartezeit zählen nur Königin und Drohne; bei Soldaten-lastig messen sie also nicht seine Käufe.
+Fett: außerhalb des Zielbands (bei Drohnen- und Soldaten-lastig nur zum Vergleich, siehe Messaufbau). ¹ Wartezeit und Anteil Wartezeit zählen nur Königin und Drohne; bei Soldaten-lastig messen sie also nicht seine Käufe.
 
 **Zyklen und Stillstand** (ohne Zielband)
 

@@ -45,7 +45,7 @@
 - Die Spiellogik ist reines, deterministisches TypeScript in den `domain`-Schichten. Spiel, Offline-Catch-up, Headless-Runner und Modell-Seite rufen dieselben Funktionen auf (TK §5.1). Die Modell-Seite enthält keine Kopie der Spiellogik.
 - Formeln und Konstanten stehen nur in `balance/domain`, alle Konstanten sind über `params` überschreibbar (ADR-007).
 - Große Zahlen laufen nur über den `Num`-Typ, nie direkt über `break_infinity.js` (ADR-002).
-- Spielzeit wird nur über die Konstanten aus `balance/domain` umgerechnet (z. B. `TICK_MS`), nie mit Literalen wie `100` oder `1000`.
+- Zeit wird nur über Konstanten umgerechnet: Zeiteinheiten (ms je Sekunde/Minute/Stunde) kommen aus `shared/util/time/time-units`, der Spieltakt (`TICK_MS`, `TICKS_PER_SECOND`) aus `balance/domain`; nie Literale wie `100`, `1000` oder `60_000`.
 - Zufall nur über den seeded RNG im State (ADR-003).
 - IDs in Spieldaten (Einheiten, Futterstellentypen, Adaptionen, Funde) sind stabil; Spielstände speichern nur IDs. Eine Änderung am Spielstand-Format braucht eine Migration (ADR-005).
 - Änderungen an Formeln oder Konstanten werden auf der Modell-Seite geprüft (Pacing-Ziele, Projektplan §3.5).
@@ -91,7 +91,7 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 
 | Domäne | Inhalt |
 | --- | --- |
-| `shared` | `util`: `Num`, RNG, Formatierung; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`) |
+| `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`) |
 | `balance` | `domain`: Konstanten, Formeln, später Zielbänder (`targets`) |
 | `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
 | `swarm` | Einheiten, Brut, Transport, Drohnen opfern, später Pheromone |
@@ -293,7 +293,7 @@ Die Quellsprache ist **Deutsch** ([ADR-011](docs/adr/011-i18n-localize.md)). Tex
 
 ## 6. State: Signal-Store und Facades
 
-Es gibt **kein NgRx** ([ADR-009](docs/adr/009-domaenen-schichten-facade.md)). Der Spielzustand liegt als ein Signal im `GameStore` (`engine/data-access`). Er ändert sich nur über `dispatch(cmd)` (Kommando → `apply`), `tick(dt)` (→ `step`) und `replace(state)` (Laden).
+Es gibt **kein NgRx** ([ADR-009](docs/adr/009-domaenen-schichten-facade.md)). Der Spielzustand liegt als ein Signal im `GameStore` (`engine/data-access`). Er ändert sich nur über `dispatch(cmd)` (Kommando → `apply`), `tick(dt)` (→ `step`), `load(state)` (Laden, neues Spiel; leert das Log) und `replace(state)` (Speichern, Uhrabgleich; Log bleibt).
 
 **Facade** (`<domain>.facade.ts`), der einzige Zugang für Komponenten:
 

@@ -29,6 +29,7 @@ Das Spielergebnis darf nicht von der Framerate abhängen. Gleichzeitig braucht d
 - Seit M1.2 zieht die Spiellogik Zufall: Der Futterstellen-Generator ([`site/domain/generator-logic.ts`](../../src/app/site/domain/generator-logic.ts)) verbraucht je Erzeugung immer `5 · k` Zahlen aus `rngState` (beim Spielstart und nach jeder Ankunft) und gibt den fortgeschriebenen Zustand zurück. Die Migration 2→3 erzeugt die Startkandidaten ebenso aus dem übernommenen `rngState` ([ADR-005](005-speicherformat-localstorage.md)).
 - Determinismus-Test [`engine/domain/determinism.spec.ts`](../../src/app/engine/domain/determinism.spec.ts): gleicher Seed und gleiche Abfolge ergeben denselben Zustand, auch über Aufbruch, Reise, Ankunft und Auto-Weiterziehen; ein anderer Seed ergibt einen anderen Verlauf.
 - Logik- und Render-Takt in [`engine/data-access/game-loop/game-loop.service.ts`](../../src/app/engine/data-access/game-loop/game-loop.service.ts)
+- Kommandos wirken sofort über `GameStore.dispatch`. Die Entscheidung nennt als Beispiel „Kommandos (Kauf, Neue Futterstelle)“; „Neue Futterstelle“ ist mit M1.2 entfallen. Heute gibt es `noop`, `buy`, `sacrificeDrones`, `convertDronesToQueen`, `setTransportPriority`, `depart` und `setAutoMove` ([`engine/domain/commands-logic.ts`](../../src/app/engine/domain/commands-logic.ts)).
 
 **Geplant:**
 

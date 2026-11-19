@@ -281,14 +281,14 @@ flowchart TB
 | 1.4.2 | Szene-Canvas | Futterstelle, Agenten-Renderer mit Budget (ein Sprite = n Einheiten), Plankton, Ertrags-Effekte, DPR | 2–3 | US-08.02 |
 | 1.4.3 | HUD im K2-Stil | Ressourcen, Titel je Modus, Aktionsleiste, Zoom-Leiste, Schubladen, Log, Ära-Anzeige | 2–3 | US-08.03, 08.04 |
 | 1.4.4 | Eingabe Desktop | Mausrad, Tastatur (W / G / Esc), Pointer Events | 0,5–1 | US-08.05 |
-| 1.4.5 | Mobile | Pinch → Moduswechsel, Breakpoints, Bottom-Sheets, Touch-Ziele ≥ 44 px | 2–3 | US-08.06, 08.07 |
+| 1.4.5 | Mobile | Pinch → Moduswechsel, Breakpoints, Bottom-Sheets, Touch-Ziele ≥ 44 px; aus der M1.2-Durchsicht: Beschriftungen der Sonar-Karte und ihre Darstellung auf Mobilgeräten überarbeiten | 2–3 | US-08.06, 08.07 |
 | 1.4.6 | Barrierearmut & Performance | `prefers-reduced-motion`, Fokusführung, Pause bei verdecktem Tab, Profiling auf Smartphone | 1–1,5 | US-08.08, 09.03 |
 
 #### M1.5 · Idle, Balancing & Release 1.0
 
 | AP | Arbeitspaket | Inhalt | PT | Stories |
 |---|---|---|---|---|
-| 1.5.1 | Offline-Fortschritt | Nachholen mit Ereignissen (Futterstelle leer, Auto-Weiterziehen), Obergrenze, Rückkehr-Zusammenfassung | 1,5–2 | US-07.01, 07.03 |
+| 1.5.1 | Offline-Fortschritt | Nachholen mit Ereignissen (Futterstelle leer, Auto-Weiterziehen), Obergrenze, Rückkehr-Zusammenfassung; neu bewerten, ob das Ereignis-Log in den Spielstand gehört (heute nur Arbeitsspeicher, `GameStore.load` leert es) | 1,5–2 | US-07.01, 07.03 |
 | 1.5.2 | Spielstand-Verwaltung | Autosave, Export/Import, Zurücksetzen | 0,5–1 | US-07.04, 07.05 |
 | 1.5.3 | Einstellungen | Zahlenformat, Animationen, Autosave-Intervall | 0,5–1 | US-09.01 |
 | 1.5.4 | Onboarding | Kontextuelle Hinweise, schrittweise Freischaltung der Oberfläche | 1–1,5 | US-09.04 |
