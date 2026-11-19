@@ -15,8 +15,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Spielfläche (TK §8.3): kein Browser-Scrollen und -Zoomen; Pinch übernimmt AP 1.4.5. Die
-     Panels liegen in den Overlays und scrollen weiter per Touch. */
+  /* Spielfläche (TK §8.3): kein Browser-Scrollen und -Zoomen; Pinch wechselt den Modus
+     (`ShellInputDirective`). Die Panels liegen in den Overlays und scrollen weiter per Touch. */
   touch-action: none;
 }
 
@@ -53,6 +53,13 @@
   opacity: 1;
   transform: none;
   pointer-events: auto;
+}
+
+/* Smartphone: Die Kopfzeile reicht bis an den oberen Rand und rückt unter Notch und Statusleiste. */
+@media (width < 48rem) {
+  .shell__header {
+    padding-top: calc(0.5rem + env(safe-area-inset-top));
+  }
 }
 
 /* Reduzierte Bewegung: keine Kamerafahrt, nur kurze Überblendung der Ebenen. */

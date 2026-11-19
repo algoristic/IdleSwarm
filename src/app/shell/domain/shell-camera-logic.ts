@@ -17,6 +17,13 @@ export const STAGE_HEIGHT_SHARE = 0.86;
 export const STAGE_SIDE_RESERVE = 720;
 /** Rand zum Viewport, damit die Bühne auf schmalen Geräten nie überläuft. */
 export const STAGE_GUTTER = 16;
+/** Unter dieser Breite gilt das Smartphone-Layout (entspricht Tailwinds `md`, TK §8.4). */
+export const STAGE_COMPACT_BELOW_WIDTH = 768;
+/**
+ * Höhe, die das Smartphone-Layout oben (Kopf-, Moduszeile, Titel) und unten (Log, Aktionsleiste
+ * bzw. eingeklapptes Sheet) zusammen belegt; die Bühne bleibt dazwischen sichtbar.
+ */
+export const STAGE_COMPACT_HEIGHT_RESERVE = 360;
 
 /** Radius des Ausschnitts der Welt im Kartenmodus vor der Skalierung. */
 export const MAP_CLIP_RADIUS = 300;
@@ -27,9 +34,14 @@ export const GENOME_BRIGHTNESS = 0.4;
 
 /**
  * Kantenlänge von Sonar-Karte und Genom in Pixeln: wie im Mockup `max(360, min(h · 0,86, w − 720))`,
- * aber nie breiter als der Viewport abzüglich Rand (schmale Geräte, Feinschliff in AP 1.4.5).
+ * aber nie breiter als der Viewport abzüglich Rand. Auf Smartphones (US-08.07) die volle Breite
+ * abzüglich Rand, höchstens so hoch, wie zwischen Kopf und Aktionsleiste Platz ist.
  */
 export function stageSize({ width, height }: ViewportSize): number {
+  if (width < STAGE_COMPACT_BELOW_WIDTH) {
+    const compact = Math.min(width - 2 * STAGE_GUTTER, height - STAGE_COMPACT_HEIGHT_RESERVE);
+    return Math.max(0, Math.floor(compact));
+  }
   const desktop = Math.max(
     STAGE_SIZE_MIN,
     Math.min(height * STAGE_HEIGHT_SHARE, width - STAGE_SIDE_RESERVE),

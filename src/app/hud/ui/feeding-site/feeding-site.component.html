@@ -1,21 +1,27 @@
 @let _site = site();
 @let stockText = (_site.stock | formatUp) + ' / ' + (_site.size | formatDown);
 
-<!-- Titel der Szene (Mockup `.top.only-scene`): Kicker, Typname, Vorrat bzw. Reise. -->
-<section aria-labelledby="site-title">
+<!--
+  Titel der Szene (Mockup `.top.only-scene`): Kicker, Typname, Vorrat bzw. Reise. Smartphone:
+  Kicker und Typname in einer Zeile, kleinere Schrift.
+-->
+<section
+  class="max-md:flex max-md:flex-wrap max-md:items-baseline max-md:justify-center max-md:gap-x-2"
+  aria-labelledby="site-title"
+>
   <p
     class="text-xs font-extrabold tracking-widest text-fg-muted uppercase"
     i18n="@@uiHud-feedingSite-title"
   >
     Futterstelle
   </p>
-  <h2 id="site-title" class="text-2xl font-black" data-testid="hud.site.type">
+  <h2 id="site-title" class="text-2xl font-black max-md:text-lg" data-testid="hud.site.type">
     {{ typeLabels[_site.type] }}
   </h2>
 
   @if (_site.travel; as travel) {
     <!-- Die Restzeit tickt und steht deshalb außerhalb der Live-Region. -->
-    <p class="mt-2 text-xs text-fg-muted tabular-nums">
+    <p class="mt-2 text-xs text-fg-muted tabular-nums max-md:mt-1 max-md:basis-full">
       <span data-testid="hud.site.travel" i18n="@@uiHud-feedingSite-travel"
         >Unterwegs nach {{ typeLabels[travel.target] }}, Ankunft in etwa
         {{ travel.secondsLeft | formatDuration }}</span
@@ -28,13 +34,13 @@
   } @else {
     <!-- Aufgerundet, damit ein Rest nie als `0` neben einer scheinbar leeren Futterstelle steht. -->
     <app-hud-meter
-      class="mx-auto mt-2 mb-1.5 w-full max-w-xs"
+      class="mx-auto mt-2 mb-1.5 w-full max-w-xs max-md:mt-1 max-md:mb-1 max-md:max-w-none max-md:basis-full"
       tone="site"
       [percent]="_site.stockPercent"
       [label]="stockLabel"
       [valueText]="stockText"
     />
-    <p class="text-xs text-fg-muted tabular-nums">
+    <p class="text-xs text-fg-muted tabular-nums max-md:basis-full">
       {{ stockLabel }} <span data-testid="hud.site.stock">{{ stockText }}</span>
       @if (!_site.empty) {
         ·
@@ -58,7 +64,11 @@
   }
 
   <!-- Die Live-Region steht von Anfang an im DOM, damit der Hinweis angesagt wird. -->
-  <p class="mt-2 text-sm empty:hidden" role="status" data-testid="hud.site.status">
+  <p
+    class="mt-2 text-sm empty:hidden max-md:mt-1 max-md:basis-full max-md:text-xs"
+    role="status"
+    data-testid="hud.site.status"
+  >
     @if (_site.travel; as travel) {
       <ng-container i18n="@@uiHud-feedingSite-traveling"
         >Der Schwarm ist unterwegs nach {{ typeLabels[travel.target] }}.</ng-container

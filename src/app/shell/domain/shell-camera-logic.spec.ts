@@ -11,9 +11,20 @@ describe('stageSize', () => {
     expect(stageSize({ width: 1400, height: 300 })).toBe(360);
   });
 
-  it('läuft auf schmalen Viewports nicht über', () => {
+  it('nimmt auf Smartphones die volle Breite abzüglich 2 · 16 px', () => {
     expect(stageSize({ width: 375, height: 800 })).toBe(343);
+    expect(stageSize({ width: 430, height: 932 })).toBe(398);
+    expect(stageSize({ width: 360, height: 712 })).toBe(328);
     expect(stageSize({ width: 20, height: 800 })).toBe(0);
+  });
+
+  it('lässt auf niedrigen Smartphones Platz für Kopf und Aktionsleiste', () => {
+    expect(stageSize({ width: 390, height: 600 })).toBe(240);
+    expect(stageSize({ width: 390, height: 300 })).toBe(0);
+  });
+
+  it('nutzt ab 768 px wieder die Desktop-Formel', () => {
+    expect(stageSize({ width: 768, height: 1024 })).toBe(360);
   });
 
   it('rundet auf ganze Pixel ab', () => {

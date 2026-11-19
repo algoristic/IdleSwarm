@@ -172,6 +172,8 @@
   --grid-template-columns-pheromone: 4.5rem minmax(0, 1fr) auto;
   /* Kostenschilder im Genom-Baum. */
   --text-2xs: 0.625rem;
+  /* Desktop-Layout wie Mockup K2-K ab 1200 px (TK §8.4); `max-desktop:` ist Tablet und Smartphone. */
+  --breakpoint-desktop: 75rem;
 }
 
 /* `inline` setzt `var(--sw-*)` direkt in die Utilities ein. */

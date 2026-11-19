@@ -30,6 +30,7 @@ import { HUD_DRAWERS, HudDrawer } from '../state/hud.model';
     PheromonePanelComponent,
   ],
   templateUrl: './scene-hud.component.html',
+  styleUrl: './scene-hud.component.css',
   host: { class: 'block' },
 })
 export class SceneHudComponent {

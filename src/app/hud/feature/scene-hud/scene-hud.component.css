@@ -1,0 +1,23 @@
+/*
+ * K2-Ausnahme (CLAUDE.md §4): sichere Bereiche (`env(safe-area-inset-*)`) für Titel, Aktionsleiste
+ * und die untere Zeile; Utilities kennen `env()` nicht ohne freie Werte.
+ */
+@media (width < 75rem) {
+  .scene-hud__stack {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (width < 48rem) {
+  .scene-hud__title {
+    margin-top: env(safe-area-inset-top);
+  }
+
+  .scene-hud__stack {
+    padding-bottom: 0;
+  }
+
+  .scene-hud__bar {
+    padding-bottom: calc(0.625rem + env(safe-area-inset-bottom));
+  }
+}

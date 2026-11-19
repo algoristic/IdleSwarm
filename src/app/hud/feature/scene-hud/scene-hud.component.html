@@ -7,159 +7,206 @@
   Szene Klicks an. Zonen nach Mockup K2-K.
 -->
 
-<!-- Oben Mitte: Titel der Szene. -->
+<!--
+  Oben Mitte: Titel der Szene. Tablet: zwischen linker Spalte und Reitern; Smartphone: kompakt unter
+  Kopf- und Moduszeile der Shell.
+-->
 <app-feeding-site
-  class="absolute top-4 left-1/2 w-sm max-w-full -translate-x-1/2 rounded-3xl bg-surface px-7 pt-3 pb-3.5 text-center shadow-panel mode-scene:pointer-events-auto"
+  class="scene-hud__title absolute top-4 left-1/2 w-sm max-w-full -translate-x-1/2 rounded-3xl bg-surface px-7 pt-3 pb-3.5 text-center shadow-panel mode-scene:pointer-events-auto md:max-desktop:right-20 md:max-desktop:left-72 md:max-desktop:w-auto md:max-desktop:translate-x-0 max-md:inset-x-4 max-md:top-28 max-md:w-auto max-md:translate-x-0 max-md:px-4 max-md:pt-2 max-md:pb-2.5"
   [site]="hud.site"
 />
 
-<!-- Unten Mitte: Aktionsleiste mit Kaufknöpfen und Platz (Mockup `.actions`). -->
-<section
-  class="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-stretch gap-2 rounded-3xl bg-surface p-2.5 shadow-panel mode-scene:pointer-events-auto"
-  aria-labelledby="units-title"
->
-  <h2 id="units-title" class="sr-only" i18n="@@featureHud-sceneHud-units-title">Schwarm</h2>
-  @for (unit of hud.units; track unit.id) {
-    <app-buy-button [unit]="unit" (clickedBuy)="facade.buy($event)" />
-  }
-  <span class="mx-0.5 my-1 w-0.75 shrink-0 rounded-xs bg-well" aria-hidden="true"></span>
-  <div class="flex w-28 flex-col justify-center px-1.5 text-xs text-fg-muted tabular-nums">
-    <p>
-      {{ spaceLabel }}
-      <span
-        class="data-warning:font-extrabold data-warning:text-warning"
-        data-testid="hud.space.value"
-        [attr.data-warning]="hud.space.warning ? '' : null"
-      >
-        {{ spaceText }}
-        @if (hud.space.usagePercent; as percent) {
-          ({{ percent | formatDown }} %)
-        }
-      </span>
-    </p>
-    <app-hud-meter
-      class="mt-1.5"
-      tone="site"
-      size="sm"
-      [percent]="hud.space.barPercent"
-      [label]="spaceLabel"
-      [valueText]="spaceText"
-      [warning]="hud.space.warning"
-    />
-    @if (hud.space.overfull) {
-      <p
-        class="mt-1 font-extrabold text-warning"
-        data-testid="hud.space.overfull"
-        i18n="@@featureHud-sceneHud-space-overfull"
-      >
-        Zu wenig Platz: Beim Weiterziehen bleiben Einheiten zurück.
-      </p>
-    } @else if (hud.space.warning) {
-      <p
-        class="mt-1 font-extrabold text-warning"
-        data-testid="hud.space.warning"
-        i18n="@@featureHud-sceneHud-space-warning"
-      >
-        Der Platz wird knapp.
-      </p>
-    }
-  </div>
-</section>
-
-<!-- Rechter Rand: Reiter der Schubladen (Mockup `.tabs`, `.tab`). -->
+<!--
+  Unten unter 1200 px: Log und Ära (Tablet) bzw. Log und Reiter (Smartphone) als Zeile über der
+  Aktionsleiste, damit sich nichts überlappt; auf dem Smartphone darüber das offene Bottom-Sheet.
+  Ab 1200 px ohne eigene Box, die Teile liegen wie im Mockup.
+-->
 <div
-  class="absolute top-1/2 right-0 grid -translate-y-1/2 justify-items-end gap-2.5 mode-scene:pointer-events-auto"
+  class="scene-hud__stack absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 px-4 pb-4 desktop:contents max-md:top-0 max-md:items-stretch max-md:justify-end max-md:px-0 max-md:pb-0"
 >
-  @for (drawer of drawers; track drawer) {
-    <button
-      type="button"
-      class="grid h-14 w-14 cursor-pointer touch-manipulation place-items-center rounded-l-3xl bg-surface shadow-panel transition-all duration-250 ease-pop hover:w-16.5 aria-expanded:w-16.5 aria-expanded:bg-surface-raised motion-reduce:transition-none"
-      [attr.aria-expanded]="open === drawer"
-      [attr.aria-controls]="'hud-drawer-' + drawer"
-      [attr.aria-label]="drawerLabels[drawer]"
-      [attr.title]="drawerLabels[drawer]"
-      [attr.data-testid]="'hud.drawers.' + drawer + '.tab'"
-      (click)="onToggleDrawer(drawer)"
-    >
-      <svg class="size-7" viewBox="0 0 28 28" aria-hidden="true" focusable="false">
+  <!--
+    Schublade neben den Reitern (Mockup `.drawer`); geschlossene sind unsichtbar und inert. Smartphone:
+    Bottom-Sheet über Reitern und Aktionsleiste, höchstens halb so hoch wie der Viewport.
+  -->
+  <div
+    class="fixed top-28 right-20 bottom-28 w-80 md:max-desktop:top-44 md:max-desktop:bottom-56 max-md:contents"
+  >
+    @for (drawer of drawers; track drawer) {
+      <div
+        class="invisible absolute inset-x-0 top-0 max-h-full translate-x-7.5 scale-96 overflow-y-auto rounded-3xl bg-surface p-5 opacity-0 shadow-panel transition-all duration-350 ease-pop data-open:visible data-open:translate-x-0 data-open:scale-100 data-open:opacity-100 mode-scene:data-open:pointer-events-auto motion-reduce:translate-x-0 motion-reduce:scale-100 motion-reduce:transition-opacity max-md:top-auto max-md:bottom-0 max-md:mx-2 max-md:max-h-1/2 max-md:min-h-0 max-md:translate-x-0 max-md:translate-y-7.5 max-md:scale-100 max-md:px-4 max-md:pt-3 max-md:data-open:relative max-md:data-open:translate-y-0 motion-reduce:max-md:translate-y-0"
+        [id]="'hud-drawer-' + drawer"
+        [attr.data-open]="open === drawer ? '' : null"
+        [attr.inert]="open === drawer ? null : ''"
+        [attr.data-testid]="'hud.drawers.' + drawer + '.panel'"
+      >
+        <!-- Griff des Bottom-Sheets (Smartphone), nur Schmuck: Auf- und Zuklappen über die Reiter. -->
+        <span
+          class="mx-auto mb-3 hidden h-1.5 w-10 rounded-full bg-well max-md:block"
+          aria-hidden="true"
+        ></span>
         @switch (drawer) {
           @case ('pheromones') {
-            <circle cx="10" cy="11" r="6" fill="var(--sw-unit-soldier)" />
-            <circle cx="18.5" cy="10" r="4.5" fill="var(--sw-unit-drone)" />
-            <circle cx="15" cy="19" r="5" fill="var(--sw-scene-plankton-violet)" />
-            <circle cx="8.3" cy="9" r="1.6" fill="var(--sw-fg)" opacity=".55" />
+            <app-pheromone-panel
+              [pheromones]="hud.pheromones"
+              (changedPheromones)="facade.setPheromones($event)"
+              (clickedStrengthenGland)="facade.strengthenGland()"
+            />
           }
           @case ('finds') {
-            <path d="M14 3 L24 12 L14 25 L4 12 Z" fill="var(--sw-primary-shade)" />
-            <path d="M14 3 L22 11.5 L14 21 L5.5 11.5 Z" fill="var(--sw-primary)" />
-            <path d="M14 3 L9.5 11.5 L5.5 11.5 Z" fill="var(--sw-fg)" opacity=".45" />
+            <app-finds-panel [finds]="hud.finds" />
           }
           @case ('sacrifice') {
-            <!-- Drohne wird zu Nahrung. -->
-            <circle cx="9.5" cy="15" r="7" fill="var(--sw-unit-drone-shade)" />
-            <circle cx="8.7" cy="14.2" r="5.8" fill="var(--sw-unit-drone)" />
-            <path
-              d="M17 15h4.5M19.5 12.5l2.5 2.5-2.5 2.5"
-              fill="none"
-              stroke="var(--sw-fg)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+            <app-form-sacrifice-drones
+              [sacrifice]="hud.sacrifice"
+              (submittedCount)="facade.sacrificeDrones($event)"
             />
-            <circle cx="24.5" cy="15" r="2.6" fill="var(--sw-primary)" />
           }
         }
-      </svg>
-    </button>
-  }
-</div>
+      </div>
+    }
+  </div>
 
-<!-- Schublade neben den Reitern (Mockup `.drawer`); geschlossene sind unsichtbar und inert. -->
-<div class="absolute top-28 right-20 bottom-28 w-80">
-  @for (drawer of drawers; track drawer) {
-    <div
-      class="invisible absolute inset-x-0 top-0 max-h-full translate-x-7.5 scale-96 overflow-y-auto rounded-3xl bg-surface p-5 opacity-0 shadow-panel transition-all duration-350 ease-pop data-open:visible data-open:translate-x-0 data-open:scale-100 data-open:opacity-100 mode-scene:data-open:pointer-events-auto motion-reduce:translate-x-0 motion-reduce:scale-100 motion-reduce:transition-opacity"
-      [id]="'hud-drawer-' + drawer"
-      [attr.data-open]="open === drawer ? '' : null"
-      [attr.inert]="open === drawer ? null : ''"
-      [attr.data-testid]="'hud.drawers.' + drawer + '.panel'"
+  <div
+    class="flex items-end justify-between gap-3 self-stretch desktop:contents md:max-desktop:pl-68 max-md:px-4"
+  >
+    <!-- Unten links: Log ohne Panel (Mockup `.log`); unter 1200 px nur die zwei neuesten Einträge. -->
+    <app-event-log
+      class="absolute bottom-4 left-4 w-64 max-desktop:static max-desktop:w-auto max-desktop:min-w-0 max-desktop:flex-1"
+      [entries]="facade.log()"
+    />
+
+    <!-- Unten rechts: Ära; bis AS2 fest Ära I (Mockup `.era`); auf dem Smartphone ausgeblendet. -->
+    <p
+      class="absolute right-4 bottom-4 flex items-center gap-2 rounded-3xl bg-surface px-4 py-2.5 text-xs text-fg-muted shadow-panel max-desktop:static max-md:hidden"
+      data-testid="hud.era"
     >
-      @switch (drawer) {
-        @case ('pheromones') {
-          <app-pheromone-panel
-            [pheromones]="hud.pheromones"
-            (changedPheromones)="facade.setPheromones($event)"
-            (clickedStrengthenGland)="facade.strengthenGland()"
-          />
-        }
-        @case ('finds') {
-          <app-finds-panel [finds]="hud.finds" />
-        }
-        @case ('sacrifice') {
-          <app-form-sacrifice-drones
-            [sacrifice]="hud.sacrifice"
-            (submittedCount)="facade.sacrificeDrones($event)"
-          />
-        }
+      <span class="flex gap-2" aria-hidden="true">
+        <span class="size-3 rounded-full bg-primary inset-shadow-shade"></span>
+        <span class="size-3 rounded-full bg-well"></span>
+        <span class="size-3 rounded-full bg-well"></span>
+        <span class="size-3 rounded-full bg-well"></span>
+        <span class="size-3 rounded-full bg-well"></span>
+      </span>
+      <span i18n="@@featureHud-sceneHud-era"
+        ><b class="font-black text-fg">Ära I</b> · Ursuppe</span
+      >
+    </p>
+    <!--
+  Rechter Rand: Reiter der Schubladen (Mockup `.tabs`, `.tab`); auf dem Smartphone rund in der Zeile
+  über der Aktionsleiste.
+-->
+    <div
+      class="fixed top-1/2 right-0 grid -translate-y-1/2 justify-items-end gap-2.5 mode-scene:pointer-events-auto max-md:static max-md:flex max-md:shrink-0 max-md:translate-y-0 max-md:gap-2"
+    >
+      @for (drawer of drawers; track drawer) {
+        <button
+          type="button"
+          class="grid h-14 w-14 cursor-pointer touch-manipulation place-items-center rounded-l-3xl bg-surface shadow-panel transition-all duration-250 ease-pop hover:w-16.5 aria-expanded:w-16.5 aria-expanded:bg-surface-raised motion-reduce:transition-none max-md:size-11 max-md:rounded-full max-md:hover:w-11 max-md:aria-expanded:w-11 max-md:aria-expanded:bg-primary"
+          [attr.aria-expanded]="open === drawer"
+          [attr.aria-controls]="'hud-drawer-' + drawer"
+          [attr.aria-label]="drawerLabels[drawer]"
+          [attr.title]="drawerLabels[drawer]"
+          [attr.data-testid]="'hud.drawers.' + drawer + '.tab'"
+          (click)="onToggleDrawer(drawer)"
+        >
+          <svg
+            class="size-7 max-md:size-6"
+            viewBox="0 0 28 28"
+            aria-hidden="true"
+            focusable="false"
+          >
+            @switch (drawer) {
+              @case ('pheromones') {
+                <circle cx="10" cy="11" r="6" fill="var(--sw-unit-soldier)" />
+                <circle cx="18.5" cy="10" r="4.5" fill="var(--sw-unit-drone)" />
+                <circle cx="15" cy="19" r="5" fill="var(--sw-scene-plankton-violet)" />
+                <circle cx="8.3" cy="9" r="1.6" fill="var(--sw-fg)" opacity=".55" />
+              }
+              @case ('finds') {
+                <path d="M14 3 L24 12 L14 25 L4 12 Z" fill="var(--sw-primary-shade)" />
+                <path d="M14 3 L22 11.5 L14 21 L5.5 11.5 Z" fill="var(--sw-primary)" />
+                <path d="M14 3 L9.5 11.5 L5.5 11.5 Z" fill="var(--sw-fg)" opacity=".45" />
+              }
+              @case ('sacrifice') {
+                <!-- Drohne wird zu Nahrung. -->
+                <circle cx="9.5" cy="15" r="7" fill="var(--sw-unit-drone-shade)" />
+                <circle cx="8.7" cy="14.2" r="5.8" fill="var(--sw-unit-drone)" />
+                <path
+                  d="M17 15h4.5M19.5 12.5l2.5 2.5-2.5 2.5"
+                  fill="none"
+                  stroke="var(--sw-fg)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <circle cx="24.5" cy="15" r="2.6" fill="var(--sw-primary)" />
+              }
+            }
+          </svg>
+        </button>
       }
     </div>
-  }
+  </div>
+
+  <!--
+    Unten Mitte: Aktionsleiste mit Kaufknöpfen und Platz (Mockup `.actions`). Tablet: rechtsbündig,
+    damit sie die Zoom-Leiste links nicht überdeckt. Smartphone: volle Breite, drei gleich breite
+    Knöpfe, Platz als schmale Zeile darüber.
+  -->
+  <section
+    class="scene-hud__bar absolute bottom-4 left-1/2 flex -translate-x-1/2 items-stretch gap-2 rounded-3xl bg-surface p-2.5 shadow-panel mode-scene:pointer-events-auto max-desktop:static max-desktop:translate-x-0 md:max-desktop:self-end max-md:grid max-md:grid-cols-3 max-md:self-stretch max-md:rounded-b-none max-md:px-3"
+    aria-labelledby="units-title"
+  >
+    <h2 id="units-title" class="sr-only" i18n="@@featureHud-sceneHud-units-title">Schwarm</h2>
+    @for (unit of hud.units; track unit.id) {
+      <app-buy-button [unit]="unit" (clickedBuy)="facade.buy($event)" />
+    }
+    <span
+      class="mx-0.5 my-1 w-0.75 shrink-0 rounded-xs bg-well max-md:hidden"
+      aria-hidden="true"
+    ></span>
+    <div
+      class="flex w-28 flex-col justify-center px-1.5 text-xs text-fg-muted tabular-nums max-md:order-first max-md:col-span-3 max-md:w-auto max-md:flex-row max-md:flex-wrap max-md:items-center max-md:gap-x-3"
+    >
+      <p>
+        {{ spaceLabel }}
+        <span
+          class="data-warning:font-extrabold data-warning:text-warning"
+          data-testid="hud.space.value"
+          [attr.data-warning]="hud.space.warning ? '' : null"
+        >
+          {{ spaceText }}
+          @if (hud.space.usagePercent; as percent) {
+            ({{ percent | formatDown }} %)
+          }
+        </span>
+      </p>
+      <app-hud-meter
+        class="mt-1.5 max-md:mt-0 max-md:flex-1"
+        tone="site"
+        size="sm"
+        [percent]="hud.space.barPercent"
+        [label]="spaceLabel"
+        [valueText]="spaceText"
+        [warning]="hud.space.warning"
+      />
+      @if (hud.space.overfull) {
+        <p
+          class="mt-1 font-extrabold text-warning max-md:basis-full"
+          data-testid="hud.space.overfull"
+          i18n="@@featureHud-sceneHud-space-overfull"
+        >
+          Zu wenig Platz: Beim Weiterziehen bleiben Einheiten zurück.
+        </p>
+      } @else if (hud.space.warning) {
+        <p
+          class="mt-1 font-extrabold text-warning max-md:basis-full"
+          data-testid="hud.space.warning"
+          i18n="@@featureHud-sceneHud-space-warning"
+        >
+          Der Platz wird knapp.
+        </p>
+      }
+    </div>
+  </section>
 </div>
-
-<!-- Unten links: Log ohne Panel (Mockup `.log`). -->
-<app-event-log class="absolute bottom-4 left-4 w-64" [entries]="facade.log()" />
-
-<!-- Unten rechts: Ära; bis AS2 fest Ära I (Mockup `.era`). -->
-<p
-  class="absolute right-4 bottom-4 flex items-center gap-2 rounded-3xl bg-surface px-4 py-2.5 text-xs text-fg-muted shadow-panel"
-  data-testid="hud.era"
->
-  <span class="flex gap-2" aria-hidden="true">
-    <span class="size-3 rounded-full bg-primary inset-shadow-shade"></span>
-    <span class="size-3 rounded-full bg-well"></span>
-    <span class="size-3 rounded-full bg-well"></span>
-    <span class="size-3 rounded-full bg-well"></span>
-    <span class="size-3 rounded-full bg-well"></span>
-  </span>
-  <span i18n="@@featureHud-sceneHud-era"><b class="font-black text-fg">Ära I</b> · Ursuppe</span>
-</p>

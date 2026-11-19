@@ -3,13 +3,13 @@
 <!-- Eintrag der Aktionsleiste (Mockup `.act`): Symbol, Anzahl, Name, Preis „+1 · x N“. -->
 <button
   type="button"
-  class="group flex size-full min-h-11 cursor-pointer touch-manipulation items-center gap-2.5 rounded-2xl bg-well py-2 pr-3 pl-2 text-left transition duration-250 ease-pop hover:enabled:-translate-y-0.75 hover:enabled:bg-surface-raised disabled:cursor-not-allowed motion-reduce:transition-none motion-reduce:hover:enabled:translate-y-0"
+  class="group flex size-full min-h-11 cursor-pointer touch-manipulation items-center gap-2.5 rounded-2xl bg-well py-2 pr-3 pl-2 text-left max-md:gap-1.5 max-md:px-1.5 transition duration-250 ease-pop hover:enabled:-translate-y-0.75 hover:enabled:bg-surface-raised disabled:cursor-not-allowed motion-reduce:transition-none motion-reduce:hover:enabled:translate-y-0"
   [disabled]="!_unit.affordable"
   [attr.data-testid]="'hud.units.' + _unit.id + '.buy'"
   (click)="onClick()"
 >
   <svg
-    class="size-10 shrink-0 group-disabled:opacity-50"
+    class="size-10 shrink-0 group-disabled:opacity-50 max-md:size-8"
     viewBox="0 0 42 42"
     aria-hidden="true"
     focusable="false"
@@ -84,9 +84,12 @@
       >Preis: {{ _unit.price | formatNum }} Nahrung</span
     >
     @if (_unit.queenEffect; as effect) {
-      <!-- Schmal gehalten, damit die Aktionsleiste zwischen Log und Ära passt. -->
+      <!--
+        Schmal gehalten, damit die Aktionsleiste zwischen Log und Ära passt; auf dem Smartphone nur
+        vorgelesen, damit die drei Knöpfe gleich hoch und schmal bleiben.
+      -->
       <span
-        class="max-w-24 text-xs text-fg-muted"
+        class="max-w-24 text-xs text-fg-muted max-md:sr-only"
         [attr.data-testid]="'hud.units.' + _unit.id + '.effect'"
         i18n="@@uiHud-buyButton-queenEffect"
         >+{{ effect.eggsPerMin | formatRate }} Eier/min, +{{ effect.space | formatNum }} Platz</span

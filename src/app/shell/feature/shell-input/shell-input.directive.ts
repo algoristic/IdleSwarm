@@ -4,16 +4,28 @@ import { CLOCK } from '@app/shared/data-access/platform/platform.tokens';
 
 import type { ShellMode, ZoomDirection } from '../../domain/models/shell-mode.model';
 import { shortcutMode, wheelDeltaPixels, wheelZoom } from '../../domain/shell-input-logic';
+import {
+  PINCH_CLICK_GUARD_MS,
+  PINCH_IDLE,
+  pinchDown,
+  pinchMove,
+  PinchPoint,
+  pinchUp,
+} from '../../domain/shell-pinch-logic';
 
 /** Elemente, in denen Tasten und Rad dem Element gehören (Texteingabe, Auswahl). */
 const EDITABLE_SELECTOR =
   'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
 
+/** Spielfläche (`touch-action: none` in `shell.page.css`): Nur dort beginnt ein Pinch. */
+const PINCH_SURFACE_SELECTOR = '.shell__layer';
+
 /**
- * Desktop-Eingabe der Shell (US-08.05, Mockup K2-K): Mausrad am Host und die Tasten W, G und Esc
- * im Dokument. Meldet nur Zoomrichtung bzw. Zielmodus; was daraus wird, entscheidet die Seite.
- * Das Rad scrollt weiter, wo etwas zu scrollen ist (Panels, Schubladen, linke Spalte), und
- * Strg+Rad (Browser-Zoom, Pinch auf Trackpads) bleibt dem Browser.
+ * Eingabe der Shell (US-08.05, US-08.06, Mockup K2-K): Mausrad am Host, die Tasten W, G und Esc
+ * im Dokument und Pinch mit zwei Fingern auf der Spielfläche. Meldet nur Zoomrichtung bzw.
+ * Zielmodus; was daraus wird, entscheidet die Seite. Das Rad scrollt weiter, wo etwas zu scrollen
+ * ist (Panels, Schubladen, linke Spalte), und Strg+Rad (Browser-Zoom, Pinch auf Trackpads) bleibt
+ * dem Browser. Panels liegen außerhalb der Spielfläche und scrollen per Touch weiter.
  */
 @Directive({
   selector: '[appShellInput]',
@@ -26,17 +38,35 @@ export class ShellInputDirective {
 
   zoomedWheel = output<ZoomDirection>();
   pressedShortcut = output<ShellMode>();
+  zoomedPinch = output<ZoomDirection>();
 
   #wheelLockedUntilMs = Number.NEGATIVE_INFINITY;
+  #pinch = PINCH_IDLE;
+  #clickBlockedUntilMs = Number.NEGATIVE_INFINITY;
 
   constructor() {
     const host = this.#host.nativeElement;
     const onWheel = (event: WheelEvent): void => this.#onWheel(event);
     const onKeydown = (event: KeyboardEvent): void => this.#onKeydown(event);
+    const onPointerDown = (event: PointerEvent): void => this.#onPointerDown(event);
+    const onPointerMove = (event: PointerEvent): void => this.#onPointerMove(event);
+    const onPointerUp = (event: PointerEvent): void => this.#onPointerUp(event);
+    const onClick = (event: MouseEvent): void => this.#onClick(event);
     host.addEventListener('wheel', onWheel, { passive: true });
+    host.addEventListener('pointerdown', onPointerDown, { passive: true });
+    host.addEventListener('pointermove', onPointerMove, { passive: true });
+    host.addEventListener('pointerup', onPointerUp, { passive: true });
+    host.addEventListener('pointercancel', onPointerUp, { passive: true });
+    // Capture: Der Klick nach einer Geste erreicht weder Knöpfe noch Links der Ebenen.
+    host.addEventListener('click', onClick, { capture: true });
     this.#document.addEventListener('keydown', onKeydown);
     this.#destroyRef.onDestroy(() => {
       host.removeEventListener('wheel', onWheel);
+      host.removeEventListener('pointerdown', onPointerDown);
+      host.removeEventListener('pointermove', onPointerMove);
+      host.removeEventListener('pointerup', onPointerUp);
+      host.removeEventListener('pointercancel', onPointerUp);
+      host.removeEventListener('click', onClick, { capture: true });
       this.#document.removeEventListener('keydown', onKeydown);
     });
   }
@@ -56,6 +86,44 @@ export class ShellInputDirective {
     if (zoom) {
       this.#wheelLockedUntilMs = zoom.lockedUntilMs;
       this.zoomedWheel.emit(zoom.direction);
+    }
+  }
+
+  #onPointerDown(event: PointerEvent): void {
+    if (
+      event.pointerType !== 'touch' ||
+      !(event.target instanceof Element) ||
+      !event.target.closest(PINCH_SURFACE_SELECTOR)
+    ) {
+      return;
+    }
+    this.#pinch = pinchDown(this.#pinch, pinchPoint(event));
+  }
+
+  #onPointerMove(event: PointerEvent): void {
+    if (this.#pinch.points.length === 0) {
+      return;
+    }
+    const move = pinchMove(this.#pinch, pinchPoint(event));
+    this.#pinch = move.state;
+    if (move.zoom) {
+      this.zoomedPinch.emit(move.zoom);
+    }
+  }
+
+  #onPointerUp(event: PointerEvent): void {
+    const release = pinchUp(this.#pinch, event.pointerId);
+    this.#pinch = release.state;
+    if (release.endedMultiTouch) {
+      this.#clickBlockedUntilMs = this.#clock.monotonic() + PINCH_CLICK_GUARD_MS;
+    }
+  }
+
+  /** Mit zwei Fingern wird nicht getippt: Klicks während und kurz nach der Geste fallen weg. */
+  #onClick(event: MouseEvent): void {
+    if (this.#pinch.multiTouch || this.#clock.monotonic() < this.#clickBlockedUntilMs) {
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
@@ -94,4 +162,8 @@ export class ShellInputDirective {
     }
     return false;
   }
+}
+
+function pinchPoint(event: PointerEvent): PinchPoint {
+  return { id: event.pointerId, x: event.clientX, y: event.clientY };
 }

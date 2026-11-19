@@ -1,15 +1,18 @@
 @let hud = facade.hud();
 
-<!-- Ressourcen (Mockup `.res`): farbige Punkte, Nahrung groß, darunter DNA, Pheromone, Eier/min. -->
+<!--
+  Ressourcen (Mockup `.res`): farbige Punkte, Nahrung groß, darunter DNA, Pheromone, Eier/min.
+  Smartphone (US-08.07): eine Zeile mit Wert über Name, ohne Aufschlüsselung und Angriff.
+-->
 <section class="grid gap-1.5" aria-labelledby="resources-title">
   <h2 id="resources-title" class="sr-only" i18n="@@featureHud-resourcesPanel-title">Ressourcen</h2>
-  <dl class="grid gap-1.5">
-    <div class="flex flex-wrap items-center gap-x-2.5">
+  <dl class="grid gap-1.5 max-md:flex max-md:items-start max-md:justify-between max-md:gap-3">
+    <div class="flex flex-wrap items-center gap-x-2.5 max-md:gap-x-1.5">
       <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-food">
         Nahrung
       </dt>
       <dd
-        class="flex min-w-28 items-center gap-2.5 text-2xl font-black tabular-nums"
+        class="flex min-w-28 items-center gap-2.5 text-2xl font-black tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight"
         data-testid="hud.resources.food"
       >
         <span
@@ -19,17 +22,17 @@
         >{{ hud.food | formatDown }}
       </dd>
       <dd
-        class="order-last -ml-1.5 text-xs text-fg-muted tabular-nums"
+        class="order-last -ml-1.5 text-xs text-fg-muted tabular-nums max-md:-ml-1"
         i18n="@@featureHud-resourcesPanel-foodRatePerSecond"
       >
         · +<span data-testid="hud.resources.food-rate">{{ hud.foodRate | formatRate }}</span
         >/s
       </dd>
     </div>
-    <div class="flex flex-wrap items-center gap-x-2.5">
+    <div class="flex flex-wrap items-center gap-x-2.5 max-md:gap-x-1.5">
       <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-dna">DNA</dt>
       <dd
-        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums"
+        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight"
         data-testid="hud.resources.dna"
       >
         <span
@@ -39,12 +42,12 @@
         >{{ hud.dna | formatDown }}
       </dd>
     </div>
-    <div class="flex flex-wrap items-center gap-x-2.5">
+    <div class="flex flex-wrap items-center gap-x-2.5 max-md:gap-x-1.5">
       <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-pheromones">
         Pheromone
       </dt>
       <dd
-        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums"
+        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight"
         data-testid="hud.resources.pheromones"
       >
         <span
@@ -54,12 +57,12 @@
         >{{ hud.pheromones.total | formatNum }}
       </dd>
     </div>
-    <div class="flex flex-wrap items-center gap-x-2.5">
+    <div class="flex flex-wrap items-center gap-x-2.5 max-md:gap-x-1.5">
       <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-eggs">
         Eier/min
       </dt>
       <dd
-        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums"
+        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight"
         data-testid="hud.resources.eggs"
       >
         <span
@@ -72,7 +75,7 @@
   </dl>
 
   <!-- Aufschlüsselung der Nahrung/s (US-01.02) und Gesamtangriff: kleiner als die Hauptwerte. -->
-  <dl class="mt-1 grid grid-cols-kv gap-x-3 text-xs text-fg-muted tabular-nums">
+  <dl class="mt-1 grid grid-cols-kv gap-x-3 text-xs text-fg-muted tabular-nums max-md:hidden">
     <dt i18n="@@featureHud-resourcesPanel-baseRate">davon Grundertrag</dt>
     <dd class="text-right">
       <span data-testid="hud.resources.base-rate">{{ hud.baseRate | formatRate }}</span>/s

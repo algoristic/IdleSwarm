@@ -11,6 +11,7 @@
   [style.--ms]="layout.stageSize"
   (zoomedWheel)="facade.zoom($event)"
   (pressedShortcut)="onShortcut($event)"
+  (zoomedPinch)="facade.zoom($event)"
 >
   <!-- Ebenen: Sonar (z = 1), Welt (z = 2), Genom (z = 3); die Kamera fährt per CSS-Übergang. -->
   <div
@@ -81,43 +82,51 @@
     In allen Modi links eine Spalte von oben: Logo mit Ressourcen (Mockup `.res`), Speicherstatus und
     Hinweise, Zoom-Leiste (Mockup `.zoom`). Gestapelt statt mittig, damit sich auch bei niedrigen
     Viewports nichts überdeckt; reicht die Höhe nicht, scrollt die Spalte. Nur die Panels nehmen
-    Klicks an.
+    Klicks an. Smartphone (US-08.07): oben eine Kopfzeile mit kompakten Ressourcen, darunter die
+    Moduszeile mit kompakter Zoom-Leiste und „← Schwarm“.
   -->
   <div
-    class="pointer-events-none fixed top-4 bottom-4 left-4 z-10 flex w-64 flex-col items-start gap-4 overflow-y-auto"
+    class="pointer-events-none fixed top-4 bottom-4 left-4 z-10 flex w-64 flex-col items-start gap-4 overflow-y-auto max-md:inset-x-0 max-md:top-0 max-md:bottom-auto max-md:w-auto max-md:items-stretch max-md:gap-0 max-md:overflow-visible"
   >
-    <div class="pointer-events-auto grid w-full gap-2">
-      <div class="rounded-3xl bg-surface px-4.5 pt-3.5 pb-4 shadow-panel">
+    <div class="pointer-events-auto grid w-full gap-2 max-md:gap-0">
+      <div
+        class="shell__header rounded-3xl bg-surface px-4.5 pt-3.5 pb-4 shadow-panel max-md:min-h-14 max-md:rounded-t-none max-md:px-4 max-md:py-2"
+      >
         <!-- Sichtbar „IDLESWARM“ wie im Mockup `.logo`, vorgelesen „IdleSwarm“; ohne Leerraum im Text. -->
         <!-- prettier-ignore -->
-        <h1 class="mb-1.5 text-base font-black tracking-widest uppercase" i18n="@@featureShell-shell-title">Idle<span class="text-primary">Swarm</span></h1>
+        <h1 class="mb-1.5 text-base font-black tracking-widest uppercase max-md:sr-only" i18n="@@featureShell-shell-title">Idle<span class="text-primary">Swarm</span></h1>
         <app-resources-panel />
       </div>
-      <app-save-status />
+      <app-save-status class="max-md:px-4" />
     </div>
 
-    <app-zoom-bar
-      class="pointer-events-auto shrink-0"
-      [mode]="mode"
-      [dna]="hud.dna"
-      [availableAdaptations]="hud.availableAdaptations"
-      (selectedMode)="facade.setMode($event)"
-    />
-  </div>
-
-  <!-- Karte und Genom: zurück zum Schwarm unten Mitte (Mockup `.back .btn`). -->
-  <div
-    class="fixed bottom-5.5 left-1/2 z-10 -translate-x-1/2 transition-opacity duration-500 mode-scene:pointer-events-none mode-scene:opacity-0"
-    [attr.inert]="mode === 'scene' ? '' : null"
-  >
-    <button
-      type="button"
-      class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-5.5 py-2.75 text-sm font-extrabold whitespace-nowrap shadow-button transition duration-200 ease-pop hover:-translate-y-px hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0"
-      data-testid="shell.back"
-      i18n="@@featureShell-shell-back"
-      (click)="facade.setMode('scene')"
+    <!-- Desktop: ohne eigene Box (Zoom-Leiste in der Spalte, Zurück unten Mitte); Smartphone: Moduszeile. -->
+    <div
+      class="contents max-md:flex max-md:items-center max-md:justify-between max-md:gap-2 max-md:px-4"
     >
-      ← zurück zum Schwarm
-    </button>
+      <app-zoom-bar
+        class="pointer-events-auto shrink-0"
+        [mode]="mode"
+        [dna]="hud.dna"
+        [availableAdaptations]="hud.availableAdaptations"
+        (selectedMode)="facade.setMode($event)"
+      />
+
+      <!-- Karte und Genom: zurück zum Schwarm unten Mitte (Mockup `.back .btn`), auf dem Smartphone in der Moduszeile. -->
+      <div
+        class="pointer-events-auto fixed bottom-5.5 left-1/2 z-10 -translate-x-1/2 transition-opacity duration-500 mode-scene:pointer-events-none mode-scene:opacity-0 max-md:static max-md:translate-x-0"
+        [attr.inert]="mode === 'scene' ? '' : null"
+      >
+        <button
+          type="button"
+          class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-5.5 py-2.75 text-sm font-extrabold whitespace-nowrap shadow-button transition duration-200 ease-pop hover:-translate-y-px hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0 max-md:px-4"
+          data-testid="shell.back"
+          i18n="@@featureShell-shell-back"
+          (click)="facade.setMode('scene')"
+        >
+          ← <span class="max-md:sr-only">zurück zum </span>Schwarm
+        </button>
+      </div>
+    </div>
   </div>
 </main>
