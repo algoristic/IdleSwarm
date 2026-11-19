@@ -2,6 +2,7 @@ import { Route, Routes } from '@angular/router';
 
 import { provideGenomeState } from '@app/genome/feature/state/genome.providers';
 import { provideHudState } from '@app/hud/feature/state/hud.providers';
+import { provideSceneState } from '@app/scene/feature/state/scene.providers';
 import { provideSonarState } from '@app/sonar/feature/state/sonar.providers';
 
 import { SHELL_MODES } from '../domain/models/shell-mode.model';
@@ -17,7 +18,13 @@ export const shellRoutes: Routes = [
   {
     path: '',
     component: ShellPage,
-    providers: [provideShellState(), provideHudState(), provideSonarState(), provideGenomeState()],
+    providers: [
+      provideShellState(),
+      provideSceneState(),
+      provideHudState(),
+      provideSonarState(),
+      provideGenomeState(),
+    ],
     children: SHELL_MODES.map((mode): Route => ({
       path: SHELL_MODE_PATHS[mode],
       pathMatch: 'full',

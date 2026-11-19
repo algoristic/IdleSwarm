@@ -20,7 +20,7 @@ paths:
 | `shared/util/rng/rng.ts` | `seedToRngState`, `nextRandom` (Mulberry32); Algorithmen nicht ändern |
 | `shared/ui/pipes/<name>/` | eine Pipe je Formatierungsfunktion (`formatNum`, `formatRate`, `formatDown`, `formatUp`, `formatDuration`, `formatElapsed`, `formatDateTime`, `formatIsoDateTime`) |
 | `shared/data-access/platform/platform.tokens.ts` | `CLOCK` (`now`, `monotonic`), `ANIMATION_FRAME` |
-| `src/styles.css` | Tailwind-Import, Varianten, `--sw-*`-Tokens, `@theme` (Farben, Rasterspalten, Schriftgröße `--text-2xs` für die Kostenschilder im Genom); seit AP 1.3.3 Genom-Tokens `--sw-branch-{collect,brood,combat,unique}`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked`, `--sw-locked-fg`, `--sw-cost-muted`, `--sw-cost-muted-fg` (Utilities `bg-nucleus`, `stroke-locked` …) |
+| `src/styles.css` | Tailwind-Import, Varianten, `--sw-*`-Tokens, `@theme` (Farben, Rasterspalten, Schriftgröße `--text-2xs` für die Kostenschilder im Genom); seit AP 1.3.3 Genom-Tokens `--sw-branch-{collect,brood,combat,unique}`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked`, `--sw-locked-fg`, `--sw-cost-muted`, `--sw-cost-muted-fg` (Utilities `bg-nucleus`, `stroke-locked` …); seit AP 1.4.2 Szene-Tokens `--sw-scene-*` (Himmel, Licht, Hügel, Plankton, Futterstelle, Schatten, Glanz, Blasen, Nahrung mit `-shade`, `--sw-scene-food-outline`) und `--sw-unit-{drone,soldier,queen}` mit `-shade` (Mockup K2-K; der Canvas liest sie, Utilities nur `text-scene-food`, `*-unit-*`) |
 
 ## Besonderheiten
 

@@ -1,0 +1,48 @@
+/*
+ * K2-Ausnahme (CLAUDE.md §4): kurze Animation der Ereigniszahlen über der Szene (Mockup `.float`).
+ * Die Elemente bleiben nach dem Ausblenden im DOM, bis neuere sie verdrängen.
+ */
+.scene-world__popup {
+  opacity: 0;
+  text-shadow: 0 3px 0 var(--sw-scene-sky-bottom);
+  animation: scene-world-rise 1.6s var(--sw-ease-zoom) forwards;
+}
+
+.scene-world__popup--find {
+  text-shadow: 0 3px 0 var(--sw-scene-food-outline);
+}
+
+@keyframes scene-world-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-12px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-72px);
+  }
+}
+
+/* Reduzierte Bewegung: nur ein- und ausblenden, ohne Steigen. */
+@media (prefers-reduced-motion: reduce) {
+  .scene-world__popup {
+    animation-name: scene-world-fade;
+  }
+}
+
+@keyframes scene-world-fade {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

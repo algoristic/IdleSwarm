@@ -27,10 +27,8 @@
     [style.clip-path]="world.clipPath"
     [style.filter]="world.filter"
   >
-    <!-- Platzhalter bis zum Szene-Canvas (AP 1.4.2): Hintergrund und Futterstelle in der Mitte. -->
-    <div class="shell__world" aria-hidden="true">
-      <div class="size-40 rounded-full border-4 border-accent bg-surface-raised"></div>
-    </div>
+    <!-- Szene-Canvas (AP 1.4.2): Futterstelle im Zentrum des Viewports, dem Fixpunkt der Kamera. -->
+    <app-scene-world class="absolute inset-0" />
     @if (mode === 'map') {
       <!-- Im Kartenmodus ist die Welt der Punkt im Kartenzentrum; der Zurück-Knopf ist der Tastaturweg. -->
       <button

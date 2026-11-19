@@ -52,21 +52,6 @@
   pointer-events: auto;
 }
 
-/* Platzhalter der Szene bis AP 1.4.2 (Verlauf wie der Hintergrund des Mockups). */
-.shell__world {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(
-    circle at 50% 45%,
-    var(--sw-bg-glow) 0%,
-    var(--sw-bg-deep) 45%,
-    var(--sw-bg) 100%
-  );
-}
-
 /* Reduzierte Bewegung: keine Kamerafahrt, nur kurze Überblendung der Ebenen. */
 @media (prefers-reduced-motion: reduce) {
   .shell__layer {
