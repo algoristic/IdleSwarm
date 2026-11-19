@@ -37,6 +37,7 @@
 | [`persistence`](.claude/rules/persistence.md) | `src/app/persistence/**` | Spielstand-Format, Slots, Migrationen, Autosave |
 | [`hud`](.claude/rules/hud.md) | `src/app/hud/**` | Prototyp-HUD: Facade, Viewmodel, Kaufknopf, Futterstelle |
 | [`model`](.claude/rules/model.md) | `src/app/model/**` | Modell-Seite: Bots, Worker, Parameterformular, Diagramme, Kennzahlen |
+| [`sonar`](.claude/rules/sonar.md) | `src/app/sonar/**` | Umgebung (`/umgebung`): Zielliste, Detailpanel, Aufbruch, Strategie und Auto-Weiterziehen |
 | [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
 
 **Regeln, die überall gelten:**
@@ -93,12 +94,13 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 | `shared` | `util`: `Num`, RNG, Formatierung; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`) |
 | `balance` | `domain`: Konstanten, Formeln, später Zielbänder (`targets`) |
 | `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
-| `swarm` | Einheiten, Brut, später Pheromone |
-| `site` | Futterstellen, Sammeln, später Generator und Weiterziehen |
+| `swarm` | Einheiten, Brut, Transport, Drohnen opfern, später Pheromone |
+| `site` | Futterstellen, Sammeln, Generator, Reichweite, Kampf, Weiterziehen, Strategien, Auto-Weiterziehen (`domain`); Typnamen (`ui`) |
 | `persistence` | `domain`: Serialisierung, Slots, Migrationen; `data-access`: `PersistenceService`, `KEY_VALUE_STORE` |
-| `hud` | Prototyp-HUD (`feature`, `ui`) |
+| `hud` | Prototyp-HUD (`feature`, `ui`, `domain` für Eingabeprüfung) |
+| `sonar` | Umgebung: Viewmodel, Facade und Seite (`feature`), Zielliste, Detailpanel, Einstellungsformular (`ui`), Eingabeprüfung (`domain`); ab AP 1.2.8 die Sonar-Karte |
 | `model` | Modell-Seite: Bots, Parameter, Laufauswertung (`domain`), Sim-Worker und `SimService` (`data-access`), Parameterformular, Diagramme, Kennzahlen (`ui`), Seite und `ModelFacade` (`feature`) |
-| später | `shell` (K2-Ebenen, Modus, Kamera), `scene` (Canvas), `sonar`, `genome`, `finds`, `settings` |
+| später | `shell` (K2-Ebenen, Modus, Kamera), `scene` (Canvas), `genome`, `finds`, `settings` |
 
 Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `Units` in `swarm/domain/models`, `Site` in `site/domain/models`) und ihre Regeln. `engine/domain` setzt daraus `GameState`, `apply` und `step` zusammen. Zusätzliche Standorte ab AS3 bleiben damit eine Sache von `site` und `engine`.
 

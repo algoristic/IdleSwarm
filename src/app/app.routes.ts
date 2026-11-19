@@ -9,6 +9,10 @@ export const routes: Routes = [
     loadChildren: async () => (await import('@app/model/feature/model.routes')).modelRoutes,
   },
   {
+    path: 'umgebung',
+    loadChildren: async () => (await import('@app/sonar/feature/sonar.routes')).sonarRoutes,
+  },
+  {
     path: '',
     loadChildren: async () => (await import('@app/hud/feature/hud.routes')).hudRoutes,
   },

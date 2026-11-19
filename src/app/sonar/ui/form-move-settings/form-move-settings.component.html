@@ -1,0 +1,92 @@
+@let _form = settingsForm;
+@let threshold = _form.thresholdPercent;
+@let thresholdError = threshold().invalid() && (threshold().touched() || threshold().dirty());
+@let control =
+  'min-w-0 rounded border border-border-control bg-surface-raised px-1.5 py-1 aria-invalid:border-warning';
+
+<form class="grid gap-3" [formRoot]="_form">
+  <label class="grid gap-1">
+    <span class="text-sm text-fg-muted" i18n="@@uiSonar-formMoveSettings-priority"
+      >Mitnahme, wenn der Platz nicht reicht</span
+    >
+    <select
+      data-testid="sonar.settings.priority"
+      [class]="control"
+      [formField]="_form.priority"
+      (change)="onChangePriority()"
+    >
+      @for (priority of priorities; track priority) {
+        <option [value]="priority">{{ priorityLabels[priority] }}</option>
+      }
+    </select>
+  </label>
+
+  <fieldset class="grid min-w-0 gap-1.5">
+    <legend class="mb-1 text-sm text-fg-muted" i18n="@@uiSonar-formMoveSettings-strategy">
+      Strategie
+    </legend>
+    <div class="flex flex-wrap gap-1.5">
+      @for (strategy of strategies; track strategy) {
+        <label
+          class="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded border border-border-control bg-surface-raised px-2.5 py-1 has-checked:border-accent has-checked:text-accent"
+        >
+          <input
+            type="radio"
+            [value]="strategy"
+            [attr.data-testid]="'sonar.settings.strategy.' + strategy"
+            [formField]="_form.strategy"
+            (change)="onChangeStrategy()"
+          />
+          {{ strategyLabels[strategy] }}
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="grid min-w-0 gap-1.5">
+    <legend class="mb-1 text-sm text-fg-muted" i18n="@@uiSonar-formMoveSettings-auto">
+      Auto-Weiterziehen
+    </legend>
+    <label class="inline-flex min-h-11 items-center gap-1.5">
+      <input
+        type="checkbox"
+        data-testid="sonar.auto.enabled"
+        [formField]="_form.autoEnabled"
+        (change)="onChangeAutoEnabled()"
+      />
+      <ng-container i18n="@@uiSonar-formMoveSettings-autoEnabled"
+        >Automatisch weiterziehen</ng-container
+      >
+    </label>
+    <label class="text-sm" for="sonar-threshold" i18n="@@uiSonar-formMoveSettings-threshold"
+      >Aufbrechen, wenn der Vorrat höchstens so viel Prozent der Größe beträgt (0 = leer)</label
+    >
+    <div class="flex items-center gap-1.5">
+      <input
+        id="sonar-threshold"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        data-testid="sonar.auto.threshold"
+        aria-describedby="sonar-threshold-hint"
+        [class]="control + ' w-20 tabular-nums'"
+        [formField]="threshold"
+        [attr.aria-invalid]="thresholdError"
+        (change)="onChangeThreshold()"
+      />
+      <span aria-hidden="true">%</span>
+    </div>
+    <p id="sonar-threshold-hint" class="text-xs text-fg-muted">
+      <ng-container i18n="@@uiSonar-formMoveSettings-thresholdHint"
+        >0 bis {{ maxThresholdPercent() | formatNum }} %</ng-container
+      >
+    </p>
+    @if (thresholdError) {
+      @for (error of threshold().errors(); track error.kind) {
+        <p class="text-xs text-warning" data-testid="sonar.auto.threshold-error">
+          {{ error.message }}
+        </p>
+      }
+    }
+  </fieldset>
+</form>

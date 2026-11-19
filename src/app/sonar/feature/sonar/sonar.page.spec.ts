@@ -1,0 +1,82 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+
+import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
+import { createInitialState } from '@app/engine/domain/game-state-logic';
+import { Num } from '@app/shared/util/num/num';
+import type { SiteCandidate } from '@app/site/domain/models/map.model';
+
+import { provideSonarState } from '../state/sonar.providers';
+import { SonarPage } from './sonar.page';
+
+const candidate = (type: SiteCandidate['type'], x: number, defense: number): SiteCandidate => ({
+  type,
+  position: { x, y: 0 },
+  size: Num.from(10_000),
+  defense: Num.from(defense),
+});
+
+describe('SonarPage', () => {
+  let store: GameStore;
+  let fixture: ComponentFixture<SonarPage>;
+
+  const element = () => fixture.nativeElement as HTMLElement;
+  const query = <T extends HTMLElement>(testId: string) =>
+    element().querySelector(`[data-testid="${testId}"]`) as T | null;
+  const text = (testId: string) => query(testId)?.textContent?.replace(/\s+/g, ' ').trim();
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [SonarPage],
+      providers: [provideRouter([]), GameStore, provideSonarState()],
+    });
+    store = TestBed.inject(GameStore);
+    const state = createInitialState({ seed: 'sonar-page', now: 0 });
+    store.replace({
+      ...state,
+      map: {
+        ...state.map,
+        candidates: [
+          candidate('algal-mat', 2, 0),
+          candidate('vent', 3, 26),
+          candidate('whale-fall', 6.5, 10),
+        ],
+      },
+    });
+    fixture = TestBed.createComponent(SonarPage);
+    fixture.detectChanges();
+  });
+
+  it('zeigt die Ziele und im Detailpanel zunächst das Ziel der Strategie', () => {
+    expect(text('sonar.targets.0.type')).toBe('Algenmatte');
+    expect(text('sonar.targets.0.strategy-choice')).toBe('◆ Strategie wählt dieses Ziel');
+    expect(text('sonar.targets.1.verdict')).toBe('✗ zu stark – mehr Soldaten nötig');
+    expect(text('sonar.targets.2.type')).toBe('?');
+    expect(text('sonar.detail.type')).toBe('Algenmatte');
+    expect(text('sonar.detail.forfeit')).toBe(
+      'Beim Aufbruch verfällt der Restvorrat von 20.000 Nahrung.',
+    );
+  });
+
+  it('nennt den Grund, warum ein ausgewähltes Ziel gesperrt ist', () => {
+    query('sonar.targets.1.select')?.click();
+    fixture.detectChanges();
+
+    expect(text('sonar.detail.type')).toBe('Hydrothermaler Schlot');
+    expect(text('sonar.detail.losses')).toBe('–');
+    expect(query<HTMLButtonElement>('sonar.detail.depart')?.disabled).toBe(true);
+    expect(text('sonar.detail.blocker')).toContain('Die Abwehr ist zu stark.');
+  });
+
+  it('bricht zum ausgewählten Ziel auf', () => {
+    query('sonar.targets.0.select')?.click();
+    fixture.detectChanges();
+    query('sonar.detail.depart')?.click();
+    fixture.detectChanges();
+
+    expect(store.state().travel?.target.type).toBe('algal-mat');
+    expect(text('sonar.status.travel')).toContain('Unterwegs nach Algenmatte');
+    expect(text('sonar.detail.blocker')).toBe('Der Schwarm ist schon unterwegs.');
+    expect(query('sonar.detail.forfeit')).toBeNull();
+  });
+});

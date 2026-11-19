@@ -1,0 +1,220 @@
+@let _target = target();
+@let _transport = transport();
+@let _queen = queen();
+@let meter = 'h-2 overflow-hidden rounded-md border border-border-control bg-surface-raised';
+
+<section class="grid gap-3" aria-labelledby="sonar-detail-title">
+  <header>
+    <p class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-kicker">Ziel</p>
+    <h2 id="sonar-detail-title" class="text-lg font-semibold" data-testid="sonar.detail.type">
+      @if (_target.details; as details) {
+        {{ siteTypeLabels[details.type] }}
+      } @else {
+        ?
+      }
+    </h2>
+    @if (_target.strategyChoice) {
+      <p class="text-sm text-accent" data-testid="sonar.detail.strategy-choice">
+        ◆
+        <ng-container i18n="@@uiSonar-targetDetail-strategyChoice"
+          >Die gewählte Strategie würde dieses Ziel ansteuern.</ng-container
+        >
+      </p>
+    }
+  </header>
+
+  @if (_target.details; as details) {
+    <dl class="grid grid-cols-stats gap-x-4 gap-y-2 tabular-nums">
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-size">
+          Größe (Nahrungsvorrat)
+        </dt>
+        <dd data-testid="sonar.detail.size">{{ details.size | formatDown }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-distance">Distanz</dt>
+        <dd data-testid="sonar.detail.distance">{{ details.distance | formatRate }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-travelTime">Reisedauer</dt>
+        <dd data-testid="sonar.detail.travel-time">{{ details.travelSeconds | formatDuration }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted">{{ defenseLabel }}</dt>
+        <dd data-testid="sonar.detail.defense">{{ details.defense | formatNum }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-dna">DNA-Belohnung</dt>
+        <dd class="text-violet" data-testid="sonar.detail.dna">+{{ details.dna | formatDown }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-findChance">Fundchance</dt>
+        <dd data-testid="sonar.detail.find-chance">
+          {{ details.findChancePercent | formatNum }} %
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-losses">
+          Erwartete Verluste
+        </dt>
+        <dd data-testid="sonar.detail.losses">
+          @if (details.losses; as losses) {
+            <ng-container i18n="@@uiSonar-targetDetail-lossesValue"
+              >{{ losses.soldiers | formatUp }} Soldaten ({{
+                losses.percent | formatNum
+              }}
+              %)</ng-container
+            >
+          } @else {
+            –
+          }
+        </dd>
+      </div>
+    </dl>
+
+    <div class="grid gap-1 tabular-nums">
+      <p data-testid="sonar.detail.versus">
+        {{ attackLabel }} {{ details.attack | formatDown }}
+        <ng-container i18n="@@uiSonar-targetDetail-versus">vs.</ng-container>
+        {{ defenseLabel }} {{ details.defense | formatNum }}
+      </p>
+      <div
+        role="meter"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [class]="meter"
+        [attr.aria-label]="attackLabel"
+        [attr.aria-valuenow]="details.attackBarPercent"
+        [attr.aria-valuetext]="details.attack | formatDown"
+      >
+        <div
+          class="h-full bg-accent data-weak:bg-danger"
+          data-testid="sonar.detail.attack-bar"
+          [attr.data-weak]="_target.verdict === 'too-strong' ? '' : null"
+          [style.width.%]="details.attackBarPercent"
+        ></div>
+      </div>
+      <div
+        role="meter"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [class]="meter"
+        [attr.aria-label]="defenseLabel"
+        [attr.aria-valuenow]="details.defenseBarPercent"
+        [attr.aria-valuetext]="details.defense | formatNum"
+      >
+        <div
+          class="h-full bg-magenta"
+          data-testid="sonar.detail.defense-bar"
+          [style.width.%]="details.defenseBarPercent"
+        ></div>
+      </div>
+    </div>
+  } @else {
+    <p class="text-fg-muted" i18n="@@uiSonar-targetDetail-unexplored">
+      Außerhalb der Wahrnehmung. Mehr Reichweite deckt das Ziel auf.
+    </p>
+  }
+
+  <p
+    class="font-semibold"
+    data-testid="sonar.detail.verdict"
+    [class]="verdictTones[_target.verdict]"
+  >
+    {{ verdictLabels[_target.verdict] }}
+  </p>
+
+  <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-transport-title">
+    <h3 id="sonar-transport-title" class="text-sm font-semibold">
+      <ng-container i18n="@@uiSonar-targetDetail-transportTitle">Mitnahme</ng-container>:
+      <span data-testid="sonar.transport.priority">{{ priorityLabels[_transport.priority] }}</span>
+    </h3>
+    <p data-testid="sonar.transport.carried" i18n="@@uiSonar-targetDetail-carried">
+      Kommen mit: {{ _transport.carriedDrones | formatDown }} Drohnen,
+      {{ _transport.carriedSoldiers | formatDown }} Soldaten
+    </p>
+    @if (_transport.fitsAll) {
+      <p
+        class="text-sm text-fg-muted"
+        data-testid="sonar.transport.fits-all"
+        i18n="@@uiSonar-targetDetail-fitsAll"
+      >
+        Der Platz reicht, niemand bleibt zurück.
+      </p>
+    } @else {
+      <p
+        class="text-warning"
+        data-testid="sonar.transport.left-behind"
+        i18n="@@uiSonar-targetDetail-leftBehind"
+      >
+        Bleiben zurück und gehen verloren: {{ _transport.leftDrones | formatUp }} Drohnen,
+        {{ _transport.leftSoldiers | formatUp }} Soldaten
+      </p>
+    }
+  </section>
+
+  <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-queen-title">
+    <h3
+      id="sonar-queen-title"
+      class="text-sm font-semibold"
+      i18n="@@uiSonar-targetDetail-queenTitle"
+    >
+      Mehr Platz: Drohnen → Königin
+    </h3>
+    <p class="text-sm text-fg-muted" data-testid="sonar.queen.price">
+      @if (_queen.price; as price) {
+        <ng-container i18n="@@uiSonar-targetDetail-queenPrice"
+          >Kostet {{ price | formatUp }} Drohnen, vorhanden
+          {{ _queen.drones | formatDown }}.</ng-container
+        >
+      } @else {
+        <ng-container i18n="@@uiSonar-targetDetail-queenUnavailable"
+          >Keine Umwandlung möglich.</ng-container
+        >
+      }
+    </p>
+    <button
+      type="button"
+      class="min-h-11 cursor-pointer justify-self-start rounded border border-border-control bg-surface-raised px-2.5 py-1 hover:enabled:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+      data-testid="sonar.queen.convert"
+      [disabled]="!_queen.possible"
+      i18n="@@uiSonar-targetDetail-queenConvert"
+      (click)="onConvertDronesToQueen()"
+    >
+      In Königin umwandeln
+    </button>
+  </section>
+
+  @if (forfeitedStock(); as stock) {
+    <p
+      class="text-sm text-warning"
+      data-testid="sonar.detail.forfeit"
+      i18n="@@uiSonar-targetDetail-forfeit"
+    >
+      Beim Aufbruch verfällt der Restvorrat von {{ stock | formatUp }} Nahrung.
+    </p>
+  }
+
+  <div class="grid gap-1">
+    <button
+      type="button"
+      class="min-h-11 cursor-pointer justify-self-start rounded border border-accent bg-surface-raised px-4 py-1 font-semibold hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:text-fg-muted"
+      data-testid="sonar.detail.depart"
+      aria-describedby="sonar-depart-blocker"
+      [disabled]="_target.blocker !== null"
+      i18n="@@uiSonar-targetDetail-depart"
+      (click)="onDepart()"
+    >
+      Aufbrechen →
+    </button>
+    <p
+      id="sonar-depart-blocker"
+      class="text-sm text-fg-muted empty:hidden"
+      data-testid="sonar.detail.blocker"
+    >
+      @if (_target.blocker; as blocker) {
+        {{ blockerLabels[blocker] }}
+      }
+    </p>
+  </div>
+</section>
