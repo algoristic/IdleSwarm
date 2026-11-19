@@ -118,21 +118,35 @@ describe('GameStore', () => {
       expect(log[LOG_MAX_ENTRIES - 1].id).toBe(total - 1);
     });
 
-    it('leert sich bei einem anderen Spiel, nicht beim Speichern oder Uhrabgleich', () => {
+    it('leert sich mit load immer, auch bei gleichem Seed und späterem Stand', () => {
       store.replace(almostEmpty());
       store.tick(TICK_MS);
       const state = store.state();
+      const lastId = store.log()[0].id;
+
+      store.load({ ...state, time: { ...state.time, played: state.time.played + 5000 } });
+      expect(store.log()).toEqual([]);
+      expect(store.state().time.played).toBe(state.time.played + 5000);
+
+      // Die IDs zählen weiter, damit track keine alten Einträge wiedererkennt.
+      store.replace(almostEmpty());
+      store.tick(TICK_MS);
+      expect(store.log()[0].id).toBeGreaterThan(lastId);
+    });
+
+    it('bleibt mit replace immer erhalten, auch bei einem anderen Seed', () => {
+      store.replace(almostEmpty());
+      store.tick(TICK_MS);
+      const log = store.log();
+      const state = store.state();
 
       store.replace({ ...state, time: { ...state.time, now: state.time.now + 5000 } });
-      expect(store.log()).toHaveLength(1);
-
       store.replace({ ...state, time: { ...state.time, played: 0 } });
-      expect(store.log()).toEqual([]);
+      const other = createInitialState({ seed: 'anderes', now: 1 });
+      store.replace(other);
 
-      store.replace(almostEmpty(state));
-      store.tick(TICK_MS);
-      store.replace(createInitialState({ seed: 'anderes', now: 1 }));
-      expect(store.log()).toEqual([]);
+      expect(store.state()).toBe(other);
+      expect(store.log()).toBe(log);
     });
   });
 });

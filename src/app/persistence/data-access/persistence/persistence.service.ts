@@ -60,7 +60,7 @@ export class PersistenceService {
     if (result.status === 'loaded' || result.status === 'restored-from-backup') {
       this.#adopt(result.state);
     } else {
-      this.#store.replace(createNewGame(this.#clock.now()));
+      this.#store.load(createNewGame(this.#clock.now()));
       this.#lastSavedAtState.set(null);
     }
     this.#noticeState.set(toNotice(result.status));
@@ -121,7 +121,7 @@ export class PersistenceService {
   }
 
   #adopt(state: GameState): void {
-    this.#store.replace(syncClock(state, this.#clock.now()));
+    this.#store.load(syncClock(state, this.#clock.now()));
     this.#lastSavedAtState.set(state.time.lastSaved);
   }
 

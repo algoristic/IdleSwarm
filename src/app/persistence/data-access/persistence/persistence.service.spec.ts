@@ -67,6 +67,11 @@ describe('PersistenceService', () => {
     };
   }
 
+  /** Ein Zustand, dessen Vorrat im nächsten Tick leer wird; das ergibt einen Log-Eintrag. */
+  function depleting(state: GameState): GameState {
+    return { ...state, site: { ...state.site, stock: Num.from(0.01) } };
+  }
+
   function writeSave(): void {
     const result = saveGame(memory, savedState(), SAVED_AT);
     expect(result.ok).toBe(true);
@@ -142,6 +147,22 @@ describe('PersistenceService', () => {
       expect(memory.items.size).toBe(0);
     });
 
+    it('leert das Ereignis-Log beim Laden und beim neuen Spiel', () => {
+      writeSave();
+      store.replace(depleting(store.state()));
+      store.tick(TICK_MS);
+      expect(store.log()).toHaveLength(1);
+
+      expect(persistence.restore()).toBe('loaded');
+      expect(store.log()).toEqual([]);
+
+      store.replace(depleting(store.state()));
+      store.tick(TICK_MS);
+      memory.items.clear();
+      expect(persistence.restore()).toBe('empty');
+      expect(store.log()).toEqual([]);
+    });
+
     it('setzt Hinweis und Speicherfehler eines früheren Laufs zurück', () => {
       memory.items.set(SAVE_KEY, 'kaputt');
       persistence.restore();
@@ -182,6 +203,16 @@ describe('PersistenceService', () => {
         ...saved,
         time: { ...saved.time, now: NOW + 1000 },
       });
+    });
+
+    it('behält das Ereignis-Log', () => {
+      store.replace(depleting(store.state()));
+      store.tick(TICK_MS);
+      const log = store.log();
+
+      expect(persistence.save()).toBe(true);
+
+      expect(store.log()).toBe(log);
     });
 
     it('schreibt einen unveränderten Zustand nicht erneut', () => {

@@ -48,17 +48,19 @@ export class GameStore {
   }
 
   /**
-   * Ersetzt den gesamten Zustand, etwa nach Laden oder Speichern. Das Log leert sich nur, wenn ein
-   * anderes Spiel kommt (anderer Seed) oder die Spielzeit zurückspringt: Speichern und Uhrabgleich
-   * ersetzen den Zustand ebenfalls und sollen das Log nicht verlieren.
+   * Setzt ein anderes Spiel ein (geladener Stand oder neues Spiel) und leert das Log. Die Log-IDs
+   * zählen weiter, damit `track` keine alten Einträge wiedererkennt.
    */
-  replace(state: GameState): void {
-    const current = this.#current();
-    const otherGame = state.seed !== current.seed || state.time.played < current.time.played;
+  load(state: GameState): void {
     this.#current.set(state);
-    if (otherGame && this.#log().length > 0) {
+    if (this.#log().length > 0) {
       this.#log.set([]);
     }
+  }
+
+  /** Ersetzt den Zustand desselben Spiels, etwa nach Speichern oder Uhrabgleich; das Log bleibt. */
+  replace(state: GameState): void {
+    this.#current.set(state);
   }
 
   #appendLog(events: readonly GameEvent[]): void {
