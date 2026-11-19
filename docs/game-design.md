@@ -4,12 +4,13 @@
 
 ## 1. Geltung
 
-Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilensteine **M1.1 · Kernschleife & Modell** und **M1.2 · Weiterziehen & Kampf** fest. Sie ist die fachliche Vorlage für die Umsetzung in `balance/domain`. Für M1.1 und M1.2 hat sie Vorrang vor dem Entwurf im [Technischen Konzept §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen).
+Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilensteine **M1.1 · Kernschleife & Modell**, **M1.2 · Weiterziehen & Kampf** und **M1.3 · Progression** fest. Sie ist die fachliche Vorlage für die Umsetzung in `balance/domain`. Für M1.1 bis M1.3 hat sie Vorrang vor dem Entwurf im [Technischen Konzept §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen).
 
 - **Zahlenwerte sind „v1“:** Sie dürfen nachjustiert werden, bis die Bots die [Pacing-Ziele](projektplan.md#35-pacing-ziele-vorläufig) treffen; das Feintuning folgt in AP 1.5.5. Formeln und Zielbänder bleiben dabei unverändert.
 - **Alle Konstanten sind über Parameter überschreibbar** ([ADR-007](adr/007-modell-seite-echarts-balancing.md)). So testet die Modell-Seite Varianten ohne Codeänderung.
-- **Nicht enthalten:** die Darstellung der Sonar-Karte (AP 1.2.8), die Zyklen-Auswertung der Modell-Seite (AP 1.2.9) und Mechaniken ab M1.3 (siehe [Abschnitt 7](#7-ausblick)). Die Fundchance wird in M1.2 nur erzeugt und angezeigt, gezogen wird erst ab M1.3.
+- **Nicht enthalten:** die Darstellung der Sonar-Karte (AP 1.2.8), die Zyklen-Auswertung der Modell-Seite (AP 1.2.9) und Mechaniken ab M1.4 (siehe [Abschnitt 7](#7-ausblick)). Die Fundchance wird in M1.2 nur erzeugt und angezeigt, gezogen wird erst ab M1.3.
 - **Kein Klick:** Seit [AP 1.1.9](projektplan.md#m11--kernschleife--modell) kennt das Spiel keinen Klick mehr, an seine Stelle tritt der [Grundertrag](#41-grundertrag).
+- **M1.3 (entschieden mit M1.3):** Die Abschnitte [4.13](#413-effekt-system) bis [4.17](#417-sammlung-und-badges), [5.1](#51-spielstand-version-4), [6.3](#63-bots-ab-m13) und [6.4](#64-abschätzung-m13) sowie die M1.3-Zeilen in [2.1](#21-startzustand) und [2.3](#23-konstanten) legen Formeln, Startwerte, Kostenkurven und Spieldaten für AP 1.3.1–1.3.7 fest. Umgesetzt wird ein AP nach dem anderen. Wie überall sind die Zahlen Werte v1 und dürfen bis AP 1.5.5 nachjustiert werden; jede Zahl ist über `params` überschreibbar ([2.3](#23-konstanten), Parameter je ID).
 
 | Thema | Abschnitt | Stories |
 |---|---|---|
@@ -25,6 +26,12 @@ Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilenste
 | Drohnen opfern | [4.10](#410-drohnen-opfern) | US-04.07, 04.08 |
 | Jederzeit weiterziehen | [4.11](#411-weiterziehen-und-reise) | US-04.09 |
 | Strategie und Auto-Weiterziehen | [4.12](#412-strategien-und-auto-weiterziehen) | US-04.10, 04.11 |
+| Effekt-System | [4.13](#413-effekt-system) | – |
+| Genom und Adaptionen | [4.14](#414-genom-ära-i) | US-05.01–05.04 |
+| Pheromone | [4.15](#415-pheromone) | US-03.01–03.03 |
+| Funde, einzigartige Adaptionen | [4.16](#416-funde) | US-06.01, 06.02 |
+| Sammlung und Badges | [4.17](#417-sammlung-und-badges) | US-06.03, 06.04 |
+| Bots und Abschätzung | [6.3](#63-bots-ab-m13), [6.4](#64-abschätzung-m13) | US-10.07, 10.08 |
 
 ## 2. Startwerte und Konstanten
 
@@ -46,6 +53,11 @@ Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilenste
 | Reise | keine |
 | Auto-Weiterziehen | aus, Strategie „Ausgewogen“, Schwelle 0 % |
 | Mitnahme-Priorität | ausgewogen |
+| Pheromone | 3 auf Drohnen, 1 auf Soldaten, 0 gekaufte Drüsenpunkte ([4.15](#415-pheromone)) |
+| Genom | nur die Wurzel `root`, keine entwickelte Adaption ([4.14](#414-genom-ära-i)) |
+| Funde | Fundzähler 0, nichts gesammelt, keine Buffs; eigener Fund-RNG aus dem Seed ([4.16](#416-funde)) |
+
+Die Startverteilung 3 : 1 der Pheromone ergibt dieselbe Brut wie das feste Verhältnis aus M1.2. Der Spielbeginn bleibt also bis zum ersten Kauf eines Drüsenpunkts, einer Adaption oder bis zum ersten Fund unverändert.
 
 ### 2.2 Einheiten
 
@@ -101,19 +113,61 @@ Jeder Einheitentyp hat eigene Nahrungskosten. Eier/min ist nur eine Rate, keine 
 | `θ_max` | `maxAutoThreshold` | 0,9 | höchste einstellbare Schwelle |
 | – | `siteTypes` | siehe unten | Faktoren, Fundchance und Ziehungsgewicht je Futterstellentyp |
 
-Weitere Symbole: `Q`, `D`, `S` sind die Anzahl Königinnen, Drohnen und Soldaten, `N` die Nahrung, `V` der Vorrat der Futterstelle, `G` ihre Größe, `B` die Abwehr eines Ziels, `P` die aktuelle Position, `R` die aktuelle Reichweite, `z` der Zugzähler und `dt` die Schrittdauer in Sekunden. Die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust` und `M_ausbeute` sind bis M1.3 gleich 1.
+Weitere Symbole: `Q`, `D`, `S` sind die Anzahl Königinnen, Drohnen und Soldaten, `N` die Nahrung, `V` der Vorrat der Futterstelle, `G` ihre Größe, `B` die Abwehr eines Ziels, `P` die aktuelle Position, `R` die aktuelle Reichweite, `z` der Zugzähler und `dt` die Schrittdauer in Sekunden. Die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust` und `M_ausbeute` sind bis M1.2 gleich 1; ab M1.3 füllt sie das [Effekt-System](#413-effekt-system).
+
+**Konstanten für M1.3** (entschieden mit M1.3, Werte v1). Sie kommen zu `BalanceParams` hinzu und sind wie alle Konstanten über `params` überschreibbar.
+
+| Symbol | Konstante | Wert v1 | Bedeutung |
+|---|---|---|---|
+| `P_d0` | `startPheromoneDrones` | 3 | Pheromonpunkte auf Drohnen beim Start |
+| `P_s0` | `startPheromoneSoldiers` | 1 | Pheromonpunkte auf Soldaten beim Start |
+| `P_0` | – | 4 | `P_d0 + P_s0`: Startpunkte und Bezugsgröße der Brutrate, `f(P_0) = 1` ([4.15](#415-pheromone)); abgeleitet, kein eigener Parameter |
+| `c_P` | `glandCost` | 100 | Basispreis eines Drüsenpunkts in Nahrung |
+| `w_P` | `glandCostGrowth` | 2 | Preisfaktor der Drüse |
+| `c_G` | `genomeCost` | 8 | DNA-Kosten eines Knotens der Stufe 1 ([4.14](#414-genom-ära-i)) |
+| `w_G` | `genomeCostGrowth` | √10 ≈ 3,1623 | Kostenfaktor je Stufe; Stufen 1–5 kosten 8, 25, 80, 253, 800 DNA |
+| `ρ` | `fallenRecycleYield` | 0,5 | Anteil von `c_s`, der je gefallenem Soldat als Nahrung zurückkommt (Autophagie, [4.13](#413-effekt-system)) |
+| `n_A` | `findHarvestDraws` | 4 | Abbau-Ziehungen je Futterstelle, je eine bei 25 %, 50 %, 75 % und 100 % abgebautem Vorrat ([4.16](#416-funde)) |
+| `σ_F` | `findSpread` | 0,2 | Streuung des Zufallsfaktors `u_F` der Fundmengen um 1 |
+| – | Schlüssel je ID | siehe unten | Effektwerte, Fragmentzahlen, Fundgewichte und -mengen, Buffs, Badge-Boni |
+
+- **`broodDroneShare` (`a`) entfällt** (entschieden mit M1.3, Änderung eines v1-Werts): An die Stelle des festen Anteils `a = 3/4` tritt die Pheromon-Verteilung `a = P_d / (P_d + P_s)` ([4.15](#415-pheromone)). Die Startverteilung `P_d0 : P_s0 = 3 : 1` hält den Wert 3/4.
+
+**Parameter je ID** (entschieden mit M1.3; ADR-007 ohne Ausnahme): Jede Zahl der Spieldaten aus [4.14](#414-genom-ära-i), [4.16](#416-funde) und [4.17](#417-sammlung-und-badges) ist ein eigener Schlüssel in `BalanceParams`, flach wie bei den Futterstellentypen (`algalMatFindChance` …), damit die Modell-Seite sie als Zahlen bearbeiten kann. Je Bereich ordnet eine Tabelle jeder ID ihre Schlüssel zu, nach dem Vorbild von `SITE_TYPE_PARAMS` in `balance/domain/formulas.ts`. Spieldaten bleiben nur die Struktur: IDs, Ast, Stufe, Vorgänger, Anker, Effektziel, Operation, Bedingung, Fundorte, Fundart, Zuordnung von Fragment zu Adaption und von Sammelobjekt zu Set.
+
+Benannt wird `<idCamel><Rolle>`, wobei `<idCamel>` die stabile ID in camelCase ist (`cilia-1` → `cilia1`, `sulfur-pearl` → `sulfurPearl`):
+
+| Bereich | Zuordnung | Schlüssel je ID | Beispiel (Wert v1) |
+|---|---|---|---|
+| reguläre Adaption ([4.14](#414-genom-ära-i)) | `GENOME_NODE_PARAMS` | `<id>Effect`: Betrag bzw. Faktor des Effekts mit Zahl | `cilia1Effect` (0,2), `flagellumEffect` (1,5), `autophagyEffect` (0,4) |
+| einzigartige Adaption ([4.14](#414-genom-ära-i)) | `UNIQUE_ADAPTATION_PARAMS` | `<id>Effect`, `<id>Fragments` (benötigte Fragmente) | `sulfurShellEffect` (1), `sulfurShellFragments` (5) |
+| Eintrag der Fundtabelle ([4.16](#416-funde)) | `FIND_ENTRY_PARAMS` | `<id>Weight` für jeden Eintrag; dazu für DNA `foreignDnaFactor` (`φ_D`), für Nahrung `nutrientBubbleShare` (`φ_N`), für Buffs `<id>Factor` (`μ_B`) und `<id>Seconds` (`T_B`) | `foreignDnaWeight` (30), `planktonBloomSeconds` (600), `sulfurPearlWeight` (5), `pumiceWeight` (3) |
+| Badge ([4.17](#417-sammlung-und-badges)) | `BADGE_PARAMS` | `<setId>BadgeEffect` | `matRelicsBadgeEffect` (0,05), `whaleRelicsBadgeEffect` (0,95) |
+| Futterstellentyp ([2.3](#23-konstanten)) | `SITE_TYPE_PARAMS` (besteht) | `<id>FindChance` (besteht) | `algalMatFindChance` (0,15) |
+
+Ein Effekt ohne Zahl (`unlock fallenRecycling`) hat keinen Schlüssel. Hat eine Quelle künftig mehrere Effekte mit Zahl, bekommt der zweite den Schlüssel `<id>Effect2`. Die Ladeprüfung des Spielstands hängt von keinem dieser Werte ab ([5.1](#51-spielstand-version-4)).
 
 **Futterstellentypen der Ära I** (`siteTypes`, stabile IDs):
 
 | ID | Name | Größe× `f_G` | Abwehr× `f_B` | Fundchance | Gewicht `g` |
 |---|---|---|---|---|---|
-| `algal-mat` | Algenmatte | 0,5 | 0 | 5 % | 1 |
-| `vent` | Schlot | 1 | 1 | 10 % | 1 |
-| `bacterial-mat` | Bakterienrasen | 1,5 | 2,5 | 15 % | 1 |
-| `methane-seep` | Methanquelle | 2,5 | 2 | 20 % | 1 |
-| `whale-fall` | Walsturz | 3 | 3 | 30 % | 1 |
+| `algal-mat` | Algenmatte | 0,5 | 0 | 15 % | 1 |
+| `vent` | Schlot | 1 | 1 | 20 % | 1 |
+| `bacterial-mat` | Bakterienrasen | 1,5 | 2,5 | 25 % | 1 |
+| `methane-seep` | Methanquelle | 2,5 | 2 | 30 % | 1 |
+| `whale-fall` | Walsturz | 3 | 3 | 40 % | 1 |
 
 `vent` ist die bestehende ID der ersten Futterstelle. Die Reihenfolge der Tabelle ist die Reihenfolge der gewichteten Ziehung ([4.6](#46-futterstellen-generator)). Das Gewicht ist vorläufig: Alle Typen sind gleich wahrscheinlich.
+
+**Fundchance ab M1.3** (entschieden mit M1.3, Änderung eines v1-Werts): Die Fundchance gilt ab M1.3 **je Ziehung**, und je Futterstelle wird bis zu fünfmal gezogen ([4.16](#416-funde)). Mit den Werten aus M1.2 käme ein Schwarm, der nur Algenmatten wählt, in der ersten Stunde auf rund 2 Funde und kaum DNA ([6.4](#64-abschätzung-m13)). Deshalb wurden sie erhöht:
+
+| ID | Fundchance bis M1.2 | Fundchance ab M1.3 | erwartete Funde je Futterstelle (5 Ziehungen) |
+|---|---|---|---|
+| `algal-mat` | 5 % | 15 % | 0,75 |
+| `vent` | 10 % | 20 % | 1,0 |
+| `bacterial-mat` | 15 % | 25 % | 1,25 |
+| `methane-seep` | 20 % | 30 % | 1,5 |
+| `whale-fall` | 30 % | 40 % | 2,0 |
 
 ## 3. Kostenkurven
 
@@ -224,7 +278,7 @@ flowchart TB
 - **Konkurrenz:** Kauf und Brut verbrauchen dieselbe Nahrung.
 - **Grenze:** Grundertrag und Drohnen leeren denselben Vorrat. Ist er leer oder lohnt ein anderes Ziel, zieht der Schwarm weiter.
 - **Weiterziehen:** Platz entscheidet, wer mitkommt; Angriff entscheidet, welches Ziel einnehmbar ist und wie viele Soldaten fallen. Jeder Weiterzug erhöht `z` und damit Größe und Abwehr der nächsten Kandidaten.
-- **Noch ohne Wirkung:** DNA wird ab M1.2 gesammelt und erst mit dem Genom in M1.3 ausgegeben.
+- **Noch ohne Wirkung:** DNA wird ab M1.2 gesammelt und erst mit dem Genom in M1.3 ausgegeben. Ab M1.3 bezahlt sie Adaptionen; wie Genom, Pheromone und Funde in diese Schleife eingreifen, zeigt das Diagramm in [4.13](#413-effekt-system).
 
 ### 4.1 Grundertrag
 
@@ -277,7 +331,7 @@ N  -= h · c̄
 ```
 
 - Passive Brut kostet die Basiskosten **ohne Preisfaktor**.
-- Das Verhältnis Drohnen : Soldaten ist bis M1.3 fest 3 : 1.
+- Das Verhältnis Drohnen : Soldaten ist bis M1.3 fest 3 : 1. Ab M1.3 bestimmen die Pheromone Brutrate und Verhältnis ([4.15](#415-pheromone)).
 - Königinnen schlüpfen nicht passiv, sie werden nur gekauft oder aus Drohnen umgewandelt.
 - Fehlt Nahrung, pausiert die Brut anteilig. Nahrung wird nie negativ.
 - Die Brut läuft auch während einer Reise.
@@ -321,7 +375,7 @@ Diese Werte werden nicht gespeichert, sondern aus dem Zustand berechnet.
 | Warnfarbe Platz | `belegt ≥ 0,9 · verfügbar` | US-02.04 |
 | Restzeit Futterstelle | `V / (g_0 + D · r_d · M_sammeln)` | auch ohne Drohnen bestimmbar |
 | Effekt einer weiteren Königin | `+e_q · M_brut` Eier/min, `+p_q` Platz | Anzeige vor dem Kauf (US-02.03) |
-| Reichweite | `R = R_0` | v1: 5; ab M1.3 durch Adaptionen erhöht |
+| Reichweite | `R = R_0` | v1: 5; ab M1.3 durch Adaptionen erhöht ([4.13](#413-effekt-system)) |
 | Distanz eines Kandidaten | `d = ‖Position − P‖` | euklidisch in der Ebene |
 | Status eines Kandidaten | [4.7](#47-reichweite-und-sichtbarkeit) | in Reichweite, außer Reichweite, unerforscht |
 | Mitkommende Einheiten | `D'`, `S'` aus [4.9](#49-transportkapazität) | gleich `D`, `S` bei `O ≤ C` |
@@ -331,7 +385,7 @@ Diese Werte werden nicht gespeichert, sondern aus dem Zustand berechnet.
 | Erwartete Verluste | `L` aus [4.8](#48-kampf) mit `S'` und `A'` | 0 bei `B = 0` |
 | Erwarteter Verlustanteil | `L / S'` | 0 bei `L = 0` |
 | DNA-Belohnung | `d_0 · B^δ` | 0 bei `B = 0` |
-| Fundchance | aus der Typtabelle ([2.3](#23-konstanten)) | nur Anzeige, gezogen ab M1.3 |
+| Fundchance | aus der Typtabelle ([2.3](#23-konstanten)) | nur Anzeige, gezogen ab M1.3 ([4.16](#416-funde)) |
 | Reisedauer | `d · t_r` | v1: 10 s je Distanzeinheit |
 | Ausbeute beim Opfern | `η · c_d` Nahrung je Drohne | v1: 5; Umwandlungsverlust `1 − η` = 50 % |
 | Drohnen je Königin | `Preis_Königin / (η · c_d)` | v1 beim Start: 12 |
@@ -571,6 +625,386 @@ Strategie, Schwelle, Auto an/aus und Mitnahme-Priorität sind Spielereinstellung
 
 K5 und K6 liegen nicht in Reichweite. „Geringster Widerstand“ wählt K3, „Ausgewogen“ wählt K4 (K1 überschreitet 25 %, K4 ist größer als K3), „Kampfgehärtet“ wählt K1.
 
+### 4.13 Effekt-System
+
+> **Entschieden mit M1.3**, Grundlage für AP 1.3.1. Die Abschnitte 4.13 bis 4.17 gehören zu AP 1.3.1 bis 1.3.6. Formeln aus M1.1 und M1.2 bleiben unverändert; die Effekte füllen nur die Modifikatoren und Basiswerte, die dort schon vorgesehen sind.
+
+Effekte verändern abgeleitete Werte. Jede **Quelle** bringt eine feste Liste von Effekten mit:
+
+| Quelle | dauerhaft | Abschnitt |
+|---|---|---|
+| reguläre Adaption (Genom-Knoten) | ja | [4.14](#414-genom-ära-i) |
+| einzigartige Adaption (aus Fragmenten) | ja | [4.14](#414-genom-ära-i), [4.16](#416-funde) |
+| Badge (vollständiges Set) | ja | [4.17](#417-sammlung-und-badges) |
+| Buff (befristeter Fund) | nein, bis zum Ablauf | [4.16](#416-funde) |
+
+Die Effekte werden bei jeder Berechnung aus dem Zustand gesammelt und **nie gespeichert**. Gespeichert sind nur die Quellen: IDs der entwickelten Adaptionen, Fundzähler und Buffs mit Ablaufzeit ([5.1](#51-spielstand-version-4)). Einzigartige Adaptionen und Badges werden aus den Fundzählern abgeleitet.
+
+**Effektziele**
+
+| ID | Symbol | Basiswert | Operationen | Quellen | wirkt in |
+|---|---|---|---|---|---|
+| `collectRate` | `M_sammeln` | 1 | `add`, `mul`, bedingt | alle | [4.3](#43-simulationsschritt) (1), [4.5](#45-abgeleitete-werte) |
+| `broodRate` | `M_brut` | 1 | `add`, `mul` | alle | [4.3](#43-simulationsschritt) (2), [4.5](#45-abgeleitete-werte), [4.15](#415-pheromone) |
+| `findChance` | `M_fund` | 1 | `add`, `mul` | alle | [4.16](#416-funde) |
+| `combatLoss` | `M_verlust` | 1 | nur `mul` mit Faktor < 1 | dauerhafte | [4.8](#48-kampf), [4.12](#412-strategien-und-auto-weiterziehen) |
+| `sacrificeYield` | `M_ausbeute` | 1 | `add`, `mul` | dauerhafte | [4.10](#410-drohnen-opfern) |
+| `range` | `R` | `R_0` | `add` | dauerhafte | [4.6](#46-futterstellen-generator), [4.7](#47-reichweite-und-sichtbarkeit) |
+| `attackPerSoldier` | `a_s*` | `a_s` | `add`, `mul` | dauerhafte | [4.5](#45-abgeleitete-werte), [4.8](#48-kampf), [4.9](#49-transportkapazität), [4.12](#412-strategien-und-auto-weiterziehen) |
+| `spacePerQueen` | `p_q*` | `p_q` | `add`, `mul` | dauerhafte | [4.5](#45-abgeleitete-werte), [4.9](#49-transportkapazität) |
+| `pheromonePoints` | `P_bonus` | 0 | nur `add`, ganzzahlig | dauerhafte | [4.15](#415-pheromone) |
+| `fallenRecycling` | – | aus | `unlock` | dauerhafte | [4.8](#48-kampf) |
+
+**Operationen**
+
+- `add` addiert einen Betrag zum Basiswert. Bei den Modifikatoren `M_*` mit Basiswert 1 bedeutet `add +0,2` also „+20 % des Basiswerts“.
+- `mul` multipliziert mit einem Faktor.
+- `unlock` schaltet eine Regel ein. Mehrere Quellen derselben Freischaltung wirken wie eine.
+- **Bedingung** `when: { siteType }`: Der Effekt zählt nur, solange der Schwarm an einer Futterstelle dieses Typs steht und nicht reist. In Ära I gibt es Bedingungen nur für `collectRate`.
+
+**Parameter:** Der Betrag bzw. Faktor jedes Effekts mit Zahl ist ein eigener Schlüssel in `BalanceParams` (`<id>Effect`, `<id>BadgeEffect`, bei Buffs `<id>Factor`; Schema in [2.3](#23-konstanten), Parameter je ID). Spieldaten sind nur Quelle, Ziel, Operation und Bedingung. Die Zahlen in den Tabellen von 4.14, 4.16 und 4.17 sind die Werte v1 dieser Schlüssel.
+
+**Verrechnung** (einheitlich für alle Ziele außer `unlock`):
+
+```
+X = max(0, (X_0 + Σ add) · Π mul)        // X_0 = Basiswert des Ziels
+M = (1 + Σ add) · Π mul                   // für die Modifikatoren M_*
+```
+
+- Erst werden alle `add` summiert, dann wird mit allen `mul` multipliziert ([Technisches Konzept §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen)). Die Reihenfolge der Quellen spielt keine Rolle.
+- Jede Quelle zählt höchstens einmal: eine Adaption einmal, ein Badge einmal, ein Buff je ID einmal ([4.16](#416-funde)).
+
+**Grenzen**
+
+- **Datenregel:** `add ≥ 0` und `mul > 0`. Senkende Effekte gibt es nur als `mul < 1`, in Ära I nur für `combatLoss`. Damit wird kein Wert negativ; `max(0, ·)` sichert nur abweichende Daten ab. Die Verluste sind also nie negativ und wegen `M_verlust ≤ 1` höchstens `λ · S` ([4.8](#48-kampf)).
+- **Opfern:** `η = min(η_0 · M_ausbeute, 1 − v_min)` bleibt wie in [4.10](#410-drohnen-opfern). Der Umwandlungsverlust sinkt also nie unter `v_min = 10 %`, egal wie viele Effekte `M_ausbeute` erhöhen.
+- **Fundchance:** `p = min(1, p_Typ · M_fund)` ([4.16](#416-funde)).
+- **Nur steigend:** Reichweite, Angriff je Soldat, Platz je Königin, Pheromonpunkte und Verlust-Modifikator kommen nur aus dauerhaften Quellen, und dauerhafte Quellen gehen nie verloren. Damit steigt `R` nur, und die Garantie der Algenmatte in Reichweite ([4.6](#46-futterstellen-generator)) bleibt bis zur nächsten Erzeugung erhalten. Ebenso kann der Angriff unterwegs nur steigen und `M_verlust` nur sinken: Das Urteil „einnehmbar“ und die angezeigten Verluste vor dem Aufbruch bleiben gültig ([4.8](#48-kampf)), und `P_ges` sinkt nie unter die verteilten Punkte ([4.15](#415-pheromone)).
+- **Buffs** wirken deshalb nur auf `collectRate`, `broodRate` und `findChance`.
+- **Sofortige Wirkung:** Ein Kauf oder Fund wirkt ab dem Moment, in dem er angewendet wird, auch während einer Reise (US-05.03). Steigt die Reichweite unterwegs, sind Ziele sofort aufgedeckt ([4.7](#47-reichweite-und-sichtbarkeit)); ein weiterer Aufbruch bleibt bis zur Ankunft gesperrt.
+
+**Eingriffspunkte in die bestehenden Formeln**
+
+| Stelle | M1.2 | mit Effekten |
+|---|---|---|
+| [4.3](#43-simulationsschritt) (1) Sammeln | `F = min((g_0 + D · r_d · M_sammeln) · dt, V)` | unverändert; `M_sammeln` mit den bedingten Effekten des aktuellen Typs |
+| [4.3](#43-simulationsschritt) (2) Brut | `E = Q · e_q · M_brut`, `a = 3/4` | `E = Q · e_q · f(P_v) · M_brut`, `a = P_d / P_v` ([4.15](#415-pheromone)) |
+| [4.5](#45-abgeleitete-werte) Angriff | `A = S · a_s` | `A = S · a_s*`, ebenso `A' = S' · a_s*` |
+| [4.5](#45-abgeleitete-werte), [4.9](#49-transportkapazität) Platz | `C = Q · p_q` | `C = Q · p_q*` |
+| [4.7](#47-reichweite-und-sichtbarkeit) Reichweite | `R = R_0` | `R = R_0 + Σ add(range)` |
+| [4.8](#48-kampf) Verluste | `L = S · λ · (B / A)^κ · M_verlust` | unverändert mit `A` aus `a_s*`; dazu Autophagie, siehe unten |
+| [4.10](#410-drohnen-opfern) Ausbeute | `η = min(η_0 · M_ausbeute, 1 − v_min)` | unverändert, `M_ausbeute` aus den Effekten |
+| [4.12](#412-strategien-und-auto-weiterziehen) Strategien | `L` und `A'` mit `a_s` | dieselben Werte mit Effekten |
+| [4.16](#416-funde) Funde | – | `p = min(1, p_Typ · M_fund)` |
+
+Nicht betroffen sind Grundertrag `g_0`, Einheitenpreise, die Ziehungen des Generators und die DNA-Belohnung `d_0 · B^δ`.
+
+**Autophagie** (`fallenRecycling`): Bei der Ankunft kommt je gefallenem Soldat ein Teil seiner Brutkosten als Nahrung zurück:
+
+```
+N += L · ρ · c_s                           // v1: 0,5 · 25 = 12,5 Nahrung je Gefallenem
+```
+
+**Beispiel 9** (Sammeln): Entwickelt sind Cilien-Schlag I (`add +0,2`) und II (`add +0,3`) sowie Geißelschlag (`mul ×1,5`), gefunden ist Thermosynthese (`add +0,25` an Schloten), und die Planktonblüte (`mul ×1,5`) läuft.
+
+| Ort | Rechnung | `M_sammeln` | Nahrung/s mit `D = 100` |
+|---|---|---|---|
+| Schlot | `(1 + 0,2 + 0,3 + 0,25) · 1,5 · 1,5` | 3,9375 | `1,5 + 100 · 0,2 · 3,9375 = 80,25` |
+| Algenmatte | `(1 + 0,2 + 0,3) · 1,5 · 1,5` | 3,375 | `1,5 + 100 · 0,2 · 3,375 = 69` |
+
+**Beispiel 10** (Kampf, wie Beispiel 4 mit `S = 34` gegen K1 mit `B = 26`): Entwickelt sind Säurevakuole (`a_s* = 1 + 0,2 = 1,2`), Autophagie und Nesselzellen (`M_verlust = 0,75`). Dann ist `A = 34 · 1,2 = 40,8` und `L = 34 · 0,5 · (26 / 40,8)² · 0,75 = 17 · 0,4061 · 0,75 ≈ 5,18` statt 9,94 (Verlustanteil 15,2 % statt 29,2 %). Die Autophagie bringt `5,18 · 0,5 · 25 ≈ 64,7` Nahrung zurück. K2 mit `B = 52` bleibt zu stark (`40,8 < 52`).
+
+**Weitere Beispiele:** Mit Brutwaben (`add +2`) und Knospung (`mul ×1,25`) bietet eine Königin `(10 + 2) · 1,25 = 15` Platz. Mit Autophagie (`M_ausbeute = 1 + 0,4 = 1,4`) beträgt die Ausbeute `η = min(0,5 · 1,4; 0,9) = 0,7`, eine Königin kostet beim Start also `60 / (0,7 · 10) ≈ 8,57` statt 12 Drohnen. Mit Chemotaxis ist `R = 5 + 1 = 6`.
+
+**Wirkungszusammenhänge M1.3** (Darstellung wie im [Diagramm zu Abschnitt 4](#wirkungszusammenhänge), die Größen aus M1.2 sind zusammengefasst):
+
+```mermaid
+flowchart TB
+    weiter(["Weiterziehen<br/>(Ankunft, Kampf)"])
+    abbau(["Grundertrag und Sammeln"])
+    brut(["Passive Brut"])
+    fund(["Fund ziehen"])
+    entwickeln(["Adaption entwickeln"])
+    druese(["Drüse stärken"])
+    verteilen(["Pheromone verteilen"])
+
+    nahrung["Nahrung N"]
+    dna["DNA"]
+    vorrat["Vorrat V"]
+    genom["Genom<br/>(entwickelte Adaptionen)"]
+    fragmente["Fragmente"]
+    einzig["einzigartige Adaptionen"]
+    sammlung["Sammelobjekte"]
+    badges["Badges"]
+    buffs["Buffs"]
+    effekte["Effekte<br/>M_sammeln, M_brut, M_fund, M_verlust,<br/>M_ausbeute, R, a_s*, p_q*, P_bonus"]
+    pheromone["Pheromone<br/>P_d, P_s, P_ges"]
+
+    weiter --> dna
+    weiter -.->|"Einnahme"| fund
+    vorrat -.->|"25 / 50 / 75 / 100 % abgebaut"| fund
+    vorrat ==> abbau
+    abbau --> nahrung
+    fund --> dna
+    fund --> nahrung
+    fund --> buffs
+    fund --> fragmente
+    fund --> sammlung
+    fragmente -.->|"vollständig"| einzig
+    sammlung -.->|"Set vollständig"| badges
+
+    dna ==> entwickeln
+    entwickeln --> genom
+    nahrung ==> druese
+    druese --> pheromone
+    verteilen --> pheromone
+
+    genom -.-> effekte
+    einzig -.-> effekte
+    badges -.-> effekte
+    buffs -.-> effekte
+
+    effekte -.->|"M_sammeln"| abbau
+    effekte -.->|"M_brut"| brut
+    effekte -.->|"M_fund"| fund
+    effekte -.->|"R, a_s*, p_q*, M_verlust"| weiter
+    effekte -.->|"P_bonus"| pheromone
+    pheromone -.->|"Rate und Verhältnis"| brut
+    nahrung ==> brut
+```
+
+- **Zwei DNA-Quellen:** Kampf bei der Ankunft (`d_0 · B^δ`, unverändert) und Funde (PO-Entscheidung). Wer nicht kämpft, entwickelt Adaptionen nur über Funde.
+- **Rückkopplung Kampf:** Angriff und Verluste aus dem Kampf-Ast machen mehr Ziele einnehmbar und senken den erwarteten Verlustanteil unter `ℓ_max`. Damit wählt auch „Ausgewogen“ öfter ein Kampfziel, und es fließt Kampf-DNA ([6.4](#64-abschätzung-m13)).
+- **Nahrung bekommt eine zweite Senke:** die Drüse. Sie konkurriert mit Einheitenkäufen und Brut.
+
+### 4.14 Genom Ära I
+
+> **Entschieden mit M1.3**, Grundlage für AP 1.3.2 und AP 1.3.3.
+
+Das Genom der Ära I hat eine Wurzel, drei Äste mit je fünf regulären Knoten und vier einzigartige Adaptionen. Namen und Anordnung folgen dem [Mockup K2-K](mockups/k2-kurzgesagt.html); die Zahlen des Mockups gelten nicht.
+
+- **Wurzel** `root` („Urzelle“): ohne Kosten und Effekt, immer entwickelt, wird nicht gespeichert.
+- **Vorgänger:** Jeder reguläre Knoten setzt seinen Vorgänger voraus, die erste Stufe die Wurzel (US-05.01). Die Äste sind lineare Ketten.
+- **Kosten** in DNA nach Stufe `s` (1 bis 5), kaufmännisch gerundet:
+
+  ```
+  Kosten(s) = round(c_G · w_G^(s−1))      // v1: 8, 25, 80, 253, 800
+  ```
+
+  Je Ast kostet das 1.166 DNA, das ganze reguläre Genom 3.498 DNA.
+
+**Reguläre Knoten** (stabile IDs). Die Spalte „Effekte“ nennt Ziel und Operation (Spieldaten) und den Wert v1 des Schlüssels `<id>Effect` in `BalanceParams` (z. B. `cilia1Effect = 0,2`, `buddingEffect = 1,25`). Die DNA-Kosten folgen aus Stufe, `c_G` und `w_G`:
+
+| ID | Name | Ast | Stufe | Vorgänger | DNA | Effekte |
+|---|---|---|---|---|---|---|
+| `cilia-1` | Cilien-Schlag I | Sammeln | 1 | `root` | 8 | `collectRate` `add +0,2` |
+| `cilia-2` | Cilien-Schlag II | Sammeln | 2 | `cilia-1` | 25 | `collectRate` `add +0,3` |
+| `filter-feeder` | Filtrierer | Sammeln | 3 | `cilia-2` | 80 | `findChance` `add +0,25` |
+| `chemotaxis` | Chemotaxis | Sammeln | 4 | `filter-feeder` | 253 | `range` `add +1` (5 → 6) |
+| `flagellum` | Geißelschlag | Sammeln | 5 | `chemotaxis` | 800 | `collectRate` `mul ×1,5` |
+| `yolk-reserve` | Dotterreserve | Brut | 1 | `root` | 8 | `broodRate` `add +0,2` |
+| `brood-combs` | Brutwaben | Brut | 2 | `yolk-reserve` | 25 | `spacePerQueen` `add +2` (10 → 12) |
+| `second-gland` | Zweite Drüse | Brut | 3 | `brood-combs` | 80 | `pheromonePoints` `add +1` |
+| `nurse-cells` | Ammenzellen | Brut | 4 | `second-gland` | 253 | `broodRate` `add +0,3` |
+| `budding` | Knospung | Brut | 5 | `nurse-cells` | 800 | `spacePerQueen` `mul ×1,25` (12 → 15) |
+| `acid-vacuole` | Säurevakuole | Kampf | 1 | `root` | 8 | `attackPerSoldier` `add +0,2` |
+| `autophagy` | Autophagie | Kampf | 2 | `acid-vacuole` | 25 | `sacrificeYield` `add +0,4`; `unlock fallenRecycling` |
+| `nettle-cells` | Nesselzellen | Kampf | 3 | `autophagy` | 80 | `combatLoss` `mul ×0,75` |
+| `chalk-shell` | Kalkpanzer | Kampf | 4 | `nettle-cells` | 253 | `combatLoss` `mul ×0,6` |
+| `spine-cells` | Stachelzellen | Kampf | 5 | `chalk-shell` | 800 | `attackPerSoldier` `add +0,5` |
+
+- **Abweichung vom Mockup:** „Filtrierer“ wirkte dort auf Klicks, die es nicht mehr gibt. Hier filtert er Partikel aus dem Wasser und erhöht die Fundchance. Neu gegenüber dem Mockup sind Geißelschlag, Ammenzellen, Knospung und Stachelzellen; Autophagie erhöht zusätzlich die Ausbeute beim Opfern, damit `M_ausbeute` eine Quelle hat.
+- Mit allen regulären Knoten gilt: `M_sammeln = 1,5 · 1,5 = 2,25`, `M_brut = 1,5`, `M_fund = 1,25`, `R = 6`, `a_s* = 1,7`, `p_q* = 15`, `M_verlust = 0,45`, `η = 0,7`, `P_bonus = 1`.
+
+**Einzigartige Adaptionen** (stabile IDs; US-06.02). „Benötigt“ ist der Wert v1 von `<id>Fragments`, der Effekt der von `<id>Effect` (z. B. `sulfurShellFragments = 5`, `sulfurShellEffect = 1`):
+
+| ID | Name | Anker im Baum | Fragment | benötigt | Effekt |
+|---|---|---|---|---|---|
+| `thermosynthesis` | Thermosynthese | `cilia-1` | `thermophile` (Thermophile Mikrobe) | 3 | `collectRate` `add +0,25` an Schloten (`vent`) |
+| `algal-symbiosis` | Algensymbiose | `cilia-1` | `chloroplast` (Chloroplast) | 2 | `collectRate` `add +0,25` an Algenmatten (`algal-mat`) |
+| `crystal-sense` | Kristallsinn | `yolk-reserve` | `primal-crystal` (Urzeitkristall) | 2 | `findChance` `add +0,25` |
+| `sulfur-shell` | Schwefelpanzer | `acid-vacuole` | `sulfur-pearl` (Schwefelperle) | 5 | `attackPerSoldier` `add +1` |
+
+- **Freischaltung** (entschieden mit M1.3): Eine einzigartige Adaption wirkt sofort und dauerhaft, sobald alle Fragmente gefunden sind. Sie kostet **keine DNA**, die Fragmente sind ihr Preis. Sie hat keinen Vorgänger. Der Anker legt nur fest, wo sie im Baum hängt (wie im Mockup), und ist keine Voraussetzung.
+- Bis dahin ist sie sichtbar, aber gesperrt, mit Fortschritt „Schwefelperle 2 / 5“ (US-06.02). Wo die Fragmente zu finden sind, steht in der [Fundtabelle](#416-funde).
+
+**Entwickeln** (Kommando `evolve` mit Knoten-ID; US-05.03):
+
+```
+Bedingungen: regulärer Knoten, nicht entwickelt, Vorgänger entwickelt, DNA ≥ Kosten
+DNA   -= Kosten
+owned += ID
+```
+
+- Der Kauf wird sofort angewendet, auch während einer Reise. Es gibt keine Rückerstattung und kein Verlernen.
+- Ist eine Bedingung verletzt, bleibt das Kommando ohne Wirkung.
+
+**Knotenstatus** (abgeleitet; US-05.02, US-05.04):
+
+| Status | Bedingung |
+|---|---|
+| entwickelt | regulär: in `owned`; einzigartig: alle Fragmente gefunden |
+| verfügbar | regulär, Vorgänger entwickelt, DNA ≥ Kosten |
+| zu teuer | regulär, Vorgänger entwickelt, DNA < Kosten |
+| gesperrt | regulär, Vorgänger nicht entwickelt |
+| einzigartig, nicht gefunden | einzigartig, Fragmente unvollständig (mit Fortschritt x / benötigt) |
+
+Der Hinweis auf verfügbare Adaptionen (US-05.04) zählt die Knoten mit Status „verfügbar“. Vor dem Kauf zeigt das Detailpanel den Effekt als „vorher → nachher“ des betroffenen Werts, z. B. „Reichweite 5 → 6“ oder „Angriff je Soldat 1 → 1,2“.
+
+### 4.15 Pheromone
+
+> **Entschieden mit M1.3**, Grundlage für AP 1.3.4. Entscheidet den Vorschlag aus [Projektplan §3.4](projektplan.md#34-game-design-entscheidungen-für-as1): Die Gesamtzahl der Punkte bestimmt die Brutrate, die Verteilung das Verhältnis.
+
+Gespeichert sind die verteilten Punkte `P_d` (Drohnen) und `P_s` (Soldaten) und die Zahl `k` der gekauften Drüsenpunkte, alle ganzzahlig. Alles andere ist abgeleitet:
+
+```
+P_ges  = P_0 + k + P_bonus             // P_0 = P_d0 + P_s0 = 4; P_bonus aus Effekten (4.13)
+P_v    = P_d + P_s                     // verteilte Punkte
+P_frei = P_ges − P_v                   // ≥ 0, in der Oberfläche hervorgehoben
+f(P_v) = P_v / P_0                     // f(P_0) = 1
+
+E   = Q · e_q · f(P_v) · M_brut        // Eier/min
+a   = P_d / P_v                        // Drohnenanteil der Brut, nur bei P_v > 0
+c̄   = a · c_d + (1 − a) · c_s
+```
+
+Der übrige Brutschritt bleibt wie in [4.3](#43-simulationsschritt): `e = E / 60 · dt`, `h = min(e, N / c̄)`, `D += a · h`, `S += (1 − a) · h`, `N −= h · c̄`.
+
+- **Start:** `P_d = 3`, `P_s = 1` ergibt `f = 1` und `a = 3/4`, also genau die Brut aus M1.2. Beispiel 1 bis 7 bleiben gültig.
+- **Jeder Punkt zählt gleich:** Ein verteilter Punkt bringt `Q · e_q · M_brut / P_0` Eier/min, beim Start also +25 % der Grundrate je Punkt. Die Brut ist proportional zu den verteilten Punkten, die Drohnen-Brut zu `P_d`, die Soldaten-Brut zu `P_s`.
+- **Freie Punkte wirken nicht** (entschieden mit M1.3): Nur verteilte Punkte brüten (US-03.01 „Alle Punkte müssen verteilt sein“). Freie Punkte entstehen durch den Kauf eines Drüsenpunkts, durch Effekte (`P_bonus`, z. B. Zweite Drüse) und wenn der Spieler mit „−“ einen Punkt abzieht.
+- **`P_d = P_s = 0`:** Dann ist `E = 0`, die Brut ruht, `a` wird nicht gebraucht. Das ist nur möglich, wenn der Spieler alle Punkte abzieht, und braucht keinen Sonderfall.
+- **Verworfen** wurde der TK-Entwurf `f = 1 + 0,1 · P` ([TK §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen)). Er bricht den Start, weil `f(4) = 1,4` die Brut der ersten Königin über den Grundertrag hebt (`1,4 · 1,375 = 1,925 > 1,5` Nahrung/s). Mit Bezug auf `P_0` (`1 + 0,1 · (P − P_0)`) bliebe der Start gleich, aber `P_v = 0` bräuchte einen Sonderfall, und ein Punkt brächte nur +10 %.
+
+**Kommandos**
+
+| Kommando | Bedingungen | Wirkung |
+|---|---|---|
+| `setPheromones` mit `drones`, `soldiers` | ganze Zahlen ≥ 0, `drones + soldiers ≤ P_ges` | `P_d = drones`, `P_s = soldiers`; kostenlos, kein Punkt geht verloren |
+| `strengthenGland` | `N ≥ Preis_P` | `N −= Preis_P`, `k += 1`; der neue Punkt ist frei |
+
+- Beide werden sofort angewendet, auch während einer Reise. Die neue Verteilung gilt damit ab dem nächsten Tick (US-03.02).
+- Ist eine Bedingung verletzt, bleibt das Kommando ohne Wirkung.
+- **Geladener Stand mit `P_v > P_ges`** (nur nach einem Absenken von `P_0` über `params` möglich): Wirksam sind `min(P_v, P_ges)` Punkte mit demselben Anteil `a`; der gespeicherte Wert bleibt, wie bei der Schwelle über `θ_max` ([4.12](#412-strategien-und-auto-weiterziehen)).
+
+**Kostenkurve der Drüse** (Nahrung, wie im Mockup; ohne Platz):
+
+```
+Preis_P = c_P · w_P^k                  // v1: 100 · 2^k
+```
+
+| k | 0 | 1 | 2 | 5 | 10 | 20 |
+|---|---|---|---|---|---|---|
+| Preis | 100 | 200 | 400 | 3.200 | 102.400 | ≈ 1,05 · 10⁸ |
+
+Zum Vergleich kostet die 74. Königin (`n = 73`) rund 3,6 · 10⁷ Nahrung ([6.1](#61-messung-m12)). Ein Drüsenpunkt bringt `Q / P_v`-mal so viele Eier wie eine weitere Königin, aber keinen Platz.
+
+**Anzeige vor dem Kauf** (US-03.03): Preis, Punkte `P_ges → P_ges + 1` und die Wirkung „+`Q · e_q · M_brut / P_0` Eier/min, sobald verteilt“. Die Verteilung zeigt `a` und `1 − a` in Prozent als geteilten Balken (US-03.01).
+
+**Beispiel 11** mit `Q = 10`, `M_brut = 1`, Start `P_d = 3`, `P_s = 1`: `E = 10 · 6 · 4/4 = 60` Eier/min, `c̄ = 13,75`, Nahrungsbedarf `60 / 60 · 13,75 = 13,75` Nahrung/s. Der erste Drüsenpunkt kostet 100 Nahrung; danach ist `P_ges = 5`, `P_frei = 1`, und `E` bleibt 60. Auf Drohnen verteilt (`P_d = 4`, `P_s = 1`): `E = 10 · 6 · 5/4 = 75` Eier/min, `a = 0,8`, `c̄ = 0,8 · 10 + 0,2 · 25 = 13`, Nahrungsbedarf `75 / 60 · 13 = 16,25` Nahrung/s.
+
+### 4.16 Funde
+
+> **Entschieden mit M1.3**, Grundlage für AP 1.3.5.
+
+**Wann gezogen wird** (US-06.01: „beim Einnehmen und beim Abbauen“):
+
+- **Einnahme:** genau eine Ziehung bei jeder Ankunft, auch an einer Algenmatte. Sie folgt auf Kampf, DNA, die neue Futterstelle, `z += 1` und die neuen Kandidaten ([4.11](#411-weiterziehen-und-reise)) und gilt für die neue Futterstelle (Typ, `G`, `z`).
+- **Abbau:** je eine Ziehung, sobald der abgebaute Anteil `(G − V) / G` der aktuellen Futterstelle die Schwelle `j / n_A` erreicht, `j = 1 … n_A`. Mit `n_A = 4` also bei 25 %, 50 %, 75 % und 100 % (Vorrat leer, gleichzeitig mit `siteDepleted`). Erreicht ein Schritt mehrere Schwellen, wird in aufsteigender Reihenfolge gezogen.
+- Abbau-Ziehungen entstehen nur durch Grundertrag und Sammeln in Schritt (1). Der Aufbruch setzt `V = 0`, löst aber keine Ziehung aus. Wer mit einer Schwelle `θ > 0` weiterzieht, erreicht nur die Abbau-Schwellen bis `1 − θ` und verzichtet auf die übrigen.
+- Je Futterstelle wird also höchstens `1 + n_A = 5`-mal gezogen. Welche Abbau-Schwellen schon erreicht sind, folgt aus `V` und `G` und wird nicht gespeichert.
+- **Schrittweite:** `step` teilt einen Schritt an jeder Abbau-Schwelle und an jedem Ablauf eines Buffs, wie an der Ankunft ([4.3](#43-simulationsschritt)). Weil die Abbaurate im Schritt konstant ist, liegt der Zeitpunkt exakt, und das Ergebnis hängt nicht von der Schrittweite ab. Der Headless-Runner und später der Offline-Catch-up übernehmen dieselben Teilungspunkte (`nextSplitMs`).
+
+**Ziehung** (deterministisch): Funde ziehen aus einem **eigenen RNG-Strom** `finds.rngState` (entschieden mit M1.3), der beim Start aus dem Seed entsteht. So bleibt die Zufallsfolge des Generators unberührt; die Kandidaten hängen weiter nur vom Seed und den Weiterzügen ab, und die Messungen aus M1.2 bleiben vergleichbar. Jede Ziehung verbraucht genau drei Zufallszahlen, auch ohne Fund:
+
+```
+r_1, r_2, r_3 aus finds.rngState, in dieser Reihenfolge
+p      = min(1, p_Typ · M_fund)                    // p_Typ aus 2.3
+Fund   ⇔  r_1 < p
+Eintrag = gewichtete Ziehung mit r_2 über die Einträge der Fundtabelle, die am Typ vorkommen
+u_F    = 1 − σ_F + 2σ_F · r_3                       // v1 in [0,8; 1,2)
+```
+
+- Die gewichtete Ziehung arbeitet wie beim Generator ([4.6](#46-futterstellen-generator)) in der Reihenfolge der Fundtabelle.
+- **Erster Fund** (entschieden mit M1.3): Ist der Fundzähler noch 0, wird der Fund unabhängig von `r_2` zu `foreign-dna`. So bringt der erste Fund jedes Spiels die erste Adaption ([6.4](#64-abschätzung-m13)).
+- **Ziel schon erreicht:** Ist ein gezogenes Fragment schon vollständig (Adaption frei) oder ein Sammelobjekt schon gesammelt, wird der Fund zu `foreign-dna` mit demselben `u_F`. Das Ereignis nennt den ursprünglichen Eintrag. So bleiben späte Funde wertvoll.
+- Jeder Fund erhöht den Fundzähler um 1, auch ein Ersatz.
+
+**Wirkung je Fundart** (`φ_D = foreignDnaFactor`, `φ_N = nutrientBubbleShare`; `μ_B` und `T_B` hat jeder Buff selbst als `<id>Factor` und `<id>Seconds`, Werte v1 1,5 und 600 s):
+
+| Art | Wirkung | Skalierung |
+|---|---|---|
+| DNA (einmalig) | `DNA += φ_D · d_0 · (b_0 · γ_B^z)^δ · u_F` | wie die DNA eines Schlots in Distanz 1 beim aktuellen `z`, ohne Rundung |
+| Nahrung (einmalig) | `N += φ_N · G · u_F` | Anteil der Größe der aktuellen Futterstelle |
+| Buff (befristet) | `Ablauf = max(Ablauf_alt, t) + T_B`; solange `t_Spiel < Ablauf`: Effekt `mul ×μ_B` | feste Dauer in Spielzeit, läuft auch unterwegs und offline |
+| Fragment | Zähler des Fragments `+1`; bei Vollständigkeit wirkt die einzigartige Adaption | – |
+| Sammelobjekt | Objekt gesammelt; bei vollständigem Set wirkt das Badge ([4.17](#417-sammlung-und-badges)) | – |
+
+- `t` ist die Spielzeit `time.played` des Funds. Ein weiterer Fund desselben Buffs verlängert ihn um `T_B`; je Buff-ID gibt es höchstens einen Eintrag und damit nur einmal den Faktor.
+- Die DNA eines Funds wächst wie die Kampf-DNA mit `γ_B^(δ · z) ≈ 1,27^z`. Die Nahrung wächst mit der Größe der Futterstelle (`γ_G = 1,4` je Weiterzug). Beide verlieren also mit `z` nicht an Wert.
+
+| `z` | 0 | 1 | 5 | 10 | 20 | 27 |
+|---|---|---|---|---|---|---|
+| DNA je Fund (`u_F = 1`) | 10,99 | 13,97 | 36,5 | 121 | 1.338 | ≈ 7.180 |
+
+Rechnung für `z = 5`: `(20 · 1,35⁵)^0,8 = 89,7^0,8 ≈ 36,5`. Nahrung beim Start (Schlot, `G = 20.000`): `0,05 · 20.000 = 1.000`.
+
+**Fundtabelle Ära I** (stabile IDs; Reihenfolge = Ziehungsreihenfolge):
+
+| ID | Name | Art | Fundorte | Gewicht | Wirkung |
+|---|---|---|---|---|---|
+| `foreign-dna` | Fremde DNA | DNA | alle | 30 | DNA wie oben |
+| `nutrient-bubble` | Nährstoffblase | Nahrung | alle | 20 | Nahrung wie oben |
+| `plankton-bloom` | Planktonblüte | Buff | alle | 8 | `collectRate` `mul ×1,5` für 10 min |
+| `warm-current` | Warme Strömung | Buff | alle | 8 | `broodRate` `mul ×1,5` für 10 min |
+| `thermophile` | Thermophile Mikrobe | Fragment | `vent` | 5 | Thermosynthese (3) |
+| `sulfur-pearl` | Schwefelperle | Fragment | `vent`, `methane-seep` | 5 | Schwefelpanzer (5) |
+| `chloroplast` | Chloroplast | Fragment | `algal-mat` | 5 | Algensymbiose (2) |
+| `primal-crystal` | Urzeitkristall | Fragment | `bacterial-mat`, `methane-seep`, `whale-fall` | 5 | Kristallsinn (2) |
+| 12 Sammelobjekte | siehe [4.17](#417-sammlung-und-badges) | Sammelobjekt | je Set | je 3 | – |
+
+Jeder Eintrag hat sein Gewicht als eigenen Schlüssel `<id>Weight` in `BalanceParams` (`foreignDnaWeight`, `sulfurPearlWeight`, `stromatoliteWeight` …; [2.3](#23-konstanten)); die Tabelle nennt die Werte v1. Spieldaten sind nur Reihenfolge, Art, Fundorte und Ziel des Eintrags. Summe und Anteile je Typ mit den Werten v1:
+
+| Typ | Summe der Gewichte | DNA | Nahrung | Buffs | Fragmente | Sammelobjekte |
+|---|---|---|---|---|---|---|
+| `algal-mat` | 89 | 33,7 % | 22,5 % | 18,0 % | 5,6 % | 20,2 % (6 Objekte) |
+| `vent` | 94 | 31,9 % | 21,3 % | 17,0 % | 10,6 % | 19,1 % (6) |
+| `bacterial-mat` | 89 | 33,7 % | 22,5 % | 18,0 % | 5,6 % | 20,2 % (6) |
+| `methane-seep` | 94 | 31,9 % | 21,3 % | 17,0 % | 10,6 % | 19,1 % (6) |
+| `whale-fall` | 89 | 33,7 % | 22,5 % | 18,0 % | 5,6 % | 20,2 % (6) |
+
+**Anzeige:** Die Fundchance eines Ziels (US-04.01) ist `p` je Ziehung, mit `M_fund`. Die Oberfläche nennt dazu „bis zu 5 Ziehungen“.
+
+**Ereignis fürs Log** (ergänzt [4.11](#411-weiterziehen-und-reise); Funde werden im Log hervorgehoben, US-06.01):
+
+| Code | Daten |
+|---|---|
+| `found` | Typ der Futterstelle, Auslöser `arrival` oder `harvest` (mit Schwelle `j`), Eintrag (ID, Art), ggf. ersetzter Eintrag, Menge (DNA oder Nahrung), Ablauf des Buffs, Fortschritt des Fragments (x / benötigt), freigeschaltete Adaption, erhaltenes Badge |
+
+Ziehungen ohne Fund erzeugen kein Ereignis. Bei der Ankunft steht `found` nach `arrived`.
+
+### 4.17 Sammlung und Badges
+
+> **Entschieden mit M1.3**, Grundlage für AP 1.3.6.
+
+Sammelobjekte gehören zu Sets. Jedes Sammelobjekt gibt es einmal; ein weiterer Fund desselben Objekts wird zu DNA ([4.16](#416-funde)). Ist ein Set vollständig, gilt sein Badge dauerhaft mit einem kleinen Bonus (US-06.03). Badges werden aus den gesammelten Objekten abgeleitet und nicht gespeichert; die Badge-ID ist die Set-ID. Der Bonus jedes Badges ist der Schlüssel `<setId>BadgeEffect` in `BalanceParams` (z. B. `matRelicsBadgeEffect = 0,05`), das Gewicht jedes Sammelobjekts `<id>Weight` (Wert v1 3). Spieldaten sind nur die Zuordnung zu Sets, Fundorte, Ziel und Operation.
+
+| Set-ID | Set | Badge | Sammelobjekte (ID, Name) | Fundorte | Bonus |
+|---|---|---|---|---|---|
+| `mat-relics` | Mattenschätze | Mattenkenner | `stromatolite` Stromatolith, `biofilm-disc` Biofilmscheibe, `green-pearl` Grünperle | `algal-mat`, `bacterial-mat` | `collectRate` `add +0,05` |
+| `deep-stones` | Tiefengestein | Steinkundler | `pyrite` Pyrit, `basalt-pebble` Basaltkiesel, `magnetite` Magnetit | `vent`, `methane-seep` | `broodRate` `add +0,05` |
+| `whale-relics` | Walsturz-Relikte | Aasfresser | `bone-splinter` Knochensplitter, `fat-pearl` Fettperle, `tooth-scale` Zahnschuppe | `whale-fall` | `combatLoss` `mul ×0,95` |
+| `drift` | Treibgut | Treibgutsammler | `pumice` Bimsstein, `foam-ball` Schaumkugel, `clay-bead` Tonperle | alle | `findChance` `add +0,1` |
+
+**Fortschritt** (US-06.04): Die Schublade „Funde“ zählt jedes Sammelobjekt und jedes Fragment als eigenes Feld:
+
+```
+y = 12 Sammelobjekte + Σ <id>Fragments     // Werte v1: 12 + (3 + 5 + 2 + 2) = 24
+x = Σ gesammelte Sammelobjekte + Σ min(Fragmentzähler, benötigt)
+```
+
+Das passt zum Mockup („3 / 24“ mit zwei Schwefelperlen und einem Urzeitkristall). Noch nicht gefundene Felder erscheinen als „?“. Je Set zeigt die Schublade x / 3, je einzigartiger Adaption x / benötigt.
+
 ## 5. Spielstand Version 3
 
 Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler ergänzt, Version 3 ergänzt Karte, Reise und Einstellungen. Die Feldnamen sind so umgesetzt (`STATE_VERSION = 3`, AP 1.2.1–1.2.7).
@@ -591,6 +1025,26 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 **Migration von Version 1:** Seed, RNG-Zustand und Zeiten bleiben erhalten. Futterstelle, Kaufzähler, Ressourcen und Einheiten werden auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt.
 
 **Migration von Version 2:** Seed, RNG-Zustand und Zeiten bleiben erhalten. Alles andere wird auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt. Die Startkandidaten entstehen deterministisch aus dem übernommenen RNG-Zustand; der migrierte Spielstand enthält den danach fortgeschriebenen RNG-Zustand, wie ein neues Spiel.
+
+### 5.1 Spielstand Version 4
+
+> **Entschieden mit M1.3.** Version 3 oben bleibt der umgesetzte Stand, bis M1.3 umgesetzt ist. Version 4 ergänzt Pheromone, Genom und Funde (`STATE_VERSION = 4`).
+
+| Feld | Inhalt | seit |
+|---|---|---|
+| `pheromones` | verteilte Punkte `drones` (`P_d`) und `soldiers` (`P_s`), gekaufte Drüsenpunkte `glands` (`k`); alle ganzzahlig | 4 |
+| `genome` | `owned`: IDs der entwickelten regulären Adaptionen in der Reihenfolge der Spieldaten, ohne `root` | 4 |
+| `finds` | `rngState` (Fund-RNG, uint32), `total` (Fundzähler), `collected` (ID eines Fragments oder Sammelobjekts → Anzahl), `buffs` (je `id` und Ablauf `expiresAtMs` in Spielzeit `time.played`) | 4 |
+
+- **Abgeleitet und nicht gespeichert:** `P_ges`, `P_frei`, alle Effekte und Modifikatoren, Reichweite, Angriff je Soldat, Platz je Königin, freigeschaltete einzigartige Adaptionen, Badges, Knotenstatus, Fortschritt der Sammlung, Restdauer der Buffs und die schon erreichten Abbau-Schwellen der Futterstelle. Die Entwürfe `badges`, `stats` und `settings` aus dem [Technischen Konzept §3.4](technisches-konzept.md#34-zustandsmodell-entwurf) gehören nicht zu Version 4.
+- **Ladeprüfung** (wie bei der Schwelle hängt sie nicht von Balance-Werten ab, damit ein späteres Ändern von `params` gespeicherte Stände nicht ungültig macht):
+  - `pheromones`: `drones`, `soldiers` und `glands` sind ganze Zahlen ≥ 0. Ob `P_v ≤ P_ges` gilt, prüft das Laden nicht; wirksam sind höchstens `P_ges` Punkte ([4.15](#415-pheromone)).
+  - `genome.owned`: nur bekannte IDs regulärer Knoten, keine doppelt, und zu jedem Knoten ist sein Vorgänger enthalten (Datenregel, kein Balance-Wert).
+  - `finds.rngState` ist ein uint32, `finds.total` eine ganze Zahl ≥ 0. `collected` enthält nur bekannte IDs mit ganzen Zahlen ≥ 1; ein Zähler über der benötigten Zahl wirkt wie die benötigte Zahl und bleibt gespeichert.
+  - `finds.buffs`: nur bekannte Buff-IDs, jede höchstens einmal, `expiresAtMs` endlich und ≥ 0. Abgelaufene Einträge sind zulässig; der nächste Schritt entfernt sie.
+- Wie bisher speichert der Spielstand nur IDs und Rohwerte, keine Texte.
+
+**Migration von Version 3** (PO-Entscheidung): wie bei den Migrationen 1→2 und 2→3. Seed, RNG-Zustand und Zeiten bleiben erhalten, alles andere wird auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt. Die Startkandidaten entstehen deterministisch aus dem übernommenen RNG-Zustand, der migrierte Spielstand enthält den danach fortgeschriebenen RNG-Zustand. `finds.rngState` entsteht wie beim neuen Spiel aus dem Seed. Wie in `v2-to-v3.ts` verwendet die Migration feste Startwerte statt `DEFAULT_BALANCE`.
 
 ## 6. Messwerte v1
 
@@ -743,8 +1197,79 @@ Ergänzend, ohne Zielband: Der Anteil Wartezeit beträgt in den ersten 30 min 15
 - **Die Brut konkurriert mit Käufen:** Eine Königin verbraucht bis zu 1,375 Nahrung/s, das entspricht fast dem ganzen Grundertrag oder dem Ertrag von knapp 7 Drohnen. Idle kauft beim ersten Besuch 7 Königinnen; danach ist der Nettozufluss negativ (−4,8 Nahrung/s), und die Brut pausiert anteilig, bis genug Drohnen geschlüpft sind. Daher stammt seine längste Wartezeit.
 - **Soldaten binden Nahrung:** Sie machen ein Viertel der Brut aus, aber rund 45 % ihrer Kosten, und haben in M1.1 noch keine spielerische Wirkung.
 
+### 6.3 Bots ab M1.3
+
+> **Entschieden mit M1.3**, Grundlage für AP 1.3.7. Die Bots bleiben einfach und deterministisch. Takt, Auto-Weiterziehen, Strategie, Mitnahme-Priorität und Einheitenkäufe bleiben wie in [6.1](#61-messung-m12); neu sind Genom, Drüse und Verteilung.
+
+Je Entscheidung in dieser Reihenfolge:
+
+1. **Genom:** Solange die DNA reicht, entwickelt der Bot den günstigsten verfügbaren Knoten seiner bevorzugten Äste, bei gleichen Kosten nach der Ast-Reihenfolge. Sind die bevorzugten Äste voll, folgen die übrigen. Ist der günstigste Knoten zu teuer, spart der Bot auf ihn. Einzigartige Adaptionen kommen von selbst.
+2. **Nahrung:** Einheiten wie in M1.2, dazu der Drüsenpunkt als weitere Option (Tabelle).
+3. **Pheromone:** Bei der ersten Entscheidung setzt der Bot die Verteilung auf die ganzzahlige Aufteilung von `P_v`, die seinem Zielanteil `a*` am nächsten liegt (Gleichstand: mehr Drohnen). Danach verteilt er jeden freien Punkt einzeln auf den Typ, der `|a − a*|` kleiner macht, bei Gleichstand auf Drohnen.
+
+| Bot | Zielanteil `a*` | Start | bevorzugte Äste | Drüsenpunkt |
+|---|---|---|---|---|
+| Aktiv | 3/4 | 3 : 1 (unverändert) | Sammeln, Brut, Kampf | dritte Option der Amortisation: Ertrag = `Q / P_v` × Ertrag einer weiteren Königin |
+| Idle | 3/4 | 3 : 1 (unverändert) | Sammeln, Brut, Kampf | beim Besuch nach den Königinnen und vor den Drohnen, alle bezahlbaren |
+| Drohnen-lastig | 1 | 4 : 0 | Sammeln, Brut; Kampf zuletzt | wie Aktiv |
+| Soldaten-lastig | 1/2 | 2 : 2 | Kampf, Brut; Sammeln zuletzt | günstigste Option von Soldat, Königin und Drüsenpunkt (Gleichstand: Soldat, dann Königin) |
+
+- Aktiv bewertet eine Königin heute mit dem festen Drohnenanteil `a`; ab M1.3 nimmt er `a` aus der Verteilung.
+- Soldaten-lastig bekommt Drohnen nur aus der Brut. Mit `a* = 1/4` hätte er kaum Einkommen, deshalb 1/2.
+
+**Zusätzliche Kennzahlen für AP 1.3.7** (entschieden mit M1.3): Zeitpunkt des ersten Drüsenpunkts, des ersten Funds und der ersten Adaption; Funde gesamt und je Art; DNA aus Kampf und aus Funden über die Zeit (US-10.07); Zeitpunkte aller entwickelten Knoten. Für das Zielband „Neue Mechanik/Ansicht alle 5–15 min in der ersten Stunde“ zählt als neue Option: der erste Drüsenpunkt, der erste Weiterzug, der erste Fund, jede Adaption, jede einzigartige Adaption und jedes Badge.
+
+### 6.4 Abschätzung M1.3
+
+> **Grobe Abschätzung, keine Messung.** Grundlage sind die Messwerte aus [6.1](#61-messung-m12) mit Seed `modell`. Angenommen ist, dass die Bots wie in M1.2 weiterziehen (Aktiv und Idle 27-mal zur Algenmatte, Soldaten-lastig wie gemessen) und die Effekte die Zahl der Weiterzüge nicht ändern. Gerechnet ist mit Erwartungswerten. Die Messung folgt in AP 1.3.7.
+
+**Ziehungen.** Aktiv ist nach 1 h etwa an der 9. Futterstelle: Die Dauern wachsen ab der 4. um rund 18 % je Weiterzug (5,42; 6,4; 7,5; 8,9; 10,5 min …), dazu je rund 20 s Reise. Bis 1 h kommen so die 4 Abbau-Ziehungen am Schlot, 8 Ankünfte und 7 × 4 Abbau-Ziehungen an vollständig abgebauten Algenmatten zusammen, also 40 Ziehungen. Idle kommt auf 35 (4 + 7 + 6 × 4), Soldaten-lastig auf 20 (4 + 4 + 3 × 4), davon 13 an Kampfzielen. In 24 h sind es bei Aktiv und Idle rund 135 (4 + 27 + 26 × 4).
+
+**Erwartete Funde**
+
+| Variante | Aktiv 1 h | Idle 1 h | Soldaten-lastig 1 h | Aktiv 24 h |
+|---|---|---|---|---|
+| a) Werte v1, nur bei der Einnahme | 0,4 | 0,35 | 0,85 | 1,35 |
+| b) Fundchancen v1, 1 + 4 Ziehungen | 2,2 | 1,95 | 3,85 | 7,0 |
+| c) M1.3: Fundchancen 15–40 %, 1 + 4 Ziehungen | 6,2 | 5,45 | 5,9 | 20,5, mit Filtrierer ≈ 25 |
+
+Rechnung für c) bei Aktiv in 1 h: `4 · 0,20 + 36 · 0,15 = 0,8 + 5,4 = 6,2`. Für Soldaten-lastig: Schlot `0,8`, Bakterienrasen `5 · 0,25 = 1,25`, Walsturz `5 · 0,40 = 2,0`, Methanquelle `5 · 0,30 = 1,5`, Ankunft an der zweiten Methanquelle `0,3`.
+
+**Erwartete DNA nach 1 h** (Variante c)
+
+| Bot | aus Kampf | aus Funden | gesamt | Knoten (günstigste zuerst) |
+|---|---|---|---|---|
+| Aktiv | 0 | erster Fund 11–14, dazu ≈ 1,75 DNA-Funde (`5,2 · 33,7 %`) zu je 18–75 DNA (`z = 2 … 8`), zusammen ≈ 80 | ≈ 80 | ≈ 5 (3 × 8 + 2 × 25 = 74) |
+| Idle | 0 | ≈ 12 + 1,5 · 35 ≈ 65 | ≈ 65 | ≈ 4 |
+| Soldaten-lastig | 159 (Abwehr 66, 104, 128, 103: `28,6 + 41,1 + 48,5 + 40,8`) | ≈ 50 | ≈ 210 | ≈ 7 (3 × 8 + 3 × 25 + 80 = 179) |
+
+Mit den Fundchancen aus M1.2 (Variante a oder b) hätten Aktiv und Idle in der ersten Stunde im Mittel höchstens einen DNA-Fund; das Genom bliebe für Spieler ohne Kampf praktisch gesperrt. Deshalb wurden die Fundchancen erhöht ([2.3](#23-konstanten)).
+
+**Erste Stunde für Aktiv** (Variante c, Erwartung):
+
+| Zeitpunkt | neue Option |
+|---|---|
+| ≈ 4–5 min | erster Drüsenpunkt: Er lohnt sich gegenüber einer Königin ab `Q = 4` (`100 / (4/4) = 100 < 60 · 1,2³ ≈ 104`) |
+| bis 10,6 min mit 59 % (`1 − 0,8⁴`), bis 15 min mit 82 % | erster Fund, wegen der Regel „erster Fund = DNA“ sofort die erste Adaption; auch mit `u_F = 0,8` sind es mindestens 8,79 DNA ≥ 8 |
+| 10,6 min | erster Weiterzug (wie M1.2) |
+| ≈ 15–35 min | weitere Funde (Nahrung, Buff, Sammelobjekt), zweite und dritte Adaption |
+| ≈ 35–60 min | vierte und fünfte Adaption, weitere Drüsenpunkte |
+
+Im Mittel kommt damit alle 5–10 min eine neue Option, also im Zielband. Die Streuung ist groß: Ohne Fund bis 15 min bleiben 18 % der Seeds (`0,8⁴ · 0,85⁵`), bis 20 min 8 %; nach dem ersten Fund bleibt in rund 17 % der Seeds (`e^(−1,75)`) der zweite DNA-Fund in der ersten Stunde aus.
+
+**Nach 24 h** (Aktiv, Variante c): ≈ 20–25 Funde, davon zunächst rund ein Drittel DNA. Später werden doppelte Sammelobjekte und Fragmente zu DNA, der Anteil steigt gegen 60 %. Weil die DNA je Fund mit `1,27^z` wächst, kommen ≈ 10.000–15.000 DNA zusammen, mehr als drei Viertel davon in den letzten 8 h. Das reguläre Genom (3.498 DNA) ist nach etwa 10–12 h vollständig.
+
+**Wirkung auf die späten Futterstellen:** Die Dauer wächst etwa mit `√(G / (Q · f · M_sammeln · M_brut))` ([6.1](#61-messung-m12)). Mit vollem Genom (`M_sammeln = 2,25`, `M_brut = 1,5`) und rund 15 gekauften Drüsenpunkten (`f = 20/4 = 5`, Preis des 15. Punkts ≈ 1,6 Mio. Nahrung) sinkt sie um den Faktor `√16,9 ≈ 4,1`, die 27. Futterstelle von Aktiv also von 207 auf rund 50 min. Dazu kommen mit 15 Platz je Königin 50 % mehr Einheiten mit. Das verschiebt die Stillstände „Kein Aufbruch“ nach hinten, erhöht aber auch die Zahl der Weiterzüge und damit `z`.
+
+**Folgerungen**
+
+- Ohne höhere Fundchancen trägt M1.3 die erste Stunde nicht. Mit Variante c liegen Aktiv und Idle im Mittel im Zielband „Neue Mechanik alle 5–15 min“.
+- **Rückkopplung Kampf:** Schon Säurevakuole (`a_s* = 1,2`) senkt den Verlustanteil um den Faktor `1/1,44`. Beim 2. Aufbruch von Aktiv fiele der Schlot von 25,4 % auf 17,6 % und läge damit unter `ℓ_max = 25 %`. Ob Aktiv und Idle dadurch kämpfen, hängt von der Kaufreihenfolge ab (Kampf ist bei ihnen der dritte Ast). Das misst AP 1.3.7.
+- **Offener Punkt für AP 1.5.5 – DNA-Senke:** Ab etwa 12 h hat Aktiv das Genom vollständig, danach fehlt der DNA eine Senke bis AS2. Mögliche Mittel: `w_G` erhöhen, `foreignDnaFactor` senken, die DNA je Fund schwächer mit `z` wachsen lassen oder eine neue Senke einführen. Entschieden wird im Balancing (AP 1.5.5) nach der Messung in AP 1.3.7.
+
 ## 7. Ausblick
 
 - **M1.2, erledigt:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer und Ertrag je Futterstelle, Reisezeit, Soldaten-Bilanz, Stillstands-Warnungen) und hat die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Alle vier Bots ziehen über das Auto-Weiterziehen weiter; die Messwerte stehen in [Abschnitt 6.1](#61-messung-m12).
-- **M1.3:** Das Genom gibt DNA aus und füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust` und `M_ausbeute`; Adaptionen wie „Chemotaxis“ erhöhen die Reichweite. Pheromone lösen das feste Brutverhältnis ab. Funde werden bei der Ankunft mit der Fundchance des Typs gezogen.
-- **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder.
+- **M1.3, entschieden:** Das Effekt-System ([4.13](#413-effekt-system)) füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust`, `M_ausbeute` und `M_fund` sowie Reichweite, Angriff je Soldat, Platz je Königin und Pheromonpunkte. Das Genom der Ära I ([4.14](#414-genom-ära-i)) gibt DNA für 15 reguläre Adaptionen aus; vier einzigartige Adaptionen entstehen aus Fragmenten. Pheromone ([4.15](#415-pheromone)) lösen das feste Brutverhältnis ab, die Drüse kostet Nahrung. Funde ([4.16](#416-funde)) werden bei jeder Einnahme und an vier Abbau-Schwellen gezogen und bringen neben dem Kampf die einzige DNA. Dazu kommen Sammlung und Badges ([4.17](#417-sammlung-und-badges)), Spielstand Version 4 ([5.1](#51-spielstand-version-4)) und die Bots für AP 1.3.7 ([6.3](#63-bots-ab-m13)). Umgesetzt wird in AP 1.3.1 bis 1.3.7.
+- **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder. Offener Punkt aus M1.3: Nach vollständigem Genom (bei Aktiv nach etwa 12 h) hat DNA keine Senke mehr bis AS2 ([6.4](#64-abschätzung-m13)).
+- **Nach Ära I:** Weitere Effektziele (z. B. Grundertrag, Reisedauer, Preise) und Bedingungen kommen mit späteren Mechaniken dazu, ohne die Verrechnungsregel aus 4.13 zu ändern.
