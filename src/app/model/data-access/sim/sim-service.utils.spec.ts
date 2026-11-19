@@ -1,3 +1,4 @@
+import { BOT_KINDS } from '../../domain/models/sim.model';
 import type { SimRequest, SimResponse } from './sim-service.model';
 import { createBot, handleSimRequest } from './sim-service.utils';
 
@@ -48,8 +49,23 @@ describe('handleSimRequest', () => {
     expect((responses[0] as { message: string }).message).toContain('ungültige Dauer');
   });
 
+  it('erzeugt jede Bot-Art', () => {
+    expect(BOT_KINDS.map((kind) => createBot({ kind }).name)).toEqual([
+      'active',
+      'idle',
+      'drone-heavy',
+      'soldier-heavy',
+    ]);
+  });
+
   it('gibt Bot-Optionen weiter', () => {
     expect(createBot({ kind: 'idle', options: { visitEveryMs: 1000 } }).nextActionMs(0)).toBe(1000);
     expect(() => createBot({ kind: 'active', options: { decideEveryMs: 0 } })).toThrow(RangeError);
+    expect(
+      createBot({ kind: 'drone-heavy', options: { decideEveryMs: 500 } }).nextActionMs(0),
+    ).toBe(500);
+    expect(() => createBot({ kind: 'soldier-heavy', options: { decideEveryMs: 0 } })).toThrow(
+      RangeError,
+    );
   });
 });

@@ -4,4 +4,6 @@ import type { BotKind } from '../../domain/models/sim.model';
 export const BOT_LABELS: Readonly<Record<BotKind, string>> = {
   active: $localize`:@@uiModel-botLabels-active:Aktiv`,
   idle: $localize`:@@uiModel-botLabels-idle:Idle`,
+  'drone-heavy': $localize`:@@uiModel-botLabels-droneHeavy:Drohnen-lastig`,
+  'soldier-heavy': $localize`:@@uiModel-botLabels-soldierHeavy:Soldaten-lastig`,
 };

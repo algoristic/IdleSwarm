@@ -7,6 +7,8 @@ import {
   unitPrice,
 } from '@app/balance/domain/formulas';
 import type { Num } from '@app/shared/util/num/num';
+import type { StrategyId } from '@app/site/domain/models/auto-move.model';
+import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
 import { UNIT_TYPES, UnitType } from '@app/swarm/domain/models/units.model';
 import type { Units } from '@app/swarm/domain/models/units.model';
 
@@ -141,6 +143,20 @@ export class CommandPlan {
   enableAutoMove(): void {
     if (!this.current.auto.enabled) {
       this.add({ type: 'setAutoMove', enabled: true });
+    }
+  }
+
+  /** Setzt die Strategie des Auto-Weiterziehens, nur wenn sie sich ändert. */
+  setStrategy(strategy: StrategyId): void {
+    if (this.current.auto.strategy !== strategy) {
+      this.add({ type: 'setAutoMove', strategy });
+    }
+  }
+
+  /** Setzt die Mitnahme-Priorität, nur wenn sie sich ändert. */
+  setTransportPriority(priority: TransportPriority): void {
+    if (this.current.priority !== priority) {
+      this.add({ type: 'setTransportPriority', priority });
     }
   }
 

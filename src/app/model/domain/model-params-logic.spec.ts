@@ -14,7 +14,7 @@ describe('model-params-logic', () => {
     expect(DURATIONS_MS).toEqual([3_600_000, 21_600_000, 86_400_000, 604_800_000]);
   });
 
-  it('startet mit festem Seed, 24 h, beiden Bots und Standardwerten', () => {
+  it('startet mit festem Seed, 24 h, Aktiv und Idle und Standardwerten', () => {
     expect(toSimConfig(defaults, DEFAULT_BALANCE)).toEqual({
       seed: 'modell',
       durationMs: 86_400_000,
@@ -22,6 +22,15 @@ describe('model-params-logic', () => {
       params: {},
     });
     expect(defaults.params.broodDroneShare).toBe('0,75');
+  });
+
+  it('übernimmt die gewählten Bots in fester Reihenfolge', () => {
+    const bots = { active: false, idle: true, 'drone-heavy': true, 'soldier-heavy': true };
+    expect(toSimConfig({ ...defaults, bots }, DEFAULT_BALANCE)?.bots).toEqual([
+      { kind: 'idle' },
+      { kind: 'drone-heavy' },
+      { kind: 'soldier-heavy' },
+    ]);
   });
 
   it('übernimmt nur geänderte Konstanten, auch mit Komma', () => {
@@ -34,7 +43,13 @@ describe('model-params-logic', () => {
     expect(toSimConfig(withParam('droneCost', 'abc'), DEFAULT_BALANCE)).toBeNull();
     expect(toSimConfig({ ...defaults, seed: '  ' }, DEFAULT_BALANCE)).toBeNull();
     expect(
-      toSimConfig({ ...defaults, bots: { active: false, idle: false } }, DEFAULT_BALANCE),
+      toSimConfig(
+        {
+          ...defaults,
+          bots: { active: false, idle: false, 'drone-heavy': false, 'soldier-heavy': false },
+        },
+        DEFAULT_BALANCE,
+      ),
     ).toBeNull();
   });
 

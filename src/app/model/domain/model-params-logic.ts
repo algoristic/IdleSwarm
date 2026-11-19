@@ -12,7 +12,7 @@ export const DURATIONS_MS = [HOUR_MS, 6 * HOUR_MS, 24 * HOUR_MS, 7 * 24 * HOUR_M
 const DEFAULT_SEED = 'modell';
 const DEFAULT_DURATION_MS = 24 * HOUR_MS;
 
-/** Startwerte: fester Seed, 24 h, beide Bots, alle Konstanten auf Standard. */
+/** Startwerte: fester Seed, 24 h, Aktiv und Idle, alle Konstanten auf Standard. */
 export function defaultModelParams(defaults: BalanceParams): ModelParamsValue {
   const params = Object.fromEntries(
     (Object.keys(defaults) as ParamKey[]).map((key) => [key, formatParam(defaults[key])]),
@@ -20,7 +20,7 @@ export function defaultModelParams(defaults: BalanceParams): ModelParamsValue {
   return {
     seed: DEFAULT_SEED,
     durationMs: String(DEFAULT_DURATION_MS),
-    bots: { active: true, idle: true },
+    bots: { active: true, idle: true, 'drone-heavy': false, 'soldier-heavy': false },
     params,
   };
 }

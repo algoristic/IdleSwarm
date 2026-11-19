@@ -48,26 +48,37 @@ function paybackSeconds(price: Num, food: Num, income: Num, gainPerSecond: Num):
   return price.div(gainPerSecond).toNumber();
 }
 
+/** Spart bewusst: Ist die beste Einheit noch zu teuer, wird nichts Schlechteres gekauft. */
+function bestUnit(plan: CommandPlan): UnitType | null {
+  const { view, state } = plan;
+  const { prices, params } = view;
+  const food = state.res.food;
+  const income = view.netFoodPerSecond;
+  const drones = paybackSeconds(prices.drones, food, income, Num.from(params.droneCollectRate));
+  const queens = paybackSeconds(prices.queens, food, income, queenGainPerSecond(view, income));
+  if (drones === Infinity && queens === Infinity) {
+    return null;
+  }
+  return queens < drones ? 'queens' : 'drones';
+}
+
+/** Kauft Königinnen und Drohnen, jeweils die Einheit mit der kürzesten Amortisation. */
+export function buyByPayback(plan: CommandPlan): void {
+  // Ohne bezahlbare Einheit steht das Ergebnis fest; das spart die Bewertung.
+  while (plan.canBuy('drones') || plan.canBuy('queens')) {
+    const unit = bestUnit(plan);
+    if (unit === null || !plan.canBuy(unit)) {
+      break;
+    }
+    plan.buy(unit);
+  }
+}
+
 /** Entscheidet regelmäßig und kauft die Einheit mit der kürzesten Amortisation. */
 export function createActiveBot({
   decideEveryMs = ACTIVE_DECIDE_EVERY_MS,
 }: ActiveBotOptions = {}): Bot {
   assertPositiveInterval('createActiveBot', decideEveryMs);
-
-  /** Spart bewusst: Ist die beste Einheit noch zu teuer, wird nichts Schlechteres gekauft. */
-  const bestUnit = (plan: CommandPlan): UnitType | null => {
-    const { view, state } = plan;
-    const { prices, params } = view;
-    const food = state.res.food;
-    const income = view.netFoodPerSecond;
-    const drones = paybackSeconds(prices.drones, food, income, Num.from(params.droneCollectRate));
-    const queens = paybackSeconds(prices.queens, food, income, queenGainPerSecond(view, income));
-    if (drones === Infinity && queens === Infinity) {
-      return null;
-    }
-    return queens < drones ? 'queens' : 'drones';
-  };
-
   return {
     name: 'active',
     nextActionMs: (afterMs) => nextMultipleMs(afterMs, decideEveryMs),
@@ -75,14 +86,7 @@ export function createActiveBot({
       const plan = new CommandPlan(state, view);
       // Weiterziehen übernimmt das Auto-Weiterziehen (Game-Design §4.12).
       plan.enableAutoMove();
-      // Ohne bezahlbare Einheit steht das Ergebnis fest; das spart die Bewertung.
-      while (plan.canBuy('drones') || plan.canBuy('queens')) {
-        const unit = bestUnit(plan);
-        if (unit === null || !plan.canBuy(unit)) {
-          break;
-        }
-        plan.buy(unit);
-      }
+      buyByPayback(plan);
       return plan.commands;
     },
   };
