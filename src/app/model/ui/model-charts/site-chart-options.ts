@@ -234,7 +234,8 @@ export function buildSiteChartOption(input: SiteChartInput) {
   return {
     animation: false,
     legend: { type: 'scroll' as const, top: 0, data: series.map((entry) => entry.name) },
-    grid: { left: 76, right: 20, top: 36, bottom: 44 },
+    // Unten liegen der Zoom-Regler (8–32 px) und darüber der Achsenname.
+    grid: { left: 76, right: 20, top: 36, bottom: 76 },
     tooltip: {
       trigger: 'axis' as const,
       confine: true,
@@ -260,8 +261,20 @@ export function buildSiteChartOption(input: SiteChartInput) {
         axisLabel: { formatter: (value: number) => formatAxisValue(value) },
       },
     ],
-    // Ohne Zeitachse kein Zoom; leere Liste entfernt die Regler der Zeitreihen.
-    dataZoom: [],
+    // Lokaler Zoom über die Futterstellen wie bei den Zeitreihen; jede neue Option zeigt wieder
+    // alle. Die Fenster sind Kategorie-Indizes, keine Zeit, und gehen darum nicht an die Facade.
+    dataZoom: [
+      { type: 'inside' as const, xAxisIndex: 0, start: 0, end: 100 },
+      {
+        type: 'slider' as const,
+        xAxisIndex: 0,
+        start: 0,
+        end: 100,
+        bottom: 8,
+        height: 24,
+        textStyle: { color: palette.muted },
+      },
+    ],
     series,
   };
 }

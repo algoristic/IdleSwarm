@@ -35,17 +35,15 @@
         <ng-container i18n="@@uiModel-modelCharts-logScale">Logarithmische Achse</ng-container>
       </label>
     }
-    @if (!_siteTab) {
-      <button
-        type="button"
-        [class]="button"
-        data-testid="model.charts.reset-zoom"
-        i18n="@@uiModel-modelCharts-resetZoom"
-        (click)="onResetZoom()"
-      >
-        Zoom zurücksetzen
-      </button>
-    }
+    <button
+      type="button"
+      [class]="button"
+      data-testid="model.charts.reset-zoom"
+      i18n="@@uiModel-modelCharts-resetZoom"
+      (click)="onResetZoom()"
+    >
+      Zoom zurücksetzen
+    </button>
     @if (logScale() && tab() !== 'siteDuration') {
       <small class="text-xs text-fg-muted" i18n="@@uiModel-modelCharts-logHint"
         >Werte ≤ 0 und „nie“ werden hier nicht gezeichnet.</small
@@ -103,6 +101,6 @@
     role="tabpanel"
     [attr.aria-labelledby]="'tab-' + tab()"
   >
-    <app-echart [option]="option()" (changedZoom)="changedZoom.emit($event)" />
+    <app-echart [option]="option()" (changedZoom)="onChangedZoom($event)" />
   </div>
 </section>

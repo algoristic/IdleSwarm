@@ -73,6 +73,7 @@ export class ModelChartsComponent {
   /** Der Zoom kommt aus dem Diagramm selbst und löst darum keinen Neuaufbau aus. */
   option = computed(() => {
     const tab = this.tab();
+    this.#zoomResets();
     if (isSiteTab(tab)) {
       return buildSiteChartOption({
         tab,
@@ -81,7 +82,6 @@ export class ModelChartsComponent {
         palette: this.#palette,
       });
     }
-    this.#zoomResets();
     return buildChartOption({
       tab,
       runs: this.runs(),
@@ -124,8 +124,17 @@ export class ModelChartsComponent {
     });
   }
 
+  /** Der Zoom der Reiter je Futterstelle zählt Kategorien, keine Zeit; er bleibt im Diagramm. */
+  onChangedZoom(zoom: TimeRange): void {
+    if (!this.siteTab()) {
+      this.changedZoom.emit(zoom);
+    }
+  }
+
   onResetZoom(): void {
-    this.changedZoom.emit(null);
+    if (!this.siteTab()) {
+      this.changedZoom.emit(null);
+    }
     this.#zoomResets.update((count) => count + 1);
   }
 }

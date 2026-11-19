@@ -123,8 +123,12 @@ describe('buildSiteChartOption', () => {
     expect(after(false)[0].value).toBe(0);
   });
 
-  it('hat keinen Zoom-Regler', () => {
-    expect(buildSiteChartOption(input).dataZoom).toEqual([]);
+  it('zoomt die Futterstellen-Achse mit Regler und Mausrad, anfangs über alle', () => {
+    const zoom = buildSiteChartOption(input).dataZoom;
+    expect(zoom.map((entry) => [entry.type, entry.xAxisIndex, entry.start, entry.end])).toEqual([
+      ['inside', 0, 0, 100],
+      ['slider', 0, 0, 100],
+    ]);
   });
 });
 
