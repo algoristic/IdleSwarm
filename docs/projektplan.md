@@ -282,18 +282,18 @@ flowchart TB
 | 1.4.2 | Szene-Canvas | Futterstelle, Agenten-Renderer mit Budget (ein Sprite = n Einheiten), Plankton, Ertrags-Effekte, DPR | 2–3 | US-08.02 |
 | 1.4.3 | HUD im K2-Stil | Ressourcen, Titel je Modus, Aktionsleiste, Zoom-Leiste, Schubladen, Log, Ära-Anzeige | 2–3 | US-08.03, 08.04 |
 | 1.4.4 | Eingabe Desktop | Mausrad, Tastatur (W / G / Esc), Pointer Events | 0,5–1 | US-08.05 |
-| 1.4.5 | Mobile | Pinch → Moduswechsel, Breakpoints, Bottom-Sheets, Touch-Ziele ≥ 44 px; aus der M1.2-Durchsicht: Beschriftungen der Sonar-Karte und ihre Darstellung auf Mobilgeräten überarbeiten | 2–3 | US-08.06, 08.07 |
+| 1.4.5 | Mobile | Pinch → Moduswechsel, Breakpoints, Bottom-Sheets, Touch-Ziele ≥ 44 px; aus der M1.2-Durchsicht: Beschriftungen der Sonar-Karte und ihre Darstellung auf Mobilgeräten überarbeiten; aus der M1.3-Durchsicht: Genom-Baum auf dem Smartphone lesbar und treffbar machen (Beschriftungen, Trefferflächen ≥ 44 px ohne Überlappung benachbarter Knoten), Links im HUD-Kopf ≥ 44 px | 2–3 | US-08.06, 08.07 |
 | 1.4.6 | Barrierearmut & Performance | `prefers-reduced-motion`, Fokusführung, Pause bei verdecktem Tab, Profiling auf Smartphone | 1–1,5 | US-08.08, 09.03 |
 
 #### M1.5 · Idle, Balancing & Release 1.0
 
 | AP | Arbeitspaket | Inhalt | PT | Stories |
 |---|---|---|---|---|
-| 1.5.1 | Offline-Fortschritt | Nachholen mit Ereignissen (Futterstelle leer, Auto-Weiterziehen), Obergrenze, Rückkehr-Zusammenfassung; neu bewerten, ob das Ereignis-Log in den Spielstand gehört (heute nur Arbeitsspeicher, `GameStore.load` leert es) | 1,5–2 | US-07.01, 07.03 |
+| 1.5.1 | Offline-Fortschritt | Nachholen mit Ereignissen (Futterstelle leer, Auto-Weiterziehen), Obergrenze, Rückkehr-Zusammenfassung; neu bewerten, ob das Ereignis-Log in den Spielstand gehört (heute nur Arbeitsspeicher, `GameStore.load` leert es); aus der M1.3-Durchsicht: Toleranz zwischen grobem und feinem Schritt prüfen (Runner-Test seit M1.3 mit 15 % statt 2 %, [TK §10](technisches-konzept.md#10-qualitätssicherung)) | 1,5–2 | US-07.01, 07.03 |
 | 1.5.2 | Spielstand-Verwaltung | Autosave, Export/Import, Zurücksetzen | 0,5–1 | US-07.04, 07.05 |
 | 1.5.3 | Einstellungen | Zahlenformat, Animationen, Autosave-Intervall | 0,5–1 | US-09.01 |
 | 1.5.4 | Onboarding | Kontextuelle Hinweise, schrittweise Freischaltung der Oberfläche | 1–1,5 | US-09.04 |
-| 1.5.5 | Balancing | Zielwerte festlegen, Bot-Läufe, Anpassen, Kennzahlen als Regressions-Snapshots; aus der M1.2-Durchsicht: neu bewerten, ob die längste Wartezeit für „Aktiv“ (Ziel ≤ 60 s) das Warten misst oder eher die Kaufkraft am Spielbeginn | 2–3 | US-10.09 |
+| 1.5.5 | Balancing | Zielwerte festlegen, Bot-Läufe, Anpassen, Kennzahlen als Regressions-Snapshots; aus der M1.2-Durchsicht: neu bewerten, ob die längste Wartezeit für „Aktiv“ (Ziel ≤ 60 s) das Warten misst oder eher die Kaufkraft am Spielbeginn; aus der M1.3-Durchsicht ([Game-Design §6.5](game-design.md#65-messung-m13)): DNA-Senke (Genom nach rund 3 h komplett), Pacing-Abweichungen der Messung M1.3, kein Kampf bei „Aktiv“ und „Idle“, „Idle“ genau auf der Grenze „< 60 min“ der längsten Strecke ohne Kauf (Band bleibt exklusiv) | 2–3 | US-10.09 |
 | 1.5.6 | PWA | Manifest, Service Worker, Icons | 0,5 | US-07.06 |
 | 1.5.7 | E2E-Tests | Smoke-Tests für Desktop- und Mobile-Viewport | 1–1,5 | – |
 | 1.5.8 | Playtest & Release | 3–5 externe Testspieler, Bugfixing, Release 1.0 | 2–3 | – |
