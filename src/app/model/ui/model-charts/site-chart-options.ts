@@ -254,6 +254,9 @@ export function buildSiteChartOption(input: SiteChartInput) {
       {
         type: useLog ? ('log' as const) : ('value' as const),
         name: isDuration ? T.minutesAxis : T.soldiersAxis,
+        // Senkrecht neben der Achse; oben läge der Name unter der Legende.
+        nameLocation: 'middle' as const,
+        nameGap: 60,
         axisLabel: { formatter: (value: number) => formatAxisValue(value) },
       },
     ],
