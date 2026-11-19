@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
+import { TICK_MS } from '@app/balance/domain/constants';
 import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
@@ -64,6 +66,7 @@ describe('HudPage', () => {
         GameStore,
         PersistenceService,
         provideHudState(),
+        provideRouter([]),
         { provide: KEY_VALUE_STORE, useValue: memory },
       ],
     });
@@ -89,6 +92,12 @@ describe('HudPage', () => {
     expect(text('hud.resources.drone-rate')).toBe('3,2');
     expect(text('hud.resources.eggs')).toBe('12,0');
     expect(text('hud.resources.attack')).toBe('3');
+    expect(text('hud.resources.dna')).toBe('0');
+  });
+
+  it('verlinkt die Umgebung zum Weiterziehen', () => {
+    setUnits({});
+    expect(query('hud.nav.environment')?.getAttribute('href')).toBe('/umgebung');
   });
 
   it('zeigt bei leerem Vorrat alle Nahrungsraten als 0', () => {
@@ -280,6 +289,43 @@ describe('HudPage', () => {
       expect(text('hud.site.stock')).toBe('0 / 20.000');
       expect(query('hud.site.time-left')).toBeNull();
       expect(query('hud.site.renew')).toBeNull();
+    });
+  });
+
+  describe('Opfern und Log', () => {
+    const input = () => query('hud.sacrifice.count') as HTMLInputElement;
+
+    it('opfert die gewählte Anzahl Drohnen für Nahrung', async () => {
+      setUnits({ drones: 10.5 });
+      const food = store.state().res.food;
+      input().value = '10';
+      input().dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(text('hud.sacrifice.yield')).toBe('Ertrag: 50 Nahrung');
+
+      (query('hud.sacrifice.submit') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(store.state().units.drones.toNumber()).toBeCloseTo(0.5);
+      expect(store.state().res.food.sub(food).toNumber()).toBe(50);
+    });
+
+    it('zeigt Ereignisse neueste zuerst, außerhalb der Status-Region', () => {
+      const base = state();
+      store.replace({ ...base, site: { ...base.site, stock: Num.from(0.01) } });
+      fixture.detectChanges();
+      expect(text('hud.log.empty')).toBe('Noch keine Ereignisse.');
+
+      store.tick(TICK_MS);
+      fixture.detectChanges();
+      const entries = element().querySelectorAll('[data-testid="hud.log.entry"]');
+      expect(entries).toHaveLength(1);
+      expect(entries[0].querySelector('[data-testid="hud.log.text"]')?.textContent).toContain(
+        'Futterstelle leer',
+      );
+      expect(query('hud.log.empty')).toBeNull();
+      expect(query('hud.site.move-link')).not.toBeNull();
     });
   });
 });

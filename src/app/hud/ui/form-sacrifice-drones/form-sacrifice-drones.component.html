@@ -1,0 +1,64 @@
+@let _form = sacrificeForm;
+@let _sacrifice = sacrifice();
+@let showErrors = _form.count().invalid() && (_form.count().touched() || _form.count().dirty());
+
+<form class="grid gap-2" aria-labelledby="sacrifice-title" [formRoot]="_form">
+  <h2 id="sacrifice-title" class="text-lg font-semibold" i18n="@@uiHud-formSacrificeDrones-title">
+    Drohnen opfern
+  </h2>
+  <p class="text-sm text-fg-muted" data-testid="hud.sacrifice.loss">
+    <ng-container i18n="@@uiHud-formSacrificeDrones-loss"
+      >Umwandlungsverlust: {{ _sacrifice.lossPercent | formatNum }} %</ng-container
+    >
+  </p>
+
+  <label
+    class="text-sm"
+    for="sacrifice-count"
+    data-testid="hud.sacrifice.max"
+    i18n="@@uiHud-formSacrificeDrones-count"
+  >
+    Anzahl (höchstens {{ _sacrifice.maxCount | formatNum }})
+  </label>
+  <div class="flex flex-wrap gap-2">
+    <input
+      id="sacrifice-count"
+      type="text"
+      inputmode="numeric"
+      autocomplete="off"
+      data-testid="hud.sacrifice.count"
+      class="min-w-0 flex-1 rounded border border-border-control bg-surface-raised px-1.5 py-1 tabular-nums aria-invalid:border-warning disabled:cursor-not-allowed disabled:opacity-50"
+      [formField]="_form.count"
+      [attr.aria-invalid]="showErrors"
+      [attr.aria-describedby]="showErrors ? 'sacrifice-errors' : null"
+    />
+    <button
+      type="submit"
+      data-testid="hud.sacrifice.submit"
+      class="cursor-pointer rounded border border-accent bg-surface-raised px-2.5 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+      [disabled]="yieldPreview() === null"
+      i18n="@@uiHud-formSacrificeDrones-submit"
+    >
+      Opfern
+    </button>
+  </div>
+  @if (showErrors) {
+    <div id="sacrifice-errors">
+      @for (error of _form.count().errors(); track error.kind) {
+        <p class="text-xs text-warning" data-testid="hud.sacrifice.error">{{ error.message }}</p>
+      }
+    </div>
+  }
+
+  <p class="text-sm tabular-nums" data-testid="hud.sacrifice.yield">
+    @if (yieldPreview(); as food) {
+      <ng-container i18n="@@uiHud-formSacrificeDrones-yield"
+        >Ertrag: {{ food | formatDown }} Nahrung</ng-container
+      >
+    } @else {
+      <ng-container i18n="@@uiHud-formSacrificeDrones-yieldPerDrone"
+        >Ertrag je Drohne: {{ _sacrifice.foodPerDrone | formatRate }} Nahrung</ng-container
+      >
+    }
+  </p>
+</form>

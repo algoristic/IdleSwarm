@@ -6,7 +6,7 @@ import { PersistenceService } from '@app/persistence/data-access/persistence/per
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 import type { HudView } from './hud.model';
-import { toHudView } from './hud.utils';
+import { toHudView, toLogView } from './hud.utils';
 
 /** Zugang des HUD zum Spielkern: Viewmodel und Befehle. */
 @Injectable()
@@ -26,7 +26,14 @@ export class HudFacade {
     ),
   );
 
+  /** Eigenes Signal, damit das Log nicht mit jedem Tick neu abgebildet wird. */
+  log = computed(() => toLogView(this.#store.log()));
+
   buy(unit: UnitType): void {
     this.#store.dispatch({ type: 'buy', unit });
+  }
+
+  sacrificeDrones(count: number): void {
+    this.#store.dispatch({ type: 'sacrificeDrones', count });
   }
 }

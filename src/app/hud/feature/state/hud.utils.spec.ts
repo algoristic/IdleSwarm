@@ -5,7 +5,7 @@ import { SaveError } from '@app/persistence/domain/serialize-logic';
 import { Num } from '@app/shared/util/num/num';
 
 import type { HudSource } from './hud.model';
-import { toHudView } from './hud.utils';
+import { toHudView, toLogView } from './hud.utils';
 
 describe('toHudView', () => {
   const base = createInitialState({ seed: 'hud', now: 0 });
@@ -68,6 +68,36 @@ describe('toHudView', () => {
     expect(view(noQueens(2)).space).toMatchObject({ usagePercent: null, barPercent: 100 });
   });
 
+  it('zeigt die DNA', () => {
+    const hud = view((state) => ({ ...state, res: { ...state.res, dna: Num.from(13.55) } }));
+    expect(hud.dna.toNumber()).toBe(13.55);
+  });
+
+  it('nennt Typ der Futterstelle und ohne Reise keine Reise', () => {
+    const hud = view();
+    expect(hud.site.type).toBe(base.site.type);
+    expect(hud.site.travel).toBeNull();
+  });
+
+  it('zeigt während der Reise Ziel und Restdauer in Sekunden', () => {
+    const [target] = base.map.candidates;
+    const hud = view((state) => ({
+      ...state,
+      site: { ...state.site, stock: Num.ZERO },
+      travel: { target, remainingMs: 24_200 },
+    }));
+    expect(hud.site.travel?.target).toBe(target.type);
+    expect(hud.site.travel?.secondsLeft.toNumber()).toBeCloseTo(24.2);
+  });
+
+  it('begrenzt das Opfern auf ganze Drohnen und nennt Ertrag und Verlust (Beispiel 6)', () => {
+    const hud = view((state) => ({ ...state, units: { ...state.units, drones: Num.from(10.9) } }));
+    expect(hud.sacrifice.maxCount).toBe(10);
+    // 10 Drohnen · 0,5 · 10 = 50 Nahrung, 50 % Verlust
+    expect(hud.sacrifice.foodPerDrone.mul(10).toNumber()).toBe(50);
+    expect(hud.sacrifice.lossPercent).toBe(50);
+  });
+
   it('übernimmt nur gültige Speicherzeitpunkte', () => {
     expect(view(undefined, { lastSavedAt: 1234 }).lastSavedAt).toBe(1234);
     expect(view(undefined, { lastSavedAt: 1e300 }).lastSavedAt).toBeNull();
@@ -81,5 +111,18 @@ describe('toHudView', () => {
         lastSaveError: new SaveError('storage', 'voll'),
       }).notices,
     ).toEqual(['restored-from-backup', 'save-failed']);
+  });
+});
+
+describe('toLogView', () => {
+  it('zeigt die neuesten Einträge zuerst, ohne die Eingabe zu ändern', () => {
+    const event = (playedMs: number) =>
+      ({ type: 'siteDepleted', playedMs, siteType: 'vent' }) as const;
+    const log = [
+      { id: 0, event: event(1) },
+      { id: 1, event: event(2) },
+    ];
+    expect(toLogView(log).map((entry) => entry.id)).toEqual([1, 0]);
+    expect(log.map((entry) => entry.id)).toEqual([0, 1]);
   });
 });

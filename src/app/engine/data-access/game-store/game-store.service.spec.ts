@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { TICK_MS } from '@app/balance/domain/constants';
+import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import type { GameState } from '@app/engine/domain/models/game-state.model';
+import { Num } from '@app/shared/util/num/num';
+import { canDepart } from '@app/site/domain/move-logic';
 
 import { Command } from '../../domain/commands-logic';
 import { createInitialState } from '../../domain/game-state-logic';
-import { createNewGame, createSeed, GameStore } from './game-store.service';
+import { createNewGame, createSeed, GameStore, LOG_MAX_ENTRIES } from './game-store.service';
 
 describe('createSeed', () => {
   it('liefert 16 Hex-Zeichen und wechselt zwischen Aufrufen', () => {
@@ -52,5 +55,84 @@ describe('GameStore', () => {
     const next = createInitialState({ seed: 'neu', now: 1 });
     store.replace(next);
     expect(store.state()).toBe(next);
+  });
+
+  describe('Log', () => {
+    /** Ein Zustand, dessen Vorrat im nächsten Tick leer wird (`siteDepleted`). */
+    function almostEmpty(state: GameState = store.state()): GameState {
+      return { ...state, site: { ...state.site, stock: Num.from(0.01) } };
+    }
+
+    /** Ein Schwarm, der jedes Ziel in Reichweite einnehmen kann. */
+    function strong(state: GameState = store.state()): GameState {
+      return { ...state, units: { ...state.units, soldiers: Num.from(1e6) } };
+    }
+
+    function reachableTarget(state: GameState): number {
+      const index = state.map.candidates.findIndex((_, i) => canDepart(state, i, DEFAULT_BALANCE));
+      expect(index).toBeGreaterThanOrEqual(0);
+      return index;
+    }
+
+    it('startet leer und bleibt ohne Ereignisse unverändert', () => {
+      const before = store.log();
+      expect(before).toEqual([]);
+      store.tick(TICK_MS);
+      store.dispatch({ type: 'noop' });
+      expect(store.log()).toBe(before);
+    });
+
+    it('nimmt Ereignisse aus Ticks auf, die Rückgabe von tick bleibt', () => {
+      store.replace(almostEmpty());
+      const events = store.tick(TICK_MS);
+      expect(events.map((e) => e.type)).toEqual(['siteDepleted']);
+      expect(store.log().map((entry) => entry.event)).toEqual(events);
+    });
+
+    it('nimmt Ereignisse aus Kommandos auf', () => {
+      store.replace(strong());
+      store.dispatch({ type: 'depart', target: reachableTarget(store.state()) });
+      expect(store.state().travel).not.toBeNull();
+      expect(store.log().map((entry) => entry.event.type)).toEqual(['departed']);
+    });
+
+    it('hält die Reihenfolge, älteste zuerst, mit fortlaufenden IDs', () => {
+      store.replace(almostEmpty(strong()));
+      store.tick(TICK_MS);
+      store.dispatch({ type: 'depart', target: reachableTarget(store.state()) });
+      const log = store.log();
+      expect(log.map((entry) => entry.event.type)).toEqual(['siteDepleted', 'departed']);
+      expect(log[1].id).toBeGreaterThan(log[0].id);
+    });
+
+    it('behält höchstens die letzten Einträge', () => {
+      const total = LOG_MAX_ENTRIES + 5;
+      for (let i = 0; i < total; i++) {
+        store.replace(almostEmpty());
+        store.tick(TICK_MS);
+      }
+      const log = store.log();
+      expect(log).toHaveLength(LOG_MAX_ENTRIES);
+      // Die fünf ältesten sind herausgefallen, die neuesten stehen am Ende.
+      expect(log[0].id).toBe(5);
+      expect(log[LOG_MAX_ENTRIES - 1].id).toBe(total - 1);
+    });
+
+    it('leert sich bei einem anderen Spiel, nicht beim Speichern oder Uhrabgleich', () => {
+      store.replace(almostEmpty());
+      store.tick(TICK_MS);
+      const state = store.state();
+
+      store.replace({ ...state, time: { ...state.time, now: state.time.now + 5000 } });
+      expect(store.log()).toHaveLength(1);
+
+      store.replace({ ...state, time: { ...state.time, played: 0 } });
+      expect(store.log()).toEqual([]);
+
+      store.replace(almostEmpty(state));
+      store.tick(TICK_MS);
+      store.replace(createInitialState({ seed: 'anderes', now: 1 }));
+      expect(store.log()).toEqual([]);
+    });
   });
 });

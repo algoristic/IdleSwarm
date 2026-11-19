@@ -2,7 +2,18 @@
 @let spaceText = (hud.space.used | formatDown) + ' / ' + (hud.space.available | formatDown);
 
 <main class="mx-auto grid max-w-240 gap-3 p-4 wrap-anywhere md:grid-cols-2">
-  <h1 class="text-2xl font-semibold md:col-span-full" i18n="@@featureHud-hud-title">IdleSwarm</h1>
+  <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 md:col-span-full">
+    <h1 class="text-2xl font-semibold" i18n="@@featureHud-hud-title">IdleSwarm</h1>
+    <nav i18n-aria-label="@@featureHud-hud-nav" aria-label="Spielbereiche">
+      <a
+        routerLink="/umgebung"
+        class="inline-block rounded border border-accent bg-surface-raised px-2.5 py-1 text-accent"
+        data-testid="hud.nav.environment"
+        i18n="@@featureHud-hud-nav-environment"
+        >Umgebung / Weiterziehen</a
+      >
+    </nav>
+  </header>
 
   <section
     class="min-w-0 rounded-lg border border-border bg-glass p-3 md:col-span-full"
@@ -16,6 +27,12 @@
         <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-food">Nahrung</dt>
         <dd class="text-xl tabular-nums" data-testid="hud.resources.food">
           {{ hud.food | formatDown }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm text-fg-muted" i18n="@@featureHud-hud-resources-dna">DNA</dt>
+        <dd class="text-xl tabular-nums" data-testid="hud.resources.dna">
+          {{ hud.dna | formatDown }}
         </dd>
       </div>
       <div>
@@ -110,6 +127,17 @@
       }
     </div>
   </section>
+
+  <app-form-sacrifice-drones
+    class="min-w-0 rounded-lg border border-border bg-glass p-3"
+    [sacrifice]="hud.sacrifice"
+    (submittedCount)="facade.sacrificeDrones($event)"
+  />
+
+  <app-event-log
+    class="min-w-0 rounded-lg border border-border bg-glass p-3"
+    [entries]="facade.log()"
+  />
 
   <footer class="text-sm text-fg-muted md:col-span-full">
     <p data-testid="hud.status.last-saved">
