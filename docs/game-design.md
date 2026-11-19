@@ -991,7 +991,7 @@ Jeder Eintrag hat sein Gewicht als eigenen Schlüssel `<id>Weight` in `BalancePa
 
 | Code | Daten |
 |---|---|
-| `found` | Typ der Futterstelle, Auslöser `arrival` oder `harvest` (mit Schwelle `j`), Eintrag (ID, Art), ggf. ersetzter Eintrag, Menge (DNA oder Nahrung), Ablauf des Buffs, Fortschritt des Fragments (x / benötigt), freigeschaltete Adaption, erhaltenes Badge |
+| `found` | Typ der Futterstelle, Auslöser `arrival` oder `harvest` (mit abgebautem Anteil `j / n_A` der Schwelle als `harvestShare`, 0 bis 1; `null` bei `arrival`), Eintrag (ID, Art), ggf. ersetzter Eintrag, Menge (DNA oder Nahrung), Ablauf des Buffs, Fortschritt des Fragments (x / benötigt), freigeschaltete Adaption, erhaltenes Badge |
 
 Ziehungen ohne Fund erzeugen kein Ereignis. Bei der Ankunft steht `found` nach `arrived`, an der Schwelle 100 % nach `siteDepleted`. Der ersetzte Eintrag fehlt beim ersten Fund und bei jedem Fund, der kein Ersatz ist (`replaced = null`).
 

@@ -59,6 +59,7 @@ import {
   findDna,
   findFood,
   findSpreadFactor,
+  harvestThresholdShare,
   harvestThresholdStock,
   reachedHarvestThresholds,
 } from './formulas';
@@ -892,6 +893,9 @@ describe('Funde (Game-Design §4.16)', () => {
     expect(
       [1, 2, 3, 4].map((j) => harvestThresholdStock(size, j, DEFAULT_BALANCE).toNumber()),
     ).toEqual([750, 500, 250, 0]);
+    expect([1, 2, 3, 4].map((j) => harvestThresholdShare(j, DEFAULT_BALANCE))).toEqual([
+      0.25, 0.5, 0.75, 1,
+    ]);
     const reached = (stock: number): number =>
       reachedHarvestThresholds(size, Num.from(stock), DEFAULT_BALANCE);
     expect([1000, 751, 750, 500, 0.1, 0].map(reached)).toEqual([0, 0, 1, 2, 3, 4]);

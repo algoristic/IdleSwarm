@@ -15,8 +15,8 @@ export interface FoundEvent {
   /** Typ der Futterstelle, für die gezogen wurde (bei der Ankunft die neue). */
   readonly siteType: SiteTypeId;
   readonly trigger: FindTrigger;
-  /** Abbau-Schwelle `j` (1 … `n_A`) bei `harvest`, sonst `null`. */
-  readonly threshold: number | null;
+  /** Abgebauter Anteil `j / n_A` (0 bis 1) der Abbau-Schwelle bei `harvest`, sonst `null`. */
+  readonly harvestShare: number | null;
   /** Wirksamer Eintrag; bei einem Ersatz `foreign-dna`. */
   readonly entry: FindEntryId;
   readonly kind: FindKind;

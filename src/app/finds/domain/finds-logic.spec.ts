@@ -193,7 +193,7 @@ describe('drawFind (Game-Design §4.16)', () => {
     const [, , r3] = triple(rngState);
     const result = drawFind(at('vent', rngState), 'harvest', 2, params, NEUTRAL_MODIFIERS);
     const event = result.events[0];
-    expect(event).toMatchObject({ trigger: 'harvest', threshold: 2, kind: 'food' });
+    expect(event).toMatchObject({ trigger: 'harvest', harvestShare: 0.5, kind: 'food' });
     expect(event.amount?.toNumber()).toBeCloseTo(1000 * (0.8 + 0.4 * r3), 8);
     expect(result.state.res.food.sub(initial.res.food).toNumber()).toBeCloseTo(
       event.amount?.toNumber() ?? NaN,

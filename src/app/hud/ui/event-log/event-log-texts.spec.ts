@@ -97,7 +97,7 @@ describe('eventLogText', () => {
       playedMs: 0,
       siteType: 'vent',
       trigger: 'arrival',
-      threshold: null,
+      harvestShare: null,
       entry: 'foreign-dna',
       kind: 'dna',
       replaced: null,
@@ -120,10 +120,10 @@ describe('eventLogText', () => {
             kind: 'food',
             amount: Num.from(1000.6),
             trigger: 'harvest',
-            threshold: 2,
+            harvestShare: 0.5,
           }),
-        ),
-      ).toBe('Fund: Nährstoffblase · +1.000 Nahrung · Hydrothermaler Schlot, Abbau-Schwelle 2');
+        ).replace(/\s/g, ' '),
+      ).toBe('Fund: Nährstoffblase · +1.000 Nahrung · Hydrothermaler Schlot, 50,0 % abgebaut');
     });
 
     it('nennt beim Ersatz den ursprünglichen Eintrag', () => {

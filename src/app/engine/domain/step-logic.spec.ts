@@ -452,7 +452,7 @@ describe('step mit Funden (Game-Design §4.16)', () => {
   const summary = (events: readonly GameEvent[]) =>
     events.map((event) =>
       event.type === 'found'
-        ? { type: event.type, entry: event.entry, threshold: event.threshold }
+        ? { type: event.type, entry: event.entry, harvestShare: event.harvestShare }
         : { type: event.type },
     );
 
@@ -465,8 +465,8 @@ describe('step mit Funden (Game-Design §4.16)', () => {
       'siteDepleted',
       'found',
     ]);
-    const thresholds = events.flatMap((event) => (event.type === 'found' ? [event.threshold] : []));
-    expect(thresholds).toEqual([1, 2, 3, 4]);
+    const shares = events.flatMap((event) => (event.type === 'found' ? [event.harvestShare] : []));
+    expect(shares).toEqual([0.25, 0.5, 0.75, 1]);
     // Der erste Fund jedes Spiels ist DNA.
     expect(events[0]).toMatchObject({ type: 'found', entry: 'foreign-dna', trigger: 'harvest' });
   });
@@ -532,7 +532,7 @@ describe('step mit Funden (Game-Design §4.16)', () => {
       playedMs: events[0].playedMs,
       siteType: 'algal-mat',
       trigger: 'arrival',
-      threshold: null,
+      harvestShare: null,
       entry: 'foreign-dna',
     });
     // DNA mit z = 1 wie ein Schlot in Distanz 1: (20 · 1,35)^0,8 · u_F

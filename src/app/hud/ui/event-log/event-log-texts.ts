@@ -6,7 +6,7 @@ import {
   UNIQUE_ADAPTATION_LABELS,
 } from '@app/genome/ui/genome-labels/genome-labels';
 import { formatDown, formatUp, roundUpForDisplay } from '@app/shared/util/format/display-format';
-import { formatElapsed } from '@app/shared/util/format/elapsed-format';
+import { formatElapsed, formatShare } from '@app/shared/util/format/elapsed-format';
 import { formatNum, formatRate } from '@app/shared/util/format/format';
 import { Num } from '@app/shared/util/num/num';
 import type { ArrivedEvent, DepartedEvent } from '@app/site/domain/models/site-event.model';
@@ -82,9 +82,9 @@ function foundText(event: FoundEvent): string {
   }
   const site = SITE_TYPE_LABELS[event.siteType];
   parts.push(
-    event.threshold === null
+    event.harvestShare === null
       ? $localize`:@@uiHud-eventLog-found-arrival:${site}:site:, Einnahme`
-      : $localize`:@@uiHud-eventLog-found-harvest:${site}:site:, Abbau-Schwelle ${formatNum(event.threshold)}:threshold:`,
+      : $localize`:@@uiHud-eventLog-found-harvestShare:${site}:site:, ${formatShare(event.harvestShare)}:share: abgebaut`,
   );
   return parts.join(SEPARATOR);
 }

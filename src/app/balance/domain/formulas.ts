@@ -817,6 +817,12 @@ export function harvestThresholdStock(size: Num, threshold: number, params: Bala
   return threshold >= count ? Num.ZERO : size.mul((count - threshold) / count);
 }
 
+/** Abgebauter Anteil `j / n_A` an der Abbau-Schwelle `j`, höchstens 1 (Game-Design §4.16). */
+export function harvestThresholdShare(threshold: number, params: BalanceParams): number {
+  const count = harvestDrawCount(params);
+  return threshold >= count ? 1 : threshold / count;
+}
+
 /**
  * Erreichte Abbau-Schwellen der Futterstelle: größtes `j ≤ n_A` mit `V ≤ G · (n_A − j) / n_A`, 0
  * ohne. Abgeleitet aus `V` und `G`, nicht gespeichert (Game-Design §4.16, §5.1).

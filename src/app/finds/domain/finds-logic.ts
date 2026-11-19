@@ -7,6 +7,7 @@ import {
   findFood,
   findSpreadFactor,
   harvestDrawCount,
+  harvestThresholdShare,
   harvestThresholdStock,
   reachedHarvestThresholds,
   siteFindChance,
@@ -177,7 +178,8 @@ function withBuff(finds: Finds, id: BuffId, expiresAtMs: number): Finds {
  *   immer Fremde DNA, ein Eintrag mit erreichtem Ziel wird zu Fremder DNA mit demselben `u_F`.
  * - Mengen mit `u_F = 1 − σ_F + 2σ_F · r_3`.
  *
- * `threshold` ist die Abbau-Schwelle `j` bei `harvest`, sonst `null`. Ohne Fund kommt nur der
+ * `threshold` ist die Abbau-Schwelle `j` bei `harvest`, sonst `null`; das Ereignis meldet den
+ * abgebauten Anteil `j / n_A` (`harvestShare`). Ohne Fund kommt nur der
  * fortgeschriebene Fund-RNG zurück, ohne Ereignis.
  */
 export function drawFind(
@@ -220,7 +222,7 @@ export function drawFind(
       playedMs: time.played,
       siteType: site.type,
       trigger,
-      threshold,
+      harvestShare: threshold === null ? null : harvestThresholdShare(threshold, params),
       entry: entry.id,
       kind: entry.kind,
       replaced: replaced === null ? null : replaced.id,
