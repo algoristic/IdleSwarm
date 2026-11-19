@@ -1,0 +1,6 @@
+<section class="genome-layer__stage" aria-labelledby="genome-tree-title">
+  <h2 id="genome-tree-title" class="sr-only" i18n="@@featureGenome-genomeLayer-title">
+    Genom-Baum
+  </h2>
+  <app-genome-tree [tree]="facade.genome().tree" (selectedEntry)="facade.select($event)" />
+</section>

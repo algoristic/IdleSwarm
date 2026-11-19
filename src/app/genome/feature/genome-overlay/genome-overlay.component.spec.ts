@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -5,12 +6,20 @@ import { GameStore } from '@app/engine/data-access/game-store/game-store.service
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { Num } from '@app/shared/util/num/num';
 
+import { GenomeLayerComponent } from '../genome-layer/genome-layer.component';
 import { provideGenomeState } from '../state/genome.providers';
-import { GenomePage } from './genome.page';
+import { GenomeOverlayComponent } from './genome-overlay.component';
 
-describe('GenomePage', () => {
+/** Die Shell zeigt Genom-Ebene und Overlay zusammen; beide teilen die Auswahl. */
+@Component({
+  imports: [GenomeLayerComponent, GenomeOverlayComponent],
+  template: '<app-genome-layer /><app-genome-overlay />',
+})
+class GenomeHostComponent {}
+
+describe('GenomeLayerComponent und GenomeOverlayComponent', () => {
   let store: GameStore;
-  let fixture: ComponentFixture<GenomePage>;
+  let fixture: ComponentFixture<GenomeHostComponent>;
 
   const element = () => fixture.nativeElement as HTMLElement;
   const query = <T extends Element>(testId: string) =>
@@ -20,7 +29,7 @@ describe('GenomePage', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [GenomePage],
+      imports: [GenomeHostComponent],
       providers: [provideRouter([]), GameStore, provideGenomeState()],
     });
     store = TestBed.inject(GameStore);
@@ -31,7 +40,7 @@ describe('GenomePage', () => {
       genome: { owned: ['cilia-1'] },
       finds: { ...state.finds, collected: { 'sulfur-pearl': 2 } },
     });
-    fixture = TestBed.createComponent(GenomePage);
+    fixture = TestBed.createComponent(GenomeHostComponent);
     fixture.detectChanges();
   });
 

@@ -8,17 +8,10 @@ export const routes: Routes = [
     canMatch: [modelRouteGuard],
     loadChildren: async () => (await import('@app/model/feature/model.routes')).modelRoutes,
   },
-  {
-    path: 'umgebung',
-    loadChildren: async () => (await import('@app/sonar/feature/sonar.routes')).sonarRoutes,
-  },
-  {
-    path: 'genom',
-    loadChildren: async () => (await import('@app/genome/feature/genome.routes')).genomeRoutes,
-  },
+  // Szene (`''`), Umgebung (`umgebung`) und Genom (`genom`) teilen sich die K2-Shell.
   {
     path: '',
-    loadChildren: async () => (await import('@app/hud/feature/hud.routes')).hudRoutes,
+    loadChildren: async () => (await import('@app/shell/feature/shell.routes')).shellRoutes,
   },
   { path: '**', redirectTo: '' },
 ];

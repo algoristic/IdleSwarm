@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -11,18 +12,26 @@ import { KeyValueStore, SAVE_KEY, saveGame } from '@app/persistence/domain/slots
 import { Num } from '@app/shared/util/num/num';
 import { Units } from '@app/swarm/domain/models/units.model';
 
+import { ResourcesPanelComponent } from '../resources-panel/resources-panel.component';
 import { provideHudState } from '../state/hud.providers';
-import { HudPage } from './hud.page';
+import { SceneHudComponent } from './scene-hud.component';
 
 const SAVED_AT = Date.UTC(2026, 0, 2, 3, 4, 5);
 
-describe('HudPage', () => {
+/** Die Shell zeigt Ressourcen-Panel und Szenen-HUD nebeneinander. */
+@Component({
+  imports: [ResourcesPanelComponent, SceneHudComponent],
+  template: '<app-resources-panel /><app-scene-hud />',
+})
+class HudHostComponent {}
+
+describe('SceneHudComponent und ResourcesPanelComponent', () => {
   let items: Map<string, string>;
   let failWrites: boolean;
   let memory: KeyValueStore;
   let store: GameStore;
   let persistence: PersistenceService;
-  let fixture: ComponentFixture<HudPage>;
+  let fixture: ComponentFixture<HudHostComponent>;
 
   const element = () => fixture.nativeElement as HTMLElement;
   const query = (testId: string) => element().querySelector(`[data-testid="${testId}"]`);
@@ -61,7 +70,7 @@ describe('HudPage', () => {
       removeItem: (key) => void items.delete(key),
     };
     TestBed.configureTestingModule({
-      imports: [HudPage],
+      imports: [HudHostComponent],
       providers: [
         GameStore,
         PersistenceService,
@@ -72,10 +81,10 @@ describe('HudPage', () => {
     });
     store = TestBed.inject(GameStore);
     persistence = TestBed.inject(PersistenceService);
-    fixture = TestBed.createComponent(HudPage);
+    fixture = TestBed.createComponent(HudHostComponent);
   });
 
-  it('zeigt Überschrift und Ressourcen, Mengen abgerundet', () => {
+  it('zeigt die Ressourcen, Mengen abgerundet', () => {
     const base = state();
     store.replace({
       ...base,
@@ -84,7 +93,6 @@ describe('HudPage', () => {
     });
     fixture.detectChanges();
 
-    expect(element().querySelector('h1')?.textContent).toBe('IdleSwarm');
     expect(text('hud.resources.food')).toBe('1.284');
     // 1,5 Grundertrag + 16 · 0,2 Drohnen
     expect(text('hud.resources.food-rate')).toBe('4,7');
@@ -93,11 +101,6 @@ describe('HudPage', () => {
     expect(text('hud.resources.eggs')).toBe('12,0');
     expect(text('hud.resources.attack')).toBe('3');
     expect(text('hud.resources.dna')).toBe('0');
-  });
-
-  it('verlinkt die Umgebung zum Weiterziehen', () => {
-    setUnits({});
-    expect(query('hud.nav.environment')?.getAttribute('href')).toBe('/umgebung');
   });
 
   it('zeigt bei leerem Vorrat alle Nahrungsraten als 0', () => {
@@ -263,7 +266,7 @@ describe('HudPage', () => {
     });
   });
 
-  describe('Pheromone, Funde und Genom', () => {
+  describe('Pheromone und Funde', () => {
     const button = (testId: string) => query(testId) as HTMLButtonElement | null;
 
     it('zeigt die Panels und verteilt einen freien Punkt mit „+“', () => {
@@ -289,19 +292,6 @@ describe('HudPage', () => {
       setUnits({});
       expect(text('hud.pheromones.gland')).toBe('Pheromon-Drüse stärken · +1 Punkt · 100 N');
       expect(button('hud.pheromones.gland')?.disabled).toBe(true);
-    });
-
-    it('verlinkt das Genom und zählt bezahlbare Adaptionen erst ab einer', () => {
-      setUnits({});
-      expect(query('hud.nav.genome')?.getAttribute('href')).toBe('/genom');
-      expect(query('hud.nav.genome-count')).toBeNull();
-
-      const base = state();
-      store.replace({ ...base, res: { ...base.res, dna: Num.from(8) } });
-      fixture.detectChanges();
-      const count = query('hud.nav.genome-count');
-      expect(count?.querySelector('[aria-hidden="true"]')?.textContent?.trim()).toBe('3');
-      expect(count?.querySelector('.sr-only')?.textContent?.trim()).toBe('3 Adaptionen verfügbar');
     });
   });
 

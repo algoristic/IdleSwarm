@@ -1,0 +1,100 @@
+@let mode = facade.mode();
+@let layout = facade.layout();
+@let world = layout.world;
+@let hud = hudFacade.hud();
+
+<main
+  class="shell"
+  data-testid="shell.root"
+  [attr.data-mode]="mode"
+  [style.--ms]="layout.stageSize"
+>
+  <!-- Ebenen: Sonar (z = 1), Welt (z = 2), Genom (z = 3); die Kamera fährt per CSS-Übergang. -->
+  <div
+    class="shell__layer shell__layer--sonar"
+    data-testid="shell.layer.map"
+    [attr.inert]="mode === 'map' ? null : ''"
+  >
+    <app-sonar-layer />
+  </div>
+
+  <div
+    class="shell__layer shell__layer--world"
+    data-testid="shell.layer.scene"
+    [attr.inert]="mode === 'gen' ? '' : null"
+    [style.transform-origin]="world.transformOrigin"
+    [style.transform]="world.transform"
+    [style.clip-path]="world.clipPath"
+    [style.filter]="world.filter"
+  >
+    <!-- Platzhalter bis zum Szene-Canvas (AP 1.4.2): Hintergrund und Futterstelle in der Mitte. -->
+    <div class="shell__world" aria-hidden="true">
+      <div class="size-40 rounded-full border-4 border-accent bg-surface-raised"></div>
+    </div>
+    @if (mode === 'map') {
+      <!-- Im Kartenmodus ist die Welt der Punkt im Kartenzentrum; der Zurück-Knopf ist der Tastaturweg. -->
+      <button
+        type="button"
+        class="absolute inset-0 cursor-pointer"
+        tabindex="-1"
+        data-testid="shell.world.back"
+        [attr.aria-label]="worldBackLabel"
+        (click)="onClickWorld()"
+      ></button>
+    }
+  </div>
+
+  <div
+    class="shell__layer shell__layer--genome"
+    data-testid="shell.layer.gen"
+    [attr.inert]="mode === 'gen' ? null : ''"
+  >
+    <app-genome-layer />
+  </div>
+
+  <!-- Overlays: nur im eigenen Modus sichtbar und bedienbar. -->
+  <app-scene-hud
+    data-testid="shell.overlay.scene"
+    class="fixed top-0 right-0 bottom-0 z-10 w-full max-w-sm overflow-y-auto p-4 opacity-0 transition-opacity duration-500 pointer-events-none mode-scene:pointer-events-auto mode-scene:opacity-100"
+    [attr.inert]="mode === 'scene' ? null : ''"
+  />
+  <app-sonar-overlay
+    data-testid="shell.overlay.map"
+    class="fixed top-0 right-0 bottom-0 z-10 w-full max-w-sm overflow-y-auto p-4 opacity-0 transition-opacity duration-500 pointer-events-none mode-map:pointer-events-auto mode-map:opacity-100"
+    [attr.inert]="mode === 'map' ? null : ''"
+  />
+  <app-genome-overlay
+    data-testid="shell.overlay.gen"
+    class="fixed top-0 right-0 bottom-0 z-10 w-full max-w-sm overflow-y-auto p-4 opacity-0 transition-opacity duration-500 pointer-events-none mode-gen:pointer-events-auto mode-gen:opacity-100"
+    [attr.inert]="mode === 'gen' ? null : ''"
+  />
+
+  <!-- In allen Modi: Titel mit Ressourcen oben links, Zoom-Leiste links. -->
+  <div class="fixed top-4 left-4 z-10 grid w-64 gap-2">
+    <h1 class="text-xl font-semibold" i18n="@@featureShell-shell-title">IdleSwarm</h1>
+    <app-resources-panel />
+  </div>
+
+  <app-zoom-bar
+    class="fixed top-1/2 left-4 z-10 w-48 -translate-y-1/2"
+    [mode]="mode"
+    [dna]="hud.dna"
+    [availableAdaptations]="hud.availableAdaptations"
+    (selectedMode)="facade.setMode($event)"
+  />
+
+  <div
+    class="fixed bottom-6 left-1/2 z-10 -translate-x-1/2 transition-opacity duration-500 mode-scene:pointer-events-none mode-scene:opacity-0"
+    [attr.inert]="mode === 'scene' ? '' : null"
+  >
+    <button
+      type="button"
+      class="min-h-11 cursor-pointer touch-manipulation rounded-full border border-accent bg-surface-raised px-5 py-2 font-semibold text-accent hover:bg-surface"
+      data-testid="shell.back"
+      i18n="@@featureShell-shell-back"
+      (click)="facade.setMode('scene')"
+    >
+      ← zurück zum Schwarm
+    </button>
+  </div>
+</main>

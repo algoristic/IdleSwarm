@@ -2,49 +2,36 @@
 @let panel = 'min-w-0 rounded-lg border border-border bg-glass p-3';
 @let strategyName = strategyLabels[sonar.settings.strategy];
 
-<main class="mx-auto grid max-w-240 gap-3 p-4 wrap-anywhere md:grid-cols-2">
-  <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 md:col-span-full">
-    <h1 class="text-2xl font-semibold" i18n="@@featureSonar-sonar-title">Umgebung</h1>
-    <a
-      class="inline-flex min-h-11 items-center text-accent underline"
-      routerLink="/"
-      data-testid="sonar.nav.back"
-      i18n="@@featureSonar-sonar-back"
-      >← Zurück zum Schwarm</a
-    >
-  </header>
+<div class="grid gap-3 wrap-anywhere">
+  <h2 class="text-2xl font-semibold" i18n="@@featureSonar-sonarOverlay-title">Umgebung</h2>
 
-  <section
-    class="grid gap-1 tabular-nums md:col-span-full"
-    aria-labelledby="sonar-status-title"
-    [class]="panel"
-  >
+  <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-status-title" [class]="panel">
     <h2
       id="sonar-status-title"
       class="text-lg font-semibold"
-      i18n="@@featureSonar-sonar-statusTitle"
+      i18n="@@featureSonar-sonarOverlay-statusTitle"
     >
       Standort
     </h2>
     @if (sonar.travel; as travel) {
       <p data-testid="sonar.status.travel">
-        <ng-container i18n="@@featureSonar-sonar-traveling">Unterwegs nach</ng-container>
+        <ng-container i18n="@@featureSonar-sonarOverlay-traveling">Unterwegs nach</ng-container>
         {{ siteTypeLabels[travel.type] }} ·
-        <ng-container i18n="@@featureSonar-sonar-arrival"
+        <ng-container i18n="@@featureSonar-sonarOverlay-arrival"
           >Ankunft in etwa {{ travel.secondsLeft | formatDuration }}</ng-container
         >
       </p>
       <p
         class="font-semibold"
         data-testid="sonar.status.new-targets"
-        i18n="@@featureSonar-sonar-newTargets"
+        i18n="@@featureSonar-sonarOverlay-newTargets"
       >
         Nach der Ankunft gibt es neue Ziele.
       </p>
     } @else {
       <p data-testid="sonar.status.site">
         {{ siteTypeLabels[sonar.site.type] }} ·
-        <ng-container i18n="@@featureSonar-sonar-stock"
+        <ng-container i18n="@@featureSonar-sonarOverlay-stock"
           >Vorrat {{ sonar.site.stock | formatUp }} / {{ sonar.site.size | formatDown }} ({{
             sonar.site.stockPercent | formatNum
           }}
@@ -52,44 +39,39 @@
         >
         @if (sonar.site.secondsLeft; as seconds) {
           ·
-          <ng-container i18n="@@featureSonar-sonar-timeLeft"
+          <ng-container i18n="@@featureSonar-sonarOverlay-timeLeft"
             >leer in etwa {{ seconds | formatDuration }}</ng-container
           >
         }
       </p>
     }
     <p class="text-sm text-fg-muted" data-testid="sonar.status.range">
-      <ng-container i18n="@@featureSonar-sonar-range"
+      <ng-container i18n="@@featureSonar-sonarOverlay-range"
         >Reichweite {{ sonar.range | formatNum }}</ng-container
       >
       ·
       @if (sonar.travel) {
-        <ng-container i18n="@@featureSonar-sonar-strategyName"
+        <ng-container i18n="@@featureSonar-sonarOverlay-strategyName"
           >Strategie „{{ strategyName }}“</ng-container
         >
       } @else if (sonar.strategyTarget === null) {
-        <ng-container i18n="@@featureSonar-sonar-strategyNoTarget"
+        <ng-container i18n="@@featureSonar-sonarOverlay-strategyNoTarget"
           >Strategie „{{ strategyName }}“ findet kein Ziel</ng-container
         >
       } @else {
         <!-- Geschützte Leerzeichen halten „◆ =“ beim Umbruch zusammen. -->
-        <ng-container i18n="@@featureSonar-sonar-strategyMark"
+        <ng-container i18n="@@featureSonar-sonarOverlay-strategyMark"
           >◆&nbsp;=&nbsp;Ziel der Strategie „{{ strategyName }}“</ng-container
         >
       }
     </p>
   </section>
 
-  <section class="md:col-span-full" aria-labelledby="sonar-map-title" [class]="panel">
-    <h2 id="sonar-map-title" class="sr-only" i18n="@@featureSonar-sonar-mapTitle">Sonar-Karte</h2>
-    <app-sonar-map [map]="sonar.map" (selectedTarget)="facade.select($event)" />
-  </section>
-
   <section aria-labelledby="sonar-targets-title" [class]="panel">
     <h2
       id="sonar-targets-title"
       class="mb-2 text-lg font-semibold"
-      i18n="@@featureSonar-sonar-targetsTitle"
+      i18n="@@featureSonar-sonarOverlay-targetsTitle"
     >
       Ziele
     </h2>
@@ -97,7 +79,7 @@
       <p
         class="mb-2 text-sm text-fg-muted"
         data-testid="sonar.targets.stale"
-        i18n="@@featureSonar-sonar-staleTargets"
+        i18n="@@featureSonar-sonarOverlay-staleTargets"
       >
         Ziele vom bisherigen Standort, nur zur Ansicht.
       </p>
@@ -120,7 +102,7 @@
         <p
           class="text-fg-muted"
           data-testid="sonar.detail.empty"
-          i18n="@@featureSonar-sonar-noSelection"
+          i18n="@@featureSonar-sonarOverlay-noSelection"
         >
           Ein Ziel auswählen, um Details zu sehen.
         </p>
@@ -131,7 +113,7 @@
       <h2
         id="sonar-settings-title"
         class="mb-2 text-lg font-semibold"
-        i18n="@@featureSonar-sonar-settingsTitle"
+        i18n="@@featureSonar-sonarOverlay-settingsTitle"
       >
         Einstellungen
       </h2>
@@ -144,4 +126,4 @@
       />
     </section>
   </div>
-</main>
+</div>

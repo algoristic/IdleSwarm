@@ -1,0 +1,8 @@
+/*
+ * K2-Ausnahme (CLAUDE.md §4): Die Bühne ist so groß wie `--ms`, damit der Zellkern in der Mitte
+ * des Viewports liegt, wo die Welt im Genom-Modus hineinzoomt. Die Legende ragt darunter.
+ */
+.genome-layer__stage {
+  width: var(--ms);
+  height: var(--ms);
+}

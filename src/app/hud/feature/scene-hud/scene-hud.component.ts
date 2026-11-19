@@ -1,11 +1,8 @@
 import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import { FormatDateTimePipe } from '@app/shared/ui/pipes/format-date-time/format-date-time.pipe';
 import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
 import { FormatIsoDateTimePipe } from '@app/shared/ui/pipes/format-iso-date-time/format-iso-date-time.pipe';
-import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
-import { FormatRatePipe } from '@app/shared/ui/pipes/format-rate/format-rate.pipe';
 
 import { BuyButtonComponent } from '../../ui/buy-button/buy-button.component';
 import { EventLogComponent } from '../../ui/event-log/event-log.component';
@@ -18,11 +15,11 @@ import { HudFacade } from '../state/hud.facade';
 import type { HudNotice } from '../state/hud.model';
 
 /**
- * Funktionales Prototyp-HUD: Ressourcen, Futterstelle, Käufe, Platz, Pheromone, Funde, Opfern,
- * Ereignis-Log, Speicherstatus und Links zu Umgebung und Genom.
+ * HUD der Szene (Prototyp bis AP 1.4.3): Futterstelle, Platz, Käufe, Pheromone, Funde, Opfern,
+ * Ereignis-Log und Speicherstatus.
  */
 @Component({
-  selector: 'app-hud-page',
+  selector: 'app-scene-hud',
   imports: [
     BuyButtonComponent,
     EventLogComponent,
@@ -32,22 +29,19 @@ import type { HudNotice } from '../state/hud.model';
     FormatDateTimePipe,
     FormatDownPipe,
     FormatIsoDateTimePipe,
-    FormatNumPipe,
-    FormatRatePipe,
     HudMeterComponent,
     PheromonePanelComponent,
-    RouterLink,
   ],
-  templateUrl: './hud.page.html',
+  templateUrl: './scene-hud.component.html',
   host: { class: 'block' },
 })
-export class HudPage {
+export class SceneHudComponent {
   facade = inject(HudFacade);
 
-  spaceLabel = $localize`:@@featureHud-hud-space-title:Platz`;
+  spaceLabel = $localize`:@@featureHud-sceneHud-space-title:Platz`;
   noticeTexts: Readonly<Record<HudNotice, string>> = {
-    'restored-from-backup': $localize`:@@featureHud-hud-notice-restoredFromBackup:Der Spielstand war beschädigt und wurde aus der Sicherung wiederhergestellt.`,
-    'save-unreadable': $localize`:@@featureHud-hud-notice-saveUnreadable:Der Spielstand konnte nicht gelesen werden. Es wurde ein neues Spiel begonnen.`,
-    'save-failed': $localize`:@@featureHud-hud-notice-saveFailed:Speichern ist fehlgeschlagen. Es wird beim nächsten Mal erneut versucht.`,
+    'restored-from-backup': $localize`:@@featureHud-sceneHud-notice-restoredFromBackup:Der Spielstand war beschädigt und wurde aus der Sicherung wiederhergestellt.`,
+    'save-unreadable': $localize`:@@featureHud-sceneHud-notice-saveUnreadable:Der Spielstand konnte nicht gelesen werden. Es wurde ein neues Spiel begonnen.`,
+    'save-failed': $localize`:@@featureHud-sceneHud-notice-saveFailed:Speichern ist fehlgeschlagen. Es wird beim nächsten Mal erneut versucht.`,
   };
 }

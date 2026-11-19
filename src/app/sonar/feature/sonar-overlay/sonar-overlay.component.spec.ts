@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -6,8 +7,9 @@ import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { Num } from '@app/shared/util/num/num';
 import type { SiteCandidate } from '@app/site/domain/models/map.model';
 
+import { SonarLayerComponent } from '../sonar-layer/sonar-layer.component';
 import { provideSonarState } from '../state/sonar.providers';
-import { SonarPage } from './sonar.page';
+import { SonarOverlayComponent } from './sonar-overlay.component';
 
 const candidate = (type: SiteCandidate['type'], x: number, defense: number): SiteCandidate => ({
   type,
@@ -16,9 +18,16 @@ const candidate = (type: SiteCandidate['type'], x: number, defense: number): Sit
   defense: Num.from(defense),
 });
 
-describe('SonarPage', () => {
+/** Die Shell zeigt Karten-Ebene und Overlay zusammen; beide teilen die Auswahl. */
+@Component({
+  imports: [SonarLayerComponent, SonarOverlayComponent],
+  template: '<app-sonar-layer /><app-sonar-overlay />',
+})
+class SonarHostComponent {}
+
+describe('SonarLayerComponent und SonarOverlayComponent', () => {
   let store: GameStore;
-  let fixture: ComponentFixture<SonarPage>;
+  let fixture: ComponentFixture<SonarHostComponent>;
 
   const element = () => fixture.nativeElement as HTMLElement;
   const query = <T extends HTMLElement>(testId: string) =>
@@ -40,7 +49,7 @@ describe('SonarPage', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [SonarPage],
+      imports: [SonarHostComponent],
       providers: [provideRouter([]), GameStore, provideSonarState()],
     });
     store = TestBed.inject(GameStore);
@@ -56,7 +65,7 @@ describe('SonarPage', () => {
         ],
       },
     });
-    fixture = TestBed.createComponent(SonarPage);
+    fixture = TestBed.createComponent(SonarHostComponent);
     fixture.detectChanges();
   });
 

@@ -29,3 +29,25 @@ export const ANIMATION_FRAME = new InjectionToken<AnimationFrame>('ANIMATION_FRA
     cancel: (handle) => cancelAnimationFrame(handle),
   }),
 });
+
+/** Größe des Browserfensters; als Token, damit Tests Größe und `resize` ersetzen können. */
+export interface Viewport {
+  /** Breite in CSS-Pixeln (`innerWidth`). */
+  width(): number;
+  /** Höhe in CSS-Pixeln (`innerHeight`). */
+  height(): number;
+  /** Meldet Größenänderungen; die Rückgabe meldet wieder ab. */
+  onResize(listener: () => void): () => void;
+}
+
+export const VIEWPORT = new InjectionToken<Viewport>('VIEWPORT', {
+  providedIn: 'root',
+  factory: () => ({
+    width: () => innerWidth,
+    height: () => innerHeight,
+    onResize: (listener) => {
+      addEventListener('resize', listener);
+      return () => removeEventListener('resize', listener);
+    },
+  }),
+});

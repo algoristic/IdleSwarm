@@ -1,0 +1,50 @@
+@let _mode = mode();
+
+<nav class="rounded-lg border border-border bg-glass p-3" [attr.aria-label]="title">
+  <ul class="grid gap-2">
+    @for (entry of modes; track entry) {
+      <li>
+        <button
+          type="button"
+          class="group relative flex min-h-11 w-full cursor-pointer touch-manipulation items-center gap-3 rounded-md px-2 py-1 text-left text-fg-muted hover:text-fg current:bg-surface-raised current:text-fg"
+          [attr.aria-current]="entry === _mode ? 'page' : null"
+          [attr.data-testid]="'shell.zoom.' + entry"
+          (click)="onSelect(entry)"
+        >
+          <span
+            class="size-3 shrink-0 rounded-full border-2 border-border-control group-current:border-accent group-current:bg-accent"
+            aria-hidden="true"
+          ></span>
+          <span class="grid leading-tight">
+            <span class="font-semibold">{{ labels[entry] }}</span>
+            @if (entry === 'gen') {
+              <small class="text-sm text-fg-muted tabular-nums" data-testid="shell.zoom.gen-dna"
+                ><ng-container i18n="@@uiShell-zoomBar-dna"
+                  >{{ dna() | formatDown }} DNA</ng-container
+                ></small
+              >
+            } @else {
+              <small class="text-sm text-fg-muted">{{ hints[entry] }}</small>
+            }
+          </span>
+          @if (entry === 'gen' && availableAdaptations() > 0) {
+            <span
+              class="ml-auto rounded-full bg-accent px-2 text-sm font-semibold text-on-accent tabular-nums"
+              data-testid="shell.zoom.gen-count"
+            >
+              <span aria-hidden="true">{{ availableAdaptations() | formatNum }}</span>
+              <span
+                class="sr-only"
+                i18n="@@uiShell-zoomBar-genomeCount"
+                >{availableAdaptations(), plural,
+                  =1 {eine Adaption verfügbar}
+                  other {{{ availableAdaptations() | formatNum }} Adaptionen verfügbar}
+                }</span
+              >
+            </span>
+          }
+        </button>
+      </li>
+    }
+  </ul>
+</nav>

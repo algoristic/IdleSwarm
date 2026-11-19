@@ -1,0 +1,33 @@
+@let genome = facade.genome();
+@let panel = 'min-w-0 rounded-lg border border-border bg-glass p-3';
+
+<div class="grid gap-3 wrap-anywhere">
+  <h2 class="text-2xl font-semibold" i18n="@@featureGenome-genomeOverlay-title">Genom</h2>
+
+  <section
+    class="flex flex-wrap items-baseline gap-x-6 gap-y-1 tabular-nums"
+    aria-labelledby="genome-status-title"
+    [class]="panel"
+  >
+    <h2 id="genome-status-title" class="sr-only" i18n="@@featureGenome-genomeOverlay-statusTitle">
+      Bestand
+    </h2>
+    <p data-testid="genome.status.dna" i18n="@@featureGenome-genomeOverlay-dna">
+      <span class="text-lg font-semibold text-violet">{{ genome.dna | formatDown }}</span> DNA
+    </p>
+    <p data-testid="genome.status.available" i18n="@@featureGenome-genomeOverlay-available">
+      {genome.availableCount, plural,
+        =0 {Keine Adaption verfügbar}
+        =1 {1 Adaption verfügbar}
+        other {{{ genome.availableCount | formatNum }} Adaptionen verfügbar}
+      }
+    </p>
+  </section>
+
+  <section aria-labelledby="genome-detail-title" [class]="panel">
+    <h2 id="genome-detail-title" class="sr-only" i18n="@@featureGenome-genomeOverlay-detailTitle">
+      Gewählte Adaption
+    </h2>
+    <app-genome-detail [detail]="genome.detail" (clickedEvolve)="facade.evolve($event)" />
+  </section>
+</div>

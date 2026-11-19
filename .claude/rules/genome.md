@@ -5,7 +5,7 @@ paths:
 
 # Genom
 
-Das Genom der Ära I (Game-Design §4.14, AP 1.3.2) und die Genom-Ansicht unter `/genom` (AP 1.3.3, US-05.01–05.04, US-06.02). Die Ansicht ist eine eigene Seite mit Rücklink zum HUD; in M1.4 wird sie zur K2-Ebene `#genome`. Viewmodel und Detailpanel bleiben dabei.
+Das Genom der Ära I (Game-Design §4.14, AP 1.3.2) und die Genom-Ansicht unter `/genom` (AP 1.3.3, US-05.01–05.04, US-06.02). Seit AP 1.4.1 ist `/genom` der Genom-Modus der K2-Shell (Regeldatei `shell`): Der Baum liegt in der Genom-Ebene, Status und Detailpanel im Overlay.
 
 ## Was wo liegt
 
@@ -21,8 +21,9 @@ Das Genom der Ära I (Game-Design §4.14, AP 1.3.2) und die Genom-Ansicht unter 
 | `genome/ui/genome-descriptions/genome-descriptions.ts` | Beschreibungstexte: `GENOME_ROOT_DESCRIPTION`, `GENOME_NODE_DESCRIPTIONS`, `UNIQUE_ADAPTATION_DESCRIPTIONS` |
 | `genome/ui/genome-tree/` | `GenomeTreeComponent`: SVG-Baum im Zellkern (Membran, Organellen, Äste, Knoten als Knöpfe mit `aria-label`, Enter/Leertaste), Legende der Äste und Status; Output `selectedEntry`. Typen in `genome-tree.component.model.ts` (`GenomeTreeView`, `TreeNodeView`, `TreeEdgeView`, `TreeEdgeStyle`). `genome-tree.layout.ts`: `GENOME_LAYOUT` (Winkel, Radius, Seite von Beschriftung und Kostenschild je Eintrag), `ORGANELLE_LAYOUT`. `genome-tree.component.css` für Membran, Puls und Beschriftungskontur |
 | `genome/ui/genome-detail/` | `GenomeDetailComponent` mit `GenomeDetailView` (`RootDetailView`, `NodeDetailView`, `UniqueDetailView`): Name, Art, Beschreibung, Effekt „vorher → nachher“, Vorgänger, Preis bzw. fehlende DNA, Fragmentfortschritt; Output `clickedEvolve` |
-| `genome/feature/genome.routes.ts` | Route `''` unter `genom` (lazy in `app.routes.ts`), registriert `provideGenomeState()` |
-| `genome/feature/genome/genome.page.{ts,html}` | `GenomePage`: DNA, Zahl verfügbarer Adaptionen (ICU), Baum, Detailpanel; Rücklink zum HUD |
+| `genome/feature/state/genome.providers.ts` | `provideGenomeState()`, registriert an der Shell-Route (`shell/feature/shell.routes.ts`) |
+| `genome/feature/genome-layer/genome-layer.component.{ts,html,css}` | `GenomeLayerComponent`: Inhalt der Genom-Ebene, der Baum auf einer Bühne von `--ms` × `--ms` (CSS nach der K2-Ausnahme), damit der Zellkern in der Viewport-Mitte liegt |
+| `genome/feature/genome-overlay/genome-overlay.component.{ts,html}` | `GenomeOverlayComponent`: Overlay des Genom-Modus mit Titel, DNA, Zahl verfügbarer Adaptionen (ICU) und Detailpanel. Zurück geht es über den Knopf der Shell |
 | `genome/feature/state/genome.facade.ts` | `GenomeFacade`: `genome` (Viewmodel), lokale Auswahl (`select`), `evolve(node)` |
 | `genome/feature/state/genome.utils.ts`, `genome.model.ts` | `toGenomeView` (rein): Status, Baum, Detailpanel; `GenomeSource`, `GenomeView` |
 
@@ -34,6 +35,7 @@ Das Genom der Ära I (Game-Design §4.14, AP 1.3.2) und die Genom-Ansicht unter 
 - `evolve` meldet `evolved` mit Knoten, Kosten und `playedMs`; das HUD-Log zeigt es, der Runner macht daraus die Markierung „Adaption gekauft“. Ein wirkungsloses `evolve` liefert denselben Zustand ohne Ereignis.
 - `genome/domain` nutzt `finds/domain` nur über Typen (`import type`), umgekehrt nutzt `finds/domain` die Genom-Daten und -Logik zur Laufzeit; `genome/ui` liest die Fragmentnamen aus `finds/ui/finds-labels`.
 - `genome` hängt zur Laufzeit nicht von `engine` ab: Die Vorschauen (`nodeEffectPreview`, `uniqueAdaptationEffectPreview`) bekommen die Modifikatoren als Funktion (`modifiersOf`). `engine/domain/modifiers-logic.ts` reicht `stateModifiers` hinein (`genomeNodePreview`, `uniqueAdaptationPreview`); Viewmodels rufen nur diese.
+- Der Baum füllt die Breite seines Hosts (keine Höchstbreite mehr); die Größe gibt die Ebene über `--ms` vor. Die Legenden stehen unter dem SVG und ragen aus der Bühne.
 - Positionen im Baum stehen nur in `genome-tree.layout.ts` (UI-Daten, TK §6), nicht in `genome/domain`. Beim Ändern von Winkeln, Radien oder Beschriftungsseiten prüfen, dass sich Knoten, Beschriftungen und Kostenschilder nicht überschneiden.
 - Das Template rechnet nichts: Koordinaten, Pfade, `transform`-Strings, Kosten, Fortschritt und Auswahl liefert `toGenomeView`, Texte und Klassen kommen aus den Abbildungen in `genome-labels`.
 - Statusdarstellung: entwickelt als gefüllte Kugel in Astfarbe mit ✓, verfügbar mit Pulsring und Kostenschild in `violet`, zu teuer mit blasser Kontur und gedämpftem Schild, gesperrt gepunktet in `locked`, einzigartig nicht gefunden gepunktet mit „?“ und Fortschritt. Kanten: `evolved` kräftig, `open` blass (Vorgänger entwickelt), `locked` gepunktet; Kanten zu einzigartigen Adaptionen sind bis zur Freischaltung gepunktet. Das Kostenschild gibt es nur bei `available` und `too-expensive`.
@@ -41,4 +43,4 @@ Das Genom der Ära I (Game-Design §4.14, AP 1.3.2) und die Genom-Ansicht unter 
 - Anzeigeformate im „vorher → nachher“ (`PREVIEW_FORMATS`): Faktoren und Anteile als Prozent, Sammelleistung als Prozent der Grundrate (relativ zu `droneCollectRate`, je Drohne wären es nur Hundertstel), Brut und Angriff als Rate, Reichweite, Platz und Pheromonpunkte als Zahl. Beträge einzigartiger Adaptionen (`DELTA_FORMATS`): `add` auf Modifikatoren und Anteile als Prozent, `mul` als Prozent über 1 (×1,25 = +25 %), sonst in der Einheit des Werts; bedingte Effekte nennen den Futterstellentyp.
 - Membran-Drehung und Pulsring sind CSS-Animationen nach der K2-Ausnahme (CLAUDE.md §4) in `genome-tree.component.css` und stehen bei `prefers-reduced-motion: reduce` still (der Pulsring bleibt als ruhiger Ring).
 - Farben über die Genom-Tokens aus `src/styles.css` (`branch-*`, `nucleus`, `membrane`, `organelle`, `cell`, `locked`, `locked-fg`, `cost-muted`, `cost-muted-fg`), Kostenschilder mit `text-2xs`.
-- Test-IDs: `genome.nav.back`, `genome.status.{dna,available}`, `genome.tree.svg`, `genome.tree.nodes.<id>`, `genome.tree.nodes.<id>.{cost,progress,selected}`, `genome.tree.edges.<id>`, `genome.legend.{branches,statuses}`, `genome.detail.{name,kind,description,root,predecessor,price,evolve,evolved,progress}`, `genome.detail.effects.<target>`.
+- Test-IDs: `genome.status.{dna,available}`, `genome.tree.svg`, `genome.tree.nodes.<id>`, `genome.tree.nodes.<id>.{cost,progress,selected}`, `genome.tree.edges.<id>`, `genome.legend.{branches,statuses}`, `genome.detail.{name,kind,description,root,predecessor,price,evolve,evolved,progress}`, `genome.detail.effects.<target>`.

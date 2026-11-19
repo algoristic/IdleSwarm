@@ -1,0 +1,42 @@
+import { Component, input, output } from '@angular/core';
+
+import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
+import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
+import type { Num } from '@app/shared/util/num/num';
+
+import { SHELL_MODES, ShellMode } from '../../domain/models/shell-mode.model';
+
+/**
+ * Zoom-Leiste links (US-08.01): Umgebung, Schwarm und Genom in Zoom-Reihenfolge, der aktive Modus
+ * über `aria-current`. Am Genom stehen DNA und die Zahl bezahlbarer Adaptionen.
+ */
+@Component({
+  selector: 'app-zoom-bar',
+  imports: [FormatDownPipe, FormatNumPipe],
+  templateUrl: './zoom-bar.component.html',
+  host: { class: 'block' },
+})
+export class ZoomBarComponent {
+  mode = input.required<ShellMode>();
+  dna = input.required<Num>();
+  availableAdaptations = input.required<number>();
+
+  modes = SHELL_MODES;
+
+  selectedMode = output<ShellMode>();
+
+  title = $localize`:@@uiShell-zoomBar-title:Zoomstufen`;
+  labels: Readonly<Record<ShellMode, string>> = {
+    map: $localize`:@@uiShell-zoomBar-map:Umgebung`,
+    scene: $localize`:@@uiShell-zoomBar-scene:Schwarm`,
+    gen: $localize`:@@uiShell-zoomBar-gen:Genom`,
+  };
+  hints: Readonly<Record<Exclude<ShellMode, 'gen'>, string>> = {
+    map: $localize`:@@uiShell-zoomBar-mapHint:weiterziehen`,
+    scene: $localize`:@@uiShell-zoomBar-sceneHint:Futterstelle`,
+  };
+
+  onSelect(mode: ShellMode): void {
+    this.selectedMode.emit(mode);
+  }
+}

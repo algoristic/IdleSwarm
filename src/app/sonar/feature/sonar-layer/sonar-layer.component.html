@@ -1,0 +1,4 @@
+<section class="sonar-layer__stage" aria-labelledby="sonar-map-title">
+  <h2 id="sonar-map-title" class="sr-only" i18n="@@featureSonar-sonarLayer-title">Sonar-Karte</h2>
+  <app-sonar-map [map]="facade.sonar().map" (selectedTarget)="facade.select($event)" />
+</section>

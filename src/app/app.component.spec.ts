@@ -49,6 +49,53 @@ describe('AppComponent', () => {
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('IdleSwarm');
   });
 
+  describe('K2-Shell', () => {
+    const shell = (harness: RouterTestingHarness) =>
+      harness.routeNativeElement?.querySelector('[data-testid="shell.root"]');
+    const byTestId = (harness: RouterTestingHarness, testId: string) =>
+      harness.routeNativeElement?.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+
+    it('setzt den Modus aus der Route schon beim ersten Laden', async () => {
+      const harness = await RouterTestingHarness.create('/genom');
+      expect(shell(harness)?.getAttribute('data-mode')).toBe('gen');
+      expect(byTestId(harness, 'shell.zoom.gen')?.getAttribute('aria-current')).toBe('page');
+      expect(byTestId(harness, 'shell.overlay.gen')?.hasAttribute('inert')).toBe(false);
+      expect(byTestId(harness, 'shell.overlay.scene')?.hasAttribute('inert')).toBe(true);
+    });
+
+    it('behält beim Moduswechsel dieselbe Shell, damit die Übergänge laufen', async () => {
+      const harness = await RouterTestingHarness.create('/');
+      const root = shell(harness);
+      expect(root?.getAttribute('data-mode')).toBe('scene');
+      expect(byTestId(harness, 'shell.layer.scene')?.style.transform).toBe('scale(1)');
+
+      byTestId(harness, 'shell.zoom.map')?.click();
+      await harness.fixture.whenStable();
+      harness.detectChanges();
+      expect(TestBed.inject(Router).url).toBe('/umgebung');
+      expect(shell(harness)).toBe(root);
+      expect(root?.getAttribute('data-mode')).toBe('map');
+      expect(byTestId(harness, 'shell.layer.map')?.hasAttribute('inert')).toBe(false);
+      expect(byTestId(harness, 'shell.layer.scene')?.style.clipPath).toContain('circle(300px');
+
+      byTestId(harness, 'shell.back')?.click();
+      await harness.fixture.whenStable();
+      harness.detectChanges();
+      expect(TestBed.inject(Router).url).toBe('/');
+      expect(shell(harness)).toBe(root);
+      expect(root?.getAttribute('data-mode')).toBe('scene');
+    });
+
+    it('kehrt per Klick auf die Welt aus der Karte zur Szene zurück', async () => {
+      const harness = await RouterTestingHarness.create('/umgebung');
+      byTestId(harness, 'shell.world.back')?.click();
+      await harness.fixture.whenStable();
+      harness.detectChanges();
+      expect(shell(harness)?.getAttribute('data-mode')).toBe('scene');
+      expect(byTestId(harness, 'shell.world.back')).toBeNull();
+    });
+  });
+
   describe('Route /modell', () => {
     const modelTitle = 'Modell';
     const heading = (harness: RouterTestingHarness) =>

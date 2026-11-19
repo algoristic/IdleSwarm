@@ -56,6 +56,13 @@
   --sw-chart-5: #d55181;
 
   --sw-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Moduswechsel der K2-Shell (Mockup K2-K): Kamerafahrt der Ebenen und Überblendung. */
+  --sw-ease-zoom: cubic-bezier(0.65, 0, 0.2, 1);
+  --sw-zoom-duration: 1.1s;
+  --sw-zoom-fade-duration: 0.9s;
+  /* Bei reduzierter Bewegung ersetzt eine kurze Überblendung die Kamerafahrt. */
+  --sw-zoom-reduced-duration: 0.2s;
 }
 
 @theme {
