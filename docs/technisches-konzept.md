@@ -1,6 +1,6 @@
 # IdleSwarm · Technisches Konzept
 
-> Stand: 18.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md) · UI-Referenz: [Mockup K2](mockups/k2-zoom.html)
+> Stand: 19.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md) · UI-Referenz: [Mockup K2](mockups/k2-zoom.html)
 
 ## 1. Rahmenbedingungen
 
@@ -344,17 +344,17 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 
 ## 10. Qualitätssicherung
 
-Dieser Testansatz bleibt bis Ausbaustufe 5 unverändert. Strengere Testregeln (z. B. aus PortfoliGo: Oracle-Regel, Mutationstests, Seiten-Tests je Akzeptanzkriterium) werden frühestens im Konzept-Meilenstein M5.0 neu bewertet; bis dahin sind viele Mechaniken noch offen.
+Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan ([Projektplan §6](projektplan.md#6-vorgehen)). Getestet werden nur die **wesentliche** Logik und die **wesentlichen** E2E-Abläufe; Hauptziel ist, unbeabsichtigte Regressionen zu vermeiden. Strengere Testregeln (z. B. aus PortfoliGo: Oracle-Regel, Mutationstests, Seiten-Tests je Akzeptanzkriterium) werden frühestens im Konzept-Meilenstein M5.0 neu bewertet; bis dahin sind viele Mechaniken noch offen.
 
 
 | Ebene | Maßnahme |
 |---|---|
-| Core | Unit-Tests mit Vitest für alle Regeln und Formeln; Ziel ≥ 85 % Abdeckung in den `domain`- und `util`-Schichten |
+| Core | Unit-Tests mit Vitest für die wesentlichen Regeln und Formeln; Untergrenze 70 % Abdeckung in den `domain`- und `util`-Schichten als Sicherheitsnetz, kein Ziel |
 | Determinismus | Test: gleicher Seed + gleiche Kommandos ⇒ identischer State |
 | Offline-Catch-up | Test: Catch-up vs. Echtzeit-Simulation innerhalb einer Toleranz |
 | Saves | Test je Migration mit eingefrorenen Beispiel-Spielständen |
 | Balancing | Snapshot-Tests der Kennzahlen (Abschnitt 5.6) |
-| UI | Komponententests für zentrale Komponenten (Kaufknopf, Detailpanels) |
+| UI | Komponententests nur für Komponenten und Seiten mit eigener Logik (z. B. Formular-Parsing); rein darstellende Komponenten deckt der E2E-Smoke ab |
 | E2E | Playwright-Smoke: Start, Kauf, Moduswechsel, Weiterziehen; Viewports Desktop und Smartphone |
 | Performance | Messung in AP 1.4.6 auf echtem Smartphone: 60 fps in der Szene, Moduswechsel ohne Ruckeln |
 | CI-Gates | Lint, Unit-Tests, Build und E2E müssen grün sein, bevor auf `main` deployt wird; das Gate E2E greift erst ab AP 1.5.7, wenn es E2E-Tests gibt |

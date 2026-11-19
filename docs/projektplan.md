@@ -1,6 +1,6 @@
 # IdleSwarm · Projektplan
 
-> Stand: 18.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2 · Kamera-Zoom](mockups/k2-zoom.html)
+> Stand: 19.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2 · Kamera-Zoom](mockups/k2-zoom.html)
 
 ## 1. Ziel und Rahmen
 
@@ -319,7 +319,7 @@ Diese Zielbänder werden auf der Modell-Seite überwacht und in AP 1.5.5 feinjus
 
 ## 4. Spätere Ausbaustufen (grob)
 
-Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Erst danach werden die Arbeitspakete detailliert. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
+Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Beginnt mit der Stufe eine neue Ära (AS3–AS5), gehört zum Konzept-Meilenstein eine **Mockup-Runde**: Es entstehen mehrere UI-Mockups für die Ära, eines davon wird ausgewählt und dient wie [Mockup K2](mockups/k2-zoom.html) für Ära I als UI-Leitbild. Erst danach werden die Arbeitspakete detailliert. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
 
 ### AS2 · Evolution: große Ascension und Langzeitmotivation
 
@@ -350,7 +350,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M3.0 | Konzept & Entscheidungen |
+| M3.0 | Konzept, UI-Mockups & Entscheidungen |
 | M3.1 | Biome & Futterstellen der Ära II |
 | M3.2 | Mehrere Standorte |
 | M3.3 | Verteidigungsarten & Spezialeinheiten |
@@ -373,7 +373,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M4.0 | Konzept & Entscheidungen |
+| M4.0 | Konzept, UI-Mockups & Entscheidungen |
 | M4.1 | Land-Biome & Planetenkarte |
 | M4.2 | Gebietseroberung & Fronten |
 | M4.3 | Zivilisation als Gegner |
@@ -396,7 +396,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M5.0 | Konzept & Entscheidungen |
+| M5.0 | Konzept, UI-Mockups & Entscheidungen |
 | M5.1 | Ausbreitung im Sonnensystem |
 | M5.2 | FTL & weitere Systeme |
 | M5.3 | Galaxis-Gesamtübersicht & Endlos-Skalierung |
@@ -409,6 +409,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | Globale Übersicht | Eingriffstiefe: einzelne Flotten vs. Prioritäten je Region; Automatisierung im Idle-Betrieb |
 | Planetenklassen | Fels, Eis, Erde, Gasriese, Raumstation: jeweils eigene Mechanik vs. nur andere Werte |
 | Weitere Ascensions | Galaxis-Ascension als weitere Prestige-Schicht |
+| Testplan | vollständigen Testplan ausarbeiten; strengere Regeln (Oracle-Regel, Mutationstests, Seiten-Tests je Akzeptanzkriterium) bewerten |
 
 ### Querschnittsthemen (Stufe offen)
 
@@ -434,5 +435,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 ## 6. Vorgehen
 
 - **Iterativ je Meilenstein:** Am Meilenstein-Ende stehen ein spielbarer Stand auf GitHub Pages, ein kurzer Spieltest und ein Blick auf die Modell-Seite.
-- **Definition of Done (AP):** Code folgt den Regeln aus [`CLAUDE.md`](../CLAUDE.md), Tests für die `domain`-Schichten, CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen), Umsetzungsstand in ADRs, technischem Konzept und Regeldateien nachgezogen.
+- **Definition of Done (AP):** Code folgt den Regeln aus [`CLAUDE.md`](../CLAUDE.md), Tests für die wesentliche Logik (siehe „Tests bis M5.0“), CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen), Umsetzungsstand in ADRs, technischem Konzept und Regeldateien nachgezogen.
 - **Planung späterer Stufen:** Vor jeder neuen Ausbaustufe wird dieser Plan um die Detaillierung der Stufe ergänzt, nachdem der Konzept-Meilenstein abgeschlossen ist.
+- **Mockup-Runde vor jeder neuen Ära:** Bevor die Arbeitspakete einer neuen Ära detailliert werden, entstehen im Konzept-Meilenstein mehrere UI-Mockups. Eines wird ausgewählt und als UI-Leitbild der Ära festgehalten (für Ära I: [Mockup K2](mockups/k2-zoom.html)).
+- **Tests bis M5.0:** Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan. Getestet werden nur die **wesentliche** Logik (z. B. Formeln, `apply`/`step`, Determinismus, Migrationen) und die **wesentlichen** E2E-Abläufe. Hauptziel der Tests ist bis dahin, unbeabsichtigte Regressionen zu vermeiden, nicht Vollständigkeit. Der vollständige Testplan entsteht in M5.0.

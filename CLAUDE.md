@@ -382,15 +382,15 @@ export class PersistenceService {
 - **Bezeichner sind Englisch, Kommentare Deutsch.** Texte für Spieler sind deutsche i18n-Quelltexte.
 - Sparsam kommentieren: kein JSDoc an offensichtlichen Membern, keine Abschnittsbanner. Nur nicht offensichtliche Entscheidungen kommentieren (z. B. warum eine Rundung so gewählt ist).
 
-## 10. Testing (bis Ausbaustufe 5 unverändert)
+## 10. Testing (bis M5.0: Regressionsschutz)
 
-Der Testansatz bleibt bis AS5 wie bisher (TK §10). Viele Mechaniken sind noch offen; ein engeres Testkorsett würde die Entwicklung jetzt zu sehr einschränken. Die strengeren Regeln aus PortfoliGo (Oracle-Regel, Mutationstests, Seiten-Tests je Akzeptanzkriterium) werden frühestens im Konzept-Meilenstein M5.0 neu bewertet.
+Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan (TK §10, Projektplan §6). Getestet werden nur die **wesentliche** Logik und die **wesentlichen** E2E-Abläufe; Hauptziel ist, unbeabsichtigte Regressionen zu vermeiden, nicht Vollständigkeit. Viele Mechaniken sind noch offen; ein engeres Testkorsett würde die Entwicklung jetzt zu sehr einschränken. Die strengeren Regeln aus PortfoliGo (Oracle-Regel, Mutationstests, Seiten-Tests je Akzeptanzkriterium) werden frühestens im Konzept-Meilenstein M5.0 neu bewertet.
 
-- **Vitest** für Regeln und Formeln in den `domain`-Schichten und `util`; Ziel ≥ 85 % Abdeckung dort. Specs liegen neben dem Code (`<name>.spec.ts`).
+- **Vitest** für die wesentlichen Regeln und Formeln in den `domain`-Schichten und `util` (z. B. Formeln, `apply`/`step`, Migrationen). CI erzwingt dort eine Untergrenze von 70 % Abdeckung (`vitest-base.config.mts`); sie ist ein Sicherheitsnetz gegen große ungetestete Lücken, kein Ziel. Specs liegen neben dem Code (`<name>.spec.ts`).
 - **Determinismus:** gleicher Seed und gleiche Kommandos ⇒ identischer State.
 - **Spielstände:** ein Test je Migration mit eingefrorenen Beispiel-Spielständen.
 - **Balancing:** Kennzahlen fester Bot-Läufe als Snapshots mit Toleranz (ab AP 1.5.5).
-- **UI:** Komponententests für zentrale Komponenten (Kaufknopf, Detailpanels) und Seiten mit eigener Logik. Erwartete Werte nicht aus dem Code unter Test ableiten.
+- **UI:** Komponententests nur für Komponenten und Seiten mit eigener Logik, die brechen kann (z. B. Formular-Parsing). Rein darstellende Komponenten deckt der E2E-Smoke ab. Erwartete Werte nicht aus dem Code unter Test ableiten.
 - **E2E:** Playwright-Smoke für Desktop und Smartphone ab AP 1.5.7.
 - Plattformzugriffe in Tests über die Tokens aus §7 ersetzen, Zeit über Fake-Timer bzw. Parameter.
 
