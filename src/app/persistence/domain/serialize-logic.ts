@@ -2,8 +2,21 @@ import { compressToBase64, decompressFromBase64 } from 'lz-string';
 
 import { GameState, STATE_VERSION } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
-import { isSiteTypeId } from '@app/site/domain/data/sites-era1.data';
+import { isSiteTypeId, SiteTypeId } from '@app/site/domain/data/sites-era1.data';
+import { AutoMove, isStrategyId } from '@app/site/domain/models/auto-move.model';
+import {
+  Position,
+  ROUTE_MAX_POINTS,
+  RoutePoint,
+  SiteCandidate,
+  SiteMap,
+} from '@app/site/domain/models/map.model';
 import { Site } from '@app/site/domain/models/site.model';
+import { Travel } from '@app/site/domain/models/travel.model';
+import {
+  isTransportPriority,
+  TransportPriority,
+} from '@app/swarm/domain/models/transport-priority.model';
 import { Units } from '@app/swarm/domain/models/units.model';
 
 import { isRecord, migrate, SaveError } from './migrations/migrations-logic';
@@ -84,6 +97,111 @@ function readSite(value: unknown): Site {
   return { type, size, stock };
 }
 
+function readSiteType(value: unknown, path: string): SiteTypeId {
+  if (!isSiteTypeId(value)) {
+    throw invalid(path);
+  }
+  return value;
+}
+
+function readCoordinate(value: unknown, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw invalid(path);
+  }
+  return value;
+}
+
+function readPosition(value: unknown, path: string): Position {
+  const position = readRecord(value, path);
+  return {
+    x: readCoordinate(position['x'], `${path}.x`),
+    y: readCoordinate(position['y'], `${path}.y`),
+  };
+}
+
+function readArray(value: unknown, path: string): readonly unknown[] {
+  if (!Array.isArray(value)) {
+    throw invalid(path);
+  }
+  return value;
+}
+
+function readCandidate(value: unknown, path: string): SiteCandidate {
+  const candidate = readRecord(value, path);
+  const defense = readAmount(candidate['defense'], `${path}.defense`);
+  // Die Abwehr ist immer ganzzahlig (Game-Design §4.6).
+  if (!defense.round().eq(defense)) {
+    throw invalid(`${path}.defense`);
+  }
+  return {
+    type: readSiteType(candidate['type'], `${path}.type`),
+    position: readPosition(candidate['position'], `${path}.position`),
+    size: readAmount(candidate['size'], `${path}.size`),
+    defense,
+  };
+}
+
+function readRoutePoint(value: unknown, path: string): RoutePoint {
+  const point = readRecord(value, path);
+  return {
+    type: readSiteType(point['type'], `${path}.type`),
+    position: readPosition(point['position'], `${path}.position`),
+  };
+}
+
+function readMap(value: unknown): SiteMap {
+  const map = readRecord(value, 'map');
+  const candidates = readArray(map['candidates'], 'map.candidates');
+  const route = readArray(map['route'], 'map.route');
+  if (route.length === 0 || route.length > ROUTE_MAX_POINTS) {
+    throw invalid('map.route');
+  }
+  const moves = map['moves'];
+  if (typeof moves !== 'number' || !Number.isInteger(moves) || moves < 0) {
+    throw invalid('map.moves');
+  }
+  return {
+    position: readPosition(map['position'], 'map.position'),
+    candidates: candidates.map((item, i) => readCandidate(item, `map.candidates.${i}`)),
+    route: route.map((item, i) => readRoutePoint(item, `map.route.${i}`)),
+    moves,
+  };
+}
+
+function readTravel(value: unknown): Travel | null {
+  if (value === null) {
+    return null;
+  }
+  const travel = readRecord(value, 'travel');
+  return {
+    target: readCandidate(travel['target'], 'travel.target'),
+    remainingMs: readTime(travel['remainingMs'], 'travel.remainingMs'),
+  };
+}
+
+/** Die Schwelle ist ein Anteil; die Obergrenze `θ_max` ist ein Balance-Wert und wird nicht geprüft. */
+function readAuto(value: unknown): AutoMove {
+  const auto = readRecord(value, 'auto');
+  const { enabled, strategy, threshold } = auto;
+  if (typeof enabled !== 'boolean') {
+    throw invalid('auto.enabled');
+  }
+  if (!isStrategyId(strategy)) {
+    throw invalid('auto.strategy');
+  }
+  if (typeof threshold !== 'number' || !(threshold >= 0 && threshold <= 1)) {
+    throw invalid('auto.threshold');
+  }
+  return { enabled, strategy, threshold };
+}
+
+function readPriority(value: unknown): TransportPriority {
+  if (!isTransportPriority(value)) {
+    throw invalid('priority');
+  }
+  return value;
+}
+
 /** Prüft einen rohen Stand der aktuellen Version und übernimmt nur die bekannten Felder. */
 function toGameState(value: unknown): GameState {
   const raw = readRecord(value, 'Spielstand');
@@ -116,6 +234,10 @@ function toGameState(value: unknown): GameState {
     units: readUnits(raw['units'], 'units'),
     site: readSite(raw['site']),
     bought: readUnits(raw['bought'], 'bought'),
+    map: readMap(raw['map']),
+    travel: readTravel(raw['travel']),
+    auto: readAuto(raw['auto']),
+    priority: readPriority(raw['priority']),
   };
 }
 

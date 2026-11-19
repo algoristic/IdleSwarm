@@ -1,4 +1,5 @@
 import { Num } from '@app/shared/util/num/num';
+import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { UnitType, Units } from '@app/swarm/domain/models/units.model';
 
 import { DEFAULT_BALANCE } from './constants';
@@ -6,7 +7,14 @@ import {
   baseFoodPerSecond,
   broodFoodPerSecond,
   broodResult,
+  candidateDefense,
+  candidateDistance,
+  candidateSize,
+  candidateStatus,
+  clampAutoThreshold,
   collectGain,
+  distanceBetween,
+  dnaReward,
   droneFoodPerSecond,
   eggsPerMinute,
   foodPerSecond,
@@ -15,13 +23,20 @@ import {
   meanBroodCost,
   netFoodPerSecond,
   nextQueenEffect,
+  positionAt,
   secondsUntilAffordable,
+  siteFindChance,
   siteSecondsLeft,
+  siteTypeWeight,
   spaceAvailable,
   spaceUsage,
   spaceUsed,
+  spreadFactor,
+  swarmRange,
   totalAttack,
+  travelDurationMs,
   unitPrice,
+  weightedIndex,
 } from './formulas';
 
 function units(queens: number, drones: number, soldiers: number): Units {
@@ -404,5 +419,140 @@ describe('secondsUntilAffordable', () => {
     expect(secondsUntilAffordable(Num.from(10), Num.ZERO, Num.ZERO)).toBeNull();
     expect(secondsUntilAffordable(Num.from(10), Num.ZERO, Num.from(-1))).toBeNull();
     expect(secondsUntilAffordable(Num.from(-1), Num.ZERO, Num.ONE)).toBeNull();
+  });
+});
+
+describe('Futterstellen-Generator (Game-Design §4.6)', () => {
+  // Beispiel 3: Kandidaten beim Spielstart mit z = 0.
+  const EXAMPLE_3: readonly (readonly [
+    type: SiteTypeId,
+    distance: number,
+    sizeSpread: number,
+    defenseSpread: number,
+    size: number,
+    defense: number,
+    dna: number,
+  ])[] = [
+    ['vent', 3, 0.9, 1.0, 30240, 26, 13.55],
+    ['bacterial-mat', 3, 1.1, 0.8, 55440, 52, 23.59],
+    // 20.000 · 1,4 · 0,5 · (1 + 0,1 · 1) · 1,1 = 16.940.
+    ['algal-mat', 2, 1.1, 1.0, 16940, 0, 0],
+    ['vent', 1, 1.0, 1.0, 28000, 20, 10.99],
+    ['whale-fall', 5.8, 1.0, 1.0, 124320, 103, 40.76],
+    ['methane-seep', 6.5, 1.0, 1.0, 108500, 73, 30.95],
+  ];
+
+  it.each(EXAMPLE_3)(
+    'berechnet %s bei d = %d: Größe, Abwehr und DNA aus Beispiel 3',
+    (type, distance, sizeSpread, defenseSpread, size, defense, dna) => {
+      const g = candidateSize(type, distance, 0, sizeSpread, DEFAULT_BALANCE);
+      const b = candidateDefense(type, distance, 0, defenseSpread, DEFAULT_BALANCE);
+      expect(g.toNumber()).toBeCloseTo(size, 6);
+      expect(b.toNumber()).toBe(defense);
+      expect(dnaReward(b, DEFAULT_BALANCE).toNumber()).toBeCloseTo(dna, 2);
+    },
+  );
+
+  it('macht beim Ersatz K4 zur Algenmatte mit Größe 14.000', () => {
+    expect(candidateSize('algal-mat', 1, 0, 1, DEFAULT_BALANCE).toNumber()).toBeCloseTo(14000, 6);
+  });
+
+  it('wächst je Weiterzug um γ_G bzw. γ_B', () => {
+    // z = 1: G = 20.000 · 1,4² · 1 · 1 · 1 = 39.200, B = round(20 · 1,35) = 27.
+    expect(candidateSize('vent', 1, 1, 1, DEFAULT_BALANCE).toNumber()).toBeCloseTo(39200, 6);
+    expect(candidateDefense('vent', 1, 1, 1, DEFAULT_BALANCE).toNumber()).toBe(27);
+  });
+
+  it('rundet die Abwehr kaufmännisch', () => {
+    const at = (base: number): number =>
+      candidateDefense('vent', 1, 0, 1, { ...DEFAULT_BALANCE, siteDefenseBase: base }).toNumber();
+    expect(at(20.5)).toBe(21);
+    expect(at(20.49)).toBe(20);
+    expect(at(0.4)).toBe(0);
+  });
+
+  it('bildet die Ziehungen auf Distanz und Zufallsfaktor ab', () => {
+    expect(candidateDistance(0, DEFAULT_BALANCE)).toBe(1);
+    expect(candidateDistance(0.5, DEFAULT_BALANCE)).toBe(4);
+    expect(spreadFactor(0, DEFAULT_BALANCE)).toBeCloseTo(0.8, 12);
+    expect(spreadFactor(0.5, DEFAULT_BALANCE)).toBeCloseTo(1, 12);
+  });
+
+  it('zieht gewichtet: erster Typ, dessen Summe r · Σg übersteigt', () => {
+    const equal = [1, 1, 1, 1, 1];
+    expect(weightedIndex(0, equal)).toBe(0);
+    expect(weightedIndex(0.19, equal)).toBe(0);
+    expect(weightedIndex(0.2, equal)).toBe(1);
+    expect(weightedIndex(0.999, equal)).toBe(4);
+    expect(weightedIndex(0, [0, 2, 1])).toBe(1);
+    expect(weightedIndex(0.7, [0, 2, 1])).toBe(2);
+    expect(weightedIndex(0.5, [0, 0])).toBe(0);
+  });
+
+  it('liest Gewicht und Fundchance aus der Typtabelle', () => {
+    expect(siteTypeWeight('whale-fall', DEFAULT_BALANCE)).toBe(1);
+    expect(siteFindChance('algal-mat', DEFAULT_BALANCE)).toBe(0.05);
+    expect(siteFindChance('vent', DEFAULT_BALANCE)).toBe(0.1);
+    expect(siteFindChance('bacterial-mat', DEFAULT_BALANCE)).toBe(0.15);
+    expect(siteFindChance('methane-seep', DEFAULT_BALANCE)).toBe(0.2);
+    expect(siteFindChance('whale-fall', DEFAULT_BALANCE)).toBe(0.3);
+  });
+
+  it('liefert keine DNA ohne Abwehr', () => {
+    expect(dnaReward(Num.ZERO, DEFAULT_BALANCE).isZero()).toBe(true);
+  });
+
+  it('setzt Positionen in Distanz und Winkel um den Ursprung', () => {
+    const position = positionAt({ x: 1, y: 2 }, 2, Math.PI / 2);
+    expect(position.x).toBeCloseTo(1, 12);
+    expect(position.y).toBeCloseTo(4, 12);
+    expect(distanceBetween({ x: 1, y: 2 }, { x: 4, y: 6 })).toBe(5);
+  });
+});
+
+describe('Reichweite und Sichtbarkeit (Game-Design §4.7)', () => {
+  it('nimmt die Grundreichweite', () => {
+    expect(swarmRange(DEFAULT_BALANCE)).toBe(5);
+    expect(swarmRange({ ...DEFAULT_BALANCE, baseRange: 8 })).toBe(8);
+  });
+
+  it.each([
+    [3, 5, 'in-range'],
+    [5, 5, 'in-range'],
+    [5.8, 5, 'out-of-range'],
+    [6, 5, 'out-of-range'],
+    [6.01, 5, 'unexplored'],
+    [6.5, 5, 'unexplored'],
+    [5.8, 6, 'in-range'],
+    [6.5, 6, 'out-of-range'],
+  ] as const)('d = %d bei R = %d ist %s', (distance, range, status) => {
+    expect(candidateStatus(distance, range, DEFAULT_BALANCE)).toBe(status);
+  });
+
+  it('toleriert Rundungsfehler an der Grenze', () => {
+    expect(candidateStatus(5 + 1e-12, 5, DEFAULT_BALANCE)).toBe('in-range');
+  });
+
+  it('nutzt den Wahrnehmungssaum aus den Parametern', () => {
+    expect(candidateStatus(6.5, 5, { ...DEFAULT_BALANCE, perceptionMargin: 2 })).toBe(
+      'out-of-range',
+    );
+  });
+});
+
+describe('travelDurationMs', () => {
+  it('rechnet d · t_r in Millisekunden (Beispiel 7: d = 3 ⇒ 30 s)', () => {
+    expect(travelDurationMs(3, DEFAULT_BALANCE)).toBe(30_000);
+    expect(travelDurationMs(0, DEFAULT_BALANCE)).toBe(0);
+    expect(travelDurationMs(2.5, { ...DEFAULT_BALANCE, travelSecondsPerDistance: 4 })).toBe(10_000);
+  });
+});
+
+describe('clampAutoThreshold', () => {
+  it('begrenzt auf [0; θ_max]', () => {
+    expect(clampAutoThreshold(0, DEFAULT_BALANCE)).toBe(0);
+    expect(clampAutoThreshold(0.5, DEFAULT_BALANCE)).toBe(0.5);
+    expect(clampAutoThreshold(1, DEFAULT_BALANCE)).toBe(0.9);
+    expect(clampAutoThreshold(-0.1, DEFAULT_BALANCE)).toBe(0);
   });
 });

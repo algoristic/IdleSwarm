@@ -1,4 +1,4 @@
-import { nextRandom, seedToRngState } from '@app/shared/util/rng/rng';
+import { nextRandom } from '@app/shared/util/rng/rng';
 
 import { createInitialState } from './game-state-logic';
 import type { GameState } from './models/game-state.model';
@@ -51,12 +51,14 @@ describe('drawRandom', () => {
 
   it('liefert bei fortlaufenden Ziehungen dieselbe Folge wie nextRandom', () => {
     let state = createState();
+    // Die Startkandidaten haben den Zustand schon fortgeschrieben; die Folge beginnt dort.
+    const start = state.rngState;
     const values: number[] = [];
     for (let i = 0; i < 6; i++) {
       const result = drawRandom(state);
       values.push(result.value);
       state = result.state;
     }
-    expect(values).toEqual(sequence(seedToRngState('idleswarm'), 6));
+    expect(values).toEqual(sequence(start, 6));
   });
 });

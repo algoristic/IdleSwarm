@@ -370,7 +370,7 @@ Der Ersatz wird zur Algenmatte: Typ `algal-mat`, Größe mit derselben Formel, d
 |---|---|---|---|---|---|---|---|---|
 | K1 | `vent` | 3 | 0,9 | 1,0 | 30.240 | 26 | 13,55 | in Reichweite |
 | K2 | `bacterial-mat` | 3 | 1,1 | 0,8 | 55.440 | 52 | 23,59 | in Reichweite |
-| K3 | `algal-mat` | 2 | 1,1 | 1,0 | 15.400 | 0 | 0 | in Reichweite |
+| K3 | `algal-mat` | 2 | 1,1 | 1,0 | 16.940 | 0 | 0 | in Reichweite |
 | K4 | `vent` | 1 | 1,0 | 1,0 | 28.000 | 20 | 10,99 | in Reichweite |
 | K5 | `whale-fall` | 5,8 | 1,0 | 1,0 | 124.320 | 103 | 40,76 | außer Reichweite |
 | K6 | `methane-seep` | 6,5 | 1,0 | 1,0 | 108.500 | 73 | 30,95 | unerforscht |
@@ -546,7 +546,7 @@ Strategie, Schwelle, Auto an/aus und Mitnahme-Priorität sind Spielereinstellung
 |---|---|---|---|---|---|---|
 | K1 | 26 | ja | 9,94 | 29,2 % | 30.240 | 13,55 |
 | K2 | 52 | nein | – | – | 55.440 | 23,59 |
-| K3 | 0 | ja | 0 | 0 % | 15.400 | 0 |
+| K3 | 0 | ja | 0 | 0 % | 16.940 | 0 |
 | K4 | 20 | ja | `34 · 0,5 · (20/34)² ≈ 5,88` | 17,3 % | 28.000 | 10,99 |
 
 K5 und K6 liegen nicht in Reichweite. „Geringster Widerstand“ wählt K3, „Ausgewogen“ wählt K4 (K1 überschreitet 25 %, K4 ist größer als K3), „Kampfgehärtet“ wählt K1.

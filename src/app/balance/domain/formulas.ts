@@ -1,4 +1,6 @@
 import { Num } from '@app/shared/util/num/num';
+import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
+import type { CandidateStatus, Position } from '@app/site/domain/models/map.model';
 import type { UnitType, Units } from '@app/swarm/domain/models/units.model';
 
 import type { BalanceParams } from './constants';
@@ -17,6 +19,51 @@ const COST_CURVES: Readonly<
   queens: { cost: 'queenCost', growth: 'queenCostGrowth' },
   drones: { cost: 'droneCost', growth: 'droneCostGrowth' },
   soldiers: { cost: 'soldierCost', growth: 'soldierCostGrowth' },
+};
+
+/**
+ * Rechentoleranz beim Vergleich von Distanz und Reichweite: Positionen entstehen über `cos`/`sin`,
+ * die nachgerechnete Distanz weicht daher um Rundungsfehler vom gezogenen `d` ab. Ohne Toleranz läge
+ * ein Ersatz mit `d = R` (Game-Design §4.6, Garantie Fall 2) womöglich knapp außer Reichweite.
+ */
+const DISTANCE_TOLERANCE = 1e-6;
+
+type SiteTypeParamKeys = Readonly<
+  Record<'size' | 'defense' | 'findChance' | 'weight', keyof BalanceParams>
+>;
+
+/** Parameter je Futterstellentyp (Game-Design §2.3, `siteTypes`). */
+const SITE_TYPE_PARAMS: Readonly<Record<SiteTypeId, SiteTypeParamKeys>> = {
+  'algal-mat': {
+    size: 'algalMatSizeFactor',
+    defense: 'algalMatDefenseFactor',
+    findChance: 'algalMatFindChance',
+    weight: 'algalMatWeight',
+  },
+  vent: {
+    size: 'ventSizeFactor',
+    defense: 'ventDefenseFactor',
+    findChance: 'ventFindChance',
+    weight: 'ventWeight',
+  },
+  'bacterial-mat': {
+    size: 'bacterialMatSizeFactor',
+    defense: 'bacterialMatDefenseFactor',
+    findChance: 'bacterialMatFindChance',
+    weight: 'bacterialMatWeight',
+  },
+  'methane-seep': {
+    size: 'methaneSeepSizeFactor',
+    defense: 'methaneSeepDefenseFactor',
+    findChance: 'methaneSeepFindChance',
+    weight: 'methaneSeepWeight',
+  },
+  'whale-fall': {
+    size: 'whaleFallSizeFactor',
+    defense: 'whaleFallDefenseFactor',
+    findChance: 'whaleFallFindChance',
+    weight: 'whaleFallWeight',
+  },
 };
 
 /** Effekt einer weiteren Königin. */
@@ -182,4 +229,136 @@ export function secondsUntilAffordable(price: Num, food: Num, foodPerSecond: Num
     return null;
   }
   return price.sub(food).div(foodPerSecond);
+}
+
+/** Ziehungsgewicht `g` eines Futterstellentyps (Game-Design §2.3). */
+export function siteTypeWeight(type: SiteTypeId, params: BalanceParams): number {
+  return params[SITE_TYPE_PARAMS[type].weight];
+}
+
+/** Fundchance eines Futterstellentyps; nur Anzeige, gezogen ab M1.3 (Game-Design §4.5). */
+export function siteFindChance(type: SiteTypeId, params: BalanceParams): number {
+  return params[SITE_TYPE_PARAMS[type].findChance];
+}
+
+/**
+ * Gewichtete Ziehung (Game-Design §4.6): erster Index, bei dem die aufsummierten Gewichte `r · Σg`
+ * übersteigen. Ohne positives Gewicht fällt die Wahl auf den ersten Index.
+ */
+export function weightedIndex(random: number, weights: readonly number[]): number {
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  const limit = random * total;
+  let cumulative = 0;
+  let lastPositive = 0;
+  for (let i = 0; i < weights.length; i++) {
+    cumulative += weights[i];
+    if (weights[i] > 0) {
+      lastPositive = i;
+    }
+    if (cumulative > limit) {
+      return i;
+    }
+  }
+  // Nur bei Rundung von `Σg` oder ohne positives Gewicht erreicht.
+  return lastPositive;
+}
+
+/** Zufallsfaktor `u = 1 − σ + 2σ · r` (Game-Design §4.6). */
+export function spreadFactor(random: number, params: BalanceParams): number {
+  return 1 - params.siteSpread + 2 * params.siteSpread * random;
+}
+
+/** Distanz eines Kandidaten `d = d_min + (d_max − d_min) · r` (Game-Design §4.6). */
+export function candidateDistance(random: number, params: BalanceParams): number {
+  const { candidateMinDistance: min, candidateMaxDistance: max } = params;
+  return min + (max - min) * random;
+}
+
+/** Größe `G = s_0 · γ_G^(z+1) · f_G · (1 + β_G · (d − 1)) · u_G`, ungerundet (Game-Design §4.6). */
+export function candidateSize(
+  type: SiteTypeId,
+  distance: number,
+  moves: number,
+  spread: number,
+  params: BalanceParams,
+): Num {
+  const factor = params[SITE_TYPE_PARAMS[type].size];
+  const distanceBonus = 1 + params.siteSizeDistanceBonus * (distance - 1);
+  return Num.from(params.siteSizeGrowth)
+    .pow(moves + 1)
+    .mul(params.siteSize)
+    .mul(factor * distanceBonus * spread);
+}
+
+/**
+ * Abwehr `B = round(b_0 · γ_B^z · f_B · (1 + β_B · (d − 1)) · u_B)`, kaufmännisch gerundet
+ * (Game-Design §4.6).
+ */
+export function candidateDefense(
+  type: SiteTypeId,
+  distance: number,
+  moves: number,
+  spread: number,
+  params: BalanceParams,
+): Num {
+  const factor = params[SITE_TYPE_PARAMS[type].defense];
+  const distanceBonus = 1 + params.siteDefenseDistanceBonus * (distance - 1);
+  return Num.from(params.siteDefenseGrowth)
+    .pow(moves)
+    .mul(params.siteDefenseBase)
+    .mul(factor * distanceBonus * spread)
+    .round();
+}
+
+/** DNA-Belohnung `d_0 · B^δ`; 0 bei `B = 0` (Game-Design §4.5). */
+export function dnaReward(defense: Num, params: BalanceParams): Num {
+  if (!defense.gt(Num.ZERO)) {
+    return Num.ZERO;
+  }
+  return defense.pow(params.dnaExponent).mul(params.dnaBase);
+}
+
+/** Euklidische Distanz in der Ebene (Game-Design §4.7). */
+export function distanceBetween(from: Position, to: Position): number {
+  return Math.hypot(to.x - from.x, to.y - from.y);
+}
+
+/** Punkt in Distanz `d` und Winkel `φ` von `origin` (Game-Design §4.6). */
+export function positionAt(origin: Position, distance: number, angle: number): Position {
+  return { x: origin.x + distance * Math.cos(angle), y: origin.y + distance * Math.sin(angle) };
+}
+
+/**
+ * Aktuelle Reichweite `R = R_0` (Game-Design §4.5). Einzige Quelle der Reichweite: Adaptionen ab
+ * M1.3 ergänzen hier ihren Modifikator.
+ */
+export function swarmRange(params: BalanceParams): number {
+  return params.baseRange;
+}
+
+/** `d ≤ R` mit Rechentoleranz (Game-Design §4.6, §4.7). */
+export function isWithinRange(distance: number, range: number): boolean {
+  return distance <= range + DISTANCE_TOLERANCE;
+}
+
+/** Status aus Distanz und Reichweite (Game-Design §4.7). */
+export function candidateStatus(
+  distance: number,
+  range: number,
+  params: BalanceParams,
+): CandidateStatus {
+  if (isWithinRange(distance, range)) {
+    return 'in-range';
+  }
+  return isWithinRange(distance, range + params.perceptionMargin) ? 'out-of-range' : 'unexplored';
+}
+
+/** Reisedauer `d · t_r` in Millisekunden (Game-Design §4.5, §4.11). */
+export function travelDurationMs(distance: number, params: BalanceParams): number {
+  return distance * params.travelSecondsPerDistance * MS_PER_SECOND;
+}
+
+/** Schwelle des Auto-Weiterziehens, begrenzt auf `[0; θ_max]` (Game-Design §4.12). */
+export function clampAutoThreshold(threshold: number, params: BalanceParams): number {
+  return Math.min(Math.max(threshold, 0), params.maxAutoThreshold);
 }

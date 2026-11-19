@@ -1,9 +1,13 @@
 import type { Num } from '@app/shared/util/num/num';
+import type { AutoMove } from '@app/site/domain/models/auto-move.model';
+import type { SiteMap } from '@app/site/domain/models/map.model';
 import type { Site } from '@app/site/domain/models/site.model';
+import type { Travel } from '@app/site/domain/models/travel.model';
+import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
 import type { Units } from '@app/swarm/domain/models/units.model';
 
 /** Aktuelle Version des Zustandsformats. */
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 export type Era = 'ursuppe';
 
@@ -32,4 +36,12 @@ export interface GameState {
   readonly site: Site;
   /** Manuell gekaufte Einheiten je Typ; Grundlage der Preise, passive Brut zählt nicht. */
   readonly bought: Units;
+  /** Position, Kandidaten, Route und Zugzähler (Game-Design §4.6, §5). */
+  readonly map: SiteMap;
+  /** `null`, solange der Schwarm nicht unterwegs ist. */
+  readonly travel: Travel | null;
+  /** Spielereinstellungen des Auto-Weiterziehens. */
+  readonly auto: AutoMove;
+  /** Mitnahme-Priorität beim Aufbruch (Spielereinstellung). */
+  readonly priority: TransportPriority;
 }
