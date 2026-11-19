@@ -274,17 +274,12 @@ describe('HudPage', () => {
       expect(text('hud.site.time-left')).toBe('Leer in etwa 29 min 00 s');
     });
 
-    it('füllt die leere Futterstelle auf und setzt den Fokus auf ihre Überschrift', () => {
-      document.body.append(element());
+    it('zeigt die leere Futterstelle ohne Erneuern', () => {
       setSite(0);
 
-      (query('hud.site.renew') as HTMLButtonElement).click();
-      fixture.detectChanges();
-
-      expect(text('hud.site.stock')).toBe('20.000 / 20.000');
+      expect(text('hud.site.stock')).toBe('0 / 20.000');
+      expect(query('hud.site.time-left')).toBeNull();
       expect(query('hud.site.renew')).toBeNull();
-      expect(document.activeElement).toBe(element().querySelector('#site-title'));
-      element().remove();
     });
   });
 });

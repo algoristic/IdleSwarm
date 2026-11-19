@@ -1,6 +1,5 @@
 import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
 import { foodPerSecond, siteSecondsLeft } from '@app/balance/domain/formulas';
-import { apply } from '@app/engine/domain/commands-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -139,14 +138,6 @@ describe('applyCollect', () => {
       const { res, site } = collect(createState({ stock: 1e-13 }));
       expect(site.stock).toBe(Num.ZERO);
       expect(res.food.eq(1e-13)).toBe(true);
-    });
-
-    it('gibt die Futterstelle für „Neue Futterstelle“ frei', () => {
-      const emptied = collect(createState({ drones: 10, food: 3, stock: 0.05 }));
-      const renewed = apply(emptied, { type: 'newSite' });
-      expect(renewed.site.stock.eq(renewed.site.size)).toBe(true);
-      expect(renewed.res).toBe(emptied.res);
-      expect(renewed.units).toBe(emptied.units);
     });
   });
 

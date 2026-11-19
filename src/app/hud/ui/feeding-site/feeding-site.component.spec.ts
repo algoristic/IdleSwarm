@@ -62,26 +62,14 @@ describe('FeedingSiteComponent', () => {
     expect(text('hud.site.time-left')).toBe('Keine Schätzung: Es wird nichts abgebaut.');
   });
 
-  it('bietet bei leerem Vorrat die neue Futterstelle an', () => {
+  it('meldet den leeren Vorrat ohne Restzeit und ohne Knopf', () => {
     render({ stock: Num.ZERO, stockPercent: 0, empty: true });
 
-    expect(text('hud.site.renew')).toBe('Neue Futterstelle');
     expect(status()).toBe(
       'Die Futterstelle ist leer. Grundertrag und Drohnen bringen nichts mehr.',
     );
+    expect(text('hud.site.stock')).toBe('0 / 20.000');
     expect(query('hud.site.time-left')).toBeNull();
-  });
-
-  it('meldet das Erneuern und setzt den Fokus auf die Überschrift', () => {
-    document.body.append(element());
-    render({ stock: Num.ZERO, stockPercent: 0, empty: true });
-    const clicked = vi.fn();
-    fixture.componentInstance.clickedRenew.subscribe(clicked);
-
-    query<HTMLButtonElement>('hud.site.renew')?.click();
-
-    expect(clicked).toHaveBeenCalledOnce();
-    expect(document.activeElement).toBe(element().querySelector('#site-title'));
-    element().remove();
+    expect(element().querySelectorAll('button')).toHaveLength(0);
   });
 });

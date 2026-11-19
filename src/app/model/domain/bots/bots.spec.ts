@@ -8,12 +8,17 @@ import { Num } from '@app/shared/util/num/num';
 import { createActiveBot } from './active-bot-logic';
 import { createIdleBot, IDLE_VISIT_EVERY_MS } from './idle-bot-logic';
 
+/**
+ * Zustand mit eingeschaltetem Auto-Weiterziehen, damit die Kaufentscheidungen für sich stehen;
+ * `autoOff` stellt den Zustand eines neuen Spiels wieder her.
+ */
 function setup(
   overrides: Partial<BalanceParams> = {},
   patch: (state: GameState) => GameState = (state) => state,
 ) {
   const params = { ...DEFAULT_BALANCE, ...overrides };
-  const state = patch(createInitialState({ seed: 'bots', now: 0 }, params));
+  const initial = createInitialState({ seed: 'bots', now: 0 }, params);
+  const state = patch({ ...initial, auto: { ...initial.auto, enabled: true } });
   return {
     state,
     decide: (bot: Bot, timeMs: number): readonly Command[] =>
@@ -43,10 +48,12 @@ function withCounts(drones: number, boughtDrones: number, boughtQueens: number, 
   });
 }
 
-const emptySite = (state: GameState): GameState => ({
+const autoOff = (state: GameState): GameState => ({
   ...state,
-  site: { ...state.site, stock: Num.ZERO },
+  auto: { ...state.auto, enabled: false },
 });
+
+const ENABLE_AUTO_MOVE: Command = { type: 'setAutoMove', enabled: true };
 
 describe('createActiveBot', () => {
   it('heißt active', () => {
@@ -64,7 +71,7 @@ describe('createActiveBot', () => {
     expect(decide(bot, 2500)).toContainEqual({ type: 'buy', unit: 'drones' });
   });
 
-  it('erzeugt nur Käufe und neue Futterstellen', () => {
+  it('erzeugt bei eingeschaltetem Auto-Weiterziehen nur Käufe', () => {
     const { decide } = setup({ startFood: 1000 });
     const types = new Set(decide(createActiveBot(), 0).map((command) => command.type));
     expect([...types]).toEqual(['buy']);
@@ -101,15 +108,16 @@ describe('createActiveBot', () => {
     expect(decide(createActiveBot(), 0)).not.toContainEqual({ type: 'buy', unit: 'soldiers' });
   });
 
-  it('löst bei leerem Vorrat eine neue Futterstelle aus', () => {
-    const { decide } = setup({}, emptySite);
-    expect(decide(createActiveBot(), 1000)).toContainEqual({ type: 'newSite' });
+  it('schaltet in einem neuen Spiel zuerst das Auto-Weiterziehen ein, dann kauft er', () => {
+    const commands = setup({ startFood: 100 }, autoOff).decide(createActiveBot(), 0);
+    expect(commands[0]).toEqual(ENABLE_AUTO_MOVE);
+    expect(commands.slice(1)).toContainEqual({ type: 'buy', unit: 'drones' });
+    expect(commands.filter((command) => command.type === 'setAutoMove')).toHaveLength(1);
   });
 
-  it('erneuert die Futterstelle vor den Käufen', () => {
-    const commands = setup({ startFood: 100 }, emptySite).decide(createActiveBot(), 1000);
-    expect(commands[0]).toEqual({ type: 'newSite' });
-    expect(commands).toContainEqual({ type: 'buy', unit: 'drones' });
+  it('schaltet das Auto-Weiterziehen auch ohne Nahrung ein', () => {
+    const commands = setup({ startFood: 0 }, autoOff).decide(createActiveBot(), 0);
+    expect(commands).toEqual([ENABLE_AUTO_MOVE]);
   });
 
   it.each([0, -1, NaN, Infinity])('lehnt den Abstand %d ab', (decideEveryMs) => {
@@ -143,9 +151,9 @@ describe('createIdleBot', () => {
     expect(setup({ startFood: 0 }).decide(createIdleBot(), 0)).toEqual([]);
   });
 
-  it('löst bei leerem Vorrat eine neue Futterstelle aus', () => {
-    const commands = setup({ startFood: 0 }, emptySite).decide(createIdleBot(), 0);
-    expect(commands).toEqual([{ type: 'newSite' }]);
+  it('schaltet in einem neuen Spiel zuerst das Auto-Weiterziehen ein, dann kauft er', () => {
+    const commands = setup({ startFood: 65 }, autoOff).decide(createIdleBot(), 0);
+    expect(commands).toEqual([ENABLE_AUTO_MOVE, { type: 'buy', unit: 'queens' }]);
   });
 
   it('bleibt bei Preis 0 endlich', () => {

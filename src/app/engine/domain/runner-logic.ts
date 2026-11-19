@@ -1,10 +1,7 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
-import {
-  isAffordable,
-  secondsUntilAffordable,
-  siteSecondsLeft,
-} from '@app/balance/domain/formulas';
+import { isAffordable, secondsUntilAffordable, siteMsLeft } from '@app/balance/domain/formulas';
 import { Num } from '@app/shared/util/num/num';
+import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 import {
@@ -14,8 +11,9 @@ import {
   createBotView,
   createPriceLookup,
 } from './bot-logic';
-import { apply, Command } from './commands-logic';
+import { applyCommand, Command } from './commands-logic';
 import { createInitialState } from './game-state-logic';
+import type { GameEvent } from './models/game-event.model';
 import { GameState } from './models/game-state.model';
 import { step } from './step-logic';
 
@@ -34,14 +32,17 @@ const MS_PER_SECOND = 1000;
 const USEFUL_UNITS: readonly UnitType[] = ['queens', 'drones'];
 
 export interface SimOptions {
-  /** Geht in den Startzustand ein; die Spiellogik zieht bisher keinen Zufall. */
+  /** Geht in den Startzustand ein; der Generator zieht daraus die Kandidaten. */
   readonly seed: string;
   readonly bot: Bot;
   readonly durationMs: number;
   readonly sampleEveryMs: number;
   /** Teil-Override über `DEFAULT_BALANCE`. */
   readonly params?: Partial<BalanceParams>;
-  /** Längster Simulationsschritt; Bot-Aktionen und Abtastpunkte teilen ihn zusätzlich. */
+  /**
+   * Längster Simulationsschritt; Bot-Aktionen, Abtastpunkte, Ankünfte und vorhergesagte
+   * Auto-Aufbrüche teilen ihn zusätzlich.
+   */
   readonly stepMs?: number;
   /** Unix-Zeit des Startzustands; alle Zeiten im Ergebnis zählen ab Laufbeginn. */
   readonly startTimeMs?: number;
@@ -72,14 +73,34 @@ export interface SimSample {
   readonly nextBuyMs: NextBuyTimes;
 }
 
+/**
+ * Ereignisse eines Laufs; `site` ist der Index in {@link SimMetrics.sites}. `departed` nennt die
+ * verlassene Futterstelle und den Typ des Ziels, `arrived` die neue Futterstelle.
+ */
 export type SimEvent =
   | { readonly timeMs: number; readonly type: 'buy'; readonly unit: UnitType }
   | { readonly timeMs: number; readonly type: 'siteEmpty'; readonly site: number }
-  | { readonly timeMs: number; readonly type: 'newSite'; readonly site: number };
+  | {
+      readonly timeMs: number;
+      readonly type: 'departed';
+      readonly site: number;
+      readonly target: SiteTypeId;
+      readonly auto: boolean;
+    }
+  | {
+      readonly timeMs: number;
+      readonly type: 'arrived';
+      readonly site: number;
+      readonly siteType: SiteTypeId;
+    };
 
-/** Futterstelle von ihrem Beginn bis zum leeren Vorrat; ohne Ende bleiben die Felder `null`. */
+/**
+ * Futterstelle von ihrem Beginn (Ankunft, die erste bei 0) bis zum leeren Vorrat; ohne Ende
+ * bleiben die Felder `null`.
+ */
 export interface SiteMetric {
   readonly index: number;
+  readonly siteType: SiteTypeId;
   readonly startMs: number;
   readonly emptyMs: number | null;
   readonly durationMs: number | null;
@@ -205,11 +226,17 @@ function doublingMetric(samples: readonly SimSample[]): DoublingMetric {
 class Recorder {
   readonly samples: SimSample[] = [];
   readonly events: SimEvent[] = [];
-  readonly sites: SiteMetric[] = [{ index: 0, startMs: 0, emptyMs: null, durationMs: null }];
+  readonly sites: SiteMetric[];
   saturated = false;
   private waitMs = 0;
   private currentWaitMs = 0;
   private longestWaitMs = 0;
+
+  constructor(firstSiteType: SiteTypeId) {
+    this.sites = [
+      { index: 0, siteType: firstSiteType, startMs: 0, emptyMs: null, durationMs: null },
+    ];
+  }
 
   /** Wertet den Abschnitt `[fromMs, toMs)` aus; `waiting` gilt für seinen Beginn. */
   segment(fromMs: number, toMs: number, waiting: boolean): void {
@@ -268,24 +295,42 @@ class Recorder {
     });
   }
 
-  siteEmptied(timeMs: number): void {
-    const current = this.sites[this.sites.length - 1];
-    this.sites[this.sites.length - 1] = {
-      ...current,
-      emptyMs: timeMs,
-      durationMs: timeMs - current.startMs,
-    };
-    this.events.push({ timeMs, type: 'siteEmpty', site: current.index });
-  }
-
-  /** Hält eine wirksame Bot-Aktion fest; wirkungslose Kommandos kommen hier nicht an. */
+  /** Hält einen wirksamen Kauf des Bots fest; wirkungslose Kommandos kommen hier nicht an. */
   command(command: Command, timeMs: number): void {
     if (command.type === 'buy') {
       this.events.push({ timeMs, type: 'buy', unit: command.unit });
-    } else if (command.type === 'newSite') {
-      const index = this.sites.length;
-      this.sites.push({ index, startMs: timeMs, emptyMs: null, durationMs: null });
-      this.events.push({ timeMs, type: 'newSite', site: index });
+    }
+  }
+
+  /** Übernimmt Ereignisse aus Kommandos und Schritten; `playedMs` zählt wie `timeMs` ab Laufbeginn. */
+  gameEvents(events: readonly GameEvent[]): void {
+    for (const event of events) {
+      const last = this.sites.length - 1;
+      const timeMs = event.playedMs;
+      switch (event.type) {
+        case 'siteDepleted': {
+          const current = this.sites[last];
+          this.sites[last] = { ...current, emptyMs: timeMs, durationMs: timeMs - current.startMs };
+          this.events.push({ timeMs, type: 'siteEmpty', site: last });
+          break;
+        }
+        case 'departed':
+          this.events.push({
+            timeMs,
+            type: 'departed',
+            site: last,
+            target: event.siteType,
+            auto: event.auto,
+          });
+          break;
+        case 'arrived': {
+          const index = last + 1;
+          const { siteType } = event;
+          this.sites.push({ index, siteType, startMs: timeMs, emptyMs: null, durationMs: null });
+          this.events.push({ timeMs, type: 'arrived', site: index, siteType });
+          break;
+        }
+      }
     }
   }
 
@@ -304,8 +349,23 @@ class Recorder {
   }
 }
 
-function emptied(before: GameState, after: GameState): boolean {
-  return !before.site.stock.isZero() && after.site.stock.isZero();
+/**
+ * Nächster Zeitpunkt, an dem der Runner den Schritt teilt: die Ankunft oder der vorhergesagte
+ * Auslöser des Auto-Weiterziehens (`V = θ · G`), auf die nächste ganze Millisekunde aufgerundet. Im
+ * Schritt ist die Abbaurate konstant, die Vorhersage also exakt; so bricht der Schwarm nicht erst
+ * am Ende eines großen Schritts auf.
+ */
+function nextSplitMs(state: GameState, timeMs: number, params: BalanceParams): number {
+  const { auto, site, travel, units } = state;
+  if (travel !== null) {
+    return timeMs + Math.max(1, Math.ceil(travel.remainingMs));
+  }
+  if (!auto.enabled) {
+    return Infinity;
+  }
+  const msLeft = siteMsLeft(units, site.stock.sub(site.size.mul(auto.threshold)), params);
+  // Ist der Auslöser schon erreicht, fand die Strategie kein Ziel; dann gibt es nichts zu teilen.
+  return msLeft !== null && msLeft > 0 ? timeMs + Math.ceil(msLeft) : Infinity;
 }
 
 function assertOptions(durationMs: number, sampleEveryMs: number, stepMs: number): void {
@@ -320,7 +380,8 @@ function assertOptions(durationMs: number, sampleEveryMs: number, stepMs: number
 }
 
 /**
- * Simuliert einen Lauf ohne Oberfläche, ausschließlich über `apply`, `step` und `balance/domain`.
+ * Simuliert einen Lauf ohne Oberfläche, ausschließlich über `applyCommand`, `step` und
+ * `balance/domain`.
  * Gleiche Optionen ergeben dasselbe Ergebnis.
  *
  * Der Lauf hält an jeder Schrittgrenze, Bot-Aktion und Abtastung. Zu einem Zeitpunkt handelt zuerst
@@ -337,8 +398,8 @@ export function runSimulation(options: SimOptions): SimResult {
   const pricesFor = createPriceLookup(params);
   const viewAt = (current: GameState, atMs: number): BotView =>
     createBotView(current, atMs, params, pricesFor);
-  const recorder = new Recorder();
   let state = createInitialState({ seed, now: startTimeMs }, params);
+  const recorder = new Recorder(state.site.type);
   let timeMs = 0;
   let nextActionMs = 0;
   let sampleIndex = 0;
@@ -346,11 +407,11 @@ export function runSimulation(options: SimOptions): SimResult {
   for (;;) {
     if (timeMs === nextActionMs) {
       for (const command of bot.decide(state, viewAt(state, timeMs))) {
-        const next = apply(state, command, params);
-        // Kein Kommando leert den Vorrat; leer wird er nur in `step`.
-        if (next !== state) {
+        const result = applyCommand(state, command, params);
+        if (result.state !== state) {
           recorder.command(command, timeMs);
-          state = next;
+          recorder.gameEvents(result.events);
+          state = result.state;
         }
       }
       nextActionMs = bot.nextActionMs(timeMs);
@@ -373,6 +434,7 @@ export function runSimulation(options: SimOptions): SimResult {
       stepEndMs > timeMs ? stepEndMs : timeMs + stepMs,
       nextActionMs,
       Math.min(sampleIndex * sampleEveryMs, durationMs),
+      nextSplitMs(state, timeMs, params),
     );
     const dtMs = stopMs - timeMs;
 
@@ -384,14 +446,9 @@ export function runSimulation(options: SimOptions): SimResult {
       !USEFUL_UNITS.some((unit) => isAffordable(prices[unit], food)),
     );
 
-    const before = state;
-    state = step(state, dtMs, params).state;
-    if (emptied(before, state)) {
-      // Innerhalb des Schritts genau bestimmen, damit die Dauer nicht an der Schrittweite hängt.
-      const seconds = siteSecondsLeft(before.units, before.site.stock, params);
-      const exactMs = seconds === null ? stopMs : timeMs + seconds.toNumber() * MS_PER_SECOND;
-      recorder.siteEmptied(Math.max(timeMs, Math.min(stopMs, Math.round(exactMs))));
-    }
+    const result = step(state, dtMs, params);
+    recorder.gameEvents(result.events);
+    state = result.state;
     timeMs = stopMs;
   }
 

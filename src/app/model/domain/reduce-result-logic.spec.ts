@@ -16,6 +16,7 @@ const MEGABYTE = 1_000_000;
 function site(index: number, durationMs: number | null): SiteMetric {
   return {
     index,
+    siteType: 'algal-mat',
     startMs: index * 100,
     emptyMs: durationMs === null ? null : index * 100 + durationMs,
     durationMs,
@@ -96,13 +97,15 @@ describe('reduceResult', () => {
 
     expect(JSON.stringify(run).length).toBeLessThan(MEGABYTE);
     expect(run.samples.length).toBeLessThanOrEqual(MAX_SAMPLES);
-    for (const type of ['buy', 'siteEmpty', 'newSite'] as const) {
+    for (const type of ['buy', 'siteEmpty', 'arrived'] as const) {
       const all = result.events.filter((event) => event.type === type);
       const kept = run.events.filter((event) => event.type === type);
       expect(run.eventTotals[type]).toBe(all.length);
       expect(kept.length).toBe(Math.min(all.length, MAX_EVENTS_PER_TYPE));
       expect(kept[kept.length - 1]).toEqual(all[all.length - 1]);
     }
+    expect(run.eventTotals.arrived).toBeGreaterThan(0);
+    expect(run.events.some((event) => event.type === 'departed')).toBe(false);
     expect(run.metrics.sites.count).toBe(result.metrics.sites.length);
     expect(run.metrics.firstBuyMs).toBe(result.metrics.firstBuyMs);
   }, 30_000);

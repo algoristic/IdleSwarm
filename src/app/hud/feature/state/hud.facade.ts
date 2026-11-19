@@ -29,9 +29,4 @@ export class HudFacade {
   buy(unit: UnitType): void {
     this.#store.dispatch({ type: 'buy', unit });
   }
-
-  /** Füllt die leere Futterstelle wieder auf (Provisorium bis M1.2). */
-  renewSite(): void {
-    this.#store.dispatch({ type: 'newSite' });
-  }
 }

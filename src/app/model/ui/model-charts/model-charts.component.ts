@@ -11,14 +11,14 @@ import { buildChartOption, ChartTab } from './chart-options';
 const MARKER_GLYPHS: Readonly<Record<EventType, string>> = {
   buy: '▲',
   siteEmpty: '◆',
-  newSite: '●',
+  arrived: '●',
 };
 
 /** Dieselben Tokens wie die Markierungen im Diagramm (`readChartPalette`). */
 const MARKER_CLASSES: Readonly<Record<EventType, string>> = {
   buy: 'text-fg-muted',
   siteEmpty: 'text-danger',
-  newSite: 'text-violet',
+  arrived: 'text-violet',
 };
 
 /** Reiter, Achsenwahl und Markierungen um das Diagramm. */
@@ -86,7 +86,7 @@ export class ModelChartsComponent {
   readonly #markerLabels: Readonly<Record<EventType, string>> = {
     buy: $localize`:@@uiModel-modelCharts-marker-buy:Kauf`,
     siteEmpty: $localize`:@@uiModel-modelCharts-marker-siteEmpty:Futterstelle leer`,
-    newSite: $localize`:@@uiModel-modelCharts-marker-newSite:Neue Futterstelle`,
+    arrived: $localize`:@@uiModel-modelCharts-marker-arrived:Weitergezogen`,
   };
 
   onToggleMarker(type: EventType): void {

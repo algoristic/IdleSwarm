@@ -73,8 +73,8 @@ export function createActiveBot({
     nextActionMs: (afterMs) => nextMultipleMs(afterMs, decideEveryMs),
     decide(state, view) {
       const plan = new CommandPlan(state, view);
-      // Zuerst: Die Bewertung braucht den Zufluss, und bei leerem Vorrat gibt es keinen.
-      plan.renewEmptySite();
+      // Weiterziehen übernimmt das Auto-Weiterziehen (Game-Design §4.12).
+      plan.enableAutoMove();
       // Ohne bezahlbare Einheit steht das Ergebnis fest; das spart die Bewertung.
       while (plan.canBuy('drones') || plan.canBuy('queens')) {
         const unit = bestUnit(plan);

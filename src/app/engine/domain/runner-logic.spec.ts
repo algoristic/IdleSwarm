@@ -4,10 +4,12 @@ import { createIdleBot } from '@app/model/domain/bots/idle-bot-logic';
 
 import type { Bot } from './bot-logic';
 import type { Command } from './commands-logic';
+import { createInitialState } from './game-state-logic';
 import {
   BUY_GAP_WINDOW_MS,
   DEFAULT_SIM_STEP_MS,
   runSimulation,
+  SimEvent,
   SimOptions,
   SimResult,
 } from './runner-logic';
@@ -18,7 +20,11 @@ const BUDGET_MS = 5000;
 
 /** Toleranzen des großen Schritts gegenüber dem echten 100-ms-Takt. */
 const SITE_TOLERANCE = 0.005;
-const UNIT_TOLERANCE = 0.01;
+/**
+ * Jeder Weiterzug verschiebt den Verlauf um die kleine Abweichung der Futterstelle davor; die
+ * letzte Futterstelle sammelt darum unterschiedlich lange. Ohne Weiterziehen reichte 1 %.
+ */
+const UNIT_TOLERANCE = 0.02;
 
 const BUY_DRONE: Command = { type: 'buy', unit: 'drones' };
 
@@ -96,7 +102,7 @@ describe('runSimulation', () => {
       // Die kleine Futterstelle bringt Käufe und Futterstellen-Wechsel in einen kurzen Lauf.
       const options = { durationMs: 15 * MINUTE_MS, params: { siteSize: 500 } };
       const result = run(createBot(), options);
-      expect(result.events.some((event) => event.type === 'newSite')).toBe(true);
+      expect(result.events.some((event) => event.type === 'arrived')).toBe(true);
       expect(run(createBot(), options)).toEqual(result);
     });
 
@@ -108,11 +114,13 @@ describe('runSimulation', () => {
       expect(clock).not.toHaveBeenCalled();
     });
 
-    it('hängt nicht vom Seed ab, solange die Spiellogik keinen Zufall zieht', () => {
-      const first = run(createActiveBot(), { seed: 'eins' });
-      const second = run(createActiveBot(), { seed: 'zwei' });
+    it('hängt vom Seed ab, sobald der Schwarm weiterzieht', () => {
+      // Der Generator zieht die Kandidaten aus dem Seed.
+      const options = { durationMs: 15 * MINUTE_MS, params: { siteSize: 500 } };
+      const first = run(createActiveBot(), { ...options, seed: 'eins' });
+      const second = run(createActiveBot(), { ...options, seed: 'zwei' });
       expect(second.seed).toBe('zwei');
-      expect({ ...second, seed: first.seed }).toEqual(first);
+      expect({ ...second, seed: first.seed }).not.toEqual(first);
     });
 
     it('hängt nicht vom Startzeitpunkt ab', () => {
@@ -204,36 +212,107 @@ describe('runSimulation', () => {
   });
 
   describe('Ereignisse und Futterstellen', () => {
-    const cycle = () =>
-      run(scripted({ 0: Array(5).fill(BUY_DRONE), 120_000: [{ type: 'newSite' }] }), {
-        params: { ...SIMPLE, siteSize: 100 },
+    /** Ohne Platzbedarf kommen alle Drohnen mit; fünf Drohnen sammeln 1 Nahrung/s. */
+    const MOVING: Partial<BalanceParams> = { ...SIMPLE, siteSize: 100, droneSpace: 0 };
+    const FIVE_DRONES: readonly Command[] = Array(5).fill(BUY_DRONE);
+    const ENABLE_AUTO_MOVE: Command = { type: 'setAutoMove', enabled: true };
+
+    // Ziel aus dem Startzustand: Ohne Soldaten ist nur die sichere Algenmatte einnehmbar.
+    const { candidates } = createInitialState(
+      { seed: 'runner', now: 0 },
+      { ...DEFAULT_BALANCE, ...MOVING },
+    ).map;
+    const target = candidates.findIndex((candidate) => candidate.defense.isZero());
+    const { position, size } = candidates[target];
+    const travelMs =
+      Math.hypot(position.x, position.y) * DEFAULT_BALANCE.travelSecondsPerDistance * 1000;
+    const secondSiteMs = size.toNumber() * 1000;
+
+    const typeAndSite = (event: SimEvent) => ({
+      type: event.type,
+      site: 'site' in event ? event.site : null,
+    });
+
+    const manual = () =>
+      run(scripted({ 0: FIVE_DRONES, 120_000: [{ type: 'depart', target }] }), {
+        params: MOVING,
         durationMs: 5 * MINUTE_MS,
-        // Der grobe Schritt prüft, dass der Zeitpunkt nicht an der Schrittweite hängt.
+        // Der grobe Schritt prüft, dass die Zeitpunkte nicht an der Schrittweite hängen.
         stepMs: 30_000,
       });
 
-    it('hält Käufe, leere und neue Futterstellen mit Zeitstempel fest', () => {
-      expect(cycle().events).toEqual([
+    it('hält Käufe, leere Futterstellen, Aufbruch und Ankunft mit Zeitstempel fest', () => {
+      const { events } = manual();
+      expect(events.slice(0, 7)).toEqual([
         ...Array.from({ length: 5 }, () => ({ timeMs: 0, type: 'buy', unit: 'drones' })),
         { timeMs: 100_000, type: 'siteEmpty', site: 0 },
-        { timeMs: 120_000, type: 'newSite', site: 1 },
-        { timeMs: 220_000, type: 'siteEmpty', site: 1 },
+        { timeMs: 120_000, type: 'departed', site: 0, target: 'algal-mat', auto: false },
       ]);
+      expect(events.slice(7).map(typeAndSite)).toEqual([
+        { type: 'arrived', site: 1 },
+        { type: 'siteEmpty', site: 1 },
+      ]);
+      expect(events[7]).toMatchObject({ siteType: 'algal-mat' });
+      expect(events[7].timeMs).toBeCloseTo(120_000 + travelMs, 3);
+      expect(events[8].timeMs).toBeCloseTo(120_000 + travelMs + secondSiteMs, 3);
     });
 
-    it('misst die Dauer je Futterstelle ohne die Zeit bis zur Erneuerung', () => {
-      const { sites, firstSiteMs } = cycle().metrics;
+    it('misst die Dauer je Futterstelle ab der Ankunft ohne die Zeit bis zum Aufbruch', () => {
+      const { sites, firstSiteMs } = manual().metrics;
       expect(firstSiteMs).toBe(100_000);
-      expect(sites).toEqual([
-        { index: 0, startMs: 0, emptyMs: 100_000, durationMs: 100_000 },
-        { index: 1, startMs: 120_000, emptyMs: 220_000, durationMs: 100_000 },
-      ]);
+      expect(sites).toHaveLength(2);
+      expect(sites[0]).toEqual({
+        index: 0,
+        siteType: 'vent',
+        startMs: 0,
+        emptyMs: 100_000,
+        durationMs: 100_000,
+      });
+      expect(sites[1]).toMatchObject({ index: 1, siteType: 'algal-mat' });
+      expect(sites[1].startMs).toBeCloseTo(120_000 + travelMs, 3);
+      expect(sites[1].durationMs).toBeCloseTo(secondSiteMs, 3);
     });
+
+    it.each([30_000, TICK_MS])(
+      'bricht mit Auto-Weiterziehen bei Schrittweite %d ms genau am leeren Vorrat auf',
+      (stepMs) => {
+        const { events } = run(scripted({ 0: [...FIVE_DRONES, ENABLE_AUTO_MOVE] }), {
+          params: MOVING,
+          durationMs: 5 * MINUTE_MS,
+          stepMs,
+        });
+        const moves = events.filter((event) => event.type !== 'buy');
+        expect(moves.map(typeAndSite)).toEqual([
+          { type: 'siteEmpty', site: 0 },
+          { type: 'departed', site: 0 },
+          { type: 'arrived', site: 1 },
+          { type: 'siteEmpty', site: 1 },
+          { type: 'departed', site: 1 },
+          { type: 'arrived', site: 2 },
+        ]);
+        const [, departed, arrived, emptied, departedAgain] = moves;
+        expect(moves[0].timeMs).toBe(100_000);
+        expect(departed).toEqual({
+          timeMs: 100_000,
+          type: 'departed',
+          site: 0,
+          target: 'algal-mat',
+          auto: true,
+        });
+        expect(arrived.timeMs).toBeCloseTo(100_000 + travelMs, 3);
+        expect(emptied.timeMs).toBeCloseTo(100_000 + travelMs + secondSiteMs, 3);
+        // Der Runner teilt den Schritt an der nächsten ganzen Millisekunde.
+        expect(departedAgain.timeMs - emptied.timeMs).toBeGreaterThanOrEqual(0);
+        expect(departedAgain.timeMs - emptied.timeMs).toBeLessThanOrEqual(1);
+      },
+    );
 
     it('lässt eine nicht geleerte Futterstelle offen', () => {
       const { sites, firstSiteMs } = run(scripted({}), { params: SIMPLE }).metrics;
       expect(firstSiteMs).toBeNull();
-      expect(sites).toEqual([{ index: 0, startMs: 0, emptyMs: null, durationMs: null }]);
+      expect(sites).toEqual([
+        { index: 0, siteType: 'vent', startMs: 0, emptyMs: null, durationMs: null },
+      ]);
     });
 
     it('erkennt, wenn der Grundertrag allein den Vorrat leert', () => {
@@ -248,7 +327,9 @@ describe('runSimulation', () => {
 
     it('ignoriert wirkungslose Kommandos', () => {
       const { events } = run(
-        scripted({ 0: [{ type: 'newSite' }, { type: 'buy', unit: 'queens' }, { type: 'noop' }] }),
+        scripted({
+          0: [{ type: 'depart', target: 99 }, { type: 'buy', unit: 'queens' }, { type: 'noop' }],
+        }),
         { params: { startFood: 0 } },
       );
       expect(events).toEqual([]);
@@ -257,19 +338,23 @@ describe('runSimulation', () => {
     it.each([
       ['Aktiv', createActiveBot],
       ['Idle', createIdleBot],
-    ])('wechselt bei %s leere und neue Futterstellen ab', (_name, createBot) => {
+    ])('zieht bei %s nach jedem leeren Vorrat automatisch weiter', (_name, createBot) => {
       const { events, metrics } = run(createBot(), {
         params: { siteSize: 500 },
         durationMs: 20 * MINUTE_MS,
       });
       const cycle = events.filter((event) => event.type !== 'buy');
       expect(metrics.sites.length).toBeGreaterThan(2);
+      const order = ['siteEmpty', 'departed', 'arrived'] as const;
       cycle.forEach((event, index) => {
-        const site = Math.ceil(index / 2);
-        expect(event).toMatchObject({
-          type: index % 2 === 0 ? 'siteEmpty' : 'newSite',
-          site,
-        });
+        const site = Math.floor(index / 3) + (event.type === 'arrived' ? 1 : 0);
+        expect(event).toMatchObject({ type: order[index % 3], site });
+        if (event.type === 'departed') {
+          expect(event.auto).toBe(true);
+        }
+      });
+      metrics.sites.slice(1).forEach((site, index) => {
+        expect(site.startMs).toBe(cycle[index * 3 + 2].timeMs);
       });
       const times = events.map((event) => event.timeMs);
       expect(times).toEqual([...times].sort((a, b) => a - b));
@@ -490,6 +575,12 @@ describe('runSimulation', () => {
       expect(
         relativeError(coarse.metrics.firstSiteMs ?? 0, exact.metrics.firstSiteMs ?? 1),
       ).toBeLessThan(SITE_TOLERANCE);
+      expect(coarse.metrics.sites.length).toBeGreaterThan(1);
+      expect(coarse.metrics.sites.length).toBe(exact.metrics.sites.length);
+      coarse.metrics.sites.slice(1).forEach((site, index) => {
+        const exactStartMs = exact.metrics.sites[index + 1].startMs;
+        expect(relativeError(site.startMs, exactStartMs)).toBeLessThan(SITE_TOLERANCE);
+      });
       expect(coarseEnd.queens).toBe(exactEnd.queens);
       expect(relativeError(coarseEnd.drones, exactEnd.drones)).toBeLessThan(UNIT_TOLERANCE);
       expect(relativeError(coarseEnd.soldiers, exactEnd.soldiers)).toBeLessThan(UNIT_TOLERANCE);

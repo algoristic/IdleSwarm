@@ -18,7 +18,7 @@ function play(seed: string): { json: string; values: number[]; state: GameState 
   let state = createInitialState({ seed, now: NOW }, { ...DEFAULT_BALANCE, startFood: 1000 });
   const values: number[] = [];
   for (let i = 0; i < 1000; i++) {
-    state = apply(state, { type: i % 2 === 0 ? 'noop' : 'newSite' });
+    state = apply(state, i % 2 === 0 ? { type: 'noop' } : { type: 'depart', target: i % 6 });
     if (i % 5 === 0) {
       state = apply(state, { type: 'buy', unit: UNIT_TYPES[i % UNIT_TYPES.length] });
     }
@@ -30,21 +30,6 @@ function play(seed: string): { json: string; values: number[]; state: GameState 
     }
   }
   return { json: JSON.stringify(state), values, state };
-}
-
-/** Drohnen leeren eine kleine Futterstelle immer wieder, danach wird sie erneuert. */
-function collectUntilRenewed(seed: string): { json: string; renewals: number } {
-  const base = createInitialState({ seed, now: NOW }, { ...DEFAULT_BALANCE, siteSize: 3 });
-  let state: GameState = { ...base, units: { ...base.units, drones: Num.from(7) } };
-  let renewals = 0;
-  for (let i = 0; i < 1000; i++) {
-    state = step(state, TICK_MS).state;
-    if (state.site.stock.isZero()) {
-      state = apply(state, { type: 'newSite' });
-      renewals++;
-    }
-  }
-  return { json: JSON.stringify(state), renewals };
 }
 
 /**
@@ -101,12 +86,6 @@ describe('Determinismus', () => {
     for (const unit of UNIT_TYPES) {
       expect(bought[unit].gt(0)).toBe(true);
     }
-  });
-
-  it('bleibt beim Sammeln über geleerte Futterstellen hinweg gleich', () => {
-    const first = collectUntilRenewed('idleswarm');
-    expect(first.renewals).toBeGreaterThan(0);
-    expect(collectUntilRenewed('idleswarm')).toEqual(first);
   });
 
   it('bleibt über Aufbruch, Reise, Ankunft und Auto-Weiterziehen gleich', () => {

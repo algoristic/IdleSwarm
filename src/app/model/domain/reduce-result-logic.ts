@@ -16,8 +16,16 @@ export const MAX_EVENTS_PER_TYPE = 500;
 
 const MS_PER_SECOND = 1000;
 
-export type EventType = SimEvent['type'];
-export const EVENT_TYPES: readonly EventType[] = ['buy', 'siteEmpty', 'newSite'];
+/**
+ * Ereignisarten, die das Ergebnis behält und die Diagramme markieren. `departed` fällt weg: Beim
+ * Auto-Weiterziehen mit Schwelle 0 fällt es mit `siteEmpty` zusammen, und `arrived` zeigt den Zug.
+ */
+export const EVENT_TYPES = [
+  'buy',
+  'siteEmpty',
+  'arrived',
+] as const satisfies readonly SimEvent['type'][];
+export type EventType = (typeof EVENT_TYPES)[number];
 
 export interface SiteSummary {
   readonly count: number;
@@ -90,7 +98,7 @@ export function summarizeSites(sites: readonly SiteMetric[]): SiteSummary {
 
 /** Verkleinert ein Ergebnis vor dem Senden; ein Aktiv-Lauf über 24 h hätte roh rund 12,7 MB. */
 export function reduceResult(result: SimResult, bot: BotKind, computeMs: number): ReducedRun {
-  const byType = new Map<EventType, SimEvent[]>(EVENT_TYPES.map((type) => [type, []]));
+  const byType = new Map<SimEvent['type'], SimEvent[]>(EVENT_TYPES.map((type) => [type, []]));
   for (const event of result.events) {
     byType.get(event.type)?.push(event);
   }
@@ -111,7 +119,7 @@ export function reduceResult(result: SimResult, bot: BotKind, computeMs: number)
     eventTotals: {
       buy: count('buy'),
       siteEmpty: count('siteEmpty'),
-      newSite: count('newSite'),
+      arrived: count('arrived'),
     },
     metrics: { ...result.metrics, sites: summarizeSites(result.metrics.sites) },
   };

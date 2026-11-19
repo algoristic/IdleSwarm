@@ -3,7 +3,6 @@ import { Num } from '@app/shared/util/num/num';
 
 import { apply, applyCommand, Command } from './commands-logic';
 import { createInitialState } from './game-state-logic';
-import { GameState } from './models/game-state.model';
 
 describe('apply', () => {
   const state = Object.freeze(createInitialState({ seed: 'idleswarm', now: 1000 }));
@@ -18,49 +17,6 @@ describe('apply', () => {
     expect(() => apply(state, cmd)).toThrow(new TypeError('Unbekanntes Kommando: unknown'));
   });
 
-  function withStock(stock: Num | number, size: Num | number = 20000): GameState {
-    return Object.freeze({
-      ...state,
-      site: Object.freeze({
-        ...state.site,
-        size: Num.from(size),
-        stock: Num.from(stock),
-      }),
-    });
-  }
-
-  describe('newSite', () => {
-    it('füllt den leeren Vorrat auf die Größe auf', () => {
-      const empty = withStock(0, 500);
-      const next = apply(empty, { type: 'newSite' });
-      expect(next.site.stock.eq(500)).toBe(true);
-      expect(next.site.size).toBe(empty.site.size);
-      expect(next.site.type).toBe('vent');
-    });
-
-    it('erhält Einheiten, Nahrung und Kaufzähler', () => {
-      const empty = withStock(0);
-      const next = apply(empty, { type: 'newSite' });
-      expect(next.res).toBe(empty.res);
-      expect(next.units).toBe(empty.units);
-      expect(next.bought).toBe(empty.bought);
-    });
-
-    it('richtet sich nach der Größe im Zustand, nicht nach den Parametern', () => {
-      const params = { ...DEFAULT_BALANCE, siteSize: 7 };
-      expect(apply(withStock(0, 500), { type: 'newSite' }, params).site.stock.eq(500)).toBe(true);
-    });
-
-    it.each([1e-9, 1, 20000])('gibt beim Vorrat %d denselben Zustand zurück', (stock) => {
-      const current = withStock(stock);
-      expect(apply(current, { type: 'newSite' })).toBe(current);
-    });
-
-    it('gibt bei einer Futterstelle der Größe 0 denselben Zustand zurück', () => {
-      const current = withStock(0, 0);
-      expect(apply(current, { type: 'newSite' })).toBe(current);
-    });
-  });
   describe('sacrificeDrones', () => {
     const withDrones = Object.freeze({
       ...state,
@@ -139,10 +95,9 @@ describe('apply', () => {
       expect(apply(state, { type: 'depart', target })).toBe(state);
     });
 
-    it('bleibt während einer Reise ohne Wirkung, auch für „Neue Futterstelle“', () => {
+    it('bleibt während einer Reise ohne Wirkung', () => {
       const traveling = Object.freeze(apply(state, { type: 'depart', target: 0 }));
       expect(apply(traveling, { type: 'depart', target: 0 })).toBe(traveling);
-      expect(apply(traveling, { type: 'newSite' })).toBe(traveling);
     });
 
     it('liefert für Kommandos ohne Ereignis eine leere Liste', () => {

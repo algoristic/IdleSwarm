@@ -36,7 +36,7 @@ export function readChartPalette(token: (name: string) => string): ChartPalette 
     markers: {
       buy: token('--sw-fg-muted'),
       siteEmpty: token('--sw-danger'),
-      newSite: token('--sw-violet'),
+      arrived: token('--sw-violet'),
     },
   };
 }

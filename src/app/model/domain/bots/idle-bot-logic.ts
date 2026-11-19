@@ -23,7 +23,7 @@ export function createIdleBot({ visitEveryMs = IDLE_VISIT_EVERY_MS }: IdleBotOpt
     nextActionMs: (afterMs) => nextMultipleMs(afterMs, visitEveryMs),
     decide(state, view) {
       const plan = new CommandPlan(state, view);
-      plan.renewEmptySite();
+      plan.enableAutoMove();
       for (const unit of BUY_ORDER) {
         while (plan.canBuy(unit)) {
           plan.buy(unit);

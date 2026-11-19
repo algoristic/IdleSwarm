@@ -128,15 +128,6 @@ describe('step', () => {
       expect(state.res.food.toNumber()).toBeCloseTo(4.8625, 10);
       expect(state.units.drones.toNumber()).toBeCloseTo(10.0075, 10);
     });
-
-    it('macht die Futterstelle nach dem Leeren wieder nutzbar', () => {
-      const emptied = step(swarm(0, 10, 0, 0.2), TICK_MS).state;
-      expect(emptied.site.stock).toBe(Num.ZERO);
-      const renewed = apply(emptied, { type: 'newSite' });
-      expect(renewed.site.stock.eq(renewed.site.size)).toBe(true);
-      expect(renewed.res.food.eq(0.2)).toBe(true);
-      expect(renewed.units).toBe(emptied.units);
-    });
   });
 
   it('liefert bei gleicher Eingabe dasselbe Ergebnis', () => {

@@ -86,9 +86,9 @@ export const CHART_TABS: Readonly<Record<ChartTab, TabDefinition>> = {
 const MARKER_SYMBOLS: Readonly<Record<EventType, string>> = {
   buy: 'triangle',
   siteEmpty: 'diamond',
-  newSite: 'circle',
+  arrived: 'circle',
 };
-const MARKER_ORDER: readonly EventType[] = ['buy', 'siteEmpty', 'newSite'];
+const MARKER_ORDER: readonly EventType[] = ['buy', 'siteEmpty', 'arrived'];
 /** Lage der Markierungen auf der verdeckten 0–1-Achse, unabhängig von der Wertachse. */
 const MARKER_BASE = 0.03;
 const MARKER_TYPE_STEP = 0.05;

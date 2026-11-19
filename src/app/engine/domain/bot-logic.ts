@@ -137,9 +137,10 @@ export class CommandPlan {
     this.#view = this.#view.forState(this.current);
   }
 
-  renewEmptySite(): void {
-    if (this.current.site.stock.isZero()) {
-      this.add({ type: 'newSite' });
+  /** Schaltet das Auto-Weiterziehen ein; Strategie und Schwelle bleiben, wie sie sind. */
+  enableAutoMove(): void {
+    if (!this.current.auto.enabled) {
+      this.add({ type: 'setAutoMove', enabled: true });
     }
   }
 
