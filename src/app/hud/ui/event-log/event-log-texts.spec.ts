@@ -25,7 +25,7 @@ describe('eventLogText', () => {
 
   it('meldet den Aufbruch mit Zurückgelassenen und verfallenem Vorrat', () => {
     expect(eventLogText(departed())).toBe(
-      'Aufbruch zu Walsturz (Distanz 4,0) · 12 Drohnen zurückgelassen · Restvorrat 121 verfallen',
+      'Aufbruch zu Walsturz (Distanz 4,0) · 13 Drohnen zurückgelassen · Restvorrat 121 verfallen',
     );
   });
 
@@ -33,7 +33,7 @@ describe('eventLogText', () => {
     expect(
       eventLogText(
         departed({
-          leftBehind: { drones: Num.from(0.4), soldiers: Num.ONE },
+          leftBehind: { drones: Num.ZERO, soldiers: Num.ONE },
           forfeitedStock: Num.ZERO,
           auto: true,
         }),
@@ -51,16 +51,32 @@ describe('eventLogText', () => {
     );
   });
 
-  it('meldet die Ankunft mit Verlusten und DNA (Beispiel 7)', () => {
+  it('rundet Zurückgelassene auf wie die Vorschau, ein Bruchteil fällt nicht weg', () => {
+    expect(
+      eventLogText(
+        departed({
+          leftBehind: { drones: Num.from(0.2), soldiers: Num.from(2.3) },
+          forfeitedStock: Num.ZERO,
+        }),
+      ),
+    ).toBe(
+      'Aufbruch zu Walsturz (Distanz 4,0) · 1 Drohne zurückgelassen · 3 Soldaten zurückgelassen',
+    );
+  });
+
+  it('meldet die Ankunft mit aufgerundeten Verlusten und abgerundeter DNA (Beispiel 7)', () => {
     expect(eventLogText(arrived(9.73))).toBe(
-      'Ankunft: Walsturz eingenommen · −9 Soldaten · +13 DNA',
+      'Ankunft: Walsturz eingenommen · −10 Soldaten · +13 DNA',
+    );
+    expect(eventLogText(arrived(2.3))).toBe(
+      'Ankunft: Walsturz eingenommen · −3 Soldaten · +13 DNA',
     );
     expect(eventLogText(arrived(1))).toBe('Ankunft: Walsturz eingenommen · −1 Soldat · +13 DNA');
     expect(eventLogText(arrived(0, 1))).toBe(
       'Ankunft: Walsturz eingenommen · ohne Verluste · +1 DNA',
     );
-    // Unter einem Soldaten weder „−0“ noch „ohne Verluste“.
-    expect(eventLogText(arrived(0.3))).toBe('Ankunft: Walsturz eingenommen · +13 DNA');
+    // Ein Bruchteil eines Soldaten erscheint als „−1“, nie als „−0“ oder „ohne Verluste“.
+    expect(eventLogText(arrived(0.3))).toBe('Ankunft: Walsturz eingenommen · −1 Soldat · +13 DNA');
   });
 
   it('meldet die leere Futterstelle', () => {

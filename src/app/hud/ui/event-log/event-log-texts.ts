@@ -1,5 +1,5 @@
 import type { GameEvent } from '@app/engine/domain/models/game-event.model';
-import { formatDown, formatUp, roundDownForDisplay } from '@app/shared/util/format/display-format';
+import { formatDown, formatUp, roundUpForDisplay } from '@app/shared/util/format/display-format';
 import { formatRate } from '@app/shared/util/format/format';
 import { Num } from '@app/shared/util/num/num';
 import type { ArrivedEvent, DepartedEvent } from '@app/site/domain/models/site-event.model';
@@ -7,7 +7,10 @@ import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels
 
 const SEPARATOR = ' · ';
 
-/** Text eines Log-Eintrags (US-04.05, US-04.09); Mengen wie überall abgerundet. */
+/**
+ * Text eines Log-Eintrags (US-04.05, US-04.09). DNA abgerundet wie die Mengen; Zurückgelassene und
+ * Verluste aufgerundet wie die Vorschau der Umgebung, damit ein Bruchteil nicht verschwindet.
+ */
 export function eventLogText(event: GameEvent): string {
   switch (event.type) {
     case 'departed':
@@ -27,18 +30,18 @@ function departedText(event: DepartedEvent): string {
   const parts = [
     $localize`:@@uiHud-eventLog-departed:Aufbruch zu ${site}:site: (Distanz ${distance}:distance:)`,
   ];
-  const drones = roundDownForDisplay(event.leftBehind.drones);
+  const drones = roundUpForDisplay(event.leftBehind.drones);
   if (drones.gt(Num.ZERO)) {
-    const count = formatDown(drones);
+    const count = formatUp(drones);
     parts.push(
       drones.eq(Num.ONE)
         ? $localize`:@@uiHud-eventLog-departed-leftDrone:${count}:count: Drohne zurückgelassen`
         : $localize`:@@uiHud-eventLog-departed-leftDrones:${count}:count: Drohnen zurückgelassen`,
     );
   }
-  const soldiers = roundDownForDisplay(event.leftBehind.soldiers);
+  const soldiers = roundUpForDisplay(event.leftBehind.soldiers);
   if (soldiers.gt(Num.ZERO)) {
-    const count = formatDown(soldiers);
+    const count = formatUp(soldiers);
     parts.push(
       soldiers.eq(Num.ONE)
         ? $localize`:@@uiHud-eventLog-departed-leftSoldier:${count}:count: Soldat zurückgelassen`
@@ -61,12 +64,12 @@ function departedText(event: DepartedEvent): string {
 function arrivedText(event: ArrivedEvent): string {
   const site = SITE_TYPE_LABELS[event.siteType];
   const parts = [$localize`:@@uiHud-eventLog-arrived:Ankunft: ${site}:site: eingenommen`];
-  const losses = roundDownForDisplay(event.losses);
-  if (event.losses.isZero()) {
+  const losses = roundUpForDisplay(event.losses);
+  if (losses.isZero()) {
     parts.push($localize`:@@uiHud-eventLog-arrived-noLosses:ohne Verluste`);
-  } else if (losses.gt(Num.ZERO)) {
-    // Bruchteile unter einem Soldaten erscheinen nicht als „−0“.
-    const count = formatDown(losses);
+  } else {
+    // Aufgerundet: Ein Bruchteil eines Soldaten erscheint als „−1“, nie als „−0“.
+    const count = formatUp(losses);
     parts.push(
       losses.eq(Num.ONE)
         ? $localize`:@@uiHud-eventLog-arrived-loss:−${count}:count: Soldat`
