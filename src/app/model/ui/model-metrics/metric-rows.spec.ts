@@ -60,6 +60,14 @@ describe('metricRows', () => {
     expect(value(outside, 'Anteil Wartezeit im Ausschnitt (Abtastpunkte)')).toBe('–');
   });
 
+  it('zählt Einheiten, Drüsenpunkte und Adaptionen als Käufe', () => {
+    const counted = {
+      ...run,
+      eventTotals: { ...run.eventTotals, buy: 10, gland: 2, evolved: 3, found: 100 },
+    };
+    expect(value(metricRows([counted], null), 'Käufe gesamt')).toBe('15');
+  });
+
   it('zeigt fehlende Werte als Strich', () => {
     const empty = {
       ...run,

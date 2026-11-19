@@ -35,6 +35,17 @@ const MAX_SAMPLES = 100_000;
 /** Soldaten nützen in M1.1 nichts; „gesamt“ und die Wartezeit zählen nur sinnvolle Käufe. */
 const USEFUL_UNITS: readonly UnitType[] = ['queens', 'drones'];
 
+/**
+ * Ereignisse, die als Kauf zählen (Kauflücken, erster Kauf, Strecke ohne Kauf, Käufe gesamt):
+ * Einheit, Drüsenpunkt und Adaption (entschieden mit M1.3, PO). Die Wartezeit zählt weiter nur
+ * Königin und Drohne (`USEFUL_UNITS`).
+ */
+export const PURCHASE_EVENT_TYPES = [
+  'buy',
+  'gland',
+  'evolved',
+] as const satisfies readonly SimEvent['type'][];
+
 export interface SimOptions {
   /** Geht in den Startzustand ein; der Generator zieht daraus die Kandidaten. */
   readonly seed: string;
@@ -180,6 +191,7 @@ export interface DoublingMetric {
 }
 
 export interface SimMetrics {
+  /** Erster Kauf; Käufe sind Einheit, Drüsenpunkt und Adaption (`PURCHASE_EVENT_TYPES`). */
   readonly firstBuyMs: number | null;
   /** Lücken zwischen Kaufzeitpunkten; Käufe im selben Moment zählen als einer. */
   readonly buyGaps: GapMetric;
@@ -242,9 +254,12 @@ function gapsBetween(times: readonly number[]): number[] {
   return times.slice(1).map((time, index) => time - times[index]);
 }
 
-/** Zeitpunkte mit mindestens einem Kauf, aufsteigend. */
+/** Zeitpunkte mit mindestens einem Kauf (`PURCHASE_EVENT_TYPES`), aufsteigend. */
 function buyTimes(events: readonly SimEvent[]): number[] {
-  const times = events.filter((event) => event.type === 'buy').map((event) => event.timeMs);
+  const purchases: readonly SimEvent['type'][] = PURCHASE_EVENT_TYPES;
+  const times = events
+    .filter((event) => purchases.includes(event.type))
+    .map((event) => event.timeMs);
   return [...new Set(times)];
 }
 
@@ -425,7 +440,7 @@ class Recorder {
 
   /**
    * Hält einen wirksamen Kauf oder Drüsenpunkt des Bots fest; wirkungslose Kommandos kommen hier
-   * nicht an. Der Drüsenpunkt zählt nicht als Kauf (Kauflücken, Strecke ohne Kauf).
+   * nicht an. Die Adaption meldet `evolved` über `gameEvents`.
    */
   command(command: Command, timeMs: number, after: GameState): void {
     if (command.type === 'buy') {

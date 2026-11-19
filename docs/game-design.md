@@ -1240,7 +1240,7 @@ Je Entscheidung in dieser Reihenfolge:
 - **Neue Drüsenpunkte** aus Schritt 2 bleiben frei, bis der Bot sie im Schritt 3 „Pheromone“ derselben Entscheidung verteilt.
 - **„Spart“ beim Genom** heißt: Ist das Ziel zu teuer, entwickelt der Bot keinen anderen Knoten, auch keinen aus anderen Ästen, bis die DNA für das Ziel reicht.
 - **Startverteilungen:** Die Regel „nächste ganzzahlige Aufteilung von `P_v = 4`“ ergibt Drohnen-lastig 4 : 0 und Soldaten-lastig 2 : 2; Aktiv und Idle bleiben bei 3 : 1. Der Bot setzt sie bei seiner ersten Entscheidung, der Startzustand des Spiels bleibt 3 : 1.
-- **Kauf-Kennzahlen:** Drüsenpunkte und Adaptionen zählen nicht als Kauf (Kauflücken, Strecke ohne Kauf); die Wartezeit zählt weiter nur Königin und Drohne ([6.2](#62-messung-m11-historisch)).
+- **Kauf-Kennzahlen:** Drüsenpunkte und Adaptionen zählen als Kauf (entschieden mit M1.3, PO): erster Kauf, Kauflücken, Strecke ohne Kauf und „Käufe gesamt“. Die Wartezeit zählt weiter nur Königin und Drohne ([6.2](#62-messung-m11-historisch)).
 
 **Zusätzliche Kennzahlen für AP 1.3.7** (entschieden mit M1.3, umgesetzt): Zeitpunkt des ersten Drüsenpunkts, des ersten Funds und der ersten Adaption; Funde gesamt und je Art; DNA aus Kampf und aus Funden über die Zeit (US-10.07); Zeitpunkte aller entwickelten Knoten. Für das Zielband „Neue Mechanik/Ansicht alle 5–15 min in der ersten Stunde“ zählt als neue Option: der erste Drüsenpunkt, der erste Weiterzug, der erste Fund, jede Adaption, jede einzigartige Adaption und jedes Badge.
 
@@ -1328,22 +1328,22 @@ Im Mittel kommt damit alle 5–10 min eine neue Option, also im Zielband. Die St
 - **Abstand neuer Optionen** (Zielband „Neue Mechanik/Ansicht alle 5–15 min in der ersten Stunde“): Neue Optionen sind die Freischaltungen nach [6.3](#63-bots-ab-m13), also der erste Drüsenpunkt, der erste Weiterzug, der erste Fund, jede Adaption, jede einzigartige Adaption und jedes Badge. Gemessen wird der größte Abstand im Fenster [0; 60 min], einschließlich der Strecken ab Laufbeginn und bis zum Fensterende.
 - **Bandgrenzen:** Bei „x–y“ und „≤“ sind die Grenzen eingeschlossen, bei „<“ ausgeschlossen. Ein fehlender Messwert (z. B. nie gekauft) gilt als Abweichung.
 - **Upgrade-Bewertung** (Upgrade-Tabelle, US-10.07): am Endzustand des Bots, ohne und mit dem Upgrade bei allen übrigen Quellen. Eine Amortisation gibt es nur für Nahrungskosten (Drüsenpunkt, Königin, Drohne), nicht für DNA und Fragmente.
-- **Kein Kauf:** Drüsenpunkte und Adaptionen zählen nicht als Kauf. Kauflücken, erster Kauf und Strecke ohne Kauf messen weiter nur Einheitenkäufe; die Wartezeit zählt nur Königin und Drohne.
+- **Kauf:** Drüsenpunkte und Adaptionen zählen als Kauf (entschieden mit M1.3, PO). Erster Kauf, Kauflücken, Strecke ohne Kauf (die „Durststrecke ohne neue Option“) und „Käufe gesamt“ zählen Einheiten, Drüsenpunkte und Adaptionen; Käufe im selben Moment zählen weiter als einer. Die Wartezeit („längste Wartezeit“, „Anteil Wartezeit“) bleibt spielbezogen und zählt nur Königin und Drohne ([6.2](#62-messung-m11-historisch)).
 - **DNA gesamt** ist DNA aus Kampf plus DNA aus Funden der Art DNA.
 
 | Kennzahl | Ziel aktiv | Aktiv | Drohnen-lastig | Soldaten-lastig | Ziel idle | Idle |
 |---|---|---|---|---|---|---|
 | Erster Kauf | < 10 s | 0 s | 0 s | **1 min 17 s** | – | 0 s |
 | Längste Wartezeit, erste 30 min | ≤ 60 s | **2 min 14 s** (ab 19 min 27 s) | **1 min 25 s** (ab 15 min 38 s) | **7 min 02 s** (ab 17 min 56 s)¹ | < 5 min | 1 min 07 s (ab 5 min) |
-| Kauflücken, erste 30 min: Anzahl / Median / Maximum | Median 5–60 s | 58 / 14 s / 3 min 17 s | 57 / 18 s / 3 min 16 s | 65 / 17 s / 8 min 00 s | – | 6 / 5 min / 5 min |
+| Kauflücken, erste 30 min: Anzahl / Median / Maximum | Median 5–60 s | 67 / 14 s / 3 min 17 s | 68 / 16 s / 2 min 50 s | 71 / 16 s / 7 min 24 s | – | 6 / 5 min / 5 min |
 | Weiterzüge in 24 h (davon auto) | – | 37 (37) | 38 (38) | 34 (34) | – | 36 (36) |
 | Gewählte Typen | – | 37 × Algenmatte | 38 × Algenmatte | 28 × Algenmatte, je 2 × Bakterienrasen und Walsturz, je 1 × Methanquelle und Schlot | – | 36 × Algenmatte |
 | Erste Futterstelle (Schlot) | 3–15 min | 9,30 min | 7,73 min | **17,84 min** | 10–60 min | 12,57 min |
 | 2. / 3. / 4. Futterstelle | 3–15 min | **2,9995 / 2,76** / 3,57 min | **2,27 / 2,05 / 2,76** min | 12,43 / **16,70** / 14,11 min | 10–60 min | **3,55 / 2,63 / 3,66 min** |
 | Letzte fünf abgeschlossene Futterstellen | 3–15 min | **93,3 / 108,2 / 142,6 / 179,6 / 187,7 min** (33.–37.) | **91,2 / 122,0 / 152,7 / 163,4 / 171,5 min** (34.–38.) | **89,7 / 80,9 / 110,5 / 117,8 / 136,3 min** (30.–34.) | 10–60 min | **89,0 / 96,7 / 110,9 / 146,6 / 186,8 min** (32.–36.) |
 | Futterstellen im Zielband | – | **17 von 37** (1., 4.–19.) | **15 von 38** (1., 5., 7.–19.) | **11 von 34** (2., 4.–13.) | – | **16 von 36** (1., 15.–29.) |
-| Längste Strecke ohne Kauf, 1 h | < 10 min | 5,18 min | 4,12 min | 8,60 min | < 60 min | 5,00 min |
-| Längste Strecke ohne Kauf, 24 h | < 10 min | **177,38 min** (ab 1.210,75 min) | **153,37 min** | **56,43 min** | < 60 min | **60,00 min** (1.255–1.315 min) |
+| Längste Strecke ohne Kauf, 1 h | < 10 min | 4,45 min | 3,57 min | 8,42 min | < 60 min | 5,00 min |
+| Längste Strecke ohne Kauf, 24 h | < 10 min | **153,10 min** (ab 1.210,75 min) | **132,05 min** (ab 1.031,22 min) | **56,43 min** | < 60 min | **60,00 min** (1.255–1.315 min) |
 
 Fett: außerhalb des Zielbands (bei Drohnen- und Soldaten-lastig nur zum Vergleich gegen „aktiv“). ¹ Die Wartezeit zählt nur Königin und Drohne; bei Soldaten-lastig misst sie also nicht seine Käufe.
 
@@ -1372,11 +1372,12 @@ Freischaltungen von Aktiv in der ersten Stunde: Drüsenpunkt 3 min 22 s, Fund un
 
 **Zielband-Warnungen über 24 h** (Warnliste der Modell-Seite, US-10.08)
 
-- **Aktiv:** 23 von 42 Messungen außerhalb. Die 2. und 3. Futterstelle liegen unter 3 min (2 min 59,97 s und 2 min 45 s), die längste Wartezeit über 60 s (2 min 14 s), der größte Abstand neuer Optionen über 15 min (30 min 56 s), die 20. bis 37. Futterstelle über 15 min (17 min 34 s bis 3 h 07 min, ab 2 h 25 min Spielzeit), die längste Strecke ohne Kauf über 10 min (2 h 57 min).
-- **Idle:** 21 von 38 Messungen außerhalb. Die 2. bis 14. Futterstelle liegen unter 10 min (2 min 38 s bis 8 min 05 s), die 30. bis 36. über 60 min (1 h 05 min bis 3 h 06 min). Die längste Strecke ohne Kauf trifft mit genau 60,00 min die Grenze; das Band „< 60 min“ schließt sie aus.
+- **Aktiv:** 23 von 42 Messungen außerhalb. Die 2. und 3. Futterstelle liegen unter 3 min (2 min 59,97 s und 2 min 45 s), die längste Wartezeit über 60 s (2 min 14 s), der größte Abstand neuer Optionen über 15 min (30 min 56 s), die 20. bis 37. Futterstelle über 15 min (17 min 34 s bis 3 h 07 min, ab 2 h 25 min Spielzeit), die längste Strecke ohne Kauf über 10 min (2 h 33 min).
+- **Idle:** 21 von 38 Messungen außerhalb. Die 2. bis 14. Futterstelle liegen unter 10 min (2 min 38 s bis 8 min 05 s), die 30. bis 36. über 60 min (1 h 05 min bis 3 h 06 min). Die längste Strecke ohne Kauf trifft mit genau 60,00 min die Grenze; das Band „< 60 min“ schließt sie aus. Idle kauft Drüsenpunkte und Adaptionen nur bei seinen Besuchen, die Strecke bleibt darum auch mit ihnen als Kauf gleich.
 
 **Auffälligkeiten**
 
+- **Drüse und Adaption als Kauf:** Seit sie als Kauf zählen (zuvor gemessen nur mit Einheitenkäufen), steigt die Zahl der Kauflücken in den ersten 30 min bei Aktiv von 58 auf 67, bei Drohnen-lastig von 57 auf 68 und bei Soldaten-lastig von 65 auf 71. Die längste Strecke ohne Kauf über 24 h sinkt bei Aktiv von 177,38 auf 153,10 min und bei Drohnen-lastig von 153,37 auf 132,05 min; beide verfehlen das Band weiter. Soldaten-lastig (56,43 min) und Idle (60,00 min) ändern sich nicht, der erste Kauf bei keinem Bot. Die Warnliste bleibt bei 23 von 42 (Aktiv) und 21 von 38 Messungen (Idle). Käufe gesamt in 24 h: Aktiv 370 (davon 330 Einheiten), Drohnen-lastig 376 (336), Soldaten-lastig 325 (289), Idle 381 (344).
 - **Mehr Weiterzüge als in M1.2:** Genom und Drüse erhöhen die Sammelrate. Aktiv zieht 37-mal weiter statt 27-mal, die anderen Bots ähnlich; dadurch wird `z` größer, und die späten Futterstellen sind größer.
 - **Frühe Futterstellen zu kurz:** Mit der höheren Sammelrate sind die 2. bis 4. Algenmatte bei Aktiv, Drohnen-lastig und Idle schneller leer als in M1.2 und liegen teils unter dem Band. Späte Futterstellen dauern weiter bis über 3 h.
 - **Fund-DNA bei drei Bots gleich:** Aktiv, Idle und Drohnen-lastig ziehen dieselbe Folge von Algenmatten. Weil Funde aus dem eigenen Fund-RNG ziehen, sind ihre Funde und die DNA daraus identisch.
@@ -1391,6 +1392,6 @@ Freischaltungen von Aktiv in der ersten Stunde: Drüsenpunkt 3 min 22 s, Fund un
 - **M1.3, erledigt:** Das Effekt-System ([4.13](#413-effekt-system)) füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust`, `M_ausbeute` und `M_fund` sowie Reichweite, Angriff je Soldat, Platz je Königin und Pheromonpunkte. Das Genom der Ära I ([4.14](#414-genom-ära-i)) gibt DNA für 15 reguläre Adaptionen aus; vier einzigartige Adaptionen entstehen aus Fragmenten. Pheromone ([4.15](#415-pheromone)) lösen das feste Brutverhältnis ab, die Drüse kostet Nahrung. Funde ([4.16](#416-funde)) werden bei jeder Einnahme und an vier Abbau-Schwellen gezogen und bringen neben dem Kampf die einzige DNA. Dazu kommen Sammlung und Badges ([4.17](#417-sammlung-und-badges)), Spielstand Version 4 ([5.1](#51-spielstand-version-4)) und die Bots für AP 1.3.7 ([6.3](#63-bots-ab-m13)). Umgesetzt in AP 1.3.1 bis 1.3.7; die Modell-Seite zeigt Upgrade-Wirkung, DNA-Fluss, Zielbänder und Warnungen, die Messwerte stehen in [Abschnitt 6.5](#65-messung-m13).
 - **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder. Offene Punkte aus M1.3:
   - **DNA-Senke:** Gemessen ist das reguläre Genom bei Aktiv nach 2 h 53 min vollständig, nach 24 h liegen rund 32.600 DNA ungenutzt ([6.4](#64-abschätzung-m13), [6.5](#65-messung-m13)). Bis AS2 fehlt der DNA eine Senke.
-  - **Pacing-Abweichungen aus der Messung M1.3:** frühe Futterstellen unter dem Band (Aktiv 2. und 3., Idle 2. bis 14.), späte über dem Band (Aktiv ab der 20., Idle ab der 30.), größter Abstand neuer Optionen in der ersten Stunde 30 min 56 s statt höchstens 15 min, längste Strecke ohne Kauf über 24 h (Aktiv 2 h 57 min, Idle genau 60 min) und die längste Wartezeit von Aktiv (2 min 14 s).
+  - **Pacing-Abweichungen aus der Messung M1.3:** frühe Futterstellen unter dem Band (Aktiv 2. und 3., Idle 2. bis 14.), späte über dem Band (Aktiv ab der 20., Idle ab der 30.), größter Abstand neuer Optionen in der ersten Stunde 30 min 56 s statt höchstens 15 min, längste Strecke ohne Kauf über 24 h (Aktiv 2 h 33 min, Idle genau 60 min) und die längste Wartezeit von Aktiv (2 min 14 s).
   - Kein Kampf bei Aktiv und Idle trotz Kampf-Ast; die Rückkopplung aus [6.4](#64-abschätzung-m13) bleibt aus.
 - **Nach Ära I:** Weitere Effektziele (z. B. Grundertrag, Reisedauer, Preise) und Bedingungen kommen mit späteren Mechaniken dazu, ohne die Verrechnungsregel aus 4.13 zu ändern.

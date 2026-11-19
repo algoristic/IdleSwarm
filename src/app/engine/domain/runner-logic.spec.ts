@@ -217,18 +217,22 @@ describe('runSimulation', () => {
   });
 
   describe('Ereignisse und Futterstellen', () => {
-    it('hält entwickelte Genom-Knoten fest, wirkungslose Käufe nicht', () => {
+    it('hält entwickelte Genom-Knoten als Kauf fest, wirkungslose Käufe nicht', () => {
       const evolveCilia: Command = { type: 'evolve', node: 'cilia-1' };
-      const { events } = run(scripted({ 60_000: [evolveCilia], 120_000: [evolveCilia] }), {
+      const { events, metrics } = run(scripted({ 60_000: [evolveCilia], 120_000: [evolveCilia] }), {
         params: { genomeCost: 0 },
         durationMs: 3 * MINUTE_MS,
       });
       expect(events.filter((event) => event.type === 'evolved')).toEqual([
         { timeMs: 60_000, type: 'evolved', node: 'cilia-1', cost: 0 },
       ]);
+      // Die Adaption zählt als Kauf (entschieden mit M1.3, PO).
+      expect(metrics.firstBuyMs).toBe(60_000);
+      expect(metrics.longestNoBuyMs).toBe(2 * MINUTE_MS);
+      expect(metrics.longestNoBuyFromMs).toBe(60_000);
     });
 
-    it('hält Drüsenpunkte als eigenes Ereignis fest, nicht als Kauf', () => {
+    it('hält Drüsenpunkte als eigenes Ereignis fest und zählt sie als Kauf', () => {
       const gland: Command = { type: 'strengthenGland' };
       const { events, metrics } = run(scripted({ 0: [gland], 60_000: [gland] }), {
         params: { startFood: 1e6 },
@@ -238,8 +242,9 @@ describe('runSimulation', () => {
         { timeMs: 0, type: 'gland', glands: 1 },
         { timeMs: 60_000, type: 'gland', glands: 2 },
       ]);
-      expect(metrics.firstBuyMs).toBeNull();
-      expect(metrics.longestNoBuyMs).toBe(2 * MINUTE_MS);
+      expect(metrics.firstBuyMs).toBe(0);
+      expect(metrics.buyGaps).toEqual({ count: 1, medianMs: MINUTE_MS, maxMs: MINUTE_MS });
+      expect(metrics.longestNoBuyMs).toBe(MINUTE_MS);
       expect(metrics.longestNoBuyFromMs).toBe(0);
     });
 

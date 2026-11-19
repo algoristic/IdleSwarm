@@ -1,3 +1,4 @@
+import { PURCHASE_EVENT_TYPES } from '@app/engine/domain/runner-logic';
 import type { FindKind } from '@app/finds/domain/models/finds.model';
 import { FIND_KINDS } from '@app/finds/domain/models/finds.model';
 import {
@@ -139,7 +140,9 @@ export function metricRows(runs: readonly ReducedRun[], range: TimeRange | null)
       ),
     ),
     row(T.waitExact, ({ metrics }) => formatShare(metrics.waitShare)),
-    row(T.buyTotal, ({ eventTotals }) => formatNum(eventTotals.buy)),
+    row(T.buyTotal, ({ eventTotals }) =>
+      formatNum(PURCHASE_EVENT_TYPES.reduce((sum, type) => sum + eventTotals[type], 0)),
+    ),
     row(T.computeTime, ({ computeMs }) => formatComputeTime(computeMs)),
     row(T.saturated, ({ saturated }) => (saturated ? T.saturatedYes : T.saturatedNo)),
   ];
