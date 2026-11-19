@@ -5,6 +5,7 @@ import { GameStore } from '@app/engine/data-access/game-store/game-store.service
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
+import type { PheromoneDistribution } from '../../ui/pheromone-panel/pheromone-panel.component.model';
 import type { HudView } from './hud.model';
 import { toHudView, toLogView } from './hud.utils';
 
@@ -35,5 +36,13 @@ export class HudFacade {
 
   sacrificeDrones(count: number): void {
     this.#store.dispatch({ type: 'sacrificeDrones', count });
+  }
+
+  setPheromones({ drones, soldiers }: PheromoneDistribution): void {
+    this.#store.dispatch({ type: 'setPheromones', drones, soldiers });
+  }
+
+  strengthenGland(): void {
+    this.#store.dispatch({ type: 'strengthenGland' });
   }
 }

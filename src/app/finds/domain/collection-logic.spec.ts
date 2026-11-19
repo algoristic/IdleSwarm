@@ -1,6 +1,7 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
 
 import {
+  badgeEffect,
   badgeEffects,
   collectionProgress,
   earnedBadges,
@@ -43,6 +44,19 @@ describe('Sammlung und Badges (Game-Design §4.17)', () => {
     ]);
     expect(badgeEffects(all, { ...params, driftBadgeEffect: 0.3 })[1]).toMatchObject({
       value: 0.3,
+    });
+  });
+
+  it('nennt den Bonus jedes Badges, auch ohne vollständiges Set', () => {
+    expect(badgeEffect('mat-relics', params)).toEqual({
+      target: 'collectRate',
+      op: 'add',
+      value: 0.05,
+    });
+    expect(badgeEffect('whale-relics', { ...params, whaleRelicsBadgeEffect: 0.9 })).toEqual({
+      target: 'combatLoss',
+      op: 'mul',
+      value: 0.9,
     });
   });
 

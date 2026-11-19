@@ -1,0 +1,129 @@
+@let _finds = finds();
+
+<section aria-labelledby="finds-title">
+  <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <h2 id="finds-title" class="text-lg font-semibold" i18n="@@uiHud-findsPanel-title">Funde</h2>
+    <p class="text-sm text-fg-muted tabular-nums" data-testid="hud.finds.progress">
+      {{ _finds.progress.found | formatNum }} / {{ _finds.progress.total | formatNum }}
+    </p>
+  </header>
+
+  <h3 class="mt-3 font-semibold" i18n="@@uiHud-findsPanel-buffs-title">Laufende Buffs</h3>
+  @if (_finds.buffs.length > 0) {
+    <ul class="mt-1 grid gap-1" data-testid="hud.finds.buffs">
+      @for (buff of _finds.buffs; track buff.id) {
+        <li
+          class="flex flex-wrap justify-between gap-x-4 text-accent tabular-nums"
+          [attr.data-testid]="'hud.finds.buffs.' + buff.id"
+        >
+          <span>{{ entryLabels[buff.id] }}</span>
+          <span i18n="@@uiHud-findsPanel-buff-timeLeft"
+            >noch {{ buff.secondsLeft | formatDuration }}</span
+          >
+        </li>
+      }
+    </ul>
+  } @else {
+    <p
+      class="mt-1 text-sm text-fg-muted"
+      data-testid="hud.finds.buffs-empty"
+      i18n="@@uiHud-findsPanel-buffs-empty"
+    >
+      Kein Buff aktiv.
+    </p>
+  }
+
+  <h3 class="mt-3 font-semibold" i18n="@@uiHud-findsPanel-sets-title">Sammlung</h3>
+  @for (set of _finds.sets; track set.id) {
+    <div class="mt-2">
+      <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+        <h4>{{ setLabels[set.id] }}</h4>
+        <span
+          class="text-sm text-fg-muted tabular-nums"
+          [attr.data-testid]="'hud.finds.sets.' + set.id + '.progress'"
+          >{{ set.progress.found | formatNum }} / {{ set.progress.total | formatNum }}</span
+        >
+      </div>
+      <ul class="mt-1 grid grid-cols-3 gap-2">
+        @for (field of set.fields; track field.id) {
+          <li
+            class="rounded-md border border-border bg-surface-raised p-2 text-center text-sm data-unknown:border-border-control data-unknown:bg-surface data-unknown:text-fg-muted"
+            data-testid="hud.finds.field"
+            [attr.data-unknown]="field.known ? null : ''"
+          >
+            @if (field.known) {
+              {{ entryLabels[field.id] }}
+            } @else {
+              <span aria-hidden="true">?</span>
+              <span class="sr-only">{{ unknownLabel }}</span>
+            }
+          </li>
+        }
+      </ul>
+      <p
+        class="mt-1 text-sm text-fg-muted data-earned:text-accent"
+        [attr.data-earned]="set.badge ? '' : null"
+        [attr.data-testid]="'hud.finds.sets.' + set.id + '.badge'"
+      >
+        @if (set.badge) {
+          <ng-container i18n="@@uiHud-findsPanel-badge-earned"
+            >Badge {{ badgeLabels[set.id] }} erhalten</ng-container
+          >
+        } @else {
+          <ng-container i18n="@@uiHud-findsPanel-badge-open"
+            >Badge {{ badgeLabels[set.id] }} bei vollständigem Set</ng-container
+          >
+        }
+        ·
+        @if (set.bonus.lowers) {
+          <ng-container i18n="@@uiHud-findsPanel-bonus-lowers"
+            >{{ targetLabels[set.bonus.target] }} −{{
+              set.bonus.percent | formatNum
+            }}
+            %</ng-container
+          >
+        } @else {
+          <ng-container i18n="@@uiHud-findsPanel-bonus-raises"
+            >{{ targetLabels[set.bonus.target] }} +{{
+              set.bonus.percent | formatNum
+            }}
+            %</ng-container
+          >
+        }
+      </p>
+    </div>
+  }
+
+  <h3 class="mt-3 font-semibold" i18n="@@uiHud-findsPanel-fragments-title">Fragmente</h3>
+  @for (fragments of _finds.fragments; track fragments.adaptation) {
+    <div class="mt-2">
+      <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+        <h4 class="data-unlocked:text-accent" [attr.data-unlocked]="fragments.unlocked ? '' : null">
+          {{ adaptationLabels[fragments.adaptation] }}
+        </h4>
+        <span
+          class="text-sm text-fg-muted tabular-nums"
+          [attr.data-testid]="'hud.finds.fragments.' + fragments.adaptation + '.progress'"
+          >{{ fragments.progress.found | formatNum }} /
+          {{ fragments.progress.total | formatNum }}</span
+        >
+      </div>
+      <ul class="mt-1 grid grid-cols-3 gap-2">
+        @for (field of fragments.fields; track $index) {
+          <li
+            class="rounded-md border border-border bg-surface-raised p-2 text-center text-sm data-unknown:border-border-control data-unknown:bg-surface data-unknown:text-fg-muted"
+            data-testid="hud.finds.field"
+            [attr.data-unknown]="field.known ? null : ''"
+          >
+            @if (field.known) {
+              {{ entryLabels[field.id] }}
+            } @else {
+              <span aria-hidden="true">?</span>
+              <span class="sr-only">{{ unknownLabel }}</span>
+            }
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</section>

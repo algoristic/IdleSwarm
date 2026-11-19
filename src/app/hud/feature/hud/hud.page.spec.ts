@@ -263,6 +263,48 @@ describe('HudPage', () => {
     });
   });
 
+  describe('Pheromone, Funde und Genom', () => {
+    const button = (testId: string) => query(testId) as HTMLButtonElement | null;
+
+    it('zeigt die Panels und verteilt einen freien Punkt mit „+“', () => {
+      const base = state();
+      store.replace({ ...base, pheromones: { drones: 3, soldiers: 0, glands: 0 } });
+      fixture.detectChanges();
+
+      expect(text('hud.pheromones.free')).toBe('1');
+      expect(text('hud.pheromones.share.drones')).toBe('100 % Drohnen');
+      expect(text('hud.finds.progress')).toBe('0 / 24');
+      expect(button('hud.pheromones.drones.decrease')?.disabled).toBe(false);
+
+      button('hud.pheromones.soldiers.increase')?.click();
+      fixture.detectChanges();
+
+      expect(store.state().pheromones).toMatchObject({ drones: 3, soldiers: 1 });
+      expect(text('hud.pheromones.free')).toBe('0');
+      expect(text('hud.pheromones.share.soldiers')).toBe('25 % Soldaten');
+      expect(button('hud.pheromones.drones.increase')?.disabled).toBe(true);
+    });
+
+    it('sperrt die Pheromon-Drüse ohne genug Nahrung', () => {
+      setUnits({});
+      expect(text('hud.pheromones.gland')).toBe('Pheromon-Drüse stärken · +1 Punkt · 100 N');
+      expect(button('hud.pheromones.gland')?.disabled).toBe(true);
+    });
+
+    it('verlinkt das Genom und zählt bezahlbare Adaptionen erst ab einer', () => {
+      setUnits({});
+      expect(query('hud.nav.genome')?.getAttribute('href')).toBe('/genom');
+      expect(query('hud.nav.genome-count')).toBeNull();
+
+      const base = state();
+      store.replace({ ...base, res: { ...base.res, dna: Num.from(8) } });
+      fixture.detectChanges();
+      const count = query('hud.nav.genome-count');
+      expect(count?.querySelector('[aria-hidden="true"]')?.textContent?.trim()).toBe('3');
+      expect(count?.querySelector('.sr-only')?.textContent?.trim()).toBe('3 Adaptionen verfügbar');
+    });
+  });
+
   describe('Futterstelle', () => {
     function setSite(stock: number, drones = 0): void {
       const base = state();

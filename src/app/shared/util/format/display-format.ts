@@ -74,3 +74,18 @@ function pad(value: number): string {
 export function barPercent(share: NumLike): number {
   return Num.from(share).mul(100).min(100).max(0).toNumber();
 }
+
+/**
+ * Teilt 100 % auf Anteile auf: ganze Prozent, Summe 100, der Rundungsrest geht an den letzten
+ * Eintrag. Einzeln gerundet ergäben 1 : 7 (12,5 % und 87,5 %) zusammen 101 %. Ist die Summe 0,
+ * sind alle Einträge 0.
+ */
+export function splitPercents(shares: readonly number[]): number[] {
+  const sum = shares.reduce((total, share) => total + share, 0);
+  if (!(sum > 0)) {
+    return shares.map(() => 0);
+  }
+  const percents = shares.map((share) => Math.round((share / sum) * 100));
+  const head = percents.slice(0, -1);
+  return [...head, 100 - head.reduce((total, percent) => total + percent, 0)];
+}

@@ -1,6 +1,6 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
 import { BADGE_PARAMS } from '@app/balance/domain/formulas';
-import type { Effect } from '@app/balance/domain/models/effect.model';
+import type { Effect, ValueEffect } from '@app/balance/domain/models/effect.model';
 import { UNIQUE_ADAPTATIONS } from '@app/genome/domain/data/genome-era1.data';
 import { fragmentProgress } from '@app/genome/domain/genome-logic';
 
@@ -39,12 +39,14 @@ export function earnedBadges(finds: Finds): readonly CollectionSetId[] {
   return COLLECTION_SETS.filter((set) => isSetComplete(finds, set.id)).map((set) => set.id);
 }
 
+/** Bonus des Badges eines Sets mit `<setId>BadgeEffect` aus `params`, ob erhalten oder nicht (§4.17). */
+export function badgeEffect(id: CollectionSetId, params: BalanceParams): ValueEffect {
+  return { ...COLLECTION_SET_BY_ID[id].badge, value: params[BADGE_PARAMS[id].effect] };
+}
+
 /** Effekte der erhaltenen Badges mit `<setId>BadgeEffect` aus `params` (Game-Design §4.13, §4.17). */
 export function badgeEffects(finds: Finds, params: BalanceParams): readonly Effect[] {
-  const effects = earnedBadges(finds).map((id): Effect => ({
-    ...COLLECTION_SET_BY_ID[id].badge,
-    value: params[BADGE_PARAMS[id].effect],
-  }));
+  const effects = earnedBadges(finds).map((id): Effect => badgeEffect(id, params));
   return effects.length === 0 ? NO_EFFECTS : effects;
 }
 

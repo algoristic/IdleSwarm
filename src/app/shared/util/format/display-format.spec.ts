@@ -1,5 +1,5 @@
 import { Num } from '../num/num';
-import { barPercent, formatDown, formatDuration, formatUp } from './display-format';
+import { barPercent, formatDown, formatDuration, formatUp, splitPercents } from './display-format';
 
 describe('display-format', () => {
   it('rundet Mengen ab und Preise auf', () => {
@@ -50,5 +50,27 @@ describe('display-format', () => {
     expect(barPercent(1.05)).toBe(100);
     expect(barPercent('1e400')).toBe(100);
     expect(barPercent(0)).toBe(0);
+  });
+
+  describe('splitPercents', () => {
+    it('teilt in ganze Prozent mit Summe 100', () => {
+      expect(splitPercents([3, 1])).toEqual([75, 25]);
+      expect(splitPercents([1, 2])).toEqual([33, 67]);
+      expect(splitPercents([1, 1, 1])).toEqual([33, 33, 34]);
+    });
+
+    it('gibt den Rundungsrest an den letzten Eintrag', () => {
+      // 12,5 % und 87,5 %: einzeln gerundet wären es 13 % und 88 %.
+      expect(splitPercents([1, 7])).toEqual([13, 87]);
+    });
+
+    it('liefert nur Nullen, wenn die Summe 0 ist', () => {
+      expect(splitPercents([0, 0])).toEqual([0, 0]);
+      expect(splitPercents([])).toEqual([]);
+    });
+
+    it('kommt mit einem einzelnen Eintrag aus', () => {
+      expect(splitPercents([4])).toEqual([100]);
+    });
   });
 });

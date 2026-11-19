@@ -1,0 +1,124 @@
+@let _pheromones = pheromones();
+@let gland = _pheromones.gland;
+
+<section aria-labelledby="pheromones-title">
+  <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <h2 id="pheromones-title" class="text-lg font-semibold" i18n="@@uiHud-pheromonePanel-title">
+      Pheromone
+    </h2>
+    <p
+      class="text-sm text-fg-muted tabular-nums"
+      data-testid="hud.pheromones.total"
+      i18n="@@uiHud-pheromonePanel-total"
+    >
+      {_pheromones.total, plural, =1 {1 Punkt} other {{{ _pheromones.total | formatNum }} Punkte}}
+    </p>
+  </header>
+
+  <dl class="mt-2 flex flex-wrap gap-x-6 gap-y-1 tabular-nums">
+    <div class="flex items-baseline gap-2">
+      <dt class="text-sm text-fg-muted" i18n="@@uiHud-pheromonePanel-distributed">Verteilt</dt>
+      <dd data-testid="hud.pheromones.distributed">{{ _pheromones.distributed | formatNum }}</dd>
+    </div>
+    <div
+      class="flex items-baseline gap-2 data-warning:font-semibold data-warning:text-warning"
+      [attr.data-warning]="_pheromones.free > 0 ? '' : null"
+    >
+      <dt class="text-sm" i18n="@@uiHud-pheromonePanel-free">Frei</dt>
+      <dd class="text-xl" data-testid="hud.pheromones.free">{{ _pheromones.free | formatNum }}</dd>
+    </div>
+  </dl>
+  @if (_pheromones.free > 0) {
+    <p
+      class="mt-1 text-sm text-warning"
+      data-testid="hud.pheromones.free-hint"
+      i18n="@@uiHud-pheromonePanel-freeHint"
+    >
+      Freie Punkte wirken erst, wenn sie verteilt sind.
+    </p>
+  }
+
+  <ul class="mt-3 grid gap-2">
+    @for (row of _pheromones.rows; track row.id) {
+      <li class="flex items-center justify-between gap-3">
+        <span class="min-w-0 flex-1">{{ unitLabels[row.id] }}</span>
+        <span
+          class="text-lg tabular-nums"
+          [attr.data-testid]="'hud.pheromones.' + row.id + '.points'"
+          >{{ row.points | formatNum }}</span
+        >
+        <span class="flex gap-1">
+          <button
+            type="button"
+            class="min-h-11 min-w-11 cursor-pointer touch-manipulation rounded-md border border-accent bg-surface-raised text-lg text-accent hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:bg-surface disabled:text-fg-muted"
+            [disabled]="row.decrease === null"
+            [attr.aria-label]="decreaseLabels[row.id]"
+            [attr.data-testid]="'hud.pheromones.' + row.id + '.decrease'"
+            (click)="onChangePheromones(row.decrease)"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            class="min-h-11 min-w-11 cursor-pointer touch-manipulation rounded-md border border-accent bg-surface-raised text-lg text-accent hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:bg-surface disabled:text-fg-muted"
+            [disabled]="row.increase === null"
+            [attr.aria-label]="increaseLabels[row.id]"
+            [attr.data-testid]="'hud.pheromones.' + row.id + '.increase'"
+            (click)="onChangePheromones(row.increase)"
+          >
+            +
+          </button>
+        </span>
+      </li>
+    }
+  </ul>
+
+  <!-- Der Balken wiederholt nur die Prozentangaben darunter. -->
+  <div
+    class="mt-3 flex h-3 overflow-hidden rounded-md border border-border-control bg-surface-raised"
+    aria-hidden="true"
+  >
+    <div
+      class="h-full bg-accent"
+      data-testid="hud.pheromones.split.drones"
+      [style.width.%]="_pheromones.dronePercent"
+    ></div>
+    <div
+      class="h-full bg-magenta"
+      data-testid="hud.pheromones.split.soldiers"
+      [style.width.%]="_pheromones.soldierPercent"
+    ></div>
+  </div>
+  <p class="mt-1 flex justify-between gap-4 text-sm tabular-nums">
+    <span
+      class="text-accent"
+      data-testid="hud.pheromones.share.drones"
+      i18n="@@uiHud-pheromonePanel-share-drones"
+      >{{ _pheromones.dronePercent | formatNum }} % Drohnen</span
+    >
+    <span
+      class="text-magenta"
+      data-testid="hud.pheromones.share.soldiers"
+      i18n="@@uiHud-pheromonePanel-share-soldiers"
+      >{{ _pheromones.soldierPercent | formatNum }} % Soldaten</span
+    >
+  </p>
+
+  <p
+    class="mt-4 text-sm text-fg-muted tabular-nums"
+    data-testid="hud.pheromones.gland-effect"
+    i18n="@@uiHud-pheromonePanel-glandEffect"
+  >
+    Wirkung: +{{ gland.eggsPerPoint | formatRate }} Eier/min je Punkt, sobald er verteilt ist
+  </p>
+  <button
+    type="button"
+    class="mt-1 min-h-11 w-full cursor-pointer touch-manipulation rounded-md border border-accent bg-surface-raised p-3 tabular-nums wrap-anywhere hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:bg-surface disabled:text-fg-muted"
+    [disabled]="!gland.affordable"
+    data-testid="hud.pheromones.gland"
+    (click)="onStrengthenGland()"
+    i18n="@@uiHud-pheromonePanel-gland"
+  >
+    Pheromon-Drüse stärken · +1 Punkt · {{ gland.price | formatNum }} N
+  </button>
+</section>

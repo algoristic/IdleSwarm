@@ -5,7 +5,9 @@ import type { Num } from '@app/shared/util/num/num';
 
 import type { UnitView } from '../../ui/buy-button/buy-button.component.model';
 import type { SiteView } from '../../ui/feeding-site/feeding-site.component.model';
+import type { FindsView } from '../../ui/finds-panel/finds-panel.component.model';
 import type { SacrificeView } from '../../ui/form-sacrifice-drones/form-sacrifice-drones.component.model';
+import type { PheromoneView } from '../../ui/pheromone-panel/pheromone-panel.component.model';
 
 /** Was das HUD aus dem Spielkern liest; die Facade setzt es aus Store und Persistenz zusammen. */
 export interface HudSource {
@@ -43,6 +45,10 @@ export interface HudView {
   /** In der Reihenfolge der Aktionsleiste. */
   readonly units: readonly UnitView[];
   readonly sacrifice: SacrificeView;
+  readonly pheromones: PheromoneView;
+  readonly finds: FindsView;
+  /** Bezahlbare Adaptionen für den Zähler am Genom-Link (US-05.04). */
+  readonly availableAdaptations: number;
   /** Zeitpunkt des letzten Speicherns; `null` ohne Speichern oder bei ungültigem Wert. */
   readonly lastSavedAt: number | null;
   readonly notices: readonly HudNotice[];

@@ -1,9 +1,13 @@
 import { BalanceParams } from '@app/balance/domain/constants';
 import {
   baseFoodPerSecond,
+  distributedPheromonePoints,
   droneFoodPerSecond,
   eggsPerMinute,
+  eggsPerPheromonePoint,
   foodPerSecond,
+  freePheromonePoints,
+  glandPrice,
   isSpaceOverfull,
   isSpaceWarning,
   nextQueenEffect,
@@ -14,31 +18,47 @@ import {
   spaceUsage,
   spaceUsed,
   totalAttack,
+  totalPheromonePoints,
   unitPrice,
 } from '@app/balance/domain/formulas';
-import type { Modifiers } from '@app/balance/domain/models/effect.model';
+import type { Modifiers, ValueEffect } from '@app/balance/domain/models/effect.model';
 import type { LogEntry } from '@app/engine/data-access/game-store/game-store-service.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { stateModifiers } from '@app/engine/domain/modifiers-logic';
+import { badgeEffect, findsDrawer } from '@app/finds/domain/collection-logic';
+import { isBuffActive } from '@app/finds/domain/finds-logic';
+import { availableNodeCount } from '@app/genome/domain/genome-logic';
 import { isValidTimestamp } from '@app/shared/util/format/date-format';
 import {
   barPercent,
   roundDownForDisplay,
   roundUpForDisplay,
+  splitPercents,
 } from '@app/shared/util/format/display-format';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
+import { canSetPheromones, canStrengthenGland } from '@app/swarm/domain/pheromone-logic';
 import { canBuy } from '@app/swarm/domain/units-logic';
 
 import type { UnitView } from '../../ui/buy-button/buy-button.component.model';
 import type { LogEntryView } from '../../ui/event-log/event-log.component.model';
 import type { SiteView } from '../../ui/feeding-site/feeding-site.component.model';
+import type { BadgeBonusView, FindsView } from '../../ui/finds-panel/finds-panel.component.model';
 import type { SacrificeView } from '../../ui/form-sacrifice-drones/form-sacrifice-drones.component.model';
+import type {
+  PheromoneDistribution,
+  PheromoneRowView,
+  PheromoneUnit,
+  PheromoneView,
+} from '../../ui/pheromone-panel/pheromone-panel.component.model';
 import type { HudNotice, HudSource, HudView, SpaceView } from './hud.model';
 
 /** Reihenfolge der Aktionsleiste, vom ersten Kauf zur teuersten Einheit. */
 export const BUY_ORDER: readonly UnitType[] = ['drones', 'soldiers', 'queens'];
+
+/** Zeilen des Pheromon-Panels wie im Mockup: Drohnen, dann Soldaten. */
+export const PHEROMONE_ORDER: readonly PheromoneUnit[] = ['drones', 'soldiers'];
 
 export function toHudView(source: HudSource, params: BalanceParams): HudView {
   const { state } = source;
@@ -56,6 +76,9 @@ export function toHudView(source: HudSource, params: BalanceParams): HudView {
     space: toSpaceView(state, params, modifiers),
     units: BUY_ORDER.map((unit) => toUnitView(state, unit, params, modifiers)),
     sacrifice: toSacrificeView(state, params, modifiers),
+    pheromones: toPheromoneView(state, params, modifiers),
+    finds: toFindsView(state, params),
+    availableAdaptations: availableNodeCount(state, params),
     lastSavedAt:
       source.lastSavedAt !== null && isValidTimestamp(source.lastSavedAt)
         ? source.lastSavedAt
@@ -71,16 +94,100 @@ function toUnitView(
   modifiers: Modifiers,
 ): UnitView {
   const affordable = canBuy(state, unit, params);
-  const rounded = roundUpForDisplay(unitPrice(unit, state.bought, params));
-  // Aufgerundet verlangte ein kaufbarer Knopf bei 10,8 Nahrung und Preis 10,7 sichtbar 11 von 10.
-  const price = affordable ? rounded.min(roundDownForDisplay(state.res.food)) : rounded;
   return {
     id: unit,
     count: state.units[unit],
-    price,
+    price: displayPrice(unitPrice(unit, state.bought, params), affordable, state.res.food),
     affordable,
     queenEffect: unit === 'queens' ? nextQueenEffect(state.pheromones, params, modifiers) : null,
   };
+}
+
+/** Aufgerundeter Preis; bei einem kaufbaren Knopf nie über der abgerundet angezeigten Nahrung. */
+function displayPrice(price: Num, affordable: boolean, food: Num): Num {
+  const rounded = roundUpForDisplay(price);
+  // Aufgerundet verlangte ein kaufbarer Knopf bei 10,8 Nahrung und Preis 10,7 sichtbar 11 von 10.
+  return affordable ? rounded.min(roundDownForDisplay(food)) : rounded;
+}
+
+/**
+ * Pheromon-Panel (US-03.01–03.03, Game-Design §4.15): Punkte, Verteilung in %, die Verteilung nach
+ * „+“ bzw. „−“ je Typ und der Kauf eines Drüsenpunkts.
+ */
+export function toPheromoneView(
+  state: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): PheromoneView {
+  const { pheromones } = state;
+  const [dronePercent = 0, soldierPercent = 0] = splitPercents([
+    pheromones.drones,
+    pheromones.soldiers,
+  ]);
+  const affordable = canStrengthenGland(state, params);
+  return {
+    total: totalPheromonePoints(pheromones, params, modifiers),
+    distributed: distributedPheromonePoints(pheromones),
+    free: freePheromonePoints(pheromones, params, modifiers),
+    rows: PHEROMONE_ORDER.map((unit) => toPheromoneRow(state, unit, params, modifiers)),
+    dronePercent,
+    soldierPercent,
+    gland: {
+      price: displayPrice(glandPrice(pheromones, params), affordable, state.res.food),
+      affordable,
+      eggsPerPoint: eggsPerPheromonePoint(state.units, params, modifiers),
+    },
+  };
+}
+
+function toPheromoneRow(
+  state: GameState,
+  unit: PheromoneUnit,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): PheromoneRowView {
+  const current: PheromoneDistribution = {
+    drones: state.pheromones.drones,
+    soldiers: state.pheromones.soldiers,
+  };
+  const points = current[unit];
+  // Dieselbe Prüfung wie das Kommando: Ein Knopf ist nur aktiv, wenn `setPheromones` wirkt.
+  const target = (change: number): PheromoneDistribution | null => {
+    const next = { ...current, [unit]: points + change };
+    return canSetPheromones(state, next.drones, next.soldiers, params, modifiers) ? next : null;
+  };
+  return {
+    id: unit,
+    points,
+    increase: target(1),
+    decrease: points > 0 ? target(-1) : null,
+  };
+}
+
+/**
+ * Funde-Panel (US-06.03, US-06.04): Schublade „Funde“ aus `findsDrawer`, je Set der Bonus des
+ * Badges und die laufenden Buffs mit Restzeit in Spielzeit.
+ */
+export function toFindsView(state: GameState, params: BalanceParams): FindsView {
+  const { finds, time } = state;
+  const drawer = findsDrawer(finds, params);
+  return {
+    progress: drawer.progress,
+    sets: drawer.sets.map((set) => ({ ...set, bonus: toBadgeBonus(badgeEffect(set.id, params)) })),
+    fragments: drawer.fragments,
+    buffs: finds.buffs
+      .filter((buff) => isBuffActive(buff, time.played))
+      .map((buff) => ({
+        id: buff.id,
+        secondsLeft: Num.from(buff.expiresAtMs - time.played).div(MS_PER_SECOND),
+      })),
+  };
+}
+
+/** `add` wirkt auf einen Modifikator mit Basiswert 1, `mul` als Faktor (Game-Design §4.13). */
+function toBadgeBonus({ target, op, value }: ValueEffect): BadgeBonusView {
+  const change = op === 'add' ? value : value - 1;
+  return { target, lowers: change < 0, percent: Math.abs(change) * 100 };
 }
 
 /** Log für die Anzeige, neueste Einträge zuerst. */
