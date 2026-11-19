@@ -1,55 +1,87 @@
 @let hud = facade.hud();
 
-<section
-  class="min-w-0 rounded-lg border border-border bg-glass p-3"
-  aria-labelledby="resources-title"
->
+<!-- Ressourcen (Mockup `.res`): farbige Punkte, Nahrung groß, darunter DNA, Pheromone, Eier/min. -->
+<section class="grid gap-1.5" aria-labelledby="resources-title">
   <h2 id="resources-title" class="sr-only" i18n="@@featureHud-resourcesPanel-title">Ressourcen</h2>
-  <dl class="grid grid-cols-2 gap-x-4 gap-y-1">
-    <div>
-      <dt class="text-sm text-fg-muted" i18n="@@featureHud-resourcesPanel-food">Nahrung</dt>
-      <dd class="text-xl tabular-nums" data-testid="hud.resources.food">
-        {{ hud.food | formatDown }}
-      </dd>
-    </div>
-    <div>
-      <dt class="text-sm text-fg-muted" i18n="@@featureHud-resourcesPanel-foodRate">Nahrung/s</dt>
-      <dd class="text-xl tabular-nums" data-testid="hud.resources.food-rate">
-        {{ hud.foodRate | formatRate }}
-      </dd>
-    </div>
-    <!-- Aufschlüsselung der Nahrung/s (US-01.02): kleiner als die Hauptwerte. -->
-    <div>
-      <dt class="text-sm text-fg-muted" i18n="@@featureHud-resourcesPanel-baseRate">
-        davon Grundertrag
+  <dl class="grid gap-1.5">
+    <div class="flex flex-wrap items-center gap-x-2.5">
+      <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-food">
+        Nahrung
       </dt>
-      <dd class="tabular-nums" data-testid="hud.resources.base-rate">
-        {{ hud.baseRate | formatRate }}
+      <dd
+        class="flex min-w-28 items-center gap-2.5 text-2xl font-black tabular-nums"
+        data-testid="hud.resources.food"
+      >
+        <span
+          class="size-3 shrink-0 rounded-full bg-primary inset-shadow-shade"
+          aria-hidden="true"
+        ></span
+        >{{ hud.food | formatDown }}
+      </dd>
+      <dd
+        class="order-last -ml-1.5 text-xs text-fg-muted tabular-nums"
+        i18n="@@featureHud-resourcesPanel-foodRatePerSecond"
+      >
+        · +<span data-testid="hud.resources.food-rate">{{ hud.foodRate | formatRate }}</span
+        >/s
       </dd>
     </div>
-    <div>
-      <dt class="text-sm text-fg-muted" i18n="@@featureHud-resourcesPanel-droneRate">
-        davon Drohnen
+    <div class="flex flex-wrap items-center gap-x-2.5">
+      <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-dna">DNA</dt>
+      <dd
+        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums"
+        data-testid="hud.resources.dna"
+      >
+        <span
+          class="size-3 shrink-0 rounded-full bg-violet inset-shadow-shade"
+          aria-hidden="true"
+        ></span
+        >{{ hud.dna | formatDown }}
+      </dd>
+    </div>
+    <div class="flex flex-wrap items-center gap-x-2.5">
+      <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-pheromones">
+        Pheromone
       </dt>
-      <dd class="tabular-nums" data-testid="hud.resources.drone-rate">
-        {{ hud.droneRate | formatRate }}
+      <dd
+        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums"
+        data-testid="hud.resources.pheromones"
+      >
+        <span
+          class="size-3 shrink-0 rounded-full bg-magenta inset-shadow-shade"
+          aria-hidden="true"
+        ></span
+        >{{ hud.pheromones.total | formatNum }}
       </dd>
     </div>
-    <div>
-      <dt class="text-sm text-fg-muted" i18n="@@featureHud-resourcesPanel-dna">DNA</dt>
-      <dd class="tabular-nums" data-testid="hud.resources.dna">{{ hud.dna | formatDown }}</dd>
-    </div>
-    <div>
-      <dt class="text-sm text-fg-muted" i18n="@@featureHud-resourcesPanel-eggs">Eier/min</dt>
-      <dd class="tabular-nums" data-testid="hud.resources.eggs">
-        {{ hud.eggsPerMinute | formatRate }}
+    <div class="flex flex-wrap items-center gap-x-2.5">
+      <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-eggs">
+        Eier/min
+      </dt>
+      <dd
+        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums"
+        data-testid="hud.resources.eggs"
+      >
+        <span
+          class="size-3 shrink-0 rounded-full bg-fg inset-shadow-shade"
+          aria-hidden="true"
+        ></span
+        >{{ hud.eggsPerMinute | formatRate }}
       </dd>
     </div>
-    <div>
-      <dt class="text-sm text-fg-muted" i18n="@@featureHud-resourcesPanel-attack">Gesamtangriff</dt>
-      <dd class="tabular-nums" data-testid="hud.resources.attack">
-        {{ hud.attack | formatDown }}
-      </dd>
-    </div>
+  </dl>
+
+  <!-- Aufschlüsselung der Nahrung/s (US-01.02) und Gesamtangriff: kleiner als die Hauptwerte. -->
+  <dl class="mt-1 grid grid-cols-kv gap-x-3 text-xs text-fg-muted tabular-nums">
+    <dt i18n="@@featureHud-resourcesPanel-baseRate">davon Grundertrag</dt>
+    <dd class="text-right">
+      <span data-testid="hud.resources.base-rate">{{ hud.baseRate | formatRate }}</span>/s
+    </dd>
+    <dt i18n="@@featureHud-resourcesPanel-droneRate">davon Drohnen</dt>
+    <dd class="text-right">
+      <span data-testid="hud.resources.drone-rate">{{ hud.droneRate | formatRate }}</span>/s
+    </dd>
+    <dt i18n="@@featureHud-resourcesPanel-attack">Gesamtangriff</dt>
+    <dd class="text-right" data-testid="hud.resources.attack">{{ hud.attack | formatDown }}</dd>
   </dl>
 </section>

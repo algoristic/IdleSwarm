@@ -53,44 +53,63 @@
   <!-- Körnung über den Ebenen (z ≤ 3), unter den Overlays (z = 10). -->
   <div class="grain z-4" aria-hidden="true"></div>
 
-  <!-- Overlays: nur im eigenen Modus sichtbar und bedienbar. -->
+  <!--
+    Overlays: vollflächige Ebenen ohne Zeiger-Ereignisse, nur im eigenen Modus sichtbar; jedes
+    Overlay platziert seine Panels selbst und schaltet dort die Zeiger-Ereignisse frei.
+  -->
   <app-scene-hud
     data-testid="shell.overlay.scene"
-    class="fixed top-0 right-0 bottom-0 z-10 w-full max-w-sm overflow-y-auto p-4 opacity-0 transition-opacity duration-500 pointer-events-none mode-scene:pointer-events-auto mode-scene:opacity-100"
+    class="pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 mode-scene:opacity-100"
+    [active]="mode === 'scene'"
     [attr.inert]="mode === 'scene' ? null : ''"
   />
   <app-sonar-overlay
     data-testid="shell.overlay.map"
-    class="fixed top-0 right-0 bottom-0 z-10 w-full max-w-sm overflow-y-auto p-4 opacity-0 transition-opacity duration-500 pointer-events-none mode-map:pointer-events-auto mode-map:opacity-100"
+    class="pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 mode-map:opacity-100"
     [attr.inert]="mode === 'map' ? null : ''"
   />
   <app-genome-overlay
     data-testid="shell.overlay.gen"
-    class="fixed top-0 right-0 bottom-0 z-10 w-full max-w-sm overflow-y-auto p-4 opacity-0 transition-opacity duration-500 pointer-events-none mode-gen:pointer-events-auto mode-gen:opacity-100"
+    class="pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 mode-gen:opacity-100"
     [attr.inert]="mode === 'gen' ? null : ''"
   />
 
-  <!-- In allen Modi: Titel mit Ressourcen oben links, Zoom-Leiste links. -->
-  <div class="fixed top-4 left-4 z-10 grid w-64 gap-2">
-    <h1 class="text-xl font-semibold" i18n="@@featureShell-shell-title">IdleSwarm</h1>
-    <app-resources-panel />
+  <!--
+    In allen Modi links eine Spalte von oben: Logo mit Ressourcen (Mockup `.res`), Speicherstatus und
+    Hinweise, Zoom-Leiste (Mockup `.zoom`). Gestapelt statt mittig, damit sich auch bei niedrigen
+    Viewports nichts überdeckt; reicht die Höhe nicht, scrollt die Spalte. Nur die Panels nehmen
+    Klicks an.
+  -->
+  <div
+    class="pointer-events-none fixed top-4 bottom-4 left-4 z-10 flex w-64 flex-col items-start gap-4 overflow-y-auto"
+  >
+    <div class="pointer-events-auto grid w-full gap-2">
+      <div class="rounded-3xl bg-surface px-4.5 pt-3.5 pb-4 shadow-panel">
+        <!-- Sichtbar „IDLESWARM“ wie im Mockup `.logo`, vorgelesen „IdleSwarm“; ohne Leerraum im Text. -->
+        <!-- prettier-ignore -->
+        <h1 class="mb-1.5 text-base font-black tracking-widest uppercase" i18n="@@featureShell-shell-title">Idle<span class="text-primary">Swarm</span></h1>
+        <app-resources-panel />
+      </div>
+      <app-save-status />
+    </div>
+
+    <app-zoom-bar
+      class="pointer-events-auto shrink-0"
+      [mode]="mode"
+      [dna]="hud.dna"
+      [availableAdaptations]="hud.availableAdaptations"
+      (selectedMode)="facade.setMode($event)"
+    />
   </div>
 
-  <app-zoom-bar
-    class="fixed top-1/2 left-4 z-10 w-48 -translate-y-1/2"
-    [mode]="mode"
-    [dna]="hud.dna"
-    [availableAdaptations]="hud.availableAdaptations"
-    (selectedMode)="facade.setMode($event)"
-  />
-
+  <!-- Karte und Genom: zurück zum Schwarm unten Mitte (Mockup `.back .btn`). -->
   <div
-    class="fixed bottom-6 left-1/2 z-10 -translate-x-1/2 transition-opacity duration-500 mode-scene:pointer-events-none mode-scene:opacity-0"
+    class="fixed bottom-5.5 left-1/2 z-10 -translate-x-1/2 transition-opacity duration-500 mode-scene:pointer-events-none mode-scene:opacity-0"
     [attr.inert]="mode === 'scene' ? '' : null"
   >
     <button
       type="button"
-      class="min-h-11 cursor-pointer touch-manipulation rounded-full border border-accent bg-surface-raised px-5 py-2 font-semibold text-accent hover:bg-surface"
+      class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-5.5 py-2.75 text-sm font-extrabold whitespace-nowrap shadow-button transition duration-200 ease-pop hover:-translate-y-px hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0"
       data-testid="shell.back"
       i18n="@@featureShell-shell-back"
       (click)="facade.setMode('scene')"

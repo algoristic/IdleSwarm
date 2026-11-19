@@ -10,7 +10,10 @@ import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels
 import { HudMeterComponent } from '../hud-meter/hud-meter.component';
 import type { SiteView } from './feeding-site.component.model';
 
-/** Futterstelle: Typ, Nahrungsrate, Vorrat, Restzeit, Reise und Hinweis bei leerem Vorrat. */
+/**
+ * Titel der Szene (Mockup `.top`): Typ der Futterstelle, Vorrat mit Balken, Restzeit, Nahrungsrate,
+ * Reise und bei leerem Vorrat der Weg in die Umgebung.
+ */
 @Component({
   selector: 'app-feeding-site',
   imports: [

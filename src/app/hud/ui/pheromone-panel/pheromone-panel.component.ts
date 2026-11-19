@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 
 import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
 import { FormatRatePipe } from '@app/shared/ui/pipes/format-rate/format-rate.pipe';
@@ -8,6 +8,12 @@ import type {
   PheromoneUnit,
   PheromoneView,
 } from './pheromone-panel.component.model';
+
+const PIP_EMPTY_CLASSES = 'size-3.5 rounded-full bg-well';
+const PIP_FILLED_CLASSES: Readonly<Record<PheromoneUnit, string>> = {
+  drones: 'size-3.5 rounded-full bg-unit-drone inset-shadow-shade',
+  soldiers: 'size-3.5 rounded-full bg-unit-soldier inset-shadow-shade',
+};
 
 /**
  * Pheromone (US-03.01–03.03): Punkte je Einheitentyp mit +/−, Verteilung als geteilter Balken,
@@ -24,6 +30,20 @@ export class PheromonePanelComponent {
 
   changedPheromones = output<PheromoneDistribution>();
   clickedStrengthenGland = output<void>();
+
+  /**
+   * Je Typ so viele Pips, wie Punkte insgesamt da sind; gefüllt sind die verteilten (Mockup
+   * `.pips`). Jeder Pip trägt seine vollständigen Klassen.
+   */
+  pipRows = computed(() => {
+    const { rows, total } = this.pheromones();
+    return rows.map((row) => ({
+      ...row,
+      pips: Array.from({ length: Math.max(total, row.points) }, (_, index) =>
+        index < row.points ? PIP_FILLED_CLASSES[row.id] : PIP_EMPTY_CLASSES,
+      ),
+    }));
+  });
 
   unitLabels: Readonly<Record<PheromoneUnit, string>> = {
     drones: $localize`:@@uiHud-pheromonePanel-unit-drones:Drohnen`,

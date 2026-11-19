@@ -7,7 +7,10 @@ import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 import type { UnitView } from './buy-button.component.model';
 
-/** Kaufknopf einer Einheit mit Name, Anzahl, Preis und bei der Königin ihrem Effekt. */
+/**
+ * Kaufknopf einer Einheit in der Aktionsleiste: Symbol, Anzahl, Name, Preis und bei der Königin ihr
+ * Effekt.
+ */
 @Component({
   selector: 'app-buy-button',
   imports: [FormatDownPipe, FormatNumPipe, FormatRatePipe],

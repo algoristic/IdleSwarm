@@ -1,5 +1,6 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
+import type { GameEvent } from '@app/engine/domain/models/game-event.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { stateModifiers } from '@app/engine/domain/modifiers-logic';
 import type { Finds } from '@app/finds/domain/models/finds.model';
@@ -8,7 +9,7 @@ import { Num } from '@app/shared/util/num/num';
 import type { Pheromones } from '@app/swarm/domain/models/pheromones.model';
 
 import type { HudSource } from './hud.model';
-import { toFindsView, toHudView, toLogView, toPheromoneView } from './hud.utils';
+import { logItemKind, toFindsView, toHudView, toLogView, toPheromoneView } from './hud.utils';
 
 describe('toHudView', () => {
   const base = createInitialState({ seed: 'hud', now: 0 });
@@ -301,5 +302,47 @@ describe('toLogView', () => {
     ];
     expect(toLogView(log).map((entry) => entry.id)).toEqual([1, 0]);
     expect(log.map((entry) => entry.id)).toEqual([0, 1]);
+    expect(toLogView(log).map((entry) => entry.kind)).toEqual(['default', 'default']);
+  });
+});
+
+describe('logItemKind', () => {
+  const departed = (drones: number, soldiers: number) =>
+    ({
+      type: 'departed',
+      playedMs: 0,
+      siteType: 'vent',
+      distance: 2,
+      leftBehind: { drones: Num.from(drones), soldiers: Num.from(soldiers) },
+      forfeitedStock: Num.ZERO,
+      auto: false,
+    }) as const;
+  const arrived = (losses: number) =>
+    ({
+      type: 'arrived',
+      playedMs: 0,
+      siteType: 'vent',
+      losses: Num.from(losses),
+      dna: Num.from(3),
+    }) as const;
+
+  it('zeigt Aufbruch und Ankunft ohne Verluste als Reise', () => {
+    expect(logItemKind(departed(0, 0))).toBe('travel');
+    expect(logItemKind(arrived(0))).toBe('travel');
+  });
+
+  it('hebt Zurückgelassene und Gefallene als Verlust hervor, auch Bruchteile', () => {
+    expect(logItemKind(departed(2, 0))).toBe('loss');
+    expect(logItemKind(departed(0, 0.2))).toBe('loss');
+    expect(logItemKind(arrived(0.3))).toBe('loss');
+  });
+
+  it('zeigt Adaptionen als DNA, Funde als Fund und den leeren Vorrat schlicht', () => {
+    expect(logItemKind({ type: 'evolved', playedMs: 0, node: 'cilia-1', cost: Num.from(8) })).toBe(
+      'dna',
+    );
+    // Für die Art zählt nur der Typ des Ereignisses.
+    expect(logItemKind({ type: 'found', playedMs: 0 } as unknown as GameEvent)).toBe('found');
+    expect(logItemKind({ type: 'siteDepleted', playedMs: 0, siteType: 'vent' })).toBe('default');
   });
 });

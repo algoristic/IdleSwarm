@@ -1,0 +1,23 @@
+/* Wippen des Badges (Mockup `.zs .badge`, `@keyframes bob`); Utilities kennen keine eigenen
+   Keyframes. Bei reduzierter Bewegung steht das Badge still. */
+.zoom-bar__badge {
+  animation: zoom-bar-bob 1.8s var(--sw-ease-pop) infinite;
+}
+
+@keyframes zoom-bar-bob {
+  0%,
+  70%,
+  100% {
+    transform: none;
+  }
+
+  80% {
+    transform: translateY(-3px) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zoom-bar__badge {
+    animation: none;
+  }
+}

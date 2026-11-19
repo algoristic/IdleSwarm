@@ -7,13 +7,15 @@ import type { Num } from '@app/shared/util/num/num';
 import { SHELL_MODES, ShellMode } from '../../domain/models/shell-mode.model';
 
 /**
- * Zoom-Leiste links (US-08.01): Umgebung, Schwarm und Genom in Zoom-Reihenfolge, der aktive Modus
- * über `aria-current`. Am Genom stehen DNA und die Zahl bezahlbarer Adaptionen.
+ * Zoom-Leiste links (US-08.01, Mockup `.zoom`): Umgebung, Schwarm und Genom in Zoom-Reihenfolge,
+ * der aktive Modus über `aria-current`. Am Genom stehen DNA und als Badge die Zahl bezahlbarer
+ * Adaptionen.
  */
 @Component({
   selector: 'app-zoom-bar',
   imports: [FormatDownPipe, FormatNumPipe],
   templateUrl: './zoom-bar.component.html',
+  styleUrl: './zoom-bar.component.css',
   host: { class: 'block' },
 })
 export class ZoomBarComponent {

@@ -23,6 +23,7 @@ import {
 } from '@app/balance/domain/formulas';
 import type { Modifiers, ValueEffect } from '@app/balance/domain/models/effect.model';
 import type { LogEntry } from '@app/engine/data-access/game-store/game-store-service.model';
+import type { GameEvent } from '@app/engine/domain/models/game-event.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { stateModifiers } from '@app/engine/domain/modifiers-logic';
 import { badgeEffect, findsDrawer } from '@app/finds/domain/collection-logic';
@@ -42,7 +43,7 @@ import { canSetPheromones, canStrengthenGland } from '@app/swarm/domain/pheromon
 import { canBuy } from '@app/swarm/domain/units-logic';
 
 import type { UnitView } from '../../ui/buy-button/buy-button.component.model';
-import type { LogEntryView } from '../../ui/event-log/event-log.component.model';
+import type { LogEntryView, LogItemKind } from '../../ui/event-log/event-log.component.model';
 import type { SiteView } from '../../ui/feeding-site/feeding-site.component.model';
 import type { BadgeBonusView, FindsView } from '../../ui/finds-panel/finds-panel.component.model';
 import type { SacrificeView } from '../../ui/form-sacrifice-drones/form-sacrifice-drones.component.model';
@@ -190,9 +191,30 @@ function toBadgeBonus({ target, op, value }: ValueEffect): BadgeBonusView {
   return { target, lowers: change < 0, percent: Math.abs(change) * 100 };
 }
 
-/** Log für die Anzeige, neueste Einträge zuerst. */
+/** Log für die Anzeige, neueste Einträge zuerst, je Eintrag mit seiner Darstellungsart. */
 export function toLogView(log: readonly LogEntry[]): readonly LogEntryView[] {
-  return [...log].reverse();
+  return [...log].reverse().map((entry) => ({ ...entry, kind: logItemKind(entry.event) }));
+}
+
+/**
+ * Darstellungsart eines Ereignisses (Mockup `.log`): Verluste und Zurückgelassene vor Aufbruch und
+ * Ankunft, damit ein verlustreicher Zug auffällt; Adaptionen kosten DNA.
+ */
+export function logItemKind(event: GameEvent): LogItemKind {
+  switch (event.type) {
+    case 'found':
+      return 'found';
+    case 'evolved':
+      return 'dna';
+    case 'departed': {
+      const { drones, soldiers } = event.leftBehind;
+      return drones.gt(Num.ZERO) || soldiers.gt(Num.ZERO) ? 'loss' : 'travel';
+    }
+    case 'arrived':
+      return event.losses.gt(Num.ZERO) ? 'loss' : 'travel';
+    case 'siteDepleted':
+      return 'default';
+  }
 }
 
 function toSiteView(

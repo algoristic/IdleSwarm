@@ -1,0 +1,20 @@
+@let hud = facade.hud();
+
+<div class="grid gap-2">
+  <p class="px-4.5 text-xs text-fg-muted text-shadow-hud" data-testid="hud.status.last-saved">
+    <ng-container i18n="@@featureHud-saveStatus-lastSaved">Zuletzt gespeichert</ng-container>:
+    @if (hud.lastSavedAt; as savedAt) {
+      <time [attr.datetime]="savedAt | formatIsoDateTime">{{ savedAt | formatDateTime }}</time>
+    } @else {
+      <ng-container i18n="@@featureHud-saveStatus-neverSaved">Noch nicht gespeichert</ng-container>
+    }
+  </p>
+  <!-- Die Live-Region steht von Anfang an im DOM, damit neue Hinweise angesagt werden. -->
+  <div class="grid gap-2" role="status" data-testid="hud.status.notices">
+    @for (notice of hud.notices; track notice) {
+      <p class="rounded-3xl bg-surface px-4 py-3 text-sm font-extrabold text-warning shadow-panel">
+        <span aria-hidden="true">⚠</span> {{ noticeTexts[notice] }}
+      </p>
+    }
+  </div>
+</div>

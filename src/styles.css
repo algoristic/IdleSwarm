@@ -140,6 +140,10 @@
   --sw-unit-soldier-shade: #b3376c;
   --sw-unit-queen: #ff8a3d;
   --sw-unit-queen-shade: #b3612b;
+  /* Balken der Futterstelle und des Platzes im HUD (Mockup `--orange`, `.top .bar`, `.mini`). */
+  --sw-site: var(--sw-scene-site);
+  /* Lesbarer Text ohne Panel direkt über der Szene (Mockup `.log div`). */
+  --sw-text-shadow-hud: 0 2px 0 rgb(5 6 26 / 0.85);
 
   --sw-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   /* Federnde Bewegung von Knöpfen und Schubladen (Mockup `--pop`). */
@@ -158,13 +162,14 @@
   --font-sans:
     'Nunito', 'Varela Round', 'Segoe UI Rounded', 'Arial Rounded MT Bold', 'Trebuchet MS',
     system-ui, sans-serif;
-  /* Kennzahlen und Kaufknöpfe des HUD: so viele Spalten, wie mit Mindestbreite passen. */
-  --grid-template-columns-stats: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
-  --grid-template-columns-actions: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   /* Modell-Seite: Parameter-Panel neben den Ergebnissen; Zeilen aus Name, Eingabe und Zurücksetzen. */
   --grid-template-columns-model: 22rem minmax(0, 1fr);
   --grid-template-columns-field: 4rem minmax(0, 1fr);
   --grid-template-columns-param: minmax(0, 1fr) 5.5rem 1.75rem;
+  /* Wertefelder (Mockup `.kv`): Name links, Wert rechts. */
+  --grid-template-columns-kv: auto minmax(0, 1fr);
+  /* Pheromon-Schublade (Mockup `.pher-row`): Name, Punkte, „−“/„+“. */
+  --grid-template-columns-pheromone: 4.5rem minmax(0, 1fr) auto;
   /* Kostenschilder im Genom-Baum. */
   --text-2xs: 0.625rem;
 }
@@ -209,6 +214,7 @@
   --color-unit-drone: var(--sw-unit-drone);
   --color-unit-soldier: var(--sw-unit-soldier);
   --color-unit-queen: var(--sw-unit-queen);
+  --color-site: var(--sw-site);
   --ease-sw: var(--sw-ease);
   --ease-pop: var(--sw-ease-pop);
   --shadow-drop: var(--sw-drop);
@@ -220,6 +226,7 @@
   --shadow-button-primary-pressed: var(--sw-button-primary-pressed);
   /* Zum Kombinieren mit einem Schlagschatten: `shadow-button inset-shadow-shade`. */
   --inset-shadow-shade: var(--sw-shade);
+  --text-shadow-hud: var(--sw-text-shadow-hud);
 }
 
 /* Körnung als Overlay (Mockup `body::after`); die Ebene darüber legt die Shell mit `z-*` fest. */

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -13,17 +13,20 @@ import { Num } from '@app/shared/util/num/num';
 import { Units } from '@app/swarm/domain/models/units.model';
 
 import { ResourcesPanelComponent } from '../resources-panel/resources-panel.component';
+import { SaveStatusComponent } from '../save-status/save-status.component';
 import { provideHudState } from '../state/hud.providers';
 import { SceneHudComponent } from './scene-hud.component';
 
 const SAVED_AT = Date.UTC(2026, 0, 2, 3, 4, 5);
 
-/** Die Shell zeigt Ressourcen-Panel und Szenen-HUD nebeneinander. */
+/** Die Shell zeigt Ressourcen-Panel, Speicherstatus und Szenen-HUD nebeneinander. */
 @Component({
-  imports: [ResourcesPanelComponent, SceneHudComponent],
-  template: '<app-resources-panel /><app-scene-hud />',
+  imports: [ResourcesPanelComponent, SaveStatusComponent, SceneHudComponent],
+  template: '<app-resources-panel /><app-save-status /><app-scene-hud [active]="active()" />',
 })
-class HudHostComponent {}
+class HudHostComponent {
+  active = signal(true);
+}
 
 describe('SceneHudComponent und ResourcesPanelComponent', () => {
   let items: Map<string, string>;
@@ -36,7 +39,7 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
   const element = () => fixture.nativeElement as HTMLElement;
   const query = (testId: string) => element().querySelector(`[data-testid="${testId}"]`);
   const text = (testId: string) => query(testId)?.textContent?.replace(/\s+/g, ' ').trim();
-  const liveRegion = () => element().querySelector('footer [role="status"]') as HTMLElement;
+  const liveRegion = () => query('hud.status.notices') as HTMLElement;
   const spaceBar = () => element().querySelector(`[role="progressbar"][aria-label="Platz"]`);
 
   function state(): GameState {
@@ -101,6 +104,7 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
     expect(text('hud.resources.eggs')).toBe('12,0');
     expect(text('hud.resources.attack')).toBe('3');
     expect(text('hud.resources.dna')).toBe('0');
+    expect(text('hud.resources.pheromones')).toBe('4');
   });
 
   it('zeigt bei leerem Vorrat alle Nahrungsraten als 0', () => {
@@ -240,8 +244,8 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
 
     it('zeigt Anzahl, Preis und den Effekt der Königin', () => {
       setUnits({ drones: 3.9 });
-      expect(text('hud.units.drones.count')).toBe('Anzahl: 3');
-      expect(text('hud.units.drones.price')).toBe('Preis: 10 Nahrung');
+      expect(text('hud.units.drones.count')).toBe('3');
+      expect(text('hud.units.drones.price')).toBe('+1 · 10 N');
       expect(text('hud.units.queens.effect')).toBe('+6,0 Eier/min, +10 Platz');
       expect(query('hud.units.drones.effect')).toBeNull();
     });
@@ -252,8 +256,8 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       fixture.detectChanges();
 
       expect(store.state().units.drones.eq(1)).toBe(true);
-      expect(text('hud.units.drones.count')).toBe('Anzahl: 1');
-      expect(text('hud.units.drones.price')).toBe('Preis: 11 Nahrung');
+      expect(text('hud.units.drones.count')).toBe('1');
+      expect(text('hud.units.drones.price')).toBe('+1 · 11 N');
       expect(buyButton('drones')?.disabled).toBe(true);
     });
 
@@ -264,6 +268,67 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       buyButton('soldiers')?.click();
       expect(dispatch).not.toHaveBeenCalled();
     });
+  });
+
+  describe('Schubladen', () => {
+    const tab = (drawer: string) => query(`hud.drawers.${drawer}.tab`) as HTMLButtonElement;
+    const panel = (drawer: string) => query(`hud.drawers.${drawer}.panel`) as HTMLElement;
+    const isOpen = (drawer: string) => panel(drawer).hasAttribute('data-open');
+
+    beforeEach(() => setUnits({}));
+
+    it('startet geschlossen; die Reiter verweisen auf ihre Schublade', () => {
+      for (const drawer of ['pheromones', 'finds', 'sacrifice']) {
+        expect(tab(drawer).getAttribute('aria-expanded')).toBe('false');
+        expect(tab(drawer).getAttribute('aria-controls')).toBe(panel(drawer).id);
+        expect(panel(drawer).hasAttribute('inert')).toBe(true);
+        expect(isOpen(drawer)).toBe(false);
+      }
+      expect(tab('sacrifice').getAttribute('aria-label')).toBe('Drohnen opfern');
+    });
+
+    it('öffnet immer nur eine Schublade und schließt sie beim erneuten Klick', () => {
+      tab('pheromones').click();
+      fixture.detectChanges();
+      expect(tab('pheromones').getAttribute('aria-expanded')).toBe('true');
+      expect(isOpen('pheromones')).toBe(true);
+      expect(panel('pheromones').hasAttribute('inert')).toBe(false);
+
+      tab('finds').click();
+      fixture.detectChanges();
+      expect(isOpen('pheromones')).toBe(false);
+      expect(isOpen('finds')).toBe(true);
+
+      tab('finds').click();
+      fixture.detectChanges();
+      expect(isOpen('finds')).toBe(false);
+      expect(tab('finds').getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('schließt die offene Schublade beim Moduswechsel', () => {
+      tab('sacrifice').click();
+      fixture.detectChanges();
+      expect(isOpen('sacrifice')).toBe(true);
+
+      fixture.componentInstance.active.set(false);
+      fixture.detectChanges();
+      fixture.componentInstance.active.set(true);
+      fixture.detectChanges();
+      expect(isOpen('sacrifice')).toBe(false);
+    });
+
+    it('bleibt beim Takt offen', () => {
+      tab('pheromones').click();
+      fixture.detectChanges();
+      store.tick(TICK_MS);
+      fixture.detectChanges();
+      expect(isOpen('pheromones')).toBe(true);
+    });
+  });
+
+  it('zeigt die Ära I', () => {
+    setUnits({});
+    expect(text('hud.era')).toBe('Ära I · Ursuppe');
   });
 
   describe('Pheromone und Funde', () => {
@@ -308,16 +373,16 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
 
     it('zeigt im Titel die Gesamtrate aus Grundertrag und Drohnen', () => {
       setSite(20_000, 50);
-      expect(text('hud.site.rate')).toBe('11,5 Nahrung/s');
+      expect(text('hud.site.rate')).toBe('+11,5/s');
       setSite(0, 50);
-      expect(text('hud.site.rate')).toBe('0,0 Nahrung/s');
+      expect(text('hud.site.rate')).toBe('+0,0/s');
     });
 
     it('schätzt die Restzeit über Grundertrag und Drohnen', () => {
       setSite(20_000);
-      expect(text('hud.site.time-left')).toBe('Leer in etwa 3 h 42 min');
+      expect(text('hud.site.time-left')).toBe('leer in ~3 h 42 min');
       setSite(20_000, 50);
-      expect(text('hud.site.time-left')).toBe('Leer in etwa 29 min 00 s');
+      expect(text('hud.site.time-left')).toBe('leer in ~29 min 00 s');
     });
 
     it('zeigt die leere Futterstelle ohne Erneuern', () => {
@@ -348,7 +413,7 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       expect(store.state().res.food.sub(food).toNumber()).toBe(50);
     });
 
-    it('zeigt Ereignisse neueste zuerst, außerhalb der Status-Region', () => {
+    it('zeigt Ereignisse außerhalb der Status-Region, Funde hervorgehoben', () => {
       const base = state();
       store.replace({ ...base, site: { ...base.site, stock: Num.from(0.01) } });
       fixture.detectChanges();
@@ -365,7 +430,7 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       );
       for (const entry of entries.filter((item) => item.getAttribute('data-kind') === 'found')) {
         expect(entry.querySelector('[data-testid="hud.log.text"]')?.className).toContain(
-          'text-accent',
+          'text-primary',
         );
       }
       expect(query('hud.log.empty')).toBeNull();

@@ -1,0 +1,24 @@
+/* Einblenden neuer Einträge (Mockup `.log div`, `@keyframes fadein`); ohne Bewegung bei reduzierter
+   Bewegung. Utilities kennen keine eigenen Keyframes. */
+.event-log__entry {
+  animation: event-log-in 0.45s var(--sw-ease-pop);
+}
+
+@keyframes event-log-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+@keyframes event-log-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-log__entry {
+    animation-name: event-log-fade;
+  }
+}

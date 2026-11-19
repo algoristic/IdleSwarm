@@ -1,18 +1,19 @@
-<section aria-labelledby="log-title">
-  <h2 id="log-title" class="text-lg font-semibold" i18n="@@uiHud-eventLog-title">Ereignisse</h2>
+<!-- Ohne Panel direkt über der Szene; nicht klickbar (Mockup `.log`). -->
+<section class="pointer-events-none text-sm leading-relaxed" aria-labelledby="log-title">
+  <h2 id="log-title" class="sr-only" i18n="@@uiHud-eventLog-title">Ereignisse</h2>
   <!--
     Einträge kommen nur bei Ereignissen hinzu, nie mit dem Takt; deshalb darf das Log angesagt
     werden. Die Region steht von Anfang an im DOM.
   -->
   <div role="log" aria-labelledby="log-title" data-testid="hud.log.list">
-    <ol class="mt-2 grid gap-1 empty:hidden">
+    <ol class="grid gap-0.5 empty:hidden">
       @for (item of items(); track item.id) {
         <li
-          class="flex flex-wrap gap-x-2 text-sm"
+          class="event-log__entry text-shadow-hud nth-last-2:opacity-75 nth-last-3:opacity-50 nth-last-4:opacity-30"
           [attr.data-kind]="item.kind"
           data-testid="hud.log.entry"
         >
-          <span class="shrink-0 text-fg-muted tabular-nums" data-testid="hud.log.time">{{
+          <span class="sr-only" data-testid="hud.log.time">{{
             item.playedMs | formatElapsed
           }}</span>
           <span [class]="item.textClass" data-testid="hud.log.text">{{ item.text }}</span>
@@ -21,7 +22,11 @@
     </ol>
   </div>
   @if (items().length === 0) {
-    <p class="mt-2 text-sm text-fg-muted" data-testid="hud.log.empty" i18n="@@uiHud-eventLog-empty">
+    <p
+      class="text-fg-muted text-shadow-hud"
+      data-testid="hud.log.empty"
+      i18n="@@uiHud-eventLog-empty"
+    >
       Noch keine Ereignisse.
     </p>
   }

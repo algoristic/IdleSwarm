@@ -32,5 +32,5 @@ paths:
 - Neue Farben sind neue `--sw-*`-Tokens mit Eintrag in `@theme inline`; Text auf `--sw-bg`, `--sw-surface`, `--sw-surface-raised`, `--sw-glass` und `--sw-well` mit mindestens 4,5:1 Kontrast, Ränder von Bedienelementen (`--sw-border-control`) mit mindestens 3:1. Mockup-Koralle, -Pink und -Violett (#ff5a5f, #ff4f9a, #8b6cff) bestehen das als Text nicht; dafür gibt es `--sw-danger`, `--sw-magenta` (aufgehellt) und `--sw-violet` (= `--sw-violet-light`).
 - Gleiche Werte dürfen per `var()` auf ein Basis-Token verweisen (z. B. `--sw-scene-sky-bottom: var(--sw-bg)`); `getComputedStyle(...).getPropertyValue` liefert den aufgelösten Wert (in Chrome geprüft), Canvas und Diagramme funktionieren damit.
 - Schatten sind `--sw-*`-Tokens mit `--shadow-*` (bzw. `--inset-shadow-shade` zum Kombinieren) in `@theme inline`; die Schriftdateien werden nur relativ referenziert, nie mit `/` am Anfang (Base-Href `/IdleSwarm/`).
-- Wiederkehrende Rasterspalten stehen als `--grid-template-columns-*` in `@theme` (z. B. `grid-cols-stats`), nicht als Arbitrary Value.
+- Wiederkehrende Rasterspalten stehen als `--grid-template-columns-*` in `@theme` (z. B. `grid-cols-kv`), nicht als Arbitrary Value.
 - Die Defaults von `CLOCK` und `ANIMATION_FRAME` lesen die Globals bei jedem Aufruf, damit Fake-Timer und Spies in Tests greifen.

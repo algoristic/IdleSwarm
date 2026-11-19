@@ -1,8 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, input, linkedSignal } from '@angular/core';
 
-import { FormatDateTimePipe } from '@app/shared/ui/pipes/format-date-time/format-date-time.pipe';
 import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
-import { FormatIsoDateTimePipe } from '@app/shared/ui/pipes/format-iso-date-time/format-iso-date-time.pipe';
 
 import { BuyButtonComponent } from '../../ui/buy-button/buy-button.component';
 import { EventLogComponent } from '../../ui/event-log/event-log.component';
@@ -12,11 +10,12 @@ import { FormSacrificeDronesComponent } from '../../ui/form-sacrifice-drones/for
 import { HudMeterComponent } from '../../ui/hud-meter/hud-meter.component';
 import { PheromonePanelComponent } from '../../ui/pheromone-panel/pheromone-panel.component';
 import { HudFacade } from '../state/hud.facade';
-import type { HudNotice } from '../state/hud.model';
+import { HUD_DRAWERS, HudDrawer } from '../state/hud.model';
 
 /**
- * HUD der Szene (Prototyp bis AP 1.4.3): Futterstelle, Platz, Käufe, Pheromone, Funde, Opfern,
- * Ereignis-Log und Speicherstatus.
+ * Overlay der Szene (Mockup K2-K, nur im Modus `scene`): Titel mit Futterstelle bzw. Reise oben,
+ * Aktionsleiste mit Kaufknöpfen und Platz unten, Schubladen Pheromone, Funde und Drohnen opfern am
+ * rechten Rand, Log unten links, Ära unten rechts.
  */
 @Component({
   selector: 'app-scene-hud',
@@ -26,9 +25,7 @@ import type { HudNotice } from '../state/hud.model';
     FeedingSiteComponent,
     FindsPanelComponent,
     FormSacrificeDronesComponent,
-    FormatDateTimePipe,
     FormatDownPipe,
-    FormatIsoDateTimePipe,
     HudMeterComponent,
     PheromonePanelComponent,
   ],
@@ -38,10 +35,25 @@ import type { HudNotice } from '../state/hud.model';
 export class SceneHudComponent {
   facade = inject(HudFacade);
 
+  /** Ist die Szene der aktive Modus? Beim Wechsel schließt die offene Schublade (Mockup `setMode`). */
+  active = input(false);
+
+  drawers = HUD_DRAWERS;
+
+  /** Höchstens eine Schublade ist offen; lokaler UI-Zustand, nie im Spielstand. */
+  openDrawer = linkedSignal<boolean, HudDrawer | null>({
+    source: this.active,
+    computation: () => null,
+  });
+
   spaceLabel = $localize`:@@featureHud-sceneHud-space-title:Platz`;
-  noticeTexts: Readonly<Record<HudNotice, string>> = {
-    'restored-from-backup': $localize`:@@featureHud-sceneHud-notice-restoredFromBackup:Der Spielstand war beschädigt und wurde aus der Sicherung wiederhergestellt.`,
-    'save-unreadable': $localize`:@@featureHud-sceneHud-notice-saveUnreadable:Der Spielstand konnte nicht gelesen werden. Es wurde ein neues Spiel begonnen.`,
-    'save-failed': $localize`:@@featureHud-sceneHud-notice-saveFailed:Speichern ist fehlgeschlagen. Es wird beim nächsten Mal erneut versucht.`,
+  drawerLabels: Readonly<Record<HudDrawer, string>> = {
+    pheromones: $localize`:@@featureHud-sceneHud-drawer-pheromones:Pheromone`,
+    finds: $localize`:@@featureHud-sceneHud-drawer-finds:Funde`,
+    sacrifice: $localize`:@@featureHud-sceneHud-drawer-sacrifice:Drohnen opfern`,
   };
+
+  onToggleDrawer(drawer: HudDrawer): void {
+    this.openDrawer.update((open) => (open === drawer ? null : drawer));
+  }
 }

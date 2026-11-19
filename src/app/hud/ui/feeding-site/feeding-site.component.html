@@ -1,62 +1,70 @@
 @let _site = site();
 @let stockText = (_site.stock | formatUp) + ' / ' + (_site.size | formatDown);
 
+<!-- Titel der Szene (Mockup `.top.only-scene`): Kicker, Typname, Vorrat bzw. Reise. -->
 <section aria-labelledby="site-title">
-  <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-    <h2 id="site-title" class="text-lg font-semibold" i18n="@@uiHud-feedingSite-title">
-      Futterstelle
-    </h2>
-    <p
-      class="text-sm text-fg-muted tabular-nums"
-      data-testid="hud.site.rate"
-      i18n="@@uiHud-feedingSite-rate"
-    >
-      {{ _site.rate | formatRate }} Nahrung/s
-    </p>
-  </header>
-  <p class="text-fg-muted" data-testid="hud.site.type">{{ typeLabels[_site.type] }}</p>
+  <p
+    class="text-xs font-extrabold tracking-widest text-fg-muted uppercase"
+    i18n="@@uiHud-feedingSite-title"
+  >
+    Futterstelle
+  </p>
+  <h2 id="site-title" class="text-2xl font-black" data-testid="hud.site.type">
+    {{ typeLabels[_site.type] }}
+  </h2>
 
   @if (_site.travel; as travel) {
     <!-- Die Restzeit tickt und steht deshalb außerhalb der Live-Region. -->
-    <p class="mt-3 tabular-nums" data-testid="hud.site.travel">
-      <ng-container i18n="@@uiHud-feedingSite-travel"
+    <p class="mt-2 text-xs text-fg-muted tabular-nums">
+      <span data-testid="hud.site.travel" i18n="@@uiHud-feedingSite-travel"
         >Unterwegs nach {{ typeLabels[travel.target] }}, Ankunft in etwa
-        {{ travel.secondsLeft | formatDuration }}</ng-container
+        {{ travel.secondsLeft | formatDuration }}</span
+      >
+      ·
+      <span data-testid="hud.site.rate" i18n="@@uiHud-feedingSite-ratePerSecond"
+        >+{{ _site.rate | formatRate }}/s</span
       >
     </p>
   } @else {
     <!-- Aufgerundet, damit ein Rest nie als `0` neben einer scheinbar leeren Futterstelle steht. -->
-    <div
-      class="mt-3 mb-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 tabular-nums"
-    >
-      <span>{{ stockLabel }}</span>
-      <span data-testid="hud.site.stock">{{ stockText }}</span>
-    </div>
-    <app-hud-meter [percent]="_site.stockPercent" [label]="stockLabel" [valueText]="stockText" />
-
-    @if (!_site.empty) {
-      <p class="mt-1 text-sm text-fg-muted" data-testid="hud.site.time-left">
-        @if (_site.secondsLeft; as seconds) {
-          <ng-container i18n="@@uiHud-feedingSite-timeLeft"
-            >Leer in etwa {{ seconds | formatDuration }}</ng-container
-          >
-        } @else {
-          <ng-container i18n="@@uiHud-feedingSite-noRate"
-            >Keine Schätzung: Es wird nichts abgebaut.</ng-container
-          >
-        }
-      </p>
-    }
+    <app-hud-meter
+      class="mx-auto mt-2 mb-1.5 w-full max-w-xs"
+      tone="site"
+      [percent]="_site.stockPercent"
+      [label]="stockLabel"
+      [valueText]="stockText"
+    />
+    <p class="text-xs text-fg-muted tabular-nums">
+      {{ stockLabel }} <span data-testid="hud.site.stock">{{ stockText }}</span>
+      @if (!_site.empty) {
+        ·
+        <span data-testid="hud.site.time-left">
+          @if (_site.secondsLeft; as seconds) {
+            <ng-container i18n="@@uiHud-feedingSite-timeLeftApprox"
+              >leer in ~{{ seconds | formatDuration }}</ng-container
+            >
+          } @else {
+            <ng-container i18n="@@uiHud-feedingSite-noRate"
+              >Keine Schätzung: Es wird nichts abgebaut.</ng-container
+            >
+          }
+        </span>
+      }
+      ·
+      <span data-testid="hud.site.rate" i18n="@@uiHud-feedingSite-ratePerSecond"
+        >+{{ _site.rate | formatRate }}/s</span
+      >
+    </p>
   }
 
   <!-- Die Live-Region steht von Anfang an im DOM, damit der Hinweis angesagt wird. -->
-  <p class="mt-2 empty:hidden" role="status" data-testid="hud.site.status">
+  <p class="mt-2 text-sm empty:hidden" role="status" data-testid="hud.site.status">
     @if (_site.travel; as travel) {
       <ng-container i18n="@@uiHud-feedingSite-traveling"
         >Der Schwarm ist unterwegs nach {{ typeLabels[travel.target] }}.</ng-container
       >
     } @else if (_site.empty) {
-      <span class="text-warning" i18n="@@uiHud-feedingSite-empty"
+      <span class="font-extrabold text-warning" i18n="@@uiHud-feedingSite-empty"
         >Die Futterstelle ist leer. Grundertrag und Drohnen bringen nichts mehr.</span
       >
     }
@@ -64,7 +72,7 @@
   @if (_site.empty && !_site.travel) {
     <a
       routerLink="/umgebung"
-      class="mt-2 inline-block rounded border border-accent bg-surface-raised px-2.5 py-1 text-accent"
+      class="mt-2 inline-flex min-h-11 touch-manipulation items-center rounded-full bg-primary px-4 py-2 text-sm font-black text-on-accent shadow-button-primary hover:bg-primary-hover active:translate-y-0.5 active:shadow-button-primary-pressed motion-reduce:active:translate-y-0"
       data-testid="hud.site.move-link"
       i18n="@@uiHud-feedingSite-moveLink"
       >Weiterziehen</a

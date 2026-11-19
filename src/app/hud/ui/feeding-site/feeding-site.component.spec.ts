@@ -43,14 +43,14 @@ describe('FeedingSiteComponent', () => {
     render();
 
     expect(text('hud.site.type')).toBe('Hydrothermaler Schlot');
-    expect(text('hud.site.rate')).toBe('1,5 Nahrung/s');
+    expect(text('hud.site.rate')).toBe('+1,5/s');
     expect(text('hud.site.stock')).toBe('5.000 / 20.000');
     expect(meter().getAttribute('aria-valuenow')).toBe('25');
     expect(meter().getAttribute('aria-valuemin')).toBe('0');
     expect(meter().getAttribute('aria-valuemax')).toBe('100');
     expect(meter().getAttribute('aria-valuetext')).toBe('5.000 / 20.000');
     expect(meter().getAttribute('aria-label')).toBe('Vorrat');
-    expect(text('hud.site.time-left')).toBe('Leer in etwa 55 min 33 s');
+    expect(text('hud.site.time-left')).toBe('leer in ~55 min 33 s');
   });
 
   it('ist ohne leeren Vorrat keine Klickfläche', () => {
@@ -101,5 +101,6 @@ describe('FeedingSiteComponent', () => {
     expect(query('hud.site.stock')).toBeNull();
     expect(query('hud.site.time-left')).toBeNull();
     expect(query('hud.site.move-link')).toBeNull();
+    expect(text('hud.site.rate')).toBe('+1,5/s');
   });
 });

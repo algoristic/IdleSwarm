@@ -1,13 +1,16 @@
 @let _pheromones = pheromones();
 @let gland = _pheromones.gland;
 
+<!-- Schublade „Pheromone“ (Mockup `#d-pher`): Punkte als Pips, „−“/„+“, geteilter Balken, Drüse. -->
 <section aria-labelledby="pheromones-title">
-  <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-    <h2 id="pheromones-title" class="text-lg font-semibold" i18n="@@uiHud-pheromonePanel-title">
+  <header
+    class="mb-3.5 flex flex-wrap items-baseline justify-between gap-x-4 text-xs font-black tracking-widest uppercase"
+  >
+    <h2 id="pheromones-title" class="text-primary" i18n="@@uiHud-pheromonePanel-title">
       Pheromone
     </h2>
     <p
-      class="text-sm text-fg-muted tabular-nums"
+      class="tracking-wide text-fg-muted normal-case tabular-nums"
       data-testid="hud.pheromones.total"
       i18n="@@uiHud-pheromonePanel-total"
     >
@@ -15,22 +18,26 @@
     </p>
   </header>
 
-  <dl class="mt-2 flex flex-wrap gap-x-6 gap-y-1 tabular-nums">
+  <dl class="flex flex-wrap gap-x-6 gap-y-1 text-sm tabular-nums">
     <div class="flex items-baseline gap-2">
-      <dt class="text-sm text-fg-muted" i18n="@@uiHud-pheromonePanel-distributed">Verteilt</dt>
-      <dd data-testid="hud.pheromones.distributed">{{ _pheromones.distributed | formatNum }}</dd>
+      <dt class="text-fg-muted" i18n="@@uiHud-pheromonePanel-distributed">Verteilt</dt>
+      <dd class="font-extrabold" data-testid="hud.pheromones.distributed">
+        {{ _pheromones.distributed | formatNum }}
+      </dd>
     </div>
     <div
-      class="flex items-baseline gap-2 data-warning:font-semibold data-warning:text-warning"
+      class="flex items-baseline gap-2 text-fg-muted data-warning:text-warning"
       [attr.data-warning]="_pheromones.free > 0 ? '' : null"
     >
-      <dt class="text-sm" i18n="@@uiHud-pheromonePanel-free">Frei</dt>
-      <dd class="text-xl" data-testid="hud.pheromones.free">{{ _pheromones.free | formatNum }}</dd>
+      <dt i18n="@@uiHud-pheromonePanel-free">Frei</dt>
+      <dd class="font-black" data-testid="hud.pheromones.free">
+        {{ _pheromones.free | formatNum }}
+      </dd>
     </div>
   </dl>
   @if (_pheromones.free > 0) {
     <p
-      class="mt-1 text-sm text-warning"
+      class="mt-1 text-xs font-extrabold text-warning"
       data-testid="hud.pheromones.free-hint"
       i18n="@@uiHud-pheromonePanel-freeHint"
     >
@@ -38,19 +45,25 @@
     </p>
   }
 
-  <ul class="mt-3 grid gap-2">
-    @for (row of _pheromones.rows; track row.id) {
-      <li class="flex items-center justify-between gap-3">
-        <span class="min-w-0 flex-1">{{ unitLabels[row.id] }}</span>
-        <span
-          class="text-lg tabular-nums"
-          [attr.data-testid]="'hud.pheromones.' + row.id + '.points'"
-          >{{ row.points | formatNum }}</span
-        >
+  <ul class="mt-3 grid gap-2.5">
+    @for (row of pipRows(); track row.id) {
+      <li class="grid grid-cols-pheromone items-center gap-2 font-extrabold">
+        <span class="min-w-0">{{ unitLabels[row.id] }}</span>
+        <span class="flex min-w-0 flex-wrap items-center gap-1">
+          <!-- Die Pips wiederholen nur die Zahl daneben. -->
+          @for (pip of row.pips; track $index) {
+            <span aria-hidden="true" [class]="pip"></span>
+          }
+          <span
+            class="ml-1 tabular-nums"
+            [attr.data-testid]="'hud.pheromones.' + row.id + '.points'"
+            >{{ row.points | formatNum }}</span
+          >
+        </span>
         <span class="flex gap-1">
           <button
             type="button"
-            class="min-h-11 min-w-11 cursor-pointer touch-manipulation rounded-md border border-accent bg-surface-raised text-lg text-accent hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:bg-surface disabled:text-fg-muted"
+            class="size-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised text-lg font-black inset-shadow-shade hover:enabled:bg-accent hover:enabled:text-on-accent disabled:cursor-not-allowed disabled:text-fg-muted"
             [disabled]="row.decrease === null"
             [attr.aria-label]="decreaseLabels[row.id]"
             [attr.data-testid]="'hud.pheromones.' + row.id + '.decrease'"
@@ -60,7 +73,7 @@
           </button>
           <button
             type="button"
-            class="min-h-11 min-w-11 cursor-pointer touch-manipulation rounded-md border border-accent bg-surface-raised text-lg text-accent hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:bg-surface disabled:text-fg-muted"
+            class="size-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised text-lg font-black inset-shadow-shade hover:enabled:bg-accent hover:enabled:text-on-accent disabled:cursor-not-allowed disabled:text-fg-muted"
             [disabled]="row.increase === null"
             [attr.aria-label]="increaseLabels[row.id]"
             [attr.data-testid]="'hud.pheromones.' + row.id + '.increase'"
@@ -74,38 +87,29 @@
   </ul>
 
   <!-- Der Balken wiederholt nur die Prozentangaben darunter. -->
-  <div
-    class="mt-3 flex h-3 overflow-hidden rounded-md border border-border-control bg-surface-raised"
-    aria-hidden="true"
-  >
+  <div class="mt-3 flex h-3.5 overflow-hidden rounded-full bg-well" aria-hidden="true">
     <div
-      class="h-full bg-accent"
+      class="h-full bg-unit-drone"
       data-testid="hud.pheromones.split.drones"
       [style.width.%]="_pheromones.dronePercent"
     ></div>
     <div
-      class="h-full bg-magenta"
+      class="h-full bg-unit-soldier"
       data-testid="hud.pheromones.split.soldiers"
       [style.width.%]="_pheromones.soldierPercent"
     ></div>
   </div>
-  <p class="mt-1 flex justify-between gap-4 text-sm tabular-nums">
-    <span
-      class="text-accent"
-      data-testid="hud.pheromones.share.drones"
-      i18n="@@uiHud-pheromonePanel-share-drones"
+  <p class="mt-1.5 flex justify-between gap-4 text-xs text-fg-muted tabular-nums">
+    <span data-testid="hud.pheromones.share.drones" i18n="@@uiHud-pheromonePanel-share-drones"
       >{{ _pheromones.dronePercent | formatNum }} % Drohnen</span
     >
-    <span
-      class="text-magenta"
-      data-testid="hud.pheromones.share.soldiers"
-      i18n="@@uiHud-pheromonePanel-share-soldiers"
+    <span data-testid="hud.pheromones.share.soldiers" i18n="@@uiHud-pheromonePanel-share-soldiers"
       >{{ _pheromones.soldierPercent | formatNum }} % Soldaten</span
     >
   </p>
 
   <p
-    class="mt-4 text-sm text-fg-muted tabular-nums"
+    class="mt-4 text-xs text-fg-muted tabular-nums"
     data-testid="hud.pheromones.gland-effect"
     i18n="@@uiHud-pheromonePanel-glandEffect"
   >
@@ -113,7 +117,7 @@
   </p>
   <button
     type="button"
-    class="mt-1 min-h-11 w-full cursor-pointer touch-manipulation rounded-md border border-accent bg-surface-raised p-3 tabular-nums wrap-anywhere hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:bg-surface disabled:text-fg-muted"
+    class="mt-2 min-h-11 w-full cursor-pointer touch-manipulation rounded-full bg-surface-raised px-3.5 py-2 text-sm font-extrabold shadow-button tabular-nums wrap-anywhere hover:enabled:bg-accent hover:enabled:text-on-accent active:enabled:translate-y-0.5 active:enabled:shadow-button-pressed disabled:cursor-not-allowed disabled:text-fg-muted disabled:shadow-none motion-reduce:active:enabled:translate-y-0"
     [disabled]="!gland.affordable"
     data-testid="hud.pheromones.gland"
     (click)="onStrengthenGland()"

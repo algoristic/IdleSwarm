@@ -33,8 +33,11 @@ describe('BuyButtonComponent', () => {
   it('zeigt Name, abgerundete Anzahl und Preis', () => {
     render();
     expect(button().textContent).toContain('Drohne');
-    expect(text('hud.units.drones.count')).toBe('Anzahl: 3');
-    expect(text('hud.units.drones.price')).toBe('Preis: 10 Nahrung');
+    expect(text('hud.units.drones.count')).toBe('3');
+    expect(text('hud.units.drones.price')).toBe('+1 · 10 N');
+    // Vorgelesen mit Bezeichnung
+    expect(button().textContent).toContain('Anzahl: 3');
+    expect(button().textContent).toContain('Preis: 10 Nahrung');
     expect(text('hud.units.drones.effect')).toBeUndefined();
   });
 

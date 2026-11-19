@@ -17,7 +17,11 @@ export interface HudSource {
   readonly lastSavedAt: number | null;
 }
 
-/** Hinweise in der Fußzeile; die Seite bildet sie auf Texte ab. */
+/** Schubladen am rechten Rand der Szene (Mockup `.tabs`); lokaler UI-Zustand, nie im Spielstand. */
+export const HUD_DRAWERS = ['pheromones', 'finds', 'sacrifice'] as const;
+export type HudDrawer = (typeof HUD_DRAWERS)[number];
+
+/** Hinweise unter den Ressourcen; `SaveStatusComponent` bildet sie auf Texte ab. */
 export type HudNotice = RestoreNotice | 'save-failed';
 
 export interface SpaceView {

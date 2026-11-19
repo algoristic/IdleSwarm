@@ -2,11 +2,16 @@
 @let _sacrifice = sacrifice();
 @let showErrors = _form.count().invalid() && (_form.count().touched() || _form.count().dirty());
 
+<!-- Schublade „Drohnen opfern“: Anzahl, Ertrag und Umwandlungsverlust vorab. -->
 <form class="grid gap-2" aria-labelledby="sacrifice-title" [formRoot]="_form">
-  <h2 id="sacrifice-title" class="text-lg font-semibold" i18n="@@uiHud-formSacrificeDrones-title">
+  <h2
+    id="sacrifice-title"
+    class="mb-1.5 text-xs font-black tracking-widest text-primary uppercase"
+    i18n="@@uiHud-formSacrificeDrones-title"
+  >
     Drohnen opfern
   </h2>
-  <p class="text-sm text-fg-muted" data-testid="hud.sacrifice.loss">
+  <p class="text-xs text-fg-muted" data-testid="hud.sacrifice.loss">
     <ng-container i18n="@@uiHud-formSacrificeDrones-loss"
       >Umwandlungsverlust: {{ _sacrifice.lossPercent | formatNum }} %</ng-container
     >
@@ -27,7 +32,7 @@
       inputmode="numeric"
       autocomplete="off"
       data-testid="hud.sacrifice.count"
-      class="min-w-0 flex-1 rounded border border-border-control bg-surface-raised px-1.5 py-1 tabular-nums aria-invalid:border-warning disabled:cursor-not-allowed disabled:opacity-50"
+      class="min-h-11 min-w-0 flex-1 rounded-2xl border border-border-control bg-well px-3.5 py-2 tabular-nums aria-invalid:border-warning disabled:cursor-not-allowed disabled:text-fg-muted"
       [formField]="_form.count"
       [attr.aria-invalid]="showErrors"
       [attr.aria-describedby]="showErrors ? 'sacrifice-errors' : null"
@@ -35,7 +40,7 @@
     <button
       type="submit"
       data-testid="hud.sacrifice.submit"
-      class="cursor-pointer rounded border border-accent bg-surface-raised px-2.5 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+      class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-primary px-4 py-2 font-black text-on-accent shadow-button-primary hover:enabled:bg-primary-hover active:enabled:translate-y-0.5 active:enabled:shadow-button-primary-pressed disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-fg-muted disabled:shadow-none motion-reduce:active:enabled:translate-y-0"
       [disabled]="yieldPreview() === null"
       i18n="@@uiHud-formSacrificeDrones-submit"
     >
@@ -45,12 +50,14 @@
   @if (showErrors) {
     <div id="sacrifice-errors">
       @for (error of _form.count().errors(); track error.kind) {
-        <p class="text-xs text-warning" data-testid="hud.sacrifice.error">{{ error.message }}</p>
+        <p class="text-xs font-extrabold text-warning" data-testid="hud.sacrifice.error">
+          {{ error.message }}
+        </p>
       }
     </div>
   }
 
-  <p class="text-sm tabular-nums" data-testid="hud.sacrifice.yield">
+  <p class="text-sm font-extrabold tabular-nums" data-testid="hud.sacrifice.yield">
     @if (yieldPreview(); as food) {
       <ng-container i18n="@@uiHud-formSacrificeDrones-yield"
         >Ertrag: {{ food | formatDown }} Nahrung</ng-container
