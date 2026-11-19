@@ -5,8 +5,8 @@ import { filter, map } from 'rxjs';
 
 import { VIEWPORT } from '@app/shared/data-access/platform/platform.tokens';
 
-import type { ShellMode, ViewportSize } from '../../domain/models/shell-mode.model';
-import { SHELL_MODE_PATHS } from '../../domain/shell-mode-logic';
+import type { ShellMode, ViewportSize, ZoomDirection } from '../../domain/models/shell-mode.model';
+import { neighborMode, SHELL_MODE_PATHS } from '../../domain/shell-mode-logic';
 import type { ShellLayoutView } from './shell.model';
 import { shellModeFromUrl, toShellLayout } from './shell.utils';
 
@@ -35,6 +35,14 @@ export class ShellFacade {
 
   setMode(mode: ShellMode): void {
     void this.#router.navigateByUrl(`/${SHELL_MODE_PATHS[mode]}`);
+  }
+
+  /** Eine Zoomstufe weiter (Mausrad); am Ende der Reihe passiert nichts. */
+  zoom(direction: ZoomDirection): void {
+    const next = neighborMode(this.mode(), direction);
+    if (next) {
+      this.setMode(next);
+    }
   }
 
   #watchViewport(): Signal<ViewportSize> {

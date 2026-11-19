@@ -5,11 +5,13 @@ import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
 import type { Num } from '@app/shared/util/num/num';
 
 import { SHELL_MODES, ShellMode } from '../../domain/models/shell-mode.model';
+import { SHELL_MODE_SHORTCUTS } from '../../domain/shell-input-logic';
 
 /**
  * Zoom-Leiste links (US-08.01, Mockup `.zoom`): Umgebung, Schwarm und Genom in Zoom-Reihenfolge,
  * der aktive Modus über `aria-current`. Am Genom stehen DNA und als Badge die Zahl bezahlbarer
- * Adaptionen.
+ * Adaptionen. Darunter die Hinweiszeile zu Mausrad und Tasten (Mockup `.zoom .hint`), nur mit
+ * Maus; die Knöpfe nennen ihr Tastenkürzel über `aria-keyshortcuts`.
  */
 @Component({
   selector: 'app-zoom-bar',
@@ -24,6 +26,7 @@ export class ZoomBarComponent {
   availableAdaptations = input.required<number>();
 
   modes = SHELL_MODES;
+  shortcuts = SHELL_MODE_SHORTCUTS;
 
   selectedMode = output<ShellMode>();
 

@@ -15,6 +15,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Spielfläche (TK §8.3): kein Browser-Scrollen und -Zoomen; Pinch übernimmt AP 1.4.5. Die
+     Panels liegen in den Overlays und scrollen weiter per Touch. */
+  touch-action: none;
 }
 
 .shell__layer--sonar {

@@ -56,4 +56,13 @@ export class SceneHudComponent {
   onToggleDrawer(drawer: HudDrawer): void {
     this.openDrawer.update((open) => (open === drawer ? null : drawer));
   }
+
+  /** Schließt die offene Schublade (Esc der Shell); `false`, wenn keine offen war. */
+  closeDrawer(): boolean {
+    if (this.openDrawer() === null) {
+      return false;
+    }
+    this.openDrawer.set(null);
+    return true;
+  }
 }

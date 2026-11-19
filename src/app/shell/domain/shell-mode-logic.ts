@@ -12,7 +12,7 @@ export function shellModeFromPath(path: string): ShellMode {
   return SHELL_MODES.find((mode) => SHELL_MODE_PATHS[mode] === path) ?? 'scene';
 }
 
-/** Nachbarmodus beim Zoomen (Mausrad ab AP 1.4.4); `null` am Ende der Reihe. */
+/** Nachbarmodus beim Zoomen (Mausrad); `null` am Ende der Reihe. */
 export function neighborMode(mode: ShellMode, direction: ZoomDirection): ShellMode | null {
   const index = SHELL_MODES.indexOf(mode) + (direction === 'in' ? 1 : -1);
   return SHELL_MODES[index] ?? null;

@@ -5,9 +5,12 @@
 
 <main
   class="shell"
+  appShellInput
   data-testid="shell.root"
   [attr.data-mode]="mode"
   [style.--ms]="layout.stageSize"
+  (zoomedWheel)="facade.zoom($event)"
+  (pressedShortcut)="onShortcut($event)"
 >
   <!-- Ebenen: Sonar (z = 1), Welt (z = 2), Genom (z = 3); die Kamera fährt per CSS-Übergang. -->
   <div

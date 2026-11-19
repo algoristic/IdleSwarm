@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, viewChild } from '@angular/core';
 
 import { GenomeLayerComponent } from '@app/genome/feature/genome-layer/genome-layer.component';
 import { GenomeOverlayComponent } from '@app/genome/feature/genome-overlay/genome-overlay.component';
@@ -10,7 +10,9 @@ import { SceneWorldComponent } from '@app/scene/feature/scene-world/scene-world.
 import { SonarLayerComponent } from '@app/sonar/feature/sonar-layer/sonar-layer.component';
 import { SonarOverlayComponent } from '@app/sonar/feature/sonar-overlay/sonar-overlay.component';
 
+import type { ShellMode } from '../../domain/models/shell-mode.model';
 import { ZoomBarComponent } from '../../ui/zoom-bar/zoom-bar.component';
+import { ShellInputDirective } from '../shell-input/shell-input.directive';
 import { ShellFacade } from '../state/shell.facade';
 
 /**
@@ -28,6 +30,7 @@ import { ShellFacade } from '../state/shell.facade';
     SaveStatusComponent,
     SceneHudComponent,
     SceneWorldComponent,
+    ShellInputDirective,
     SonarLayerComponent,
     SonarOverlayComponent,
     ZoomBarComponent,
@@ -40,9 +43,19 @@ export class ShellPage {
   facade = inject(ShellFacade);
   hudFacade = inject(HudFacade);
 
+  sceneHud = viewChild.required(SceneHudComponent);
+
   worldBackLabel = $localize`:@@featureShell-shell-worldBack:Zurück zum Schwarm`;
 
   onClickWorld(): void {
     this.facade.setMode('scene');
+  }
+
+  /** Esc schließt in der Szene zuerst die offene Schublade, sonst führt es zum Schwarm. */
+  onShortcut(mode: ShellMode): void {
+    if (mode === 'scene' && this.sceneHud().closeDrawer()) {
+      return;
+    }
+    this.facade.setMode(mode);
   }
 }
