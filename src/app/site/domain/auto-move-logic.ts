@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { clampAutoThreshold } from '@app/balance/domain/formulas';
 import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
@@ -58,7 +57,7 @@ export function isAutoMoveDue(state: GameState, params: BalanceParams): boolean 
 export function applyAutoMove(
   state: GameState,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): SiteResult {
   if (!isAutoMoveDue(state, params)) {
     return { state, events: [] };

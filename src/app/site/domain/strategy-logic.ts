@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { swarmRange } from '@app/balance/domain/formulas';
 import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
@@ -75,7 +74,7 @@ export function strategyTarget(
   state: GameState,
   strategy: StrategyId,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): number | null {
   const all = options(state, params, modifiers);
   const eligible =

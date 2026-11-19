@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
 import { canDepart } from '@app/site/domain/move-logic';
@@ -69,7 +70,9 @@ describe('GameStore', () => {
     }
 
     function reachableTarget(state: GameState): number {
-      const index = state.map.candidates.findIndex((_, i) => canDepart(state, i, DEFAULT_BALANCE));
+      const index = state.map.candidates.findIndex((_, i) =>
+        canDepart(state, i, DEFAULT_BALANCE, NEUTRAL_MODIFIERS),
+      );
       expect(index).toBeGreaterThanOrEqual(0);
       return index;
     }

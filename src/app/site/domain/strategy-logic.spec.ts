@@ -1,4 +1,5 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -40,7 +41,7 @@ function stateWith(candidates: readonly SiteCandidate[], soldiers = 34): GameSta
 }
 
 function pick(state: GameState, strategy: StrategyId, params = DEFAULT_BALANCE): number | null {
-  return strategyTarget(state, strategy, params);
+  return strategyTarget(state, strategy, params, NEUTRAL_MODIFIERS);
 }
 
 describe('strategyTarget (Game-Design §4.12)', () => {

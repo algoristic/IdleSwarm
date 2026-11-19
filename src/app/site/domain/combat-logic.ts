@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import {
   carriedUnits,
   dnaReward,
@@ -34,7 +33,7 @@ export function assessCombat(
   soldiers: Num,
   defense: Num,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): CombatAssessment {
   const attack = soldierAttack(soldiers, params, modifiers);
   const losses = expectedLosses(soldiers, defense, params, modifiers);
@@ -57,7 +56,7 @@ export function assessTarget(
   state: GameState,
   target: SiteCandidate,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): CombatAssessment {
   const { soldiers } = carriedUnits(state.units, state.priority, params, modifiers);
   return assessCombat(soldiers, target.defense, params, modifiers);
@@ -67,7 +66,7 @@ export function assessTarget(
 export function assessTargets(
   state: GameState,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): readonly CombatAssessment[] {
   return state.map.candidates.map((target) => assessTarget(state, target, params, modifiers));
 }
@@ -82,7 +81,7 @@ export function applyCapture(
   state: GameState,
   target: SiteCandidate,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): GameState {
   const { res, units } = state;
   const { losses, dna } = assessCombat(units.soldiers, target.defense, params, modifiers);

@@ -1,4 +1,5 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { clampAutoThreshold, swarmRange } from '@app/balance/domain/formulas';
 import { initialFinds } from '@app/finds/domain/finds-logic';
 import { Num } from '@app/shared/util/num/num';
@@ -35,7 +36,7 @@ export function createInitialState(
   const origin = { x: 0, y: 0 };
   // Ein neues Spiel hat noch keine Quellen für Effekte, die Reichweite ist also `R_0`.
   const generated = generateCandidates(
-    { origin, moves: 0, range: swarmRange(params), rngState },
+    { origin, moves: 0, range: swarmRange(params, NEUTRAL_MODIFIERS), rngState },
     params,
   );
   return {

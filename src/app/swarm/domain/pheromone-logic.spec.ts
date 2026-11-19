@@ -1,5 +1,5 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
-import { combineEffects } from '@app/balance/domain/effects-logic';
+import { combineEffects, NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -35,7 +35,7 @@ describe('startPheromones', () => {
 describe('setPheromones', () => {
   it('verteilt die Punkte kostenlos neu', () => {
     const state = createState(10);
-    const next = setPheromones(state, 1, 3, DEFAULT_BALANCE);
+    const next = setPheromones(state, 1, 3, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(next.pheromones).toEqual({ drones: 1, soldiers: 3, glands: 0 });
     expect(next.res).toBe(state.res);
     expect(state.pheromones).toEqual({ drones: 3, soldiers: 1, glands: 0 });
@@ -43,8 +43,10 @@ describe('setPheromones', () => {
 
   it('erlaubt freie Punkte und das Abziehen aller Punkte', () => {
     const state = createState(10);
-    expect(setPheromones(state, 2, 1, DEFAULT_BALANCE).pheromones.drones).toBe(2);
-    expect(setPheromones(state, 0, 0, DEFAULT_BALANCE).pheromones).toEqual({
+    expect(setPheromones(state, 2, 1, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).pheromones.drones).toBe(
+      2,
+    );
+    expect(setPheromones(state, 0, 0, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).pheromones).toEqual({
       drones: 0,
       soldiers: 0,
       glands: 0,
@@ -53,8 +55,10 @@ describe('setPheromones', () => {
 
   it('nutzt gekaufte Drüsenpunkte und P_bonus aus den Effekten', () => {
     const state = createState(10, 1);
-    expect(setPheromones(state, 4, 1, DEFAULT_BALANCE).pheromones.drones).toBe(4);
-    expect(setPheromones(state, 5, 1, DEFAULT_BALANCE)).toBe(state);
+    expect(setPheromones(state, 4, 1, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).pheromones.drones).toBe(
+      4,
+    );
+    expect(setPheromones(state, 5, 1, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(state);
     const bonus = combineEffects([{ target: 'pheromonePoints', op: 'add', value: 1 }], null);
     expect(setPheromones(state, 5, 1, DEFAULT_BALANCE, bonus).pheromones.drones).toBe(5);
   });
@@ -67,13 +71,15 @@ describe('setPheromones', () => {
     ['unendlich', Number.POSITIVE_INFINITY, 0],
   ])('bleibt %s ohne Wirkung', (_name, drones, soldiers) => {
     const state = createState(10);
-    expect(canSetPheromones(state, drones, soldiers, DEFAULT_BALANCE)).toBe(false);
-    expect(setPheromones(state, drones, soldiers, DEFAULT_BALANCE)).toBe(state);
+    expect(canSetPheromones(state, drones, soldiers, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(
+      false,
+    );
+    expect(setPheromones(state, drones, soldiers, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(state);
   });
 
   it('gibt bei unveränderter Verteilung denselben Zustand zurück', () => {
     const state = createState(10);
-    expect(setPheromones(state, 3, 1, DEFAULT_BALANCE)).toBe(state);
+    expect(setPheromones(state, 3, 1, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(state);
   });
 });
 

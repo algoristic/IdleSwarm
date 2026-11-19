@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { glandPrice, isAffordable, totalPheromonePoints } from '@app/balance/domain/formulas';
 import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
@@ -29,7 +28,7 @@ export function canSetPheromones(
   drones: number,
   soldiers: number,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): boolean {
   return (
     isPointCount(drones) &&
@@ -47,7 +46,7 @@ export function setPheromones(
   drones: number,
   soldiers: number,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): GameState {
   const { pheromones } = state;
   if (

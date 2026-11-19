@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import {
   candidateStatus,
   distanceBetween,
@@ -30,7 +29,7 @@ export function candidateInfo(
   position: Position,
   range: number,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): CandidateInfo {
   const distance = distanceBetween(position, candidate.position);
   return {
@@ -48,7 +47,7 @@ export function candidateInfos(
   position: Position,
   range: number,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): readonly CandidateInfo[] {
   return candidates.map((candidate) =>
     candidateInfo(candidate, position, range, params, modifiers),

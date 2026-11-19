@@ -1,4 +1,5 @@
 import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { foodPerSecond, siteSecondsLeft } from '@app/balance/domain/formulas';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
@@ -31,7 +32,7 @@ function createState({ drones = 0, food = 0, stock }: Setup): GameState {
 }
 
 const collect = (state: GameState, dtMs: number = TICK_MS): GameState =>
-  applyCollect(state, dtMs, DEFAULT_BALANCE);
+  applyCollect(state, dtMs, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
 
 describe('applyCollect', () => {
   it('rechnet Grundertrag und Sammeln aus Beispiel 1 in Game-Design §4.3', () => {
@@ -54,7 +55,12 @@ describe('applyCollect', () => {
 
   it('nutzt überschriebene Parameter', () => {
     const params = { ...DEFAULT_BALANCE, baseFoodRate: 2, droneCollectRate: 1 };
-    const { res } = applyCollect(createState({ drones: 4, stock: 100 }), 1000, params);
+    const { res } = applyCollect(
+      createState({ drones: 4, stock: 100 }),
+      1000,
+      params,
+      NEUTRAL_MODIFIERS,
+    );
     expect(res.food.eq(6)).toBe(true);
   });
 
@@ -67,7 +73,7 @@ describe('applyCollect', () => {
   it('gibt ohne Grundertrag und Sammelrate denselben Zustand zurück', () => {
     const input = createState({ drones: 10, stock: 100 });
     const params = { ...DEFAULT_BALANCE, baseFoodRate: 0, droneCollectRate: 0 };
-    expect(applyCollect(input, TICK_MS, params)).toBe(input);
+    expect(applyCollect(input, TICK_MS, params, NEUTRAL_MODIFIERS)).toBe(input);
   });
 
   it('ändert Einheiten, Kaufzähler und DNA nicht', () => {
@@ -127,9 +133,9 @@ describe('applyCollect', () => {
       const params = { ...DEFAULT_BALANCE, baseFoodRate: 0, droneCollectRate: stock };
       for (let i = -50; i <= 50; i++) {
         const input = createState({ drones: 1, stock: stock * (1 + i * 1e-15) });
-        const first = applyCollect(input, 1000, params);
+        const first = applyCollect(input, 1000, params, NEUTRAL_MODIFIERS);
         expect(first.site.stock.isNegative()).toBe(false);
-        const second = applyCollect(first, 1000, params);
+        const second = applyCollect(first, 1000, params, NEUTRAL_MODIFIERS);
         expect(second.site.stock).toBe(Num.ZERO);
       }
     });
@@ -177,7 +183,7 @@ describe('applyCollect', () => {
 describe('collectStep', () => {
   it('meldet ohne Leeren kein Ereignis', () => {
     const input = createState({ drones: 10, stock: 1000 });
-    const { state, events } = collectStep(input, TICK_MS, 0, DEFAULT_BALANCE);
+    const { state, events } = collectStep(input, TICK_MS, 0, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(state).toEqual(collect(input));
     expect(events).toEqual([]);
   });
@@ -185,7 +191,7 @@ describe('collectStep', () => {
   it('meldet siteDepleted mit dem Zeitpunkt, an dem der Vorrat leer wurde', () => {
     // 3,5 Nahrung/s leeren 0,7 nach 200 ms eines 1000-ms-Schritts ab Spielzeit 5000.
     const input = createState({ drones: 10, stock: 0.7 });
-    const { state, events } = collectStep(input, 1000, 5000, DEFAULT_BALANCE);
+    const { state, events } = collectStep(input, 1000, 5000, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(state.site.stock).toBe(Num.ZERO);
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe('siteDepleted');
@@ -199,12 +205,16 @@ describe('collectStep', () => {
       TICK_MS,
       0,
       DEFAULT_BALANCE,
+      NEUTRAL_MODIFIERS,
     );
     expect(events[0].playedMs).toBeCloseTo(TICK_MS, 9);
   });
 
   it('meldet einen schon leeren Vorrat nicht erneut', () => {
     const input = createState({ drones: 10, stock: 0 });
-    expect(collectStep(input, TICK_MS, 0, DEFAULT_BALANCE)).toEqual({ state: input, events: [] });
+    expect(collectStep(input, TICK_MS, 0, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toEqual({
+      state: input,
+      events: [],
+    });
   });
 });

@@ -1,4 +1,5 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { distanceBetween } from '@app/balance/domain/formulas';
 import { nextRandom } from '@app/shared/util/rng/rng';
 
@@ -108,7 +109,9 @@ describe('generateCandidates', () => {
     expect(replaced.size.toNumber()).toBeCloseTo(20315.1260145, 4);
     expect(replaced.defense.isZero()).toBe(true);
     expect(candidates[1].type).toBe('methane-seep');
-    const statuses = candidateInfos(candidates, ORIGIN, 5, DEFAULT_BALANCE).map((i) => i.status);
+    const statuses = candidateInfos(candidates, ORIGIN, 5, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).map(
+      (i) => i.status,
+    );
     expect(statuses[0]).toBe('in-range');
     expect(statuses.filter((status) => status === 'in-range')).toHaveLength(1);
   });
@@ -131,7 +134,13 @@ describe('generateCandidates', () => {
         expect(candidate.defense.round().eq(candidate.defense)).toBe(true);
       }
       expect(candidates.some((candidate) => isSafeInRange(candidate, input))).toBe(true);
-      const statuses = candidateInfos(candidates, input.origin, input.range, DEFAULT_BALANCE);
+      const statuses = candidateInfos(
+        candidates,
+        input.origin,
+        input.range,
+        DEFAULT_BALANCE,
+        NEUTRAL_MODIFIERS,
+      );
       expect(
         statuses.some(({ status }, i) => status === 'in-range' && candidates[i].defense.isZero()),
       ).toBe(true);

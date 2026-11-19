@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { carriedUnits } from '@app/balance/domain/formulas';
 import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
@@ -22,7 +21,7 @@ export function planTransport(
   units: Units,
   priority: TransportPriority,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): TransportResult {
   const carried = carriedUnits(units, priority, params, modifiers);
   return {
@@ -43,7 +42,7 @@ export function planTransport(
 export function applyTransport(
   state: GameState,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): GameState {
   const carried = carriedUnits(state.units, state.priority, params, modifiers);
   return carried === state.units ? state : { ...state, units: carried };

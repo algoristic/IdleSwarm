@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { dronesPerQueen, sacrificeFood } from '@app/balance/domain/formulas';
 import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
@@ -14,7 +13,7 @@ export function sacrificeDrones(
   state: GameState,
   count: number,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): GameState {
   const { res, units } = state;
   if (!(count > 0) || !units.drones.gt(Num.ZERO)) {
@@ -39,7 +38,7 @@ export function sacrificeDrones(
 export function queenPriceInDrones(
   state: GameState,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): Num | null {
   const price = dronesPerQueen(state.bought, params, modifiers);
   return price && !price.isNegative() ? price : null;
@@ -49,7 +48,7 @@ export function queenPriceInDrones(
 export function canConvertDronesToQueen(
   state: GameState,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): boolean {
   const price = queenPriceInDrones(state, params, modifiers);
   return price !== null && state.units.drones.gte(price);
@@ -62,7 +61,7 @@ export function canConvertDronesToQueen(
 export function convertDronesToQueen(
   state: GameState,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): GameState {
   const price = queenPriceInDrones(state, params, modifiers);
   const { units, bought } = state;

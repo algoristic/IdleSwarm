@@ -1,5 +1,4 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { recycledFood, swarmRange } from '@app/balance/domain/formulas';
 import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
@@ -32,7 +31,7 @@ export function departureBlocker(
   state: GameState,
   target: number,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): DepartureBlocker | null {
   const { candidates, position } = state.map;
   if (state.travel !== null) {
@@ -53,7 +52,7 @@ export function canDepart(
   state: GameState,
   target: number,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): boolean {
   return departureBlocker(state, target, params, modifiers) === null;
 }
@@ -67,7 +66,7 @@ export function depart(
   target: number,
   auto: boolean,
   params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+  modifiers: Modifiers,
 ): SiteResult {
   if (!canDepart(state, target, params, modifiers)) {
     return { state, events: NO_EVENTS };
@@ -106,11 +105,7 @@ export function depart(
  * `modifiers` gelten bei der Ankunft, also noch während der Reise: Bedingte Effekte zählen nicht.
  * Bedingungen gibt es in Ära I nur beim Sammeln, Kampf und Reichweite betreffen sie nicht.
  */
-export function arrive(
-  state: GameState,
-  params: BalanceParams,
-  modifiers: Modifiers = NEUTRAL_MODIFIERS,
-): SiteResult {
+export function arrive(state: GameState, params: BalanceParams, modifiers: Modifiers): SiteResult {
   const { travel, map, res, units } = state;
   if (travel === null) {
     return { state, events: NO_EVENTS };

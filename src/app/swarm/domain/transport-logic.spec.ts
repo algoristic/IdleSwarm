@@ -1,4 +1,5 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -29,7 +30,7 @@ describe('planTransport (Game-Design §4.9, Beispiel 5)', () => {
     ['drones-first', 200, 0, 300, 130],
     ['soldiers-first', 0, 100, 500, 30],
   ])('teilt bei „%s“ in mitkommend und zurückgelassen', (priority, d, s, leftD, leftS) => {
-    const result = planTransport(swarm, priority, DEFAULT_BALANCE);
+    const result = planTransport(swarm, priority, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(result.fitsAll).toBe(false);
     expect(result.carried.queens.eq(20)).toBe(true);
     expect(result.carried.drones.toNumber()).toBeCloseTo(d, 2);
@@ -41,7 +42,7 @@ describe('planTransport (Game-Design §4.9, Beispiel 5)', () => {
 
   it('lässt niemanden zurück, wenn der Platz reicht', () => {
     const fits = units(1, 6, 2);
-    const result = planTransport(fits, 'drones-first', DEFAULT_BALANCE);
+    const result = planTransport(fits, 'drones-first', DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(result.fitsAll).toBe(true);
     expect(result.carried).toBe(fits);
     expect(result.leftBehind.drones.isZero()).toBe(true);
@@ -52,7 +53,7 @@ describe('planTransport (Game-Design §4.9, Beispiel 5)', () => {
 describe('applyTransport', () => {
   it('übernimmt die mitkommenden Einheiten mit der Priorität aus dem Zustand', () => {
     const state = stateWith(units(20, 500, 130), 'soldiers-first');
-    const next = applyTransport(state, DEFAULT_BALANCE);
+    const next = applyTransport(state, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(next.units.queens.eq(20)).toBe(true);
     expect(next.units.drones.isZero()).toBe(true);
     expect(next.units.soldiers.eq(100)).toBe(true);
@@ -62,7 +63,7 @@ describe('applyTransport', () => {
 
   it('gibt denselben Zustand zurück, wenn alles passt', () => {
     const state = stateWith(units(1, 10, 0));
-    expect(applyTransport(state, DEFAULT_BALANCE)).toBe(state);
+    expect(applyTransport(state, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(state);
   });
 });
 

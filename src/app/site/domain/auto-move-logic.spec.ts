@@ -1,4 +1,5 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -86,7 +87,7 @@ describe('isAutoMoveDue und applyAutoMove (Game-Design §4.12)', () => {
     expect(isAutoMoveDue(stateWith(600, { threshold: 0.9 }), params)).toBe(false);
     expect(isAutoMoveDue(stateWith(500, { threshold: 0.9 }), params)).toBe(true);
     const input = stateWith(600, { threshold: 0.9 });
-    expect(applyAutoMove(input, params).state).toBe(input);
+    expect(applyAutoMove(input, params, NEUTRAL_MODIFIERS).state).toBe(input);
     expect(input.auto.threshold).toBe(0.9);
   });
 
@@ -98,7 +99,7 @@ describe('isAutoMoveDue und applyAutoMove (Game-Design §4.12)', () => {
 
   it('bricht zum Ziel der Strategie auf und meldet auto: true', () => {
     const input = stateWith(400, { threshold: 0.5, strategy: 'battle-hardened' });
-    const { state, events } = applyAutoMove(input, DEFAULT_BALANCE);
+    const { state, events } = applyAutoMove(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(state.travel?.target).toBe(CANDIDATES[0]);
     expect(state.site.stock).toBe(Num.ZERO);
     expect(events).toHaveLength(1);
@@ -108,20 +109,26 @@ describe('isAutoMoveDue und applyAutoMove (Game-Design §4.12)', () => {
   });
 
   it('wählt mit „Ausgewogen“ K4', () => {
-    const { state } = applyAutoMove(stateWith(0), DEFAULT_BALANCE);
+    const { state } = applyAutoMove(stateWith(0), DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
     expect(state.travel?.target).toBe(CANDIDATES[2]);
   });
 
   it('bleibt ohne Auslöser oder ohne Ziel ohne Wirkung', () => {
     const notDue = stateWith(1);
-    expect(applyAutoMove(notDue, DEFAULT_BALANCE)).toEqual({ state: notDue, events: [] });
+    expect(applyAutoMove(notDue, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toEqual({
+      state: notDue,
+      events: [],
+    });
     const off = stateWith(0, { enabled: false });
-    expect(applyAutoMove(off, DEFAULT_BALANCE).state).toBe(off);
+    expect(applyAutoMove(off, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).state).toBe(off);
     const noTarget = Object.freeze({
       ...stateWith(0),
       map: { ...initial.map, candidates: [CANDIDATES[0]] },
       units: { queens: Num.ONE, drones: Num.ZERO, soldiers: Num.ZERO },
     });
-    expect(applyAutoMove(noTarget, DEFAULT_BALANCE)).toEqual({ state: noTarget, events: [] });
+    expect(applyAutoMove(noTarget, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toEqual({
+      state: noTarget,
+      events: [],
+    });
   });
 });
