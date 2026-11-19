@@ -1,0 +1,179 @@
+@let _detail = detail();
+@let button =
+  'min-h-11 cursor-pointer justify-self-start rounded border border-accent bg-surface-raised px-4 py-1 font-semibold hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:text-fg-muted';
+
+<div class="grid gap-2">
+  <p class="text-sm font-semibold" [class]="kindTone()" data-testid="genome.detail.kind">
+    {{ kind() }}
+  </p>
+  <h2 class="text-lg font-semibold" data-testid="genome.detail.name">{{ name() }}</h2>
+  <p class="text-sm text-fg-muted" data-testid="genome.detail.description">{{ description() }}</p>
+
+  @switch (_detail.kind) {
+    @case ('root') {
+      <p class="font-semibold" data-testid="genome.detail.root" i18n="@@uiGenome-genomeDetail-root">
+        ✓ immer entwickelt
+      </p>
+    }
+    @case ('node') {
+      <dl class="grid gap-y-2 tabular-nums">
+        <div>
+          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
+          @for (effect of _detail.effects; track effect.target) {
+            <dd [attr.data-testid]="'genome.detail.effects.' + effect.target">
+              {{ targetLabels[effect.target] }}
+              @if (effect.kind === 'unlock') {
+                @if (effect.before) {
+                  <ng-container i18n="@@uiGenome-genomeDetail-on">an</ng-container>
+                } @else {
+                  <ng-container i18n="@@uiGenome-genomeDetail-off">aus</ng-container>
+                }
+                →
+                @if (effect.after) {
+                  <ng-container i18n="@@uiGenome-genomeDetail-on">an</ng-container>
+                } @else {
+                  <ng-container i18n="@@uiGenome-genomeDetail-off">aus</ng-container>
+                }
+              } @else {
+                @switch (effect.format) {
+                  @case ('rate') {
+                    {{ effect.before | formatRate }} → {{ effect.after | formatRate }}
+                  }
+                  @case ('count') {
+                    {{ effect.before | formatNum }} → {{ effect.after | formatNum }}
+                  }
+                  @case ('percent') {
+                    {{ effect.before | formatNum }} % → {{ effect.after | formatNum }} %
+                  }
+                }
+              }
+            </dd>
+          }
+        </div>
+        <div>
+          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-predecessor">
+            Voraussetzung
+          </dt>
+          <dd data-testid="genome.detail.predecessor">
+            {{ predecessorName() }}
+            @if (_detail.predecessor.evolved) {
+              <span class="text-accent">✓</span>
+            } @else {
+              <span class="text-danger">✗</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-price">Preis</dt>
+          <dd data-testid="genome.detail.price" i18n="@@uiGenome-genomeDetail-priceValue">
+            {{ _detail.cost | formatNum }} DNA
+          </dd>
+        </div>
+      </dl>
+
+      @switch (_detail.status) {
+        @case ('evolved') {
+          <p
+            class="font-semibold"
+            [class]="kindTone()"
+            data-testid="genome.detail.evolved"
+            i18n="@@uiGenome-genomeDetail-evolved"
+          >
+            ✓ entwickelt · wirkt dauerhaft
+          </p>
+        }
+        @case ('available') {
+          <button
+            type="button"
+            [class]="button"
+            data-testid="genome.detail.evolve"
+            i18n="@@uiGenome-genomeDetail-evolve"
+            (click)="onEvolve(_detail.id)"
+          >
+            Für {{ _detail.cost | formatNum }} DNA entwickeln
+          </button>
+        }
+        @case ('too-expensive') {
+          <button type="button" [class]="button" data-testid="genome.detail.evolve" disabled>
+            <ng-container i18n="@@uiGenome-genomeDetail-missing"
+              >{{ _detail.cost | formatNum }} DNA · es fehlen
+              {{ _detail.missing | formatUp }}</ng-container
+            >
+          </button>
+        }
+        @case ('locked') {
+          <button
+            type="button"
+            [class]="button"
+            data-testid="genome.detail.evolve"
+            disabled
+            i18n="@@uiGenome-genomeDetail-locked"
+          >
+            gesperrt
+          </button>
+        }
+      }
+    }
+    @case ('unique') {
+      <dl class="grid gap-y-2 tabular-nums">
+        <div>
+          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
+          @for (effect of _detail.effects; track effect.target) {
+            <dd [attr.data-testid]="'genome.detail.effects.' + effect.target">
+              {{ targetLabels[effect.target] }}
+              @if (effect.kind === 'value') {
+                @switch (effect.format) {
+                  @case ('rate') {
+                    {{ effect.sign }}{{ effect.delta | formatRate }}
+                  }
+                  @case ('count') {
+                    {{ effect.sign }}{{ effect.delta | formatNum }}
+                  }
+                  @case ('percent') {
+                    {{ effect.sign }}{{ effect.delta | formatNum }} %
+                  }
+                }
+              }
+              @if (effect.siteType; as siteType) {
+                <span class="text-fg-muted" i18n="@@uiGenome-genomeDetail-siteCondition"
+                  >(nur an: {{ siteTypeLabels[siteType] }})</span
+                >
+              }
+            </dd>
+          }
+        </div>
+        <div>
+          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-unlock">Freischaltung</dt>
+          <dd data-testid="genome.detail.progress" i18n="@@uiGenome-genomeDetail-progress">
+            Fund: {{ fragmentLabels[_detail.fragment] }} {{ _detail.progress.found | formatNum }} /
+            {{ _detail.progress.required | formatNum }}
+          </dd>
+        </div>
+      </dl>
+
+      @if (_detail.status === 'evolved') {
+        <p
+          class="font-semibold"
+          [class]="kindTone()"
+          data-testid="genome.detail.evolved"
+          i18n="@@uiGenome-genomeDetail-unlocked"
+        >
+          ✓ freigeschaltet · wirkt dauerhaft
+        </p>
+      } @else {
+        <button
+          type="button"
+          [class]="button"
+          data-testid="genome.detail.evolve"
+          disabled
+          i18n="@@uiGenome-genomeDetail-undiscovered"
+        >
+          noch nicht gefunden
+        </button>
+        <p class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-uniqueHint">
+          Einzigartige Adaptionen kosten keine DNA. Sie wirken, sobald alle Fragmente gefunden sind.
+        </p>
+      }
+    }
+  }
+</div>

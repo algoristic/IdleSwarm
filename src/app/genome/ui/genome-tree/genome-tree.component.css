@@ -1,0 +1,50 @@
+/* K2-Ausnahme (CLAUDE.md §4): Membran und Pulsring des Genoms. */
+.genome-tree__membrane {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: genome-tree-spin 90s linear infinite;
+}
+
+/* Verfügbare Knoten pulsieren (US-05.04). */
+.genome-tree__pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: genome-tree-pop 1.6s var(--sw-ease) infinite;
+}
+
+/* Beschriftung mit Kontur in Zellkernfarbe, damit sie über Ästen lesbar bleibt. */
+.genome-tree__label {
+  paint-order: stroke;
+  stroke: var(--sw-nucleus);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+@keyframes genome-tree-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes genome-tree-pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .genome-tree__membrane {
+    animation: none;
+  }
+
+  /* Ohne Bewegung bleibt der Ring als ruhiger Hinweis stehen. */
+  .genome-tree__pulse {
+    animation: none;
+    opacity: 0.6;
+  }
+}

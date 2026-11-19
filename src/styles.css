@@ -32,6 +32,22 @@
   --sw-violet: #a98bff;
   --sw-magenta: #ff5fa8;
 
+  /* Genom (Mockup K2-K): Astfarben, Zellkern und Knoten. Text in Astfarbe und `--sw-locked-fg`
+     haben auch auf `--sw-nucleus` mindestens 4,5:1. */
+  --sw-branch-collect: #2ee6c8;
+  --sw-branch-brood: #ffb02e;
+  --sw-branch-combat: #ff4f9a;
+  --sw-branch-unique: #f4f1ff;
+  --sw-nucleus: #241b6b;
+  --sw-membrane: #3b2d94;
+  --sw-organelle: #2f2585;
+  --sw-cell: #1a1650;
+  /* Nur Linien gesperrter Knoten; gesperrte Beschriftung in `--sw-locked-fg`. */
+  --sw-locked: #3a3577;
+  --sw-locked-fg: #8f8cc9;
+  --sw-cost-muted: #2f2a6e;
+  --sw-cost-muted-fg: #9aa0d8;
+
   /* Diagramme der Modell-Seite: feste Reihenfolge, geprüft auf Kontrast und Farbsehschwäche. */
   --sw-chart-1: #3987e5;
   --sw-chart-2: #d95926;
@@ -51,6 +67,8 @@
   --grid-template-columns-model: 22rem minmax(0, 1fr);
   --grid-template-columns-field: 4rem minmax(0, 1fr);
   --grid-template-columns-param: minmax(0, 1fr) 5.5rem 1.75rem;
+  /* Kostenschilder im Genom-Baum. */
+  --text-2xs: 0.625rem;
 }
 
 /* `inline` setzt `var(--sw-*)` direkt in die Utilities ein. */
@@ -70,6 +88,18 @@
   --color-danger: var(--sw-danger);
   --color-violet: var(--sw-violet);
   --color-magenta: var(--sw-magenta);
+  --color-branch-collect: var(--sw-branch-collect);
+  --color-branch-brood: var(--sw-branch-brood);
+  --color-branch-combat: var(--sw-branch-combat);
+  --color-branch-unique: var(--sw-branch-unique);
+  --color-nucleus: var(--sw-nucleus);
+  --color-membrane: var(--sw-membrane);
+  --color-organelle: var(--sw-organelle);
+  --color-cell: var(--sw-cell);
+  --color-locked: var(--sw-locked);
+  --color-locked-fg: var(--sw-locked-fg);
+  --color-cost-muted: var(--sw-cost-muted);
+  --color-cost-muted-fg: var(--sw-cost-muted-fg);
   --ease-sw: var(--sw-ease);
 }
 

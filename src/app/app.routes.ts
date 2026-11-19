@@ -13,6 +13,10 @@ export const routes: Routes = [
     loadChildren: async () => (await import('@app/sonar/feature/sonar.routes')).sonarRoutes,
   },
   {
+    path: 'genom',
+    loadChildren: async () => (await import('@app/genome/feature/genome.routes')).genomeRoutes,
+  },
+  {
     path: '',
     loadChildren: async () => (await import('@app/hud/feature/hud.routes')).hudRoutes,
   },

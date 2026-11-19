@@ -1,0 +1,49 @@
+@let genome = facade.genome();
+@let panel = 'min-w-0 rounded-lg border border-border bg-glass p-3';
+
+<main class="mx-auto grid max-w-240 gap-3 p-4 wrap-anywhere lg:grid-cols-3">
+  <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 lg:col-span-full">
+    <h1 class="text-2xl font-semibold" i18n="@@featureGenome-genome-title">Genom</h1>
+    <a
+      class="inline-flex min-h-11 items-center text-accent underline"
+      routerLink="/"
+      data-testid="genome.nav.back"
+      i18n="@@featureGenome-genome-back"
+      >← Zurück zum Schwarm</a
+    >
+  </header>
+
+  <section
+    class="flex flex-wrap items-baseline gap-x-6 gap-y-1 tabular-nums lg:col-span-full"
+    aria-labelledby="genome-status-title"
+    [class]="panel"
+  >
+    <h2 id="genome-status-title" class="sr-only" i18n="@@featureGenome-genome-statusTitle">
+      Bestand
+    </h2>
+    <p data-testid="genome.status.dna" i18n="@@featureGenome-genome-dna">
+      <span class="text-lg font-semibold text-violet">{{ genome.dna | formatDown }}</span> DNA
+    </p>
+    <p data-testid="genome.status.available" i18n="@@featureGenome-genome-available">
+      {genome.availableCount, plural,
+        =0 {Keine Adaption verfügbar}
+        =1 {1 Adaption verfügbar}
+        other {{{ genome.availableCount | formatNum }} Adaptionen verfügbar}
+      }
+    </p>
+  </section>
+
+  <section class="min-w-0 lg:col-span-2" aria-labelledby="genome-tree-title">
+    <h2 id="genome-tree-title" class="sr-only" i18n="@@featureGenome-genome-treeTitle">
+      Genom-Baum
+    </h2>
+    <app-genome-tree [tree]="genome.tree" (selectedEntry)="facade.select($event)" />
+  </section>
+
+  <section aria-labelledby="genome-detail-title" [class]="panel">
+    <h2 id="genome-detail-title" class="sr-only" i18n="@@featureGenome-genome-detailTitle">
+      Gewählte Adaption
+    </h2>
+    <app-genome-detail [detail]="genome.detail" (clickedEvolve)="facade.evolve($event)" />
+  </section>
+</main>

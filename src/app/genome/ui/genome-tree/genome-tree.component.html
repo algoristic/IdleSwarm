@@ -1,0 +1,283 @@
+@let _tree = tree();
+@let center = _tree.center;
+
+<svg
+  class="mx-auto block aspect-square w-full max-w-160"
+  role="group"
+  [attr.viewBox]="_tree.viewBox"
+  [attr.aria-label]="title"
+  data-testid="genome.tree.svg"
+>
+  <g aria-hidden="true">
+    <path class="genome-tree__membrane fill-membrane" [attr.d]="_tree.membrane" />
+    <circle
+      class="fill-nucleus"
+      [attr.cx]="center"
+      [attr.cy]="center"
+      [attr.r]="_tree.nucleusRadius"
+    />
+    @for (organelle of _tree.organelles; track $index) {
+      <g [attr.transform]="organelle.transform">
+        <ellipse class="fill-organelle" [attr.rx]="organelle.rx" [attr.ry]="organelle.ry" />
+        <ellipse
+          class="fill-membrane"
+          cx="-2"
+          cy="-2"
+          [attr.rx]="organelle.innerRx"
+          [attr.ry]="organelle.innerRy"
+        />
+      </g>
+    }
+    <circle
+      class="fill-none stroke-membrane"
+      stroke-width="3"
+      stroke-linecap="round"
+      stroke-dasharray="1 10"
+      [attr.cx]="center"
+      [attr.cy]="center"
+      [attr.r]="_tree.nucleusRingRadius"
+    />
+    @for (item of edges(); track item.edge.id) {
+      @let edge = item.edge;
+      <path
+        class="fill-none"
+        [class]="item.stroke"
+        stroke-linecap="round"
+        [attr.stroke-width]="edgeWidths[edge.style]"
+        [attr.stroke-opacity]="edgeOpacities[edge.style]"
+        [attr.stroke-dasharray]="edgeDashes[edge.style]"
+        [attr.d]="edge.path"
+        [attr.data-style]="edge.style"
+        [attr.data-testid]="'genome.tree.edges.' + edge.id"
+      />
+    }
+  </g>
+
+  @for (item of nodes(); track item.node.id) {
+    @let node = item.node;
+    @let deco = node.decoration;
+    <g
+      class="group cursor-pointer outline-none"
+      role="button"
+      tabindex="0"
+      [attr.transform]="node.translate"
+      [attr.aria-label]="item.ariaLabel"
+      [attr.aria-pressed]="node.selected"
+      [attr.data-status]="node.status"
+      [attr.data-testid]="'genome.tree.nodes.' + node.id"
+      (click)="onSelect(node.id)"
+      (keydown.enter)="onKeySelect($event, node.id)"
+      (keydown.space)="onKeySelect($event, node.id)"
+    >
+      <!-- Trefferfläche: größer als der Knoten, unsichtbar, aber anklickbar. -->
+      <circle class="fill-bg" fill-opacity="0" [attr.r]="deco.focusRadius" />
+      <circle
+        class="fill-none stroke-accent opacity-0 group-focus-visible:opacity-100"
+        stroke-width="2"
+        [attr.r]="deco.focusRadius"
+      />
+      @if (node.selected) {
+        <circle
+          class="fill-none stroke-fg"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-dasharray="1 7"
+          [attr.r]="deco.selectionRadius"
+          [attr.data-testid]="'genome.tree.nodes.' + node.id + '.selected'"
+        />
+      }
+      @switch (node.status) {
+        @case ('evolved') {
+          <g [attr.transform]="node.ballScale">
+            <circle [class]="toneFills[node.tone]" r="1" />
+            <circle class="fill-bg" fill-opacity="0.3" r="1" />
+            <circle [class]="toneFills[node.tone]" cx="-0.1" cy="-0.1" r="0.86" />
+            <ellipse
+              class="fill-fg"
+              fill-opacity="0.55"
+              cx="-0.4"
+              cy="-0.42"
+              rx="0.22"
+              ry="0.13"
+              transform="rotate(-35 -0.4 -0.42)"
+            />
+          </g>
+          <text
+            class="fill-on-accent text-base font-bold"
+            text-anchor="middle"
+            y="6"
+            aria-hidden="true"
+          >
+            ✓
+          </text>
+        }
+        @case ('available') {
+          <circle
+            class="genome-tree__pulse fill-none"
+            [class]="toneStrokes[node.tone]"
+            stroke-width="3"
+            [attr.r]="deco.pulseRadius"
+          />
+          <circle
+            class="fill-cell"
+            [class]="toneStrokes[node.tone]"
+            stroke-width="3.5"
+            [attr.r]="node.radius"
+          />
+        }
+        @case ('too-expensive') {
+          <circle
+            class="fill-cell"
+            [class]="toneStrokes[node.tone]"
+            stroke-width="3.5"
+            stroke-opacity="0.55"
+            [attr.r]="node.radius"
+          />
+        }
+        @case ('locked') {
+          <circle
+            class="fill-cell stroke-locked"
+            stroke-width="3.5"
+            stroke-linecap="round"
+            stroke-dasharray="1 7"
+            [attr.r]="node.radius"
+          />
+        }
+        @case ('undiscovered') {
+          <circle
+            class="fill-cell stroke-branch-unique"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-dasharray="1 6"
+            [attr.r]="node.radius"
+          />
+          <text
+            class="fill-branch-unique text-base font-bold"
+            text-anchor="middle"
+            y="6"
+            aria-hidden="true"
+          >
+            ?
+          </text>
+        }
+      }
+      <text
+        class="genome-tree__label text-xs font-semibold"
+        [class]="labelFills[node.status]"
+        [attr.x]="deco.label.x"
+        [attr.y]="deco.label.y"
+        [attr.text-anchor]="deco.label.anchor"
+        aria-hidden="true"
+      >
+        {{ item.name }}
+      </text>
+      @if (node.cost; as cost) {
+        <g aria-hidden="true" [attr.data-testid]="'genome.tree.nodes.' + node.id + '.cost'">
+          <rect
+            [class]="tagFills[node.status]"
+            rx="8"
+            [attr.x]="deco.tag.x"
+            [attr.y]="deco.tag.y"
+            [attr.width]="deco.tag.width"
+            [attr.height]="deco.tag.height"
+          />
+          <text
+            class="text-2xs font-semibold tabular-nums"
+            [class]="tagTextFills[node.status]"
+            text-anchor="middle"
+            [attr.x]="deco.tag.textX"
+            [attr.y]="deco.tag.textY"
+            i18n="@@uiGenome-genomeTree-cost"
+          >
+            {{ cost | formatNum }} DNA
+          </text>
+        </g>
+      }
+      @if (node.progress; as progress) {
+        <g aria-hidden="true" [attr.data-testid]="'genome.tree.nodes.' + node.id + '.progress'">
+          <rect
+            class="fill-cost-muted"
+            rx="8"
+            [attr.x]="deco.tag.x"
+            [attr.y]="deco.tag.y"
+            [attr.width]="deco.tag.width"
+            [attr.height]="deco.tag.height"
+          />
+          <text
+            class="fill-cost-muted-fg text-2xs font-semibold tabular-nums"
+            text-anchor="middle"
+            [attr.x]="deco.tag.textX"
+            [attr.y]="deco.tag.textY"
+          >
+            {{ progress.found | formatNum }} / {{ progress.required | formatNum }}
+          </text>
+        </g>
+      }
+    </g>
+  }
+</svg>
+
+<ul
+  class="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm"
+  data-testid="genome.legend.branches"
+>
+  @for (branch of branches; track branch) {
+    <li class="inline-flex items-center gap-1.5">
+      <span class="size-3 rounded-full" [class]="toneBackgrounds[branch]"></span>
+      {{ branchLabels[branch] }}
+    </li>
+  }
+  <li class="inline-flex items-center gap-1.5">
+    <span class="size-3 rounded-full" [class]="toneBackgrounds.unique"></span>
+    {{ uniqueKindLabel }}
+  </li>
+</ul>
+<ul
+  class="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-fg-muted"
+  data-testid="genome.legend.statuses"
+>
+  <li class="inline-flex items-center gap-1.5">
+    <svg class="size-4" viewBox="-10 -10 20 20" aria-hidden="true">
+      <circle class="fill-fg" r="8" />
+    </svg>
+    {{ statusLabels.evolved }}
+  </li>
+  <li class="inline-flex items-center gap-1.5">
+    <svg class="size-4" viewBox="-10 -10 20 20" aria-hidden="true">
+      <circle class="fill-cell stroke-fg" r="7" stroke-width="2.5" />
+    </svg>
+    <ng-container i18n="@@uiGenome-genomeTree-legendAvailable"
+      >{{ statusLabels.available }} (pulsiert)</ng-container
+    >
+  </li>
+  <li class="inline-flex items-center gap-1.5">
+    <svg class="size-4" viewBox="-10 -10 20 20" aria-hidden="true">
+      <circle class="fill-cell stroke-fg" r="7" stroke-width="2.5" stroke-opacity="0.55" />
+    </svg>
+    {{ statusLabels['too-expensive'] }}
+  </li>
+  <li class="inline-flex items-center gap-1.5">
+    <svg class="size-4" viewBox="-10 -10 20 20" aria-hidden="true">
+      <circle
+        class="fill-cell stroke-locked-fg"
+        r="7"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-dasharray="1 4"
+      />
+    </svg>
+    {{ statusLabels.locked }}
+  </li>
+  <li class="inline-flex items-center gap-1.5">
+    <svg class="size-4" viewBox="-10 -10 20 20" aria-hidden="true">
+      <circle
+        class="fill-cell stroke-branch-unique"
+        r="7"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-dasharray="1 3.5"
+      />
+    </svg>
+    {{ statusLabels.undiscovered }}
+  </li>
+</ul>
