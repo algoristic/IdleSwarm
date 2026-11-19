@@ -53,6 +53,19 @@ describe('model-params-logic', () => {
     ).toBeNull();
   });
 
+  it('liefert bei widersprüchlichen Konstanten keine Konfiguration', () => {
+    expect(toSimConfig(withParam('candidateMinDistance', '8'), DEFAULT_BALANCE)).toBeNull();
+    expect(toSimConfig(withParam('maxAutoThreshold', '0'), DEFAULT_BALANCE)).not.toBeNull();
+    expect(toSimConfig(withParam('defaultAutoThreshold', '0,95'), DEFAULT_BALANCE)).toBeNull();
+    const params = { ...defaults.params };
+    for (const key of Object.keys(params) as (keyof typeof params)[]) {
+      if (key.endsWith('Weight')) {
+        params[key] = '0';
+      }
+    }
+    expect(toSimConfig({ ...defaults, params }, DEFAULT_BALANCE)).toBeNull();
+  });
+
   it('wertet gleichwertige Eingaben als dieselbe Konfiguration', () => {
     const a = toSimConfig(withParam('droneCost', '10'), DEFAULT_BALANCE);
     const b = toSimConfig(withParam('droneCost', '10,0'), DEFAULT_BALANCE);

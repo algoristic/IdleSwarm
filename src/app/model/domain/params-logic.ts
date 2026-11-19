@@ -5,7 +5,16 @@ export type ParamKey = keyof BalanceParams;
 export type ParamOverrides = Partial<Record<ParamKey, number>>;
 export type ParamDrafts = Readonly<Partial<Record<ParamKey, string>>>;
 
-export type ParamLimit = NumberRange;
+export interface ParamLimit extends NumberRange {
+  /** Zählwert: die Eingabe bleibt eine Dezimalzahl, muss aber ganzzahlig sein (`6`, `6,0`). */
+  readonly integer?: true;
+}
+
+/** Widersprüche zwischen Konstanten, die jede für sich gültig sind. */
+export const PARAM_CONFLICTS = ['candidateDistance', 'autoThreshold', 'siteTypeWeights'] as const;
+export type ParamConflict = (typeof PARAM_CONFLICTS)[number];
+/** Konflikt je Feld, an dem er gemeldet wird. */
+export type ParamConflicts = Partial<Readonly<Record<ParamKey, ParamConflict>>>;
 
 export interface ParamField {
   readonly key: ParamKey;
@@ -18,9 +27,27 @@ export interface ParamField {
 }
 
 const DEFAULT_LIMIT: ParamLimit = { min: 0 };
+const SHARE_LIMIT: ParamLimit = { min: 0, max: 1 };
 const PARAM_LIMITS: Partial<Readonly<Record<ParamKey, ParamLimit>>> = {
-  broodDroneShare: { min: 0, max: 1 },
+  broodDroneShare: SHARE_LIMIT,
+  startQueens: { min: 0, integer: true },
+  candidateCount: { min: 1, integer: true },
+  siteSpread: SHARE_LIMIT,
+  sacrificeYield: SHARE_LIMIT,
+  minSacrificeLoss: SHARE_LIMIT,
+  balancedMaxLossShare: SHARE_LIMIT,
+  defaultAutoThreshold: SHARE_LIMIT,
+  maxAutoThreshold: SHARE_LIMIT,
 };
+
+// Je Futterstellentyp über das Namensmuster, damit neue Typen von selbst erfasst werden.
+const FIND_CHANCE_SUFFIX = 'FindChance';
+const WEIGHT_SUFFIX = 'Weight';
+
+/** Grenzen der Konstante; Anteile in [0; 1], Zählwerte ganzzahlig, sonst ab 0. */
+export function paramLimit(key: ParamKey): ParamLimit {
+  return PARAM_LIMITS[key] ?? (key.endsWith(FIND_CHANCE_SUFFIX) ? SHARE_LIMIT : DEFAULT_LIMIT);
+}
 
 export function formatParam(value: number): string {
   return String(value).replace('.', ',');
@@ -28,7 +55,8 @@ export function formatParam(value: number): string {
 
 /** Liest eine Eingabe mit Komma oder Punkt; `null`, wenn sie ungültig ist oder die Grenzen verletzt. */
 export function parseParam(text: string, limit: ParamLimit = DEFAULT_LIMIT): number | null {
-  return parseDecimal(text, limit);
+  const value = parseDecimal(text, limit);
+  return value !== null && limit.integer && !Number.isInteger(value) ? null : value;
 }
 
 /** Felder direkt aus dem Objekt, damit neue Konstanten von selbst erscheinen. */
@@ -37,7 +65,7 @@ export function paramFields(defaults: BalanceParams, drafts: ParamDrafts): reado
     const defaultValue = defaults[key];
     const defaultText = formatParam(defaultValue);
     const text = drafts[key] ?? defaultText;
-    const value = parseParam(text, PARAM_LIMITS[key]);
+    const value = parseParam(text, paramLimit(key));
     return { key, defaultValue, defaultText, text, value, changed: value !== defaultValue };
   });
 }
@@ -59,5 +87,42 @@ export function paramsToJson(overrides: ParamOverrides): string {
 
 /** Prüft eine Eingabe gegen die Grenzen der Konstante. */
 export function isValidParam(key: ParamKey, text: string): boolean {
-  return parseParam(text, PARAM_LIMITS[key]) !== null;
+  return parseParam(text, paramLimit(key)) !== null;
+}
+
+/**
+ * Widersprüche zwischen gültigen Eingaben: kleinste Kandidatendistanz über der größten,
+ * Standard-Schwelle über der höchsten, keine Typgewichte. Ungültige oder fehlende Eingaben
+ * prüft das jeweilige Feld selbst; sie lösen hier keinen Konflikt aus.
+ */
+export function paramConflicts(drafts: ParamDrafts): ParamConflicts {
+  const value = (key: ParamKey): number | null => {
+    const text = drafts[key];
+    return text === undefined ? null : parseParam(text, paramLimit(key));
+  };
+  const conflicts: Partial<Record<ParamKey, ParamConflict>> = {};
+  const minDistance = value('candidateMinDistance');
+  const maxDistance = value('candidateMaxDistance');
+  if (minDistance !== null && maxDistance !== null && minDistance > maxDistance) {
+    conflicts.candidateMaxDistance = 'candidateDistance';
+  }
+  const defaultThreshold = value('defaultAutoThreshold');
+  const maxThreshold = value('maxAutoThreshold');
+  if (defaultThreshold !== null && maxThreshold !== null && defaultThreshold > maxThreshold) {
+    conflicts.maxAutoThreshold = 'autoThreshold';
+  }
+  const weightKeys = (Object.keys(drafts) as ParamKey[]).filter((key) =>
+    key.endsWith(WEIGHT_SUFFIX),
+  );
+  const weights = weightKeys.map(value);
+  if (weights.length > 0 && weights.every((weight) => weight === 0)) {
+    for (const key of weightKeys) {
+      conflicts[key] = 'siteTypeWeights';
+    }
+  }
+  return conflicts;
+}
+
+export function hasParamConflicts(drafts: ParamDrafts): boolean {
+  return Object.keys(paramConflicts(drafts)).length > 0;
 }

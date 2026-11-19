@@ -3,7 +3,13 @@ import { MS_PER_HOUR } from '@app/shared/util/time/time-units';
 
 import type { ModelParamsValue } from './models/model-params.model';
 import { BOT_KINDS, SimConfig } from './models/sim.model';
-import { changedParams, formatParam, ParamKey, paramFields } from './params-logic';
+import {
+  changedParams,
+  formatParam,
+  hasParamConflicts,
+  ParamKey,
+  paramFields,
+} from './params-logic';
 
 /** Wählbare Laufdauern: 1 h, 6 h, 24 h, 7 d. */
 export const DURATIONS_MS = [
@@ -29,12 +35,17 @@ export function defaultModelParams(defaults: BalanceParams): ModelParamsValue {
   };
 }
 
-/** Konfiguration des Laufs; `null`, solange eine Eingabe ungültig ist. */
+/** Konfiguration des Laufs; `null`, solange eine Eingabe ungültig ist oder Konstanten sich widersprechen. */
 export function toSimConfig(value: ModelParamsValue, defaults: BalanceParams): SimConfig | null {
   const seed = value.seed.trim();
   const kinds = BOT_KINDS.filter((kind) => value.bots[kind]);
   const fields = paramFields(defaults, value.params);
-  if (seed === '' || kinds.length === 0 || fields.some((field) => field.value === null)) {
+  if (
+    seed === '' ||
+    kinds.length === 0 ||
+    fields.some((field) => field.value === null) ||
+    hasParamConflicts(value.params)
+  ) {
     return null;
   }
   return {

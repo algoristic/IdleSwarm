@@ -1,6 +1,15 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 
-import { changedParams, formatParam, paramFields, paramsToJson, parseParam } from './params-logic';
+import {
+  changedParams,
+  formatParam,
+  paramConflicts,
+  ParamDrafts,
+  paramFields,
+  paramLimit,
+  paramsToJson,
+  parseParam,
+} from './params-logic';
 
 describe('parseParam', () => {
   it.each([
@@ -24,6 +33,96 @@ describe('parseParam', () => {
   it('prüft Grenzen', () => {
     expect(parseParam('1', { min: 0, max: 1 })).toBe(1);
     expect(parseParam('1,5', { min: 0, max: 1 })).toBeNull();
+  });
+
+  it('verlangt bei Zählwerten eine ganze Zahl', () => {
+    const limit = { min: 1, integer: true } as const;
+    expect(parseParam('6', limit)).toBe(6);
+    expect(parseParam('6,0', limit)).toBe(6);
+    expect(parseParam('6,5', limit)).toBeNull();
+    expect(parseParam('0', limit)).toBeNull();
+  });
+});
+
+describe('paramLimit', () => {
+  it.each([
+    'broodDroneShare',
+    'sacrificeYield',
+    'minSacrificeLoss',
+    'balancedMaxLossShare',
+    'defaultAutoThreshold',
+    'maxAutoThreshold',
+    'siteSpread',
+    'algalMatFindChance',
+    'ventFindChance',
+    'bacterialMatFindChance',
+    'methaneSeepFindChance',
+    'whaleFallFindChance',
+  ] as const)('begrenzt den Anteil %s auf 0 bis 1', (key) => {
+    expect(paramLimit(key)).toEqual({ min: 0, max: 1 });
+  });
+
+  it('verlangt ganzzahlige Zählwerte', () => {
+    expect(paramLimit('candidateCount')).toEqual({ min: 1, integer: true });
+    expect(paramLimit('startQueens')).toEqual({ min: 0, integer: true });
+  });
+
+  it('lässt Wachstumsfaktoren nach oben offen', () => {
+    expect(paramLimit('droneCostGrowth')).toEqual({ min: 0 });
+    expect(paramLimit('siteSizeGrowth')).toEqual({ min: 0 });
+  });
+
+  it('wird von allen Standardwerten erfüllt', () => {
+    expect(paramFields(DEFAULT_BALANCE, {}).filter((field) => field.value === null)).toEqual([]);
+  });
+});
+
+describe('paramConflicts', () => {
+  const defaults = Object.fromEntries(
+    paramFields(DEFAULT_BALANCE, {}).map((field) => [field.key, field.text]),
+  ) as ParamDrafts;
+  const allWeights = (text: string): ParamDrafts => ({
+    ...defaults,
+    algalMatWeight: text,
+    ventWeight: text,
+    bacterialMatWeight: text,
+    methaneSeepWeight: text,
+    whaleFallWeight: text,
+  });
+
+  it('meldet für die Standardwerte keinen Konflikt', () => {
+    expect(paramConflicts(defaults)).toEqual({});
+  });
+
+  it('meldet eine kleinste Distanz über der größten an der größten', () => {
+    expect(paramConflicts({ ...defaults, candidateMinDistance: '8' })).toEqual({
+      candidateMaxDistance: 'candidateDistance',
+    });
+    expect(
+      paramConflicts({ ...defaults, candidateMinDistance: '7', candidateMaxDistance: '7' }),
+    ).toEqual({});
+  });
+
+  it('meldet eine Standard-Schwelle über der höchsten an der höchsten', () => {
+    expect(paramConflicts({ ...defaults, defaultAutoThreshold: '0,95' })).toEqual({
+      maxAutoThreshold: 'autoThreshold',
+    });
+  });
+
+  it('meldet fehlende Typgewichte an jedem Gewicht', () => {
+    expect(paramConflicts(allWeights('0'))).toEqual({
+      algalMatWeight: 'siteTypeWeights',
+      ventWeight: 'siteTypeWeights',
+      bacterialMatWeight: 'siteTypeWeights',
+      methaneSeepWeight: 'siteTypeWeights',
+      whaleFallWeight: 'siteTypeWeights',
+    });
+    expect(paramConflicts({ ...allWeights('0'), ventWeight: '0,1' })).toEqual({});
+  });
+
+  it('überlässt ungültige Eingaben der Feldprüfung', () => {
+    expect(paramConflicts({ ...defaults, candidateMinDistance: 'x' })).toEqual({});
+    expect(paramConflicts({ ...allWeights('0'), ventWeight: 'x' })).toEqual({});
   });
 });
 

@@ -10,6 +10,7 @@ import { BOT_KINDS } from '../../domain/models/sim.model';
 import {
   changedParams,
   formatParam,
+  paramConflicts,
   ParamKey,
   paramFields,
   paramsToJson,
@@ -53,6 +54,7 @@ export class FormModelParamsComponent {
   });
 
   fields = computed(() => paramFields(DEFAULT_BALANCE, this.paramsModel().params));
+  conflicts = computed(() => paramConflicts(this.paramsModel().params));
   exportJson = computed(() => paramsToJson(changedParams(this.fields())));
   hasChanges = computed(() => this.fields().some((field) => field.changed));
   copyStatus = signal('');

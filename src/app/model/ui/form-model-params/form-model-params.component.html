@@ -91,6 +91,9 @@
     </legend>
     @for (field of fields(); track field.key) {
       @let control = _form.params[field.key];
+      <!-- Konflikte entstehen oft durch ein anderes Feld; sie erscheinen daher auch unberührt. -->
+      @let showErrors =
+        control().touched() || control().dirty() || conflicts()[field.key] !== undefined;
       <div
         class="grid grid-cols-param items-center gap-x-1.5 gap-y-0.5 border-l-2 border-transparent pl-1.5 data-changed:border-accent"
         [attr.data-param]="field.key"
@@ -115,7 +118,7 @@
           [class]="input"
           [id]="'param-' + field.key"
           [formField]="control"
-          [attr.aria-invalid]="control().invalid() && (control().touched() || control().dirty())"
+          [attr.aria-invalid]="control().invalid() && showErrors"
         />
         @if (field.changed) {
           <button
@@ -128,7 +131,7 @@
             ↺
           </button>
         }
-        @if (control().invalid() && (control().touched() || control().dirty())) {
+        @if (control().invalid() && showErrors) {
           @for (error of control().errors(); track error.kind) {
             <p class="col-span-full text-xs text-warning">{{ error.message }}</p>
           }
