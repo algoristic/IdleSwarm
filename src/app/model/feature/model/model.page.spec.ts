@@ -366,13 +366,13 @@ describe('ModelPage', () => {
     expect(workers[0].posted).toHaveLength(before);
   });
 
-  it('zeigt die Reiter je Futterstelle ohne Zoom und Markierungen', () => {
+  it('zeigt die Reiter je Futterstelle ohne Markierungen, mit eigenem Zoom', () => {
     finishRun();
     byTestId('model.charts.tab-siteDuration')?.click();
     settle();
     expect(lastOption().series.every((s) => (s.type as string) === 'bar')).toBe(true);
     expect(byTestId('model.charts.marker-buy')).toBeNull();
-    expect(byTestId('model.charts.reset-zoom')).toBeNull();
+    expect(byTestId('model.charts.reset-zoom')).not.toBeNull();
     expect(byTestId('model.charts.log')).toBeNull();
 
     byTestId('model.charts.tab-soldiers')?.click();
