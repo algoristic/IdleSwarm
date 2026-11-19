@@ -70,11 +70,13 @@
   <app-sonar-overlay
     data-testid="shell.overlay.map"
     class="pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 mode-map:opacity-100"
+    [active]="mode === 'map'"
     [attr.inert]="mode === 'map' ? null : ''"
   />
   <app-genome-overlay
     data-testid="shell.overlay.gen"
     class="pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 mode-gen:opacity-100"
+    [active]="mode === 'gen'"
     [attr.inert]="mode === 'gen' ? null : ''"
   />
 

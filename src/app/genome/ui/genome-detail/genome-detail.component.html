@@ -5,7 +5,8 @@
 @let button =
   'min-h-11 w-full cursor-pointer rounded-full bg-primary px-4 py-3 font-black text-on-accent shadow-button-primary transition ease-pop hover:enabled:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:enabled:translate-y-0.5 active:enabled:shadow-button-primary-pressed disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-fg-muted disabled:shadow-none';
 
-<div class="grid gap-3">
+<!-- Eingeklappt (Bottom-Sheet) bleiben Ast, Name und Primäraktion; der Rest blendet sich aus. -->
+<div class="group/detail grid gap-3" [attr.data-collapsed]="collapsed() ? '' : null">
   <header class="grid gap-0.5">
     <p
       class="text-xs font-black tracking-widest uppercase"
@@ -14,8 +15,13 @@
     >
       {{ kind() }}
     </p>
-    <h2 class="text-2xl leading-tight font-black" data-testid="genome.detail.name">{{ name() }}</h2>
-    <p class="text-sm leading-relaxed text-fg-muted" data-testid="genome.detail.description">
+    <h2 class="text-2xl leading-tight font-black max-md:text-xl" data-testid="genome.detail.name">
+      {{ name() }}
+    </h2>
+    <p
+      class="text-sm leading-relaxed text-fg-muted max-md:group-data-collapsed/detail:hidden"
+      data-testid="genome.detail.description"
+    >
       {{ description() }}
     </p>
   </header>
@@ -27,7 +33,7 @@
       </p>
     }
     @case ('node') {
-      <dl [class]="box">
+      <dl class="max-md:group-data-collapsed/detail:hidden" [class]="box">
         <div class="grid gap-0.5">
           <dt class="text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
           @for (effect of _detail.effects; track effect.target) {
@@ -132,7 +138,7 @@
       }
     }
     @case ('unique') {
-      <dl [class]="box">
+      <dl class="max-md:group-data-collapsed/detail:hidden" [class]="box">
         <div class="grid gap-0.5">
           <dt class="text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
           @for (effect of _detail.effects; track effect.target) {
@@ -196,7 +202,10 @@
         >
           noch nicht gefunden
         </button>
-        <p class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-uniqueHint">
+        <p
+          class="text-sm text-fg-muted max-md:group-data-collapsed/detail:hidden"
+          i18n="@@uiGenome-genomeDetail-uniqueHint"
+        >
           Einzigartige Adaptionen kosten keine DNA. Sie wirken, sobald alle Fragmente gefunden sind.
         </p>
       }
@@ -204,7 +213,7 @@
   }
 
   <p
-    class="border-t-3 border-well pt-3 text-xs leading-relaxed text-fg-muted"
+    class="border-t-3 border-well pt-3 text-xs leading-relaxed text-fg-muted max-md:group-data-collapsed/detail:hidden"
     data-testid="genome.detail.note"
     i18n="@@uiGenome-genomeDetail-note"
   >

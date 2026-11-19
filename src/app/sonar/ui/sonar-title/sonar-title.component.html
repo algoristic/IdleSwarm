@@ -1,15 +1,37 @@
 @let _site = site();
 @let _travel = travel();
 @let _strategy = strategy();
+@let _legendOpen = legendOpen();
 @let legendItem = 'inline-flex items-center gap-1.5';
 @let legendDot = 'size-3 shrink-0 rounded-full shadow-shade';
 
+<!--
+  Smartphone (< 768 px, höchstens ~110 px hoch): Zeile 1 Kicker und Name, Zeile 2 Vorrat bzw.
+  Ankunft mit dem Knopf „Legende“ rechts, Zeile 3 die drei Strategien über die volle Breite,
+  darunter aufgeklappt die Legende. Die Reihenfolge
+  setzt `order`; die Gruppen um Name und Vorrat lösen sich dafür auf (`contents`).
+-->
 <section
-  class="grid justify-items-center gap-1 text-center tabular-nums"
+  class="grid justify-items-center gap-1 text-center tabular-nums max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-2 max-md:gap-y-0 max-md:text-left"
   aria-labelledby="sonar-title-name"
 >
+  <button
+    type="button"
+    class="group flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2 text-xs font-extrabold text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:order-3 max-md:-my-2 md:hidden cursor-pointer items-center gap-1 rounded-full px-2.5 text-xs font-extrabold text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden"
+    aria-controls="sonar-legend"
+    data-testid="sonar.map.legend.toggle"
+    [attr.aria-expanded]="_legendOpen"
+    (click)="onToggleLegend()"
+  >
+    <span i18n="@@uiSonar-sonarTitle-legendToggle">Legende</span>
+    <span
+      class="transition-transform group-aria-expanded:rotate-180 motion-reduce:transition-none"
+      aria-hidden="true"
+      >▾</span
+    >
+  </button>
   <p
-    class="text-xs font-extrabold tracking-widest text-fg-muted uppercase"
+    class="text-xs font-extrabold tracking-widest text-fg-muted uppercase max-md:shrink-0 max-md:tracking-wide"
     data-testid="sonar.status.range"
     i18n="@@uiSonar-sonarTitle-kicker"
   >
@@ -17,24 +39,32 @@
   </p>
 
   @if (_travel) {
-    <div data-testid="sonar.status.travel">
+    <div class="max-md:contents" data-testid="sonar.status.travel">
       <h2
         id="sonar-title-name"
-        class="text-2xl leading-tight font-black"
+        class="text-2xl leading-tight font-black max-md:min-w-0 max-md:flex-1 max-md:truncate max-md:text-base"
         i18n="@@uiSonar-sonarTitle-traveling"
       >
         Unterwegs nach {{ siteTypeLabels[_travel.type] }}
       </h2>
-      <p class="text-xs text-fg-muted" i18n="@@uiSonar-sonarTitle-arrival">
+      <p
+        class="text-xs text-fg-muted max-md:order-2 max-md:min-w-0 max-md:basis-2/3 max-md:grow max-md:truncate"
+        i18n="@@uiSonar-sonarTitle-arrival"
+      >
         Ankunft in etwa {{ _travel.secondsLeft | formatDuration }}
       </p>
     </div>
   } @else {
-    <div data-testid="sonar.status.site">
-      <h2 id="sonar-title-name" class="text-2xl leading-tight font-black">
+    <div class="max-md:contents" data-testid="sonar.status.site">
+      <h2
+        id="sonar-title-name"
+        class="text-2xl leading-tight font-black max-md:min-w-0 max-md:flex-1 max-md:truncate max-md:text-base"
+      >
         {{ siteTypeLabels[_site.type] }}
       </h2>
-      <p class="text-xs text-fg-muted">
+      <p
+        class="text-xs text-fg-muted max-md:order-2 max-md:min-w-0 max-md:basis-2/3 max-md:grow max-md:truncate"
+      >
         <ng-container i18n="@@uiSonar-sonarTitle-stock"
           >Vorrat {{ _site.stock | formatUp }} / {{ _site.size | formatDown }} ({{
             _site.stockPercent | formatNum
@@ -52,14 +82,14 @@
   }
 
   <div
-    class="mt-1.5 flex flex-wrap justify-center gap-1 rounded-3xl bg-well p-1"
+    class="mt-1.5 flex flex-wrap justify-center gap-1 rounded-3xl bg-well p-1 max-md:order-4 max-md:mt-1 max-md:w-full max-md:flex-nowrap max-md:p-0.5"
     role="group"
     [attr.aria-label]="strategyGroupLabel"
   >
     @for (item of strategies; track item) {
       <button
         type="button"
-        class="min-h-8 cursor-pointer rounded-full px-3 text-xs font-extrabold text-fg-muted transition-colors duration-200 ease-pop pointer-coarse:min-h-11 not-aria-pressed:hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:bg-accent aria-pressed:text-on-accent aria-pressed:shadow-shade"
+        class="min-h-8 cursor-pointer rounded-full px-3 text-xs max-md:min-h-11 max-md:min-w-0 max-md:flex-1 max-md:px-1 max-md:leading-tight font-extrabold text-fg-muted transition-colors duration-200 ease-pop pointer-coarse:min-h-11 not-aria-pressed:hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:bg-accent aria-pressed:text-on-accent aria-pressed:shadow-shade"
         [attr.aria-pressed]="item === _strategy"
         [attr.data-testid]="'sonar.settings.strategy.' + item"
         (click)="onSelectStrategy(item)"
@@ -70,8 +100,10 @@
   </div>
 
   <ul
-    class="mt-1 flex flex-wrap justify-center gap-x-3.5 gap-y-0.5 text-xs text-fg-muted"
+    id="sonar-legend"
+    class="mt-1 flex flex-wrap justify-center gap-x-3.5 gap-y-0.5 text-xs text-fg-muted max-md:order-5 max-md:w-full max-md:justify-start max-md:pb-1 max-md:not-data-open:hidden"
     data-testid="sonar.map.legend"
+    [attr.data-open]="_legendOpen ? '' : null"
   >
     <li [class]="legendItem">
       <span class="bg-accent" [class]="legendDot" aria-hidden="true"></span>

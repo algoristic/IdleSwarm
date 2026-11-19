@@ -35,6 +35,8 @@ import type { GenomeDetailView } from './genome-detail.component.model';
 })
 export class GenomeDetailComponent {
   detail = input.required<GenomeDetailView>();
+  /** Eingeklappt im Bottom-Sheet (nur < 768 px): nur Ast, Name und Primäraktion. */
+  collapsed = input(false);
 
   targetLabels = EFFECT_TARGET_LABELS;
   siteTypeLabels = SITE_TYPE_LABELS;

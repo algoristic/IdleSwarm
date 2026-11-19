@@ -55,7 +55,7 @@
 
   @for (item of nodes(); track item.node.id) {
     @let node = item.node;
-    @let deco = node.decoration;
+    @let deco = item.decoration;
     <g
       class="group cursor-pointer outline-none"
       role="button"
@@ -69,8 +69,8 @@
       (keydown.enter)="onKeySelect($event, node.id)"
       (keydown.space)="onKeySelect($event, node.id)"
     >
-      <!-- Trefferfläche: größer als der Knoten, unsichtbar, aber anklickbar. -->
-      <circle class="fill-bg" fill-opacity="0" [attr.r]="deco.focusRadius" />
+      <!-- Trefferfläche: mindestens 44 px, unsichtbar, höchstens bis zur Mitte zum Nachbarn. -->
+      <circle class="fill-bg" fill-opacity="0" [attr.r]="item.hitRadius" />
       <circle
         class="fill-none stroke-accent opacity-0 group-focus-visible:opacity-100"
         stroke-width="2"
@@ -162,8 +162,9 @@
         }
       }
       <text
-        class="genome-tree__label text-xs font-semibold"
+        class="genome-tree__label font-semibold"
         [class]="labelFills[node.status]"
+        [attr.font-size]="deco.labelSize"
         [attr.x]="deco.label.x"
         [attr.y]="deco.label.y"
         [attr.text-anchor]="deco.label.anchor"
@@ -175,15 +176,16 @@
         <g aria-hidden="true" [attr.data-testid]="'genome.tree.nodes.' + node.id + '.cost'">
           <rect
             [class]="tagFills[node.status]"
-            rx="8"
+            [attr.rx]="deco.tag.rx"
             [attr.x]="deco.tag.x"
             [attr.y]="deco.tag.y"
             [attr.width]="deco.tag.width"
             [attr.height]="deco.tag.height"
           />
           <text
-            class="text-2xs font-semibold tabular-nums"
+            class="font-semibold tabular-nums"
             [class]="tagTextFills[node.status]"
+            [attr.font-size]="deco.tagTextSize"
             text-anchor="middle"
             [attr.x]="deco.tag.textX"
             [attr.y]="deco.tag.textY"
@@ -197,14 +199,15 @@
         <g aria-hidden="true" [attr.data-testid]="'genome.tree.nodes.' + node.id + '.progress'">
           <rect
             class="fill-cost-muted"
-            rx="8"
+            [attr.rx]="deco.tag.rx"
             [attr.x]="deco.tag.x"
             [attr.y]="deco.tag.y"
             [attr.width]="deco.tag.width"
             [attr.height]="deco.tag.height"
           />
           <text
-            class="fill-cost-muted-fg text-2xs font-semibold tabular-nums"
+            class="fill-cost-muted-fg font-semibold tabular-nums"
+            [attr.font-size]="deco.tagTextSize"
             text-anchor="middle"
             [attr.x]="deco.tag.textX"
             [attr.y]="deco.tag.textY"

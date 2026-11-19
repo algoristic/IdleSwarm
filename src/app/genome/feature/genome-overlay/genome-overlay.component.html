@@ -1,50 +1,106 @@
 @let genome = facade.genome();
+@let _legendOpen = legendOpen();
+@let _sheetOpen = sheetOpen();
 @let panel = 'pointer-events-auto fixed rounded-3xl bg-surface shadow-panel';
 
 <section
-  class="top-4 left-1/2 grid w-max max-w-md -translate-x-1/2 justify-items-center gap-1 px-5 py-3 text-center tabular-nums"
+  class="top-4 left-1/2 grid w-max max-w-md -translate-x-1/2 justify-items-center gap-1 px-5 py-3 text-center tabular-nums max-md:top-28 max-md:right-4 max-md:left-4 max-md:w-auto max-md:max-w-none max-md:translate-x-0 max-md:justify-items-stretch max-md:gap-0 max-md:px-3 max-md:py-1.5 max-md:text-left"
   aria-labelledby="genome-title"
   [class]="panel"
 >
-  <p
-    class="text-xs font-extrabold tracking-widest text-fg-muted uppercase"
-    i18n="@@featureGenome-genomeOverlay-kicker"
-  >
-    Zellkern · Genetische Adaption
-  </p>
-  <h2
-    id="genome-title"
-    class="text-2xl leading-tight font-black"
-    i18n="@@featureGenome-genomeOverlay-title"
-  >
-    Genom
-  </h2>
-  <p class="flex flex-wrap justify-center gap-x-2 text-xs text-fg-muted">
-    <span data-testid="genome.status.dna" i18n="@@featureGenome-genomeOverlay-dna"
-      ><span class="text-sm font-black text-violet">{{ genome.dna | formatDown }}</span> DNA</span
+  <!--
+    Smartphone (< 768 px): Zeile 1 Kicker und Titel, Zeile 2 DNA und verfügbare Adaptionen mit dem
+    Knopf „Legende“ rechts, darunter aufgeklappt die Legende. Auf größeren Bildschirmen lösen sich
+    die Zeilen auf (`contents`) und alles steht wie bisher untereinander.
+  -->
+  <div class="contents max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-2">
+    <p
+      class="text-xs font-extrabold tracking-widest text-fg-muted uppercase max-md:tracking-wide"
+      i18n="@@featureGenome-genomeOverlay-kicker"
     >
-    <span aria-hidden="true">·</span>
-    <span
-      data-testid="genome.status.available"
-      i18n="@@featureGenome-genomeOverlay-available"
-      >{genome.availableCount, plural,
-        =0 {Keine Adaption verfügbar}
-        =1 {1 Adaption verfügbar}
-        other {{{ genome.availableCount | formatNum }} Adaptionen verfügbar}
-      }</span
+      Zellkern · Genetische Adaption
+    </p>
+    <h2
+      id="genome-title"
+      class="text-2xl leading-tight font-black max-md:text-base"
+      i18n="@@featureGenome-genomeOverlay-title"
     >
-  </p>
-  <app-genome-legend class="mt-1" />
+      Genom
+    </h2>
+  </div>
+  <div class="contents max-md:flex max-md:items-center max-md:justify-between max-md:gap-2">
+    <p
+      class="flex flex-wrap justify-center gap-x-2 text-xs text-fg-muted max-md:min-w-0 max-md:justify-start"
+    >
+      <span data-testid="genome.status.dna" i18n="@@featureGenome-genomeOverlay-dna"
+        ><span class="text-sm font-black text-violet">{{ genome.dna | formatDown }}</span> DNA</span
+      >
+      <span aria-hidden="true">·</span>
+      <span
+        data-testid="genome.status.available"
+        i18n="@@featureGenome-genomeOverlay-available"
+        >{genome.availableCount, plural,
+          =0 {Keine Adaption verfügbar}
+          =1 {1 Adaption verfügbar}
+          other {{{ genome.availableCount | formatNum }} Adaptionen verfügbar}
+        }</span
+      >
+    </p>
+    <button
+      type="button"
+      class="group flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2 text-xs font-extrabold text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden"
+      aria-controls="genome-legend"
+      data-testid="genome.legend.toggle"
+      [attr.aria-expanded]="_legendOpen"
+      (click)="onToggleLegend()"
+    >
+      <span i18n="@@featureGenome-genomeOverlay-legendToggle">Legende</span>
+      <span
+        class="transition-transform group-aria-expanded:rotate-180 motion-reduce:transition-none"
+        aria-hidden="true"
+        >▾</span
+      >
+    </button>
+  </div>
+  <app-genome-legend
+    id="genome-legend"
+    class="mt-1 max-md:mb-1 max-md:not-data-open:hidden"
+    [attr.data-open]="_legendOpen ? '' : null"
+  />
 </section>
 
+<!--
+  Detailpanel: Desktop rechts Mitte; Tablet schmaler und unter dem Titel; Smartphone als
+  Bottom-Sheet, eingeklappt nur Ast, Name und Primäraktion.
+-->
 <section
-  class="top-1/2 right-4 max-h-11/12 w-84 -translate-y-1/2 overflow-y-auto p-5 wrap-anywhere"
+  class="genome-overlay__sheet top-1/2 right-4 max-h-11/12 w-84 -translate-y-1/2 overflow-y-auto p-5 wrap-anywhere md:max-desktop:top-56 md:max-desktop:bottom-4 md:max-desktop:max-h-none md:max-desktop:w-72 md:max-desktop:translate-y-0 max-md:top-auto max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:max-h-1/2 max-md:w-auto max-md:translate-y-0 max-md:rounded-b-none max-md:px-4 max-md:pt-0"
   aria-labelledby="genome-detail-title"
   data-testid="genome.side"
   [class]="panel"
 >
+  <button
+    type="button"
+    class="sticky top-0 z-1 mb-2 grid min-h-11 w-full cursor-pointer justify-items-center gap-1 bg-surface pt-2 pb-1 text-xs font-extrabold text-fg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:hidden"
+    aria-controls="genome-sheet"
+    data-testid="genome.sheet.toggle"
+    [attr.aria-expanded]="_sheetOpen"
+    (click)="onToggleSheet()"
+  >
+    <span class="h-1.5 w-10 rounded-full bg-surface-raised" aria-hidden="true"></span>
+    @if (_sheetOpen) {
+      <span i18n="@@featureGenome-genomeOverlay-sheetCollapse">Weniger anzeigen ▾</span>
+    } @else {
+      <span i18n="@@featureGenome-genomeOverlay-sheetExpand">Mehr anzeigen ▴</span>
+    }
+  </button>
   <h2 id="genome-detail-title" class="sr-only" i18n="@@featureGenome-genomeOverlay-detailTitle">
     Gewählte Adaption
   </h2>
-  <app-genome-detail [detail]="genome.detail" (clickedEvolve)="facade.evolve($event)" />
+  <app-genome-detail
+    id="genome-sheet"
+    [detail]="genome.detail"
+    [collapsed]="!_sheetOpen"
+    (clickedEvolve)="facade.evolve($event)"
+  />
 </section>

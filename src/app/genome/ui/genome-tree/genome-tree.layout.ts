@@ -1,4 +1,12 @@
-import type { LabelSide, PolarPosition, TagSide } from '../../domain/genome-tree-logic';
+import {
+  type LabelSide,
+  minTreeSize,
+  nearestDistances,
+  type PolarPosition,
+  polarPoint,
+  type TagSide,
+  TREE_SIZE,
+} from '../../domain/genome-tree-logic';
 import type { GenomeEntryId } from '../models/genome-entry.model';
 
 /** Lage eines Knotens im radialen Baum und wo Beschriftung und Kostenschild stehen. */
@@ -17,9 +25,9 @@ export const GENOME_LAYOUT: Readonly<Record<GenomeEntryId, GenomeNodeLayout>> = 
   root: { angle: 0, radius: 0, label: 'below', tag: 'below' },
   'cilia-1': { angle: -150, radius: 95, label: 'below', tag: 'below' },
   'cilia-2': { angle: -149, radius: 155, label: 'start', tag: 'below' },
-  'filter-feeder': { angle: -148, radius: 215, label: 'start', tag: 'below' },
-  chemotaxis: { angle: -147, radius: 275, label: 'start', tag: 'below' },
-  flagellum: { angle: -146, radius: 335, label: 'start', tag: 'below' },
+  'filter-feeder': { angle: -148, radius: 215, label: 'start', tag: 'opposite' },
+  chemotaxis: { angle: -147, radius: 275, label: 'start', tag: 'opposite' },
+  flagellum: { angle: -146, radius: 335, label: 'start', tag: 'opposite' },
   'yolk-reserve': { angle: 90, radius: 95, label: 'start', tag: 'opposite' },
   'brood-combs': { angle: 95, radius: 155, label: 'start', tag: 'opposite' },
   'second-gland': { angle: 100, radius: 215, label: 'start', tag: 'opposite' },
@@ -27,14 +35,33 @@ export const GENOME_LAYOUT: Readonly<Record<GenomeEntryId, GenomeNodeLayout>> = 
   budding: { angle: 108, radius: 332, label: 'start', tag: 'opposite' },
   'acid-vacuole': { angle: -30, radius: 95, label: 'below', tag: 'below' },
   autophagy: { angle: -31, radius: 155, label: 'end', tag: 'below' },
-  'nettle-cells': { angle: -32, radius: 215, label: 'end', tag: 'below' },
-  'chalk-shell': { angle: -33, radius: 275, label: 'end', tag: 'below' },
-  'spine-cells': { angle: -34, radius: 335, label: 'end', tag: 'below' },
+  'nettle-cells': { angle: -32, radius: 215, label: 'end', tag: 'opposite' },
+  'chalk-shell': { angle: -33, radius: 275, label: 'end', tag: 'opposite' },
+  'spine-cells': { angle: -34, radius: 335, label: 'end', tag: 'opposite' },
   thermosynthesis: { angle: -120, radius: 200, label: 'start', tag: 'below' },
   'algal-symbiosis': { angle: 175, radius: 170, label: 'below', tag: 'below' },
   'crystal-sense': { angle: 45, radius: 200, label: 'below', tag: 'below' },
-  'sulfur-shell': { angle: -75, radius: 200, label: 'below', tag: 'below' },
+  'sulfur-shell': { angle: -75, radius: 206, label: 'below', tag: 'below' },
 };
+
+const LAYOUT_IDS = Object.keys(GENOME_LAYOUT) as GenomeEntryId[];
+const LAYOUT_POINTS = LAYOUT_IDS.map((id) => polarPoint(GENOME_LAYOUT[id]));
+const NEAREST = nearestDistances(LAYOUT_POINTS);
+
+/** Abstand jedes Knotens zum nächsten im `viewBox`; begrenzt seine Trefferfläche. */
+export const GENOME_NEAREST: Readonly<Record<GenomeEntryId, number>> = Object.fromEntries(
+  LAYOUT_IDS.map((id, i) => [id, NEAREST[i]]),
+) as Record<GenomeEntryId, number>;
+
+/**
+ * Lesbare Größe: Bei Maßstab 1 sind Beschriftungen (`LABEL_SIZE` 12) 12 px groß. Kleiner ginge für
+ * 44-px-Trefferflächen (bei 59,2 Einheiten Knotenabstand 595 px), aber dann müssten die Texte so
+ * wachsen, dass sie sich überschneiden (geprüft in `genome-tree.layout.spec.ts`).
+ */
+export const GENOME_TREE_LEGIBLE_SIZE = TREE_SIZE;
+
+/** Kleinste gerenderte Kantenlänge des Baums in Pixeln; auf dem Smartphone wird er so groß. */
+export const GENOME_TREE_MIN_SIZE = Math.max(minTreeSize(LAYOUT_POINTS), GENOME_TREE_LEGIBLE_SIZE);
 
 /** Organellen in den Lücken zwischen den Ästen: Lage und Halbachsen. */
 export interface OrganelleLayout extends PolarPosition {

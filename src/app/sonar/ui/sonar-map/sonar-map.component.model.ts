@@ -15,6 +15,9 @@ export interface MapRingView {
 /** Ziel auf der Karte; alle Maße im `viewBox`, die Gruppe liegt bei `translate`. */
 export interface MapNodeView {
   readonly target: TargetView;
+  /** Mittelpunkt im `viewBox`. */
+  readonly x: number;
+  readonly y: number;
   /** `translate(x y)` der Gruppe. */
   readonly translate: string;
   readonly radius: number;
@@ -26,8 +29,6 @@ export interface MapNodeView {
   readonly focusRadius: number;
   /** `stroke-dasharray` des Abwehrbogens; `null` ohne Abwehr oder unerforscht. */
   readonly defenseDash: string | null;
-  readonly labelY: number;
-  readonly dnaY: number;
   readonly markY: number;
   /** Außer Reichweite, unerforscht oder Ziel vom alten Standort während der Reise. */
   readonly dimmed: boolean;
@@ -38,7 +39,6 @@ export interface MapHereView {
   /** `translate(x y)` des Zentrums. */
   readonly translate: string;
   readonly radius: number;
-  readonly labelY: number;
 }
 
 export interface SonarMapView {

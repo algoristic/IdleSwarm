@@ -4,6 +4,13 @@ import { FIND_ENTRY_LABELS } from '@app/finds/ui/finds-labels/finds-labels';
 import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
 import { formatNum } from '@app/shared/util/format/format';
 
+import {
+  hitRadius,
+  type NodeDecoration,
+  nodeDecoration,
+  TREE_SIZE,
+  treeTextScale,
+} from '../../domain/genome-tree-logic';
 import { GenomeNodeStatus } from '../../domain/models/genome.model';
 import {
   GENOME_BRANCH_LABELS,
@@ -20,6 +27,7 @@ import type {
   TreeEdgeView,
   TreeNodeView,
 } from './genome-tree.component.model';
+import { GENOME_TREE_MIN_SIZE } from './genome-tree.layout';
 
 interface TreeEdgeItem {
   readonly edge: TreeEdgeView;
@@ -28,6 +36,9 @@ interface TreeEdgeItem {
 
 interface TreeNodeItem {
   readonly node: TreeNodeView;
+  readonly decoration: NodeDecoration;
+  /** Unsichtbare Trefferfläche: mindestens 44 px, ohne den Nachbarn zu überdecken. */
+  readonly hitRadius: number;
   readonly name: string;
   readonly ariaLabel: string;
 }
@@ -85,6 +96,8 @@ const TAG_TEXT_FILLS: Readonly<Record<GenomeNodeStatus, string>> = {
 })
 export class GenomeTreeComponent {
   tree = input.required<GenomeTreeView>();
+  /** Gerenderte Pixel je `viewBox`-Einheit; die Ebene misst sie, ohne Messung gilt 1. */
+  scale = input(1);
 
   toneFills = GENOME_TONE_FILLS;
   toneStrokes = GENOME_TONE_STROKES;
@@ -97,12 +110,21 @@ export class GenomeTreeComponent {
 
   selectedEntry = output<GenomeEntryId>();
 
-  nodes = computed<readonly TreeNodeItem[]>(() =>
-    this.tree().nodes.map((node) => {
+  nodes = computed<readonly TreeNodeItem[]>(() => {
+    const scale = this.scale();
+    const textScale = treeTextScale(scale, GENOME_TREE_MIN_SIZE / TREE_SIZE);
+    return this.tree().nodes.map((node) => {
       const name = genomeEntryLabel(node.id);
-      return { node, name, ariaLabel: this.#ariaLabel(node, name) };
-    }),
-  );
+      const decoration = nodeDecoration(node.radius, node.labelSide, node.tagSide, textScale);
+      return {
+        node,
+        decoration,
+        hitRadius: hitRadius(decoration.focusRadius, node.nearest, scale),
+        name,
+        ariaLabel: this.#ariaLabel(node, name),
+      };
+    });
+  });
 
   edges = computed<readonly TreeEdgeItem[]>(() =>
     this.tree().edges.map((edge) => ({

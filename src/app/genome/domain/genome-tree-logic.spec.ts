@@ -1,5 +1,11 @@
 import {
   branchPath,
+  hitRadius,
+  MIN_HIT_PX,
+  MIN_TEXT_PX,
+  minTreeSize,
+  nearestDistances,
+  treeTextScale,
   membranePath,
   MEMBRANE_RADIUS,
   nodeDecoration,
@@ -68,9 +74,11 @@ describe('genome-tree-logic', () => {
         y: 45,
         width: TAG_WIDTH,
         height: TAG_HEIGHT,
+        rx: TAG_HEIGHT / 2,
         textX: 0,
         textY: 57,
       });
+      expect([deco.labelSize, deco.tagTextSize]).toEqual([12, 10]);
       expect([deco.pulseRadius, deco.selectionRadius, deco.focusRadius]).toEqual([24, 30, 33]);
     });
 
@@ -90,6 +98,47 @@ describe('genome-tree-logic', () => {
       expect(tagRight.x).toBe(25);
       // Unter einer Beschriftung darunter gibt es kein „gegenüber“.
       expect(nodeDecoration(19, 'below', 'opposite').tag.y).toBe(45);
+    });
+  });
+
+  describe('Mindestgrößen auf dem Bildschirm', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 60, y: 0 },
+      { x: 0, y: 200 },
+    ];
+
+    it('misst den Abstand zum nächsten Knoten', () => {
+      expect(nearestDistances(points)).toEqual([60, 60, 200]);
+    });
+
+    it('braucht so viele Pixel, dass die nächsten Knoten 44 px Abstand haben', () => {
+      const size = minTreeSize(points);
+      expect(size).toBe(Math.ceil((800 * MIN_HIT_PX) / 60));
+      expect((60 * size) / 800).toBeGreaterThanOrEqual(MIN_HIT_PX);
+    });
+
+    it('vergrößert Texte bis 12 px, aber nicht unter den Mindestmaßstab hinaus', () => {
+      expect(treeTextScale(1.2, 0.75)).toEqual({ label: 1, tag: 1 });
+      const scale = treeTextScale(0.75, 0.75);
+      expect(12 * scale.label * 0.75).toBeCloseTo(MIN_TEXT_PX, 1);
+      expect(10 * scale.tag * 0.75).toBeCloseTo(MIN_TEXT_PX, 1);
+      expect(treeTextScale(0.5, 0.75)).toEqual(scale);
+    });
+
+    it('wächst die Schilder mit der Schrift mit', () => {
+      const deco = nodeDecoration(19, 'below', 'below', { label: 1.5, tag: 2 });
+      expect(deco.labelSize).toBe(18);
+      expect(deco.tagTextSize).toBe(20);
+      expect(deco.tag.width).toBe(2 * TAG_WIDTH);
+      expect(deco.label.y).toBe(19 + 6 + 18);
+      expect(deco.tag.y).toBe(19 + 14 + 18);
+    });
+
+    it('macht Trefferflächen 44 px breit, ohne den halben Abstand zum Nachbarn zu überschreiten', () => {
+      expect(hitRadius(33, 200, 1)).toBe(33);
+      expect(hitRadius(33, 200, 0.5)).toBe(MIN_HIT_PX);
+      expect(hitRadius(33, 60, 1)).toBe(30);
     });
   });
 });

@@ -3,7 +3,19 @@ import { Num } from '@app/shared/util/num/num';
 import {
   approachPath,
   arcDash,
+  CHAR_WIDTH_EM,
   HERE_RADIUS,
+  hitAreaPaths,
+  hitRadius,
+  keepApart,
+  type LabelRequest,
+  MIN_HIT_PX,
+  MIN_TEXT_PX,
+  placeLabels,
+  SYMBOL_ZOOM_MAX,
+  symbolZoom,
+  textBox,
+  textSize,
   MAP_CENTER,
   MAP_RADIUS,
   mapScale,
@@ -105,5 +117,127 @@ describe('arcDash', () => {
     const circumference = Math.round(2 * Math.PI * 10 * 10) / 10;
     expect(arcDash(10, 1)).toBe(`${circumference} ${circumference}`);
     expect(arcDash(10, 0)).toBeNull();
+  });
+});
+
+describe('Mindestgrößen auf dem Bildschirm', () => {
+  it('vergrößert Schrift im viewBox, bis sie mindestens 12 px groß gerendert wird', () => {
+    expect(textSize(16, 1.2)).toBe(16);
+    expect(textSize(16, 0.45) * 0.45).toBeCloseTo(MIN_TEXT_PX, 1);
+    expect(textSize(14, 0)).toBe(14);
+  });
+
+  it('vergrößert die Ziele nur auf kleinen Karten und höchstens bis zum Grenzwert', () => {
+    expect(symbolZoom(1)).toBe(1);
+    expect(symbolZoom(0.6)).toBe(1);
+    expect(symbolZoom(0.45)).toBeCloseTo(1.33, 2);
+    expect(symbolZoom(0.1)).toBe(SYMBOL_ZOOM_MAX);
+  });
+
+  it('macht Trefferflächen mindestens 44 px breit', () => {
+    expect(hitRadius(30, 1)).toBe(30);
+    expect(hitRadius(30, 0.45) * 2 * 0.45).toBeCloseTo(MIN_HIT_PX, 0);
+  });
+});
+
+/** Eckpunkte eines Pfads `M… L… Z` relativ zum Mittelpunkt. */
+function pathPoints(path: string): { x: number; y: number }[] {
+  return [...path.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map((m) => ({
+    x: Number(m[1]),
+    y: Number(m[2]),
+  }));
+}
+
+describe('hitAreaPaths', () => {
+  it('lässt einzelne Ziele als vollen Kreis', () => {
+    expect(hitAreaPaths([{ x: 100, y: 100, radius: 40 }])).toEqual([
+      'M-40 0 A40 40 0 1 0 40 0 A40 40 0 1 0 -40 0 Z',
+    ]);
+  });
+
+  it('teilt überlappende Flächen an der Mittelsenkrechten (näheres Zentrum gewinnt)', () => {
+    const [left, right] = hitAreaPaths([
+      { x: 100, y: 100, radius: 50 },
+      { x: 160, y: 100, radius: 50 },
+    ]);
+    const leftPoints = pathPoints(left ?? '');
+    const rightPoints = pathPoints(right ?? '');
+    // Die linke Fläche reicht bis zur Mitte (x = 30 relativ), die rechte ab dort nach links.
+    expect(Math.max(...leftPoints.map((p) => p.x))).toBeCloseTo(30, 1);
+    expect(Math.min(...rightPoints.map((p) => p.x))).toBeCloseTo(-30, 1);
+    expect(Math.min(...leftPoints.map((p) => p.x))).toBeCloseTo(-50, 1);
+  });
+
+  it('gibt bei genau übereinanderliegenden Zielen dem früheren die Fläche', () => {
+    const paths = hitAreaPaths([
+      { x: 100, y: 100, radius: 40 },
+      { x: 100, y: 100, radius: 40 },
+    ]);
+    expect(paths[0]).not.toBeNull();
+    expect(paths[1]).toBeNull();
+  });
+});
+
+describe('placeLabels', () => {
+  const request = (x: number, y: number, extra: Partial<LabelRequest> = {}): LabelRequest => ({
+    x,
+    y,
+    clearance: 20,
+    clearanceTop: 0,
+    lines: [10, 6],
+    priority: 2,
+    required: false,
+    ...extra,
+  });
+
+  it('setzt eine freie Beschriftung unter das Ziel', () => {
+    const [placement] = placeLabels([request(400, 300)], [], 16);
+    expect(placement).toMatchObject({ side: 'below', anchor: 'middle', dx: 0, lines: 2 });
+    expect(placement?.dy).toBeGreaterThan(20);
+  });
+
+  it('weicht bei nahen Zielen auf eine andere Seite aus', () => {
+    const placements = placeLabels([request(400, 300), request(410, 340)], [], 16);
+    // Unter dem ersten liegt das zweite Ziel; also oben, das zweite bekommt den Platz unten.
+    expect(placements.map((placement) => placement?.side)).toEqual(['above', 'below']);
+  });
+
+  it('platziert nach Priorität; bei Platzmangel nur der Name oder gar nichts', () => {
+    // Zwei Ziele fast an derselben Stelle, Hindernisse ringsum außer direkt unter dem ersten.
+    const obstacles = [
+      { left: 0, top: 0, right: 800, bottom: 270 },
+      { left: 0, top: 0, right: 370, bottom: 800 },
+      { left: 430, top: 0, right: 800, bottom: 800 },
+      { left: 0, top: 345, right: 800, bottom: 800 },
+    ];
+    const placements = placeLabels(
+      [request(400, 300), request(402, 302, { priority: 0, required: true })],
+      obstacles,
+      16,
+    );
+    // Das gewählte Ziel (Priorität 0) bekommt den Platz zuerst, nur mit einer Zeile.
+    expect(placements[1]).toMatchObject({ side: 'below', lines: 1 });
+    expect(placements[0]).toBeNull();
+  });
+
+  it('hält Beschriftungen im viewBox', () => {
+    const [placement] = placeLabels([request(400, 790)], [], 16);
+    expect(placement?.side).toBe('above');
+  });
+});
+
+describe('textBox und keepApart', () => {
+  it('schätzt die Breite aus der Zeichenzahl', () => {
+    const box = textBox(100, 50, 10, 20, 'start');
+    expect(box.left).toBe(100);
+    expect(box.right).toBeCloseTo(100 + 10 * CHAR_WIDTH_EM * 20);
+    expect(textBox(100, 50, 10, 20, 'end').right).toBe(100);
+  });
+
+  it('behält in Reihenfolge nur Beschriftungen, die keine behaltene berühren', () => {
+    const a = textBox(400, 100, 4, 20, 'start');
+    const b = textBox(400, 110, 4, 20, 'start');
+    const c = textBox(400, 200, 4, 20, 'start');
+    expect(keepApart([a, b, c])).toEqual([true, false, true]);
   });
 });

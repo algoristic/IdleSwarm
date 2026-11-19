@@ -1,0 +1,6 @@
+/* K2-Ausnahme (CLAUDE.md §4): Das Bottom-Sheet hält den unteren Sicherheitsabstand frei. */
+@media (width < 48rem) {
+  .genome-overlay__sheet {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}

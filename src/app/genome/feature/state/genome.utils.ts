@@ -24,7 +24,6 @@ import {
   branchPath,
   membranePath,
   NODE_RADIUS,
-  nodeDecoration,
   NUCLEUS_RADIUS,
   NUCLEUS_RING_RADIUS,
   organelle,
@@ -52,7 +51,11 @@ import type {
   TreeEdgeView,
   TreeNodeView,
 } from '../../ui/genome-tree/genome-tree.component.model';
-import { GENOME_LAYOUT, ORGANELLE_LAYOUT } from '../../ui/genome-tree/genome-tree.layout';
+import {
+  GENOME_LAYOUT,
+  GENOME_NEAREST,
+  ORGANELLE_LAYOUT,
+} from '../../ui/genome-tree/genome-tree.layout';
 import type {
   EffectFormat,
   EffectPreviewView,
@@ -196,13 +199,18 @@ function nodeBase(
   id: GenomeEntryId,
   radius: number,
   selected: GenomeEntryId,
-): Pick<TreeNodeView, 'radius' | 'translate' | 'ballScale' | 'decoration' | 'selected'> {
+): Pick<
+  TreeNodeView,
+  'radius' | 'translate' | 'ballScale' | 'labelSide' | 'tagSide' | 'nearest' | 'selected'
+> {
   const layout = GENOME_LAYOUT[id];
   return {
     radius,
     translate: translate(polarPoint(layout)),
     ballScale: `scale(${radius})`,
-    decoration: nodeDecoration(radius, layout.label, layout.tag),
+    labelSide: layout.label,
+    tagSide: layout.tag,
+    nearest: GENOME_NEAREST[id],
     selected: id === selected,
   };
 }

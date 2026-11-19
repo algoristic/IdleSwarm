@@ -33,6 +33,8 @@ export class TargetDetailComponent {
   queen = input.required<QueenConversionView>();
   /** Restvorrat, der beim Aufbruch verfällt; `null` ohne Rest oder während der Reise. */
   forfeitedStock = input.required<Num | null>();
+  /** Eingeklappt im Bottom-Sheet (nur < 768 px): nur Kicker, Name und „Aufbrechen“. */
+  collapsed = input(false);
 
   siteTypeLabels = SITE_TYPE_LABELS;
   verdictLabels = VERDICT_LABELS;

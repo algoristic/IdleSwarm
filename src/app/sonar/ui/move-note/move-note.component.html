@@ -21,19 +21,20 @@
         {{ _site.stockPercent | formatNum }} %.</ng-container
       >
     }
+    <!-- Führendes Leerzeichen im Text: Leerraum zwischen Blöcken entfernt der Compiler. -->
     @if (!_settings.autoEnabled) {
-      <ng-container i18n="@@uiSonar-moveNote-autoOff"
-        >Auto-Weiterziehen ist aus: Ohne Entscheidung bleibt der Schwarm hier.</ng-container
+      <ng-container i18n="@@uiSonar-moveNote-autoOff">
+        Auto-Weiterziehen ist aus: Ohne Entscheidung bleibt der Schwarm hier.</ng-container
       >
     } @else if (_settings.thresholdPercent === 0) {
-      <ng-container i18n="@@uiSonar-moveNote-autoEmpty"
-        >Ohne Entscheidung zieht der Schwarm bei leerem Vorrat nach Strategie
+      <ng-container i18n="@@uiSonar-moveNote-autoEmpty">
+        Ohne Entscheidung zieht der Schwarm bei leerem Vorrat nach Strategie
         <b class="font-black text-accent">„{{ strategyLabels[_settings.strategy] }}“</b>
         weiter.</ng-container
       >
     } @else {
-      <ng-container i18n="@@uiSonar-moveNote-autoThreshold"
-        >Ohne Entscheidung zieht der Schwarm bei höchstens
+      <ng-container i18n="@@uiSonar-moveNote-autoThreshold">
+        Ohne Entscheidung zieht der Schwarm bei höchstens
         {{ _settings.thresholdPercent | formatNum }} % Vorrat nach Strategie
         <b class="font-black text-accent">„{{ strategyLabels[_settings.strategy] }}“</b>
         weiter.</ng-container

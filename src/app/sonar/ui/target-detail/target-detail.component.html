@@ -3,7 +3,12 @@
 @let row = 'flex flex-wrap items-baseline justify-between gap-x-3';
 @let value = 'ml-auto text-right font-extrabold';
 
-<section class="grid gap-3" aria-labelledby="sonar-detail-title">
+<!-- Eingeklappt (Bottom-Sheet) bleiben Kicker, Name und Aufbruch; der Rest blendet sich aus. -->
+<section
+  class="group/detail grid gap-3"
+  aria-labelledby="sonar-detail-title"
+  [attr.data-collapsed]="collapsed() ? '' : null"
+>
   <header class="grid gap-0.5">
     <p class="text-xs font-black tracking-widest text-fg-muted uppercase tabular-nums">
       @if (_target.details; as details) {
@@ -19,7 +24,7 @@
     </p>
     <h2
       id="sonar-detail-title"
-      class="text-2xl leading-tight font-black"
+      class="text-2xl leading-tight font-black max-md:text-xl"
       data-testid="sonar.detail.type"
     >
       @if (_target.details; as details) {
@@ -29,7 +34,10 @@
       }
     </h2>
     @if (_target.strategyChoice) {
-      <p class="text-sm text-accent" data-testid="sonar.detail.strategy-choice">
+      <p
+        class="text-sm text-accent max-md:group-data-collapsed/detail:hidden"
+        data-testid="sonar.detail.strategy-choice"
+      >
         ◆
         <ng-container i18n="@@uiSonar-targetDetail-strategyChoice"
           >Die gewählte Strategie würde dieses Ziel ansteuern.</ng-container
@@ -39,7 +47,9 @@
   </header>
 
   @if (_target.details; as details) {
-    <dl class="grid gap-1.5 rounded-2xl bg-well px-3.5 py-3 text-sm tabular-nums">
+    <dl
+      class="grid gap-1.5 rounded-2xl bg-well px-3.5 py-3 text-sm tabular-nums max-md:group-data-collapsed/detail:hidden"
+    >
       <div [class]="row">
         <dt class="text-fg-muted" i18n="@@uiSonar-targetDetail-size">Größe (Nahrungsvorrat)</dt>
         <dd data-testid="sonar.detail.size" [class]="value">{{ details.size | formatDown }}</dd>
@@ -84,11 +94,12 @@
       </div>
     </dl>
 
-    <div class="grid gap-2 tabular-nums">
+    <div class="grid gap-2 tabular-nums max-md:group-data-collapsed/detail:hidden">
       <p class="text-xs text-fg-muted" data-testid="sonar.detail.versus">
         {{ attackLabel }}
         <span class="font-extrabold text-fg">{{ details.attack | formatDown }}</span>
-        <ng-container i18n="@@uiSonar-targetDetail-versus">vs.</ng-container>
+        <!-- Leerzeichen im Text: Leerraum zwischen Elementen entfernt der Compiler. -->
+        <ng-container i18n="@@uiSonar-targetDetail-versus"> vs.</ng-container>
         {{ defenseLabel }}
         <span class="font-extrabold text-fg" data-testid="sonar.detail.defense">{{
           details.defense | formatNum
@@ -110,13 +121,16 @@
       </div>
     </div>
   } @else {
-    <p class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-unexplored">
+    <p
+      class="text-sm text-fg-muted max-md:group-data-collapsed/detail:hidden"
+      i18n="@@uiSonar-targetDetail-unexplored"
+    >
       Außerhalb der Wahrnehmung. Mehr Reichweite deckt das Ziel auf.
     </p>
   }
 
   <p
-    class="text-sm font-black data-stale:text-fg-muted"
+    class="text-sm font-black data-stale:text-fg-muted max-md:group-data-collapsed/detail:hidden"
     data-testid="sonar.detail.verdict"
     [class]="verdictTones[_target.verdict]"
     [attr.data-stale]="_target.blocker === 'traveling' ? '' : null"
@@ -127,7 +141,10 @@
   @if (transport(); as _transport) {
     @let leftDrones = _transport.leftDrones;
     @let leftSoldiers = _transport.leftSoldiers;
-    <section class="grid gap-1 text-sm tabular-nums" aria-labelledby="sonar-transport-title">
+    <section
+      class="grid gap-1 text-sm tabular-nums max-md:group-data-collapsed/detail:hidden"
+      aria-labelledby="sonar-transport-title"
+    >
       <h3 id="sonar-transport-title" class="font-extrabold">
         <ng-container i18n="@@uiSonar-targetDetail-transportTitle">Mitnahme</ng-container>:
         <span data-testid="sonar.transport.priority">{{
@@ -191,7 +208,7 @@
     </section>
   } @else {
     <p
-      class="text-sm text-fg-muted"
+      class="text-sm text-fg-muted max-md:group-data-collapsed/detail:hidden"
       data-testid="sonar.transport.after-arrival"
       i18n="@@uiSonar-targetDetail-transportAfterArrival"
     >
@@ -199,7 +216,10 @@
     </p>
   }
 
-  <section class="grid gap-1.5 text-sm tabular-nums" aria-labelledby="sonar-queen-title">
+  <section
+    class="grid gap-1.5 text-sm tabular-nums max-md:group-data-collapsed/detail:hidden"
+    aria-labelledby="sonar-queen-title"
+  >
     <h3 id="sonar-queen-title" class="font-extrabold" i18n="@@uiSonar-targetDetail-queenTitle">
       Mehr Platz: Drohnen → Königin
     </h3>
@@ -233,7 +253,7 @@
 
   @if (forfeitedStock(); as stock) {
     <p
-      class="text-sm text-warning"
+      class="text-sm text-warning max-md:group-data-collapsed/detail:hidden"
       data-testid="sonar.detail.forfeit"
       i18n="@@uiSonar-targetDetail-forfeit"
     >

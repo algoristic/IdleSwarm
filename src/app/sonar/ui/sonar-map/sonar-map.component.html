@@ -1,5 +1,7 @@
 @let _map = map();
 @let center = _map.center;
+@let _layout = layout();
+@let _ringLabels = ringLabels();
 
 <svg
   class="mx-auto block aspect-square w-full"
@@ -45,25 +47,26 @@
       [attr.r]="_map.range.radius"
       data-testid="sonar.map.range"
     />
-    @for (ring of _map.rings; track ring.distance) {
-      @if (ring.labeled) {
+    @for (ring of _map.rings; track ring.distance; let i = $index) {
+      @if (_layout.ringLabels[i]) {
         <text
-          class="sonar-map__label fill-fg-muted text-sm tabular-nums"
+          class="sonar-map__label fill-fg-muted tabular-nums"
+          [attr.font-size]="_layout.smallSize"
           [attr.x]="_map.labelX"
           [attr.y]="ring.labelY"
         >
-          {{ ring.distance | formatNum }}
+          {{ _ringLabels[i] }}
         </text>
       }
     }
     <text
-      class="sonar-map__label fill-accent text-sm font-semibold tabular-nums"
+      class="sonar-map__label fill-accent font-semibold tabular-nums"
+      [attr.font-size]="_layout.smallSize"
       [attr.x]="_map.labelX"
       [attr.y]="_map.range.labelY"
       data-testid="sonar.map.range-label"
-      i18n="@@uiSonar-sonarMap-range"
     >
-      {{ _map.range.value | formatNum }} · Reichweite
+      {{ rangeLabel() }}
     </text>
     <path class="sonar-map__sweep fill-accent" fill-opacity="0.08" [attr.d]="_map.sweep" />
 
@@ -116,6 +119,7 @@
   @for (item of nodes(); track item.node.target.index) {
     @let node = item.node;
     @let target = node.target;
+    @let label = item.layout.label;
     <g
       class="group cursor-pointer outline-none data-dim:opacity-60"
       role="button"
@@ -129,94 +133,107 @@
       (keydown.enter)="onKeySelect($event, target.index)"
       (keydown.space)="onKeySelect($event, target.index)"
     >
-      <!-- Trefferfläche: größer als die Kugel, unsichtbar, aber anklickbar. -->
-      <circle class="fill-bg" fill-opacity="0" [attr.r]="node.focusRadius" />
-      <circle
-        class="fill-none stroke-accent opacity-0 group-focus-visible:opacity-100"
-        stroke-width="2"
-        [attr.r]="node.focusRadius"
-      />
-      @if (target.selected) {
-        <circle
-          class="fill-none stroke-warning"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-dasharray="1 7"
-          [attr.r]="node.selectionRadius"
-          [attr.data-testid]="'sonar.map.targets.' + target.index + '.selected'"
-        />
+      <!-- Trefferfläche: mindestens 44 px, unsichtbar; Nachbarn teilen sich überlappende Flächen. -->
+      @if (item.layout.hitPath; as hitPath) {
+        <path class="fill-bg" fill-opacity="0" [attr.d]="hitPath" />
       }
-      <circle
-        class="fill-none"
-        [class]="verdictStrokes[target.verdict]"
-        stroke-opacity="0.3"
-        stroke-width="3"
-        [attr.r]="node.haloRadius"
-      />
-      @if (target.details; as details) {
-        <g [attr.transform]="node.ballScale">
-          <circle [class]="verdictFills[target.verdict]" r="1" />
-          <circle class="fill-bg" fill-opacity="0.35" r="1" />
-          <circle [class]="verdictFills[target.verdict]" cx="-0.1" cy="-0.1" r="0.86" />
-          <ellipse
-            class="fill-fg"
-            fill-opacity="0.55"
-            cx="-0.4"
-            cy="-0.42"
-            rx="0.22"
-            ry="0.13"
-            transform="rotate(-35 -0.4 -0.42)"
-          />
-        </g>
-        @if (node.defenseDash; as dash) {
+      <!-- Die Symbole fangen keine Zeiger, sonst träfe eine große Kugel die Fläche des Nachbarn. -->
+      <g class="pointer-events-none" [attr.transform]="item.layout.zoom">
+        <circle
+          class="fill-none stroke-accent opacity-0 group-focus-visible:opacity-100"
+          stroke-width="2"
+          [attr.r]="node.focusRadius"
+        />
+        @if (target.selected) {
           <circle
-            class="fill-none stroke-magenta"
-            stroke-width="4"
+            class="fill-none stroke-warning"
+            stroke-width="3"
             stroke-linecap="round"
-            transform="rotate(-90)"
-            [attr.r]="node.haloRadius"
-            [attr.stroke-dasharray]="dash"
+            stroke-dasharray="1 7"
+            [attr.r]="node.selectionRadius"
+            [attr.data-testid]="'sonar.map.targets.' + target.index + '.selected'"
           />
         }
-        <text
-          class="sonar-map__label fill-fg text-base font-semibold"
-          text-anchor="middle"
-          [attr.y]="node.labelY"
-          aria-hidden="true"
-        >
-          {{ siteTypeLabels[details.type] }}
-        </text>
-        @if (details.rewardsDna) {
-          <text
-            class="sonar-map__label fill-violet text-sm tabular-nums"
-            text-anchor="middle"
-            [attr.y]="node.dnaY"
-            aria-hidden="true"
-            i18n="@@uiSonar-sonarMap-dna"
-          >
-            +{{ details.dna | formatDown }} DNA
+        <circle
+          class="fill-none"
+          [class]="verdictStrokes[target.verdict]"
+          stroke-opacity="0.3"
+          stroke-width="3"
+          [attr.r]="node.haloRadius"
+        />
+        @if (target.details; as details) {
+          <g [attr.transform]="node.ballScale">
+            <circle [class]="verdictFills[target.verdict]" r="1" />
+            <circle class="fill-bg" fill-opacity="0.35" r="1" />
+            <circle [class]="verdictFills[target.verdict]" cx="-0.1" cy="-0.1" r="0.86" />
+            <ellipse
+              class="fill-fg"
+              fill-opacity="0.55"
+              cx="-0.4"
+              cy="-0.42"
+              rx="0.22"
+              ry="0.13"
+              transform="rotate(-35 -0.4 -0.42)"
+            />
+          </g>
+          @if (node.defenseDash; as dash) {
+            <circle
+              class="fill-none stroke-magenta"
+              stroke-width="4"
+              stroke-linecap="round"
+              transform="rotate(-90)"
+              [attr.r]="node.haloRadius"
+              [attr.stroke-dasharray]="dash"
+            />
+          }
+        } @else {
+          <circle
+            class="fill-bg-deep stroke-fg-muted"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-dasharray="1 6"
+            [attr.r]="node.radius"
+          />
+          <text class="fill-fg-muted text-base" text-anchor="middle" y="5" aria-hidden="true">
+            ?
           </text>
         }
-      } @else {
-        <circle
-          class="fill-bg-deep stroke-fg-muted"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-dasharray="1 6"
-          [attr.r]="node.radius"
-        />
-        <text class="fill-fg-muted text-base" text-anchor="middle" y="5" aria-hidden="true">?</text>
-      }
-      @if (target.strategyChoice) {
+        @if (target.strategyChoice) {
+          <text
+            class="sonar-map__label fill-accent text-base"
+            text-anchor="middle"
+            [attr.y]="node.markY"
+            aria-hidden="true"
+            [attr.data-testid]="'sonar.map.targets.' + target.index + '.strategy-choice'"
+          >
+            ◆
+          </text>
+        }
+      </g>
+      <!-- Beschriftung außerhalb der Vergrößerung: Lage und Größe aus der Kollisionsvermeidung. -->
+      @if (label) {
         <text
-          class="sonar-map__label fill-accent text-base"
-          text-anchor="middle"
-          [attr.y]="node.markY"
+          class="sonar-map__label fill-fg font-semibold"
           aria-hidden="true"
-          [attr.data-testid]="'sonar.map.targets.' + target.index + '.strategy-choice'"
+          [attr.font-size]="_layout.nameSize"
+          [attr.text-anchor]="label.anchor"
+          [attr.x]="label.x"
+          [attr.y]="label.y"
         >
-          ◆
+          {{ item.name }}
         </text>
+        @if (label.dnaY !== null) {
+          <text
+            class="sonar-map__label fill-violet tabular-nums"
+            aria-hidden="true"
+            [attr.font-size]="_layout.smallSize"
+            [attr.text-anchor]="label.anchor"
+            [attr.x]="label.x"
+            [attr.y]="label.dnaY"
+          >
+            {{ item.dna }}
+          </text>
+        }
       }
     </g>
   }
@@ -231,16 +248,13 @@
       stroke-dasharray="1 8"
       [attr.r]="_map.here.radius"
     />
-    <text class="sonar-map__label fill-fg text-sm" text-anchor="middle" [attr.y]="_map.here.labelY">
-      @if (_map.travel) {
-        <ng-container i18n="@@uiSonar-sonarMap-left">
-          {{ siteTypeLabels[_map.here.type] }} (verlassen)
-        </ng-container>
-      } @else {
-        <ng-container i18n="@@uiSonar-sonarMap-here">
-          {{ siteTypeLabels[_map.here.type] }} (hier)
-        </ng-container>
-      }
+    <text
+      class="sonar-map__label fill-fg"
+      text-anchor="middle"
+      [attr.font-size]="_layout.smallSize"
+      [attr.y]="_layout.hereLabelY"
+    >
+      {{ hereLabel() }}
     </text>
   </g>
 </svg>

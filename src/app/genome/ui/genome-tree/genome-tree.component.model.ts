@@ -1,7 +1,7 @@
 import type { FragmentId } from '@app/finds/domain/models/finds.model';
 import type { Num } from '@app/shared/util/num/num';
 
-import type { NodeDecoration, TreeOrganelle } from '../../domain/genome-tree-logic';
+import type { LabelSide, TagSide, TreeOrganelle } from '../../domain/genome-tree-logic';
 import type {
   FragmentProgress,
   GenomeBranch,
@@ -32,7 +32,11 @@ interface TreeNodeBase {
   readonly translate: string;
   /** `transform` der Kugel eines entwickelten Knotens, gezeichnet im Einheitskreis. */
   readonly ballScale: string;
-  readonly decoration: NodeDecoration;
+  /** Seite von Beschriftung und Kostenschild; die Maße rechnet der Baum nach der Bildschirmgröße. */
+  readonly labelSide: LabelSide;
+  readonly tagSide: TagSide;
+  /** Abstand zum nächsten Knoten im `viewBox`; begrenzt die Trefferfläche. */
+  readonly nearest: number;
   /** DNA-Preis im Kostenschild, nur bei `available` und `too-expensive`. */
   readonly cost: Num | null;
   /** Fortschritt im Schild einer noch nicht gefundenen einzigartigen Adaption. */

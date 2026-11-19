@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 
 import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
 import { FormatDurationPipe } from '@app/shared/ui/pipes/format-duration/format-duration.pipe';
@@ -35,7 +35,14 @@ export class SonarTitleComponent {
 
   changedStrategy = output<StrategyId>();
 
+  /** Legende auf dem Smartphone aufgeklappt; lokaler UI-Zustand, auf größeren Bildschirmen immer offen. */
+  legendOpen = signal(false);
+
   strategyGroupLabel = $localize`:@@uiSonar-sonarTitle-strategyGroup:Strategie`;
+
+  onToggleLegend(): void {
+    this.legendOpen.update((open) => !open);
+  }
 
   onSelectStrategy(strategy: StrategyId): void {
     if (strategy !== this.strategy()) {

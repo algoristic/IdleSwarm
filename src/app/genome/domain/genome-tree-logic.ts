@@ -19,6 +19,12 @@ const LABEL_GAP = 8;
 const TAG_GAP = 6;
 export const TAG_WIDTH = 48;
 export const TAG_HEIGHT = 16;
+/** Schriftgrößen im Mockup (`viewBox`-Einheiten): Beschriftung `text-xs`, Kostenschild `text-2xs`. */
+export const LABEL_SIZE = 12;
+export const TAG_TEXT_SIZE = 10;
+/** Mindestgrößen auf dem Bildschirm (US-08.06, US-08.07). */
+export const MIN_TEXT_PX = 12;
+export const MIN_HIT_PX = 44;
 /** Wellen der Membran: zwei überlagerte Sinusformen wie im Mockup. */
 const MEMBRANE_SEGMENTS = 120;
 const MEMBRANE_WAVES: readonly {
@@ -59,6 +65,8 @@ export interface TreeTag {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  /** Eckenradius: halbe Höhe (Pille). */
+  readonly rx: number;
   /** Grundlinie des Texts, mittig im Schild. */
   readonly textX: number;
   readonly textY: number;
@@ -68,6 +76,9 @@ export interface TreeTag {
 export interface NodeDecoration {
   readonly label: TreeLabel;
   readonly tag: TreeTag;
+  /** Schriftgrößen im `viewBox`. */
+  readonly labelSize: number;
+  readonly tagTextSize: number;
   readonly pulseRadius: number;
   readonly selectionRadius: number;
   readonly focusRadius: number;
@@ -143,53 +154,125 @@ export function organelle(position: PolarPosition, rx: number, ry: number): Tree
   };
 }
 
+/** Vergrößerung von Beschriftung und Kostenschild gegenüber dem Mockup; 1 = wie im Mockup. */
+export interface TextScale {
+  readonly label: number;
+  readonly tag: number;
+}
+
+export const NO_TEXT_SCALE: TextScale = { label: 1, tag: 1 };
+
 /**
  * Beschriftung, Kostenschild, Pulsring, Auswahlring und Fokusring eines Knotens mit Radius
  * `radius`, relativ zum Mittelpunkt. Die Beschriftung steht darunter oder seitlich etwas über der
- * Mitte; das Schild darunter bzw. gegenüber der Beschriftung.
+ * Mitte; das Schild darunter bzw. gegenüber der Beschriftung. `scale` vergrößert Schrift und
+ * Schild auf kleinen Bildschirmen ({@link treeTextScale}); die Abstände wachsen mit.
  */
-export function nodeDecoration(radius: number, label: LabelSide, tag: TagSide): NodeDecoration {
+export function nodeDecoration(
+  radius: number,
+  label: LabelSide,
+  tag: TagSide,
+  scale: TextScale = NO_TEXT_SCALE,
+): NodeDecoration {
   return {
-    label: labelPlacement(radius, label),
-    tag: tagPlacement(radius, label, tag),
+    label: labelPlacement(radius, label, scale.label),
+    tag: tagPlacement(radius, label, tag, scale),
+    labelSize: round(LABEL_SIZE * scale.label),
+    tagTextSize: round(TAG_TEXT_SIZE * scale.tag),
     pulseRadius: radius + 5,
     selectionRadius: radius + 11,
     focusRadius: radius + 14,
   };
 }
 
-function labelPlacement(radius: number, side: LabelSide): TreeLabel {
+/**
+ * Kleinster Abstand zweier Knotenmittelpunkte; bestimmt, wie groß der Baum mindestens gerendert
+ * werden muss, damit Trefferflächen ohne Überschneidung {@link MIN_HIT_PX} breit sind.
+ */
+export function nearestDistances(points: readonly TreePoint[]): readonly number[] {
+  return points.map((point, i) =>
+    Math.min(
+      ...points
+        .filter((_other, j) => j !== i)
+        .map((other) => Math.hypot(other.x - point.x, other.y - point.y)),
+    ),
+  );
+}
+
+/**
+ * Kleinste gerenderte Kantenlänge des Baums in Pixeln: Bei ihr berühren sich die 44-px-Kreise der
+ * beiden nächsten Knoten gerade. Darunter wird der Baum größer als die Bühne und verschiebbar.
+ */
+export function minTreeSize(points: readonly TreePoint[]): number {
+  const nearest = Math.min(...nearestDistances(points));
+  return Math.ceil((TREE_SIZE * MIN_HIT_PX) / nearest);
+}
+
+/**
+ * Vergrößerung der Texte bei `pixelScale` (gerenderte Pixel je `viewBox`-Einheit), damit sie
+ * mindestens {@link MIN_TEXT_PX} groß erscheinen. Unter `minScale` (der Baum wird dann ohnehin nicht
+ * kleiner gerendert, außer auf breiten, niedrigen Desktops) wächst sie nicht weiter, damit sich
+ * Beschriftungen und Schilder benachbarter Knoten nicht überlappen.
+ */
+export function treeTextScale(pixelScale: number, minScale: number): TextScale {
+  const scale = Math.max(pixelScale > 0 && Number.isFinite(pixelScale) ? pixelScale : 1, minScale);
+  return {
+    label: round2(Math.max(1, MIN_TEXT_PX / (LABEL_SIZE * scale))),
+    tag: round2(Math.max(1, MIN_TEXT_PX / (TAG_TEXT_SIZE * scale))),
+  };
+}
+
+/**
+ * Radius der Trefferfläche: auf dem Bildschirm mindestens 44 px breit, mindestens der Fokusring,
+ * aber höchstens der halbe Abstand zum nächsten Knoten. So überdecken sich Nachbarn nie; bei
+ * Konflikt teilt die Mitte (das nähere Zentrum gewinnt).
+ */
+export function hitRadius(focusRadius: number, nearest: number, pixelScale: number): number {
+  const scale = pixelScale > 0 && Number.isFinite(pixelScale) ? pixelScale : 1;
+  return round(Math.min(Math.max(focusRadius, MIN_HIT_PX / 2 / scale), nearest / 2));
+}
+
+function labelPlacement(radius: number, side: LabelSide, scale: number): TreeLabel {
   switch (side) {
     case 'below':
-      return { x: 0, y: radius + 18, anchor: 'middle' };
+      return { x: 0, y: round(radius + 6 + LABEL_SIZE * scale), anchor: 'middle' };
     case 'start':
-      return { x: radius + LABEL_GAP, y: -4, anchor: 'start' };
+      return { x: radius + LABEL_GAP, y: round(-4 * scale), anchor: 'start' };
     case 'end':
-      return { x: -(radius + LABEL_GAP), y: -4, anchor: 'end' };
+      return { x: -(radius + LABEL_GAP), y: round(-4 * scale), anchor: 'end' };
   }
 }
 
-function tagPlacement(radius: number, label: LabelSide, side: TagSide): TreeTag {
+function tagPlacement(radius: number, label: LabelSide, side: TagSide, scale: TextScale): TreeTag {
+  const width = TAG_WIDTH * scale.tag;
+  const height = TAG_HEIGHT * scale.tag;
   if (side === 'opposite' && label !== 'below') {
     // Gegenüber der Beschriftung, auf Höhe der Knotenmitte.
     const direction = label === 'start' ? -1 : 1;
-    const centerX = direction * (radius + TAG_GAP + TAG_WIDTH / 2);
-    return tagAt(centerX, -TAG_HEIGHT / 2);
+    const centerX = direction * (radius + TAG_GAP + width / 2);
+    return tagAt(centerX, -height / 2, scale.tag);
   }
   // Unter der Beschriftung, wenn sie unter dem Knoten steht; sonst direkt unter dem Knoten.
-  const top = label === 'below' ? radius + 26 : radius + TAG_GAP;
-  return tagAt(0, top);
+  const top = label === 'below' ? radius + 14 + LABEL_SIZE * scale.label : radius + TAG_GAP;
+  return tagAt(0, top, scale.tag);
 }
 
-function tagAt(centerX: number, top: number): TreeTag {
+function tagAt(centerX: number, top: number, scale: number): TreeTag {
+  const width = TAG_WIDTH * scale;
+  const height = TAG_HEIGHT * scale;
   return {
-    x: round(centerX - TAG_WIDTH / 2),
+    x: round(centerX - width / 2),
     y: round(top),
-    width: TAG_WIDTH,
-    height: TAG_HEIGHT,
+    width: round(width),
+    height: round(height),
+    rx: round(height / 2),
     textX: round(centerX),
-    textY: round(top + 12),
+    textY: round(top + 12 * scale),
   };
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function toRadians(degrees: number): number {

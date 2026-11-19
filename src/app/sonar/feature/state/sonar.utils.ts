@@ -147,13 +147,11 @@ function toMapView(
       type: state.site.type,
       translate: `translate(${MAP_CENTER} ${MAP_CENTER})`,
       radius: HERE_RADIUS,
-      labelY: HERE_RADIUS + HERE_LABEL_GAP,
     },
   };
 }
 
 const LABEL_GAP = 7;
-const HERE_LABEL_GAP = 20;
 
 function toMapNode(
   target: TargetView,
@@ -164,6 +162,8 @@ function toMapNode(
   const halo = radius + 6;
   return {
     target,
+    x: point.x,
+    y: point.y,
     translate: `translate(${point.x} ${point.y})`,
     radius,
     ballScale: `scale(${radius})`,
@@ -174,8 +174,6 @@ function toMapNode(
       details === null || !details.defense.gt(Num.ZERO)
         ? null
         : arcDash(halo, details.defenseBarPercent / PERCENT),
-    labelY: radius + 24,
-    dnaY: radius + 39,
     markY: -(radius + 20),
     dimmed: target.status !== 'in-range' || target.blocker === 'traveling',
   };
