@@ -13,7 +13,7 @@ export const MAX_TICKS_PER_WAKE = 600;
 
 /**
  * Größerer Rückstand (Tab im Hintergrund, eingefrorene Seite) wird in groben Schritten nachgeholt,
- * höchstens so lange (TK §5, Start 24 h); den Rest verwirft der Takt und gleicht die Uhr ab. Die
+ * höchstens so lange (TK §4, Start 24 h); den Rest verwirft der Takt und gleicht die Uhr ab. Die
  * Obergrenze für den Offline-Fortschritt legt AP 1.5.1 fest.
  */
 export const MAX_CATCH_UP_MS = 24 * MS_PER_HOUR;

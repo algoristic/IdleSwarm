@@ -84,7 +84,8 @@ src/app/
   shared/
     util/num/, format/, rng/    # Num, Formatierung (Zahlen, Dauer, Datum), seeded RNG
     ui/pipes/                   # formatNum, formatRate, formatDown, formatDuration …
-    data-access/platform/       # CLOCK, ANIMATION_FRAME
+    data-access/platform/       # CLOCK, ANIMATION_FRAME, VIEWPORT
+    data-access/motion-preference/   # MotionPreferenceService: reduzierte Bewegung aus einer Quelle (data-motion)
   balance/
     domain/constants.ts, formulas.ts, targets.ts   # Konstanten, Formeln, Pacing-Zielbänder
     domain/models/effect.model.ts, effects-logic.ts # Effekt-System (Modifikatoren)
@@ -94,7 +95,7 @@ src/app/
     domain/game-state-logic.ts, commands-logic.ts, step-logic.ts, step-split-logic.ts, random-logic.ts
     domain/modifiers-logic.ts           # stateEffects, stateModifiers: Effekte aller Quellen
     domain/runner-logic.ts, cycle-metrics-logic.ts, bot-logic.ts, catch-up (geplant)
-    data-access/game-store/, game-loop/, game-core/   # provideGameCore(), Ereignis-Log
+    data-access/game-store/, game-loop/, game-core/   # provideGameCore(), Ereignis-Log, Nachholen im Takt
   swarm/
     domain/models/units.model.ts, transport-priority.model.ts, pheromones.model.ts
     domain/units-logic.ts, brood-logic.ts, transport-logic.ts, sacrifice-logic.ts, pheromone-logic.ts
@@ -103,11 +104,11 @@ src/app/
     domain/data/sites-era1.data.ts, collect-logic.ts, generator-logic.ts, map-logic.ts
     domain/combat-logic.ts, move-logic.ts, strategy-logic.ts, auto-move-logic.ts
     ui/site-type-labels/        # Namen der Futterstellentypen für HUD, Log und Umgebung
-  genome/                       # Genom Ära I und Genom-Ansicht /genom (lazy)
+  genome/                       # Genom Ära I und Genom-Modus /genom der K2-Shell
     domain/models/genome.model.ts, genome-event.model.ts, data/genome-era1.data.ts
     domain/genome-logic.ts, genome-tree-logic.ts   # Status, evolve, Vorschau; Geometrie des radialen Baums
-    feature/genome.routes.ts, genome/genome.page.ts, state/genome.facade.ts, state/genome.utils.ts
-    ui/genome-tree/, genome-detail/, genome-labels/, genome-descriptions/, models/
+    feature/genome-layer/, genome-overlay/, state/genome.facade.ts, state/genome.utils.ts   # Ebene (Baum) und Overlay
+    ui/genome-tree/, genome-detail/, genome-legend/, genome-labels/, genome-descriptions/, models/
   finds/
     domain/models/finds.model.ts, finds-event.model.ts, collection.model.ts, data/finds-era1.data.ts
     domain/finds-logic.ts, collection-logic.ts     # Ziehung, Buffs, Abbau-Schwellen; Sets, Badges, Schublade
@@ -115,15 +116,24 @@ src/app/
   persistence/
     domain/serialize-logic.ts, slots-logic.ts, migrations/
     data-access/persistence/    # PersistenceService, KEY_VALUE_STORE
-  hud/
+  hud/                          # HUD der Szene (Overlay im Szenen-Modus), Ressourcen und Speicherstatus für alle Modi
     domain/sacrifice-count-logic.ts   # Eingabeprüfung „Drohnen opfern“
-    feature/hud.routes.ts, hud/hud.page.ts, state/hud.facade.ts, state/hud.utils.ts
+    feature/scene-hud/, resources-panel/, save-status/, state/hud.facade.ts, state/hud.utils.ts
     ui/buy-button/, feeding-site/, hud-meter/, event-log/, form-sacrifice-drones/, pheromone-panel/, finds-panel/
-  sonar/                        # Umgebung /umgebung (lazy): SVG-Sonar-Karte (AP 1.2.8), darunter die Zielliste
+  sonar/                        # Kartenmodus /umgebung der K2-Shell: Sonar-Karte in der Ebene, Zielliste und Detailpanel im Overlay
     domain/auto-threshold-logic.ts    # Eingabeprüfung der Schwelle
-    domain/sonar-map-logic.ts         # Geometrie der Sonar-Karte (Maßstab, Route, Reiselinie)
-    feature/sonar.routes.ts, sonar/sonar.page.ts, state/sonar.facade.ts, state/sonar.utils.ts
-    ui/sonar-map/, target-list/, target-detail/, form-move-settings/, sonar-labels/, models/
+    domain/sonar-map-logic.ts         # Geometrie der Sonar-Karte (Maßstab, Route, Reiselinie, Beschriftung, Trefferflächen)
+    feature/sonar-layer/, sonar-overlay/, state/sonar.facade.ts, state/sonar.utils.ts
+    ui/sonar-map/, sonar-title/, move-note/, target-list/, target-detail/, form-move-settings/, sonar-labels/, models/
+  shell/                        # K2-Shell (lazy, Elternroute von /, /umgebung, /genom): Ebenen, Kamera, Eingabe
+    domain/models/shell-mode.model.ts, shell-mode-logic.ts, shell-camera-logic.ts   # Modus ↔ Pfad, --ms, Kamera
+    domain/shell-input-logic.ts, shell-pinch-logic.ts   # Mausrad, Tasten, Pinch (rein)
+    feature/shell.routes.ts, shell/shell.page.ts, shell-input/, state/shell.facade.ts, state/shell.utils.ts
+    ui/zoom-bar/
+  scene/                        # Szene der Welt-Ebene (Canvas 2D)
+    domain/scene-budget-logic.ts, scene-agent-logic.ts, scene-effects-logic.ts, scene-geometry-logic.ts
+    feature/scene-world/, state/scene.facade.ts, state/scene.utils.ts, state/scene.tokens.ts
+    ui/scene-canvas/            # SceneRenderer, vorgerenderte Sprites, Palette aus den Tokens
   model/                        # Modell-Seite (lazy)
     feature/model.routes.ts, model/model.page.ts, state/model.facade.ts, state/model.guards.ts
     ui/form-model-params/, form-stall-threshold/, model-charts/, model-metrics/, model-stalls/, model-pacing/, model-upgrades/, echart/, bot-labels/
@@ -131,12 +141,12 @@ src/app/
     domain/bots/, models/, params-logic.ts, model-params-logic.ts, reduce-result-logic.ts, stall-logic.ts,
     domain/progress-logic.ts, pacing-targets-logic.ts, upgrade-logic.ts, dna-flow-logic.ts …
   # geplant
-  shell/                        # Ebenen-Layout, Modus/Kamera (K2)
-  scene/                        # Canvas-Renderer
   settings/
 ```
 
 Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `applyCommand`/`apply` und `step` daraus zusammen. Eine `domain`-Schicht in einer Oberflächen-Domäne (`hud/domain`, `sonar/domain`) enthält nur reine Eingabeprüfung ohne Spielregeln, damit Formular-Schemas in `ui` sie nutzen können; `sonar/domain` und `genome/domain` enthalten außerdem die reine Geometrie ihrer SVG-Ansicht. `genome` und `finds` sind Fachdomänen mit eigenem Teil des Zustands (`genome`, `finds`). `finds/domain` nutzt `genome/domain` zur Laufzeit, umgekehrt nur über Typen, damit kein Laufzeitzyklus entsteht.
+
+Seit M1.4 gibt es die Oberflächen-Domänen `shell` und `scene`, beide ohne eigenen Teil des Zustands. `shell/domain` enthält die reine Modus-, Kamera- und Eingabelogik, `scene/domain` das Bewegungsmodell der Szene als reine Funktionen der Zeit mit eigenem visuellem RNG. Die Shell-Route stellt die Facades von Shell, Szene, HUD, Sonar und Genom bereit; jede Ebene und jedes Overlay injiziert die Facade seiner Domäne, die `ShellPage` selbst nur `ShellFacade` und `HudFacade` (DNA und Zahl verfügbarer Adaptionen für die Zoom-Leiste). Die einzelnen Routen `/umgebung` und `/genom` und das Prototyp-HUD auf `/` sind in der Shell aufgegangen; nur `/modell` liegt außerhalb.
 
 ### 3.3 Datenfluss
 
@@ -214,7 +224,7 @@ IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil*
 | Eingaben | Kommandos wie Käufe werden sofort angewendet, nicht erst im nächsten Tick |
 | Determinismus | Zufall nur über den seeded RNG im State (z. B. mulberry32). Gleicher Seed + gleiche Kommandos an gleicher Position zwischen den Ticks ⇒ gleiches Ergebnis. Grundlage für Tests, Modell-Seite und gegen Save-Scumming |
 | Offline-Catch-up | Beim Laden wird `Δt = now − lastSaved` (gedeckelt, Start 24 h) nachgeholt. Das geschieht in **adaptiven Schritten**: große Schritte (z. B. 10 s), die an Ereignisgrenzen (Futterstelle leer, Nahrung reicht für Brut, Auto-Weiterziehen) verkürzt werden. Die Teilung gibt es schon: `nextSplitMs` in `engine/domain/step-split-logic.ts` liefert Ankunft, nächste Abbau-Schwelle der Funde, nächsten Buff-Ablauf und vorhergesagten Auto-Auslöser, heute vom Headless-Runner genutzt. `step` teilt selbst exakt an Ankunft, Abbau-Schwellen und Buff-Ablauf (seit M1.3). Ergebnis ≈ Echtzeit-Simulation; ein Test sichert die Toleranz ab ([§10](#10-qualitätssicherung)) |
-| Hintergrund-Tab | Browser drosseln Timer, daher erkennt der GameLoop große Zeitsprünge und nutzt dafür ebenfalls den Catch-up |
+| Hintergrund-Tab | Browser drosseln Timer, daher erkennt der GameLoop große Zeitsprünge. **Umgesetzt (AP 1.4.6):** Bis 60 s Rückstand je Aufwachen (`MAX_TICKS_PER_WAKE`) läuft der Takt Tick für Tick; größere Rückstände (verborgener Tab, eingefrorene Seite) holt er wie der Headless-Runner in Schritten von 1 s (`CATCH_UP_STEP_MS`) nach, geteilt an `nextSplitMs`, damit Ankunft, Abbau-Schwellen und Auto-Weiterziehen auf die Millisekunde fallen. Vorläufige Obergrenze 24 h (`MAX_CATCH_UP_MS` in `engine/data-access/game-loop`); den Rest verwirft der Takt und gleicht die Uhr ab. Die endgültige Obergrenze und die Vereinheitlichung mit dem Offline-Catch-up legt AP 1.5.1 fest |
 | Performance-Budget | `step` < 2 ms auf einem Mittelklasse-Smartphone; Catch-up für 24 h < 1 s |
 
 ## 5. Mathematisches Modell & Modell-Seite
@@ -352,40 +362,74 @@ Die Umsetzung folgt [`docs/mockups/k2-kurzgesagt.html`](mockups/k2-kurzgesagt.ht
 | `#world` (z = 2) | Schwarm-Szene | Canvas; im Kartenmodus per `scale` und `clip-path: circle()` zum Punkt verkleinert |
 | `#genome` (z = 3) | Zellkern mit radialem Genom | SVG; im Genommodus wird die Welt vergrößert, `blur` und abgedunkelt |
 
-- **Umsetzungsstand:** Die SVG-Sonar-Karte gibt es seit AP 1.2.8 als Komponente oben auf `/umgebung` (SVG im Angular-Template, keine neue Abhängigkeit; Geometrie rein in `sonar/domain`). Die Zielliste bleibt bis M1.4 darunter als tippbare, barrierearme Alternative. Das SVG-Genom gibt es seit AP 1.3.3 als eigene Seite `/genom` (§8.6). Ebenen, Kamera und Moduswechsel folgen ab AP 1.4.1.
-- Der Modus ist ein Signal im GameStore (`'map' | 'scene' | 'gen'`). Die Shell-Komponente setzt `data-mode` am Container, CSS übernimmt die Übergänge.
-- Zoom-Leiste, Titel je Modus und Detailpanels hängen am Modus-Signal.
+- **Umsetzungsstand (AP 1.4.1, M1.4):** Ebenen, Kamera und Moduswechsel sind in der Domäne `shell` umgesetzt (`ShellPage`, Ebenen und Kamera nach der K2-Ausnahme in `shell.page.css`). Die Sonar-Ebene zeigt die SVG-Sonar-Karte (`SonarLayerComponent`, seit AP 1.2.8; Geometrie rein in `sonar/domain`), die Welt-Ebene die Canvas-Szene (`SceneWorldComponent`, §8.2), die Genom-Ebene den SVG-Baum (`GenomeLayerComponent`, seit AP 1.3.3, §8.6). Sonar- und Genom-Ebene setzen ihre Bühne auf `--ms` × `--ms`, damit Kartenzentrum und Zellkern in der Viewport-Mitte liegen. Die Zielliste bleibt im Overlay der Karte als tippbare, barrierearme Alternative zur Karte.
+- **Modus = Route:** `/` ist die Szene (`scene`), `/umgebung` die Karte (`map`), `/genom` das Genom (`gen`). Die `ShellPage` ist die gemeinsame Elternroute; die Kindrouten haben keine Komponente, damit dieselbe Instanz bestehen bleibt und die CSS-Übergänge laufen. Die `ShellFacade` leitet den Modus per `toSignal` aus den Router-Ereignissen ab und wechselt ihn per Navigation (`setMode`, `zoom` in den Nachbarmodus). Browser-Verlauf, Lesezeichen und Links wie „Weiterziehen“ funktionieren damit ohne eigenen Zustand; der Modus ist UI-Zustand und gehört nicht in den `GameStore`. Die Shell setzt `data-mode` am Container, CSS übernimmt die Übergänge; Utilities reagieren über die Varianten `mode-map:`, `mode-scene:`, `mode-gen:`. `/modell` liegt außerhalb der Shell.
+- **Kamera:** Die Werte stehen als UI-Konstanten in `shell/domain/shell-camera-logic.ts` (`worldCamera`, `worldCameraStyle`). Szene `scale(1)`; die Karte schrumpft die Welt auf die eigene Position der Sonar-Karte (Ausschnitt `clip-path: circle()` mit `MAP_CLIP_RADIUS`, skaliert auf `HERE_RADIUS` der Karte, Helligkeit 1,15); Genom `scale(2.8)`, `blur(7px)`, `brightness(0.4)`. `clip-path` hat in allen Modi die Form `circle(…)`, damit es überblendet. Dauern und Easing sind Tokens (`--sw-zoom-duration`, `--sw-zoom-fade-duration`, `--sw-ease-zoom`, `--sw-zoom-reduced-duration`).
+- **`--ms`** (`stageSize`): Mockup-Formel `max(360, min(h · 0,86, w − 720))`, auf ganze Pixel abgerundet und nie breiter als der Viewport minus 2 · 16 px; unter 768 px eigene Formel (§8.4). Die Viewport-Größe liest die `ShellFacade` über das Token `VIEWPORT` (`shared/data-access/platform`).
+- **Bedienelemente:** Zoom-Leiste links (`ZoomBarComponent`: Umgebung, Schwarm, Genom mit DNA und Badge bezahlbarer Adaptionen; aktiver Eintrag mit `aria-current="page"`), Knopf „← zurück zum Schwarm“ unten Mitte in Karte und Genom; ein Klick auf die verkleinerte Welt im Kartenmodus führt ebenfalls zur Szene. Ressourcen, Speicherstatus und Zoom-Leiste stehen in allen Modi in der linken Spalte.
+- **Overlays je Modus:** Jeder Modus hat ein vollflächiges Overlay über den Ebenen (`SceneHudComponent`, `SonarOverlayComponent`, `GenomeOverlayComponent`), das seine Panels selbst platziert: Titel oben Mitte, Detailpanel rechts, in der Szene dazu Aktionsleiste, Schubladen, Log und Ära-Anzeige. Sichtbar ist nur das Overlay des aktiven Modus (`mode-*:opacity-100`). Nicht aktive Ebenen und Overlays tragen `inert` (kein Tab-Fokus, nicht für Screenreader); die Welt ist nur im Genom-Modus inert, weil sie in der Karte als Punkt anklickbar bleibt. Die Körnung liegt zwischen Ebenen und Overlays.
 
 ### 8.2 Szene (Canvas)
 
-- **Agenten-Budget:** maximal ~300 Sprites (mobil ~150). Bei mehr Einheiten steht ein Sprite für `n` Einheiten, die Verteilung auf die Typen bleibt proportional.
-- **DPR:** Die Canvas-Größe wird mit `devicePixelRatio` skaliert (gedeckelt auf 2).
-- Einheiten sind flach schattierte Zellen aus mehreren Flächen (Körper, Cel-Schatten als Sichel, Kern). Damit das pro Frame billig bleibt, werden Sprites je Typ vorgerendert (Offscreen-Canvas) und nur kopiert.
-- Ertrags-Partikel und Ereigniszahlen, etwa bei Einnahmen oder Funden: Partikel im Canvas, Zahlen als DOM-Elemente.
+- **Umsetzungsstand (AP 1.4.2, 1.4.6):** Domäne `scene`: `SceneWorldComponent` mit Canvas 2D in der Welt-Ebene, `SceneRenderer` in `scene/ui`, das Bewegungsmodell als reine Funktionen der Zeit in `scene/domain`. Die Szene zeichnet Hintergrund, Lichtkegel, Hügel, Plankton, die Futterstelle (Wärmezonen, Klumpen nach Vorratsanteil kleiner und blasser, Blasen), Agenten (Drohnen pendeln und tragen auf dem Rückweg Nahrung, Soldaten patrouillieren, Königinnen kreisen) und Ertragsteilchen; unterwegs keine Futterstelle.
+- **Agenten-Budget:** 300 Sprites, mobil 150 (`spriteBudget`). Mobil heißt Breite < 768 px **oder** `pointer: coarse`, damit auch Tablets mit schwacher GPU das kleinere Budget bekommen. Bei mehr Einheiten steht ein Sprite für `n` Einheiten, verteilt nach größten Resten, jeder vorhandene Typ mit mindestens einem Sprite. Ändert sich die Sprite-Zahl, werden Agenten nur ergänzt oder ausgeblendet, nicht neu gewürfelt.
+- **Zufall:** Rein visueller Zufall läuft über einen eigenen seeded RNG der Szene (`SCENE_SEED`, `shared/util/rng`), nie über `rngState` des Spielstands. Die Szene ändert keinen Zustand.
+- **DPR:** Die Canvas-Größe wird mit `devicePixelRatio` skaliert (gedeckelt auf 2). DPR und Zeigerart kommen über das Token `SCENE_DISPLAY`, die Viewport-Größe über `VIEWPORT`.
+- **Sprites:** Einheiten sind flach schattierte Zellen aus mehreren Flächen (Körper, Glanzlicht, Kern; kein `shadowBlur`). Sprites je Typ werden in Geräte-Pixeln vorgerendert und nur per `drawImage` kopiert; bei Größen- oder DPR-Wechsel entstehen sie neu.
+- **Hintergrund-Cache (AP 1.4.6):** Himmel, Lichtkegel und Hügel liegen in einem vorgerenderten Bild, das erst neu entsteht, wenn ein Kegel um 0,5 CSS-px geschwankt ist; der Schein der Futterstelle ist ein Sprite statt eines Verlaufs je Frame.
+- **Farben:** Der Canvas liest alle Farben einmal beim Start aus den Tokens `--sw-scene-*` und `--sw-unit-*`; im Renderer stehen keine Farbwerte.
+- **Render-Takt:** nur über `GameLoop.onRender`; er pausiert bei verborgener Seite (§4). Pro Frame laufen keine Template-Bindungen.
+- **Ertragsteilchen und Ereigniszahlen:** Teilchen im Canvas (Rate logarithmisch in der Nahrung/s, gedeckelt), Zahlen („+x DNA“, „Fund!“) als DOM-Elemente mit CSS-Animation; für Screenreader `aria-hidden`, weil das Log dieselben Ereignisse nennt.
 
 ### 8.3 Eingabe
 
 | Eingabe | Desktop | Mobile |
 |---|---|---|
-| Moduswechsel | Mausrad (mit Sperre ~900 ms), Tasten `W` / `G` / `Esc`, Zoom-Leiste | Pinch (Schwellwert), Zoom-Leiste, Zurück-Knopf |
+| Moduswechsel | Mausrad (mit Sperre 900 ms), Tasten `W` / `G` / `Esc`, Zoom-Leiste, Zurück-Knopf | Pinch (Schwellwert), Zoom-Leiste, Zurück-Knopf |
 | Auswahl | Mausklick auf Ziel, Knoten oder Knopf | Tippen |
 | Technik | Pointer Events einheitlich; Pinch aus zwei aktiven Pointern berechnet; `touch-action: none` auf der Spielfläche |
+
+**Umsetzungsstand (AP 1.4.4, 1.4.5):** Die Eingabelogik ist rein in `shell/domain` (`shell-input-logic.ts`, `shell-pinch-logic.ts`) und wird von der `ShellInputDirective` am Shell-Container verdrahtet. Nur diese Stelle hört auf Rad, Tasten und Pinch, deshalb gibt es keine doppelte Auslösung.
+
+- **Mausrad:** Richtung wie im Mockup (`deltaY > 0` zoomt hinaus Richtung Karte, sonst hinein Richtung Genom). Ein Wechsel je Sperre von 900 ms (`WHEEL_LOCK_MS`); die Sperre startet auch am Ende der Reihe neu. Ausschläge unter 4 px zählen nicht (`WHEEL_MIN_DELTA`), Zeilen- und Seitenmodus werden in Pixel umgerechnet (16 px je Zeile). Kein Wechsel, wenn das Rad über einem Eingabefeld oder einem Panel liegt, das gerade senkrecht scrollen kann (Detailpanels, Schubladen, linke Spalte). Strg+Rad bleibt dem Browser-Zoom.
+- **Tasten:** `W` Umgebung, `G` Genom, `Esc` Schwarm; nicht mit Strg/Alt/Meta, nicht bei Tastenwiederholung und nicht aus Eingabefeldern. `Esc` schließt in der Szene zuerst eine offene Schublade. Die Knöpfe der Zoom-Leiste tragen `aria-keyshortcuts`; eine Hinweiszeile nennt Rad und Tasten und ist bei `pointer: coarse` ausgeblendet.
+- **Pinch:** Auseinander ab Faktor 1,25 zoomt hinein (Richtung Genom), zusammen ab 0,8 hinaus (Richtung Karte, wie das Mausrad). Je Geste höchstens ein Wechsel, ab drei Fingern gesperrt. Gezählt werden nur Touch-Pointer, die auf der Spielfläche (`.shell__layer`) aufsetzen; Panels scrollen weiter und erlauben dort den Browser-Zoom (kein `user-scalable=no`). Übernimmt der Browser die Geste (`pointercancel`, z. B. wenn ein Finger den Genom-Baum auf dem Smartphone schon verschiebt), speisen bis zum Loslassen passive Touch Events denselben Zustandsautomaten. Klicks während und 400 ms nach einer Mehrfinger-Geste werden verworfen, damit ein Pinch kein Tippen auslöst.
+- Pinch ist bisher nur in der Emulation geprüft; die Prüfung auf echten Geräten (iOS, Android) steht aus.
 
 ### 8.4 Responsives Layout
 
 | Breite | Anpassung |
 |---|---|
-| ≥ 1200 px | Layout wie Mockup (Ressourcen links oben, Zoom-Leiste links, Detailpanel rechts) |
-| 768–1199 px | Detailpanel schmaler, Log ausgeblendet bzw. einklappbar |
-| < 768 px | Detailpanels und Schubladen als **Bottom-Sheets**; Zoom-Leiste als kompakte Leiste; Aktionsleiste unten über volle Breite; Ressourcen als kompakte Zeile oben |
+| ≥ 1200 px (`desktop:`) | Layout wie Mockup (Ressourcen links oben, Zoom-Leiste links, Detailpanel rechts, Log mit 4 Einträgen) |
+| 768–1199 px (`md:max-desktop:`) | Detailpanel schmaler und unter dem Titel; das Log zeigt nur die 2 neuesten Einträge |
+| < 768 px (`max-md:`) | Ressourcen als kompakte Kopfzeile oben, darunter eine Moduszeile mit kompakter Zoom-Leiste und „← Schwarm“; Titel je Modus kompakt; Aktionsleiste unten über volle Breite; Detailpanels und Schubladen als **Bottom-Sheets**; Log mit 2 Einträgen, Ära-Anzeige ausgeblendet |
 
-Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz berechnet (`--ms`). Auf Mobile ist das die volle Breite.
+Die Breakpoints sind Tailwinds `md` (768 px) und das eigene Token `--breakpoint-desktop` (75rem = 1200 px) in `src/styles.css`.
+
+Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz berechnet (`--ms`). Auf dem Smartphone ist das die volle Breite abzüglich Rand, höchstens so hoch wie der Platz zwischen Kopfbereich und Aktionsleiste bzw. eingeklapptem Sheet (`min(w − 32, h − 360)`); die Bühne bleibt in der Viewport-Mitte.
+
+**Umsetzungsstand (AP 1.4.5):**
+
+- **Tablet-Log:** Statt ausgeblendet oder einklappbar zeigt das Log unter 1200 px nur die 2 neuesten Einträge. Das ist einfacher und überlappt die Aktionsleiste nicht; die Tabelle oben ist entsprechend angepasst.
+- **Bottom-Sheets:** Die Detailpanels von Karte und Genom haben einen Kopf zum Auf- und Zuklappen (`aria-expanded`); eingeklappt zeigen sie nur Kicker, Name und Primäraktion und klappen beim Moduswechsel ein. Die Schubladen der Szene liegen als Sheet über Reitern und Aktionsleiste. Legenden von Karte und Genom stehen hinter einem Knopf „Legende“.
+- **Sichere Bereiche:** `viewport-fit=cover` in `src/index.html`; Kopfzeile, Titel, Aktionsleiste und Sheets berücksichtigen `env(safe-area-inset-*)` (K2-Ausnahme).
+- **Sonar-Karte:** Schrift mindestens 12 px über den gemessenen Kartenmaßstab, Beschriftungen deterministisch ohne Überlappung platziert, unsichtbare Trefferflächen mindestens 44 px, zwischen Nachbarn an der Mittelsenkrechten geteilt (`sonar/domain/sonar-map-logic.ts`).
+- **Genom-Baum:** Auf dem Smartphone ist der Baum mindestens 800 px groß und mit einem Finger verschiebbar (Start auf dem Zellkern), weil 44-px-Trefferflächen ohne Überschneidung und 12-px-Beschriftungen erst ab rund 820 px Platz finden. Die Kostenschilder sind in allen Größen um den Faktor 1,2 gewachsen.
+- **Touch-Ziele:** Bedienelemente mindestens 44 px (`min-h-11`). Ausnahme sind die Strategie-Knöpfe im Kartentitel bei feinem Zeiger ab 768 px (`min-h-8`); bei `pointer: coarse` und auf dem Smartphone haben auch sie 44 px.
+- **Offen:** Das Querformat auf dem Smartphone ist nicht eigens optimiert.
 
 ### 8.5 Barrierearmut
 
 - `prefers-reduced-motion` und eine Einstellung ersetzen Zoom-Übergänge durch Überblendungen, reduzieren Partikel und stoppen Dauer-Animationen (Sonar-Sweep, Membran).
 - Alle Aktionen sind per Tastatur erreichbar; sichtbarer Fokus; ARIA-Labels für Icon-Knöpfe.
 - Farben sind nicht der einzige Informationsträger (z. B. „✓ einnehmbar“ / „✗ zu stark“ als Text).
+
+**Umsetzungsstand (AP 1.4.6):**
+
+- **Reduzierte Bewegung aus einer Quelle:** Der `MotionPreferenceService` (`shared/data-access/motion-preference`) verbindet `prefers-reduced-motion` (Token `PREFERS_REDUCED_MOTION`, folgt Änderungen zur Laufzeit) mit einem Override und spiegelt das Ergebnis als `data-motion="reduced"` bzw. `"full"` an `<html>`. Utilities nutzen die Variante `motion-reduced:` (vor dem App-Start ersatzweise die Media-Query), Komponenten-CSS `:host-context([data-motion='reduced'])`, Canvas und Logik lesen `reducedMotion` über ihre Facade. Das Attribut sitzt an `<html>`, damit auch `/modell` und spätere Dialoge außerhalb der Shell reagieren. Die Einstellung kommt mit AP 1.5.3 und setzt den Override über `setOverride(boolean | null)`.
+- **Wirkung:** Moduswechsel sind eine kurze Überblendung ohne Kamerafahrt. Sonar-Sweep, Routenfluss, Membran-Drehung, Puls verfügbarer Knoten und das Badge der Zoom-Leiste stehen still; Ereigniszahlen und Log-Einträge blenden nur ein und aus. Die Szene halbiert Plankton und Ertragsteilchen, lässt keine Blasen aufsteigen und hält die Lichtkegel an. Die Agenten bewegen sich weiter, weil sie Spielzustand zeigen und keine großen Flächen bewegen.
+- **Fokusführung:** Nach jedem Moduswechsel außer dem ersten Laden setzt die Shell den Fokus auf den Titel des neuen Modus (`tabindex="-1"`, benannte Region, ohne Scrollen); eine zusätzliche Live-Ansage gibt es nicht, damit der Screenreader den Modus nicht doppelt nennt. Schubladen nehmen beim Öffnen den Fokus und geben ihn beim Schließen an ihren Reiter zurück. Den sichtbaren Fokus setzt `:focus-visible` global in `src/styles.css`.
+- **Pause:** Dauer-Animationen von Sonar (Sweep, Routenfluss) und Genom (Membran, Puls) pausieren, solange ihre Ebene inert ist (`:host-context([inert])`); der Render-Takt der Szene pausiert bei verborgener Seite, der Logik-Takt holt den Rückstand danach nach (§4, US-09.03).
 
 ### 8.6 Grafikstil (K2-K)
 
@@ -395,8 +439,9 @@ Das UI-Leitbild ist [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 - **Schatten:** Cel-Schatten als Sichel auf Zellen und Knoten; Panels und Knöpfe als massive, abgerundete Flächen mit flachem Schlagschatten (`--drop`, `--shade` im Mockup).
 - **Tiefe:** Lichtkegel und Hügel in Luftperspektive in der Szene; leichte Körnung als Overlay über den Ebenen, unter dem HUD.
 - **Typografie:** abgerundete, kräftige Sans-Serif (im Mockup Nunito mit Systemschriften als Fallback). Seit AP 1.4.3 ist Nunito als variable Webfont (latin, latin-ext) selbst gehostet, mit den Systemschriften des Mockups als Fallback ([ADR-013](adr/013-webfont-nunito.md)).
-- **Palette:** Die Farben des Mockups (`:root`) werden zu `--sw-*`-Tokens in `src/styles.css` ([ADR-010](adr/010-tailwind-tokens.md)); Textkontrast ≥ 4,5:1 bleibt Pflicht.
-- **Genom (umgesetzt in AP 1.3.3):** radialer SVG-Baum im Zellkern nach Mockup K2-K, ohne neue Abhängigkeit. Gewellte Membran, Organellen, gebogene Äste in den Astfarben (Tokens `--sw-branch-*`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked*`, `--sw-cost-muted*`), Knoten mit Cel-Glanz, Kostenschild und Statusdarstellung; verfügbare Knoten pulsieren. Die Geometrie rechnet `genome/domain/genome-tree-logic.ts` rein, die Positionen stehen als UI-Daten in `genome/ui` (§6). Membran-Drehung und Puls sind CSS-Animationen nach der K2-Ausnahme und stehen bei `prefers-reduced-motion` still. Bis M1.4 ist das Genom eine eigene Seite, keine K2-Ebene.
+- **Palette:** Die Farben des Mockups (`:root`) werden zu `--sw-*`-Tokens in `src/styles.css` ([ADR-010](adr/010-tailwind-tokens.md)); Textkontrast ≥ 4,5:1 bleibt Pflicht. Umgesetzt in AP 1.4.3: Die Basis-Tokens tragen die Palette von K2-K. Koralle, Pink und Violett des Mockups erreichen als Text keine 4,5:1; `--sw-danger` und `--sw-magenta` sind deshalb aufgehellt, `--sw-violet` ist der helle Ton `--sw-violet-light`.
+- **HUD und Overlays (umgesetzt in AP 1.4.3):** Ressourcen, Titel je Modus, Aktionsleiste, Zoom-Leiste, Schubladen, Log und Ära-Anzeige folgen dem Mockup als massive, abgerundete Panels (`bg-surface`, `shadow-panel`) mit gelbem Primärknopf. Die Körnung ist die Utility `grain` (`mix-blend-mode: overlay`) zwischen Ebenen und Overlays.
+- **Genom (umgesetzt in AP 1.3.3):** radialer SVG-Baum im Zellkern nach Mockup K2-K, ohne neue Abhängigkeit. Gewellte Membran, Organellen, gebogene Äste in den Astfarben (Tokens `--sw-branch-*`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked*`, `--sw-cost-muted*`), Knoten mit Cel-Glanz, Kostenschild und Statusdarstellung; verfügbare Knoten pulsieren. Die Geometrie rechnet `genome/domain/genome-tree-logic.ts` rein, die Positionen stehen als UI-Daten in `genome/ui` (§6). Membran-Drehung und Puls sind CSS-Animationen nach der K2-Ausnahme und stehen bei reduzierter Bewegung still (§8.5). Seit AP 1.4.1 liegt der Baum in der Genom-Ebene der Shell, Titel und Detailpanel im Overlay des Genom-Modus.
 
 ## 9. Zahlenformatierung
 
@@ -421,7 +466,7 @@ Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan ([Projek
 | Balancing | Snapshot-Tests der Kennzahlen (Abschnitt 5.6) |
 | UI | Komponententests nur für Komponenten und Seiten mit eigener Logik (z. B. Formular-Parsing); rein darstellende Komponenten deckt der E2E-Smoke ab |
 | E2E | Playwright-Smoke: Start, Kauf, Moduswechsel, Weiterziehen; Viewports Desktop und Smartphone |
-| Performance | Messung in AP 1.4.6 auf echtem Smartphone: 60 fps in der Szene, Moduswechsel ohne Ruckeln |
+| Performance | Ziel: 60 fps in der Szene, Moduswechsel ohne Ruckeln. **Stand AP 1.4.6 (Emulation):** Headless-Chromium mit Software-Raster, 4× CPU-Drosselung, 250.000 Drohnen. Smartphone 390 × 844, DPR 2, 150 Sprites: mit Hintergrund-Cache und Schein-Sprite Median und 95-Perzentil 16,7–16,8 ms je Frame, auch während der Moduswechsel (vorher 95-Perzentil 33,4 ms); teuer sind Pixelflächen, nicht JavaScript (Szene-Skript < 1 % der Samples). **Risiko:** Desktop 1440 × 900 mit 300 Sprites bleibt im Software-Compositing bei rund 30 fps; Hauptursache ist die Körnung (`mix-blend-mode: overlay` über der sich jeden Frame ändernden Szene), ohne Körnung 60 fps. Auf echter GPU zu prüfen. Profiling auf echten Geräten (iOS, Android) steht aus |
 | CI-Gates | Lint, Unit-Tests, Build und E2E müssen grün sein, bevor auf `main` deployt wird; das Gate E2E greift erst ab AP 1.5.7, wenn es E2E-Tests gibt |
 
 ## 11. Deployment & PWA

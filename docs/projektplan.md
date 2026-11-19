@@ -219,6 +219,7 @@ flowchart TB
     class ap111,ap112,ap113,ap114,ap115,ap116,ap117,ap118,ap119,ap1110 done
     class ap121,ap122,ap123,ap124,ap125,ap126,ap127,ap128,ap129 done
     class ap131,ap132,ap133,ap134,ap135,ap136,ap137 done
+    class ap141,ap142,ap143,ap144,ap145,ap146 done
 ```
 
 #### M1.0 · Fundament
@@ -289,14 +290,14 @@ flowchart TB
 
 | AP | Arbeitspaket | Inhalt | PT | Stories |
 |---|---|---|---|---|
-| 1.5.1 | Offline-Fortschritt | Nachholen mit Ereignissen (Futterstelle leer, Auto-Weiterziehen), Obergrenze, Rückkehr-Zusammenfassung; neu bewerten, ob das Ereignis-Log in den Spielstand gehört (heute nur Arbeitsspeicher, `GameStore.load` leert es); aus der M1.3-Durchsicht: Toleranz zwischen grobem und feinem Schritt prüfen (Runner-Test seit M1.3 mit 15 % statt 2 %, [TK §10](technisches-konzept.md#10-qualitätssicherung)) | 1,5–2 | US-07.01, 07.03 |
+| 1.5.1 | Offline-Fortschritt | Nachholen mit Ereignissen (Futterstelle leer, Auto-Weiterziehen), Obergrenze, Rückkehr-Zusammenfassung; neu bewerten, ob das Ereignis-Log in den Spielstand gehört (heute nur Arbeitsspeicher, `GameStore.load` leert es); aus der M1.3-Durchsicht: Toleranz zwischen grobem und feinem Schritt prüfen (Runner-Test seit M1.3 mit 15 % statt 2 %, [TK §10](technisches-konzept.md#10-qualitätssicherung)); aus der M1.4-Durchsicht: Der GameLoop holt einen Rückstand bei verborgenem Tab schon in 1-s-Schritten an `nextSplitMs` nach, mit vorläufiger Obergrenze 24 h (`MAX_CATCH_UP_MS`); Obergrenze festlegen und mit dem Offline-Fortschritt vereinheitlichen ([TK §4](technisches-konzept.md#4-simulation)) | 1,5–2 | US-07.01, 07.03 |
 | 1.5.2 | Spielstand-Verwaltung | Autosave, Export/Import, Zurücksetzen | 0,5–1 | US-07.04, 07.05 |
-| 1.5.3 | Einstellungen | Zahlenformat, Animationen, Autosave-Intervall | 0,5–1 | US-09.01 |
+| 1.5.3 | Einstellungen | Zahlenformat, Animationen, Autosave-Intervall; aus der M1.4-Durchsicht: Schalter „Animationen“ an `MotionPreferenceService.setOverride` anschließen ([TK §8.5](technisches-konzept.md#85-barrierearmut)) | 0,5–1 | US-09.01 |
 | 1.5.4 | Onboarding | Kontextuelle Hinweise, schrittweise Freischaltung der Oberfläche | 1–1,5 | US-09.04 |
 | 1.5.5 | Balancing | Zielwerte festlegen, Bot-Läufe, Anpassen, Kennzahlen als Regressions-Snapshots; aus der M1.2-Durchsicht: neu bewerten, ob die längste Wartezeit für „Aktiv“ (Ziel ≤ 60 s) das Warten misst oder eher die Kaufkraft am Spielbeginn; aus der M1.3-Durchsicht ([Game-Design §6.5](game-design.md#65-messung-m13)): DNA-Senke (Genom nach rund 3 h komplett), Pacing-Abweichungen der Messung M1.3, kein Kampf bei „Aktiv“ und „Idle“, „Idle“ genau auf der Grenze „< 60 min“ der längsten Strecke ohne Kauf (Band bleibt exklusiv) | 2–3 | US-10.09 |
-| 1.5.6 | PWA | Manifest, Service Worker, Icons | 0,5 | US-07.06 |
-| 1.5.7 | E2E-Tests | Smoke-Tests für Desktop- und Mobile-Viewport | 1–1,5 | – |
-| 1.5.8 | Playtest & Release | 3–5 externe Testspieler, Bugfixing, Release 1.0 | 2–3 | – |
+| 1.5.6 | PWA | Manifest, Service Worker, Icons; aus der M1.4-Durchsicht: Der Service Worker muss die gebündelten Schriftdateien (`media/*.woff2`, [ADR-013](adr/013-webfont-nunito.md)) vorab cachen | 0,5 | US-07.06 |
+| 1.5.7 | E2E-Tests | Smoke-Tests für Desktop- und Mobile-Viewport; aus der M1.4-Durchsicht: Moduswechsel über Zoom-Leiste, Zurück-Knopf und Tasten sowie Bottom-Sheets und Log mit Einträgen im Smartphone-Viewport abdecken (Test-IDs `shell.*`) | 1–1,5 | – |
+| 1.5.8 | Playtest & Release | 3–5 externe Testspieler, Bugfixing, Release 1.0; aus der M1.4-Durchsicht: Profiling und Pinch auf echten Geräten (iOS, Android), Körnung (`mix-blend-mode: overlay`) auf dem Desktop mit echter GPU prüfen ([TK §10](technisches-konzept.md#10-qualitätssicherung)); Querformat auf dem Smartphone; Kartenbeschriftung „(hier)“ weicht Zielen nicht aus, „Reichweite“ liegt auf dem Desktop teils unter dem Titel-Panel | 2–3 | – |
 
 ### 3.4 Game-Design-Entscheidungen für AS1
 

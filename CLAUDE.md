@@ -35,11 +35,13 @@
 | --- | --- | --- |
 | [`simulation`](.claude/rules/simulation.md) | `src/app/{balance,engine,swarm,site}/**` | Formeln, `GameState`, Kommandos, `step`, Runner, GameStore und GameLoop |
 | [`persistence`](.claude/rules/persistence.md) | `src/app/persistence/**` | Spielstand-Format, Slots, Migrationen, Autosave |
-| [`hud`](.claude/rules/hud.md) | `src/app/hud/**` | Prototyp-HUD: Facade, Viewmodel, Kaufknopf, Futterstelle |
+| [`hud`](.claude/rules/hud.md) | `src/app/hud/**` | HUD der Szene im K2-Stil: Facade, Viewmodel, Ressourcen, Aktionsleiste, Schubladen, Log |
 | [`model`](.claude/rules/model.md) | `src/app/model/**` | Modell-Seite: Bots, Worker, Parameterformular, Diagramme, Kennzahlen, Stillstände |
 | [`sonar`](.claude/rules/sonar.md) | `src/app/sonar/**` | Umgebung (`/umgebung`): Sonar-Karte, Zielliste, Detailpanel, Aufbruch, Strategie und Auto-Weiterziehen |
 | [`genome`](.claude/rules/genome.md) | `src/app/genome/**` | Genom Ära I: Knoten, einzigartige Adaptionen, `evolve`; Genom-Ansicht (`/genom`) mit SVG-Baum und Detailpanel |
 | [`finds`](.claude/rules/finds.md) | `src/app/finds/**` | Funde: Fundtabelle, eigener Fund-RNG, Ziehung, Buffs, Fragmente, Sammlung und Badges |
+| [`shell`](.claude/rules/shell.md) | `src/app/shell/**` | K2-Shell: Ebenen, Kamera, Modus = Route, Zoom-Leiste, Mausrad, Tasten, Pinch, Fokusführung |
+| [`scene`](.claude/rules/scene.md) | `src/app/scene/**` | Szene: Canvas der Welt-Ebene, Sprite-Budget, Bewegungsmodell, Renderer, Ereigniszahlen |
 | [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
 
 **Regeln, die überall gelten:**
@@ -93,18 +95,20 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 
 | Domäne | Inhalt |
 | --- | --- |
-| `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`) |
+| `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`, `VIEWPORT`), `MotionPreferenceService` (reduzierte Bewegung) |
 | `balance` | `domain`: Konstanten, Formeln, Effekt-System, Zielbänder (`targets`) |
 | `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
 | `swarm` | Einheiten, Brut, Transport, Drohnen opfern, Pheromone |
 | `site` | Futterstellen, Sammeln, Generator, Reichweite, Kampf, Weiterziehen, Strategien, Auto-Weiterziehen (`domain`); Typnamen (`ui`) |
 | `persistence` | `domain`: Serialisierung, Slots, Migrationen; `data-access`: `PersistenceService`, `KEY_VALUE_STORE` |
-| `hud` | Prototyp-HUD (`feature`, `ui`, `domain` für Eingabeprüfung) |
-| `sonar` | Umgebung: Viewmodel, Facade und Seite (`feature`), Sonar-Karte (SVG), Zielliste, Detailpanel, Einstellungsformular (`ui`), Eingabeprüfung und Kartengeometrie (`domain`) |
-| `genome` | Genom Ära I: Knoten, einzigartige Adaptionen, Status, `evolve`, Effektvorschau, Baumgeometrie (`domain`); Namen, Beschreibungen, SVG-Baum und Detailpanel (`ui`); Seite `/genom` und `GenomeFacade` (`feature`) |
+| `hud` | HUD der Szene, Ressourcen und Speicherstatus (`feature`, `ui`, `domain` für Eingabeprüfung) |
+| `sonar` | Umgebung (Kartenmodus): Viewmodel, Facade, Ebene und Overlay (`feature`), Sonar-Karte (SVG), Zielliste, Detailpanel, Einstellungsformular (`ui`), Eingabeprüfung und Kartengeometrie (`domain`) |
+| `genome` | Genom Ära I: Knoten, einzigartige Adaptionen, Status, `evolve`, Effektvorschau, Baumgeometrie (`domain`); Namen, Beschreibungen, SVG-Baum und Detailpanel (`ui`); Ebene, Overlay und `GenomeFacade` (`feature`) |
 | `finds` | Fundtabelle, eigener Fund-RNG, Ziehung, Buffs, Fragmente, Sammlung und Badges (`domain`); Namen der Funde, Sets und Badges (`ui`) |
 | `model` | Modell-Seite: Bots, Parameter, Laufauswertung (`domain`), Sim-Worker und `SimService` (`data-access`), Parameterformular, Diagramme, Kennzahlen (`ui`), Seite und `ModelFacade` (`feature`) |
-| später | `shell` (K2-Ebenen, Modus, Kamera), `scene` (Canvas), `settings` |
+| `shell` | K2-Shell: Modus ↔ Pfad, Kamera, `--ms`, Mausrad-, Tasten- und Pinch-Logik (`domain`); Zoom-Leiste (`ui`); `ShellPage` als Elternroute von `/`, `/umgebung`, `/genom`, `ShellInputDirective` und `ShellFacade` (`feature`) |
+| `scene` | Szene der Welt-Ebene: Sprite-Budget, Bewegungsmodell, Plankton und Teilchen (`domain`); Canvas-Renderer, Sprites, Palette (`ui`); `SceneWorldComponent` und `SceneFacade` (`feature`) |
+| später | `settings` |
 
 Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `Units` in `swarm/domain/models`, `Site` in `site/domain/models`) und ihre Regeln. `engine/domain` setzt daraus `GameState`, `apply` und `step` zusammen. Zusätzliche Standorte ab AS3 bleiben damit eine Sache von `site` und `engine`.
 
@@ -263,11 +267,12 @@ Das Spiel hat nur ein dunkles Thema; ein helles ist nicht geplant.
 - Klassennamen immer vollständig schreiben. Tailwind findet Klassen durch Scannen der Quellen, also nicht aus Strings zusammensetzen (`'bg-' + x`). Varianten über Signal-Inputs und ein `computed`-Mapping mit vollständigen Klassennamen.
 - Zustände folgen ARIA-Attributen statt Klassen-Ternären: `aria-disabled:`, `aria-selected:`, `aria-current` über eine eigene Variante, `disabled:` bei nativen Elementen.
 - Zahlen (Mengen, Raten, Preise) bekommen `tabular-nums`.
-- Reduzierte Bewegung über `motion-reduce:` bzw. `@media (prefers-reduced-motion: reduce)` und die Einstellung aus AP 1.5.3.
+- Reduzierte Bewegung hat eine Quelle, den `MotionPreferenceService` (`prefers-reduced-motion` plus Einstellung, die mit AP 1.5.3 kommt); er setzt `data-motion` an `<html>`. Utilities nutzen die Variante `motion-reduced:` (nie Tailwinds `motion-reduce:`), Komponenten-CSS `:host-context([data-motion='reduced'])` (nie `@media (prefers-reduced-motion)`), Canvas und Logik lesen `reducedMotion` über ihre Facade.
+- Breakpoints: `max-md:` Smartphone (< 768 px), `md:max-desktop:` Tablet (768–1199 px), `desktop:` ab 1200 px (Token `--breakpoint-desktop`).
 - **Host-Styling** über die Host-Klasse (`host: { class: 'block' }`, `host: { '[class]': 'classes()' }`). Kein `display` oder andere Eigenschaften auf `:host`, die Aufrufer per Utility ändern könnten: Angulars Komponenten-Styles sind ungelayert und schlagen Tailwinds `@layer utilities`.
 - **Komponenten-CSS** (`.component.css`/`.page.css`, Plain CSS, kein Sass) gibt es nur für Sonderfälle, die Utilities nicht ausdrücken können. Darin werden Tokens als `var(--sw-*)` gelesen; nie fest eingetragene Hex-/RGB-Werte. Keine Tailwind-Direktiven (`@apply`, `@reference`, `@theme`) in Komponenten-Styles. `ViewEncapsulation` nicht überschreiben.
 - **Ausnahme K2:** Die folgenden Teile stehen ausdrücklich in Komponenten-CSS, auch mit freien Werten:
-  - Ebenen, Kamera und Moduswechsel (`transform`, `scale`, `clip-path: circle()`, `filter`, `opacity`, Übergänge mit `--sw-ease`)
+  - Ebenen, Kamera und Moduswechsel (`transform`, `scale`, `clip-path: circle()`, `filter`, `opacity`, Übergänge mit `--sw-ease-zoom`)
   - die aus dem Platz berechnete Größe `--ms`
   - SVG-Animationen von Sonar und Genom (Sweep, Membran, Pulse)
   - Canvas-Container

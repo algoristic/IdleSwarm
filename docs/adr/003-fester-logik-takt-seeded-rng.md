@@ -29,13 +29,13 @@ Das Spielergebnis darf nicht von der Framerate abhängen. Gleichzeitig braucht d
 - **Zweiter RNG-Strom (seit M1.3):** Funde ziehen aus `finds.rngState` im `GameState`, getrennt vom `rngState` des Generators ([Game-Design §4.16](../game-design.md#416-funde)). Er entsteht mit demselben Seed-Hash aus `seed + '#finds'` (`findsRngState` in [`finds/domain/finds-logic.ts`](../../src/app/finds/domain/finds-logic.ts)); jede Ziehung verbraucht genau drei Zahlen, auch ohne Fund. So hängen die Kandidaten weiter nur von Seed und Weiterzügen ab. Die Migration 3→4 leitet den Strom ebenso aus dem Seed ab.
 - Seit M1.2 zieht die Spiellogik Zufall: Der Futterstellen-Generator ([`site/domain/generator-logic.ts`](../../src/app/site/domain/generator-logic.ts)) verbraucht je Erzeugung immer `5 · k` Zahlen aus `rngState` (beim Spielstart und nach jeder Ankunft) und gibt den fortgeschriebenen Zustand zurück. Die Migration 2→3 erzeugt die Startkandidaten ebenso aus dem übernommenen `rngState` ([ADR-005](005-speicherformat-localstorage.md)).
 - Determinismus-Test [`engine/domain/determinism.spec.ts`](../../src/app/engine/domain/determinism.spec.ts): gleicher Seed und gleiche Abfolge ergeben denselben Zustand, auch über Aufbruch, Reise, Ankunft und Auto-Weiterziehen; ein anderer Seed ergibt einen anderen Verlauf.
-- Logik- und Render-Takt in [`engine/data-access/game-loop/game-loop.service.ts`](../../src/app/engine/data-access/game-loop/game-loop.service.ts)
+- Logik- und Render-Takt in [`engine/data-access/game-loop/game-loop.service.ts`](../../src/app/engine/data-access/game-loop/game-loop.service.ts). Seit AP 1.4.6 holt der Takt einen Rückstand über 60 s (verborgener Tab, eingefrorene Seite) in Schritten von 1 s nach, geteilt an `nextSplitMs`; die Obergrenze `MAX_CATCH_UP_MS` ist vorläufig 24 h ([TK §4](../technisches-konzept.md#4-simulation)).
+- Canvas-Renderer der Szene (AP 1.4.2): Er liest den Zustand nur im Render-Takt (`GameLoop.onRender`) und zieht visuellen Zufall aus einem eigenen seeded RNG, nie aus `rngState` ([ADR-006](006-rendering-canvas-svg-css.md)).
 - Kommandos wirken sofort über `GameStore.dispatch`. Die Entscheidung nennt als Beispiel „Kommandos (Kauf, Neue Futterstelle)“; „Neue Futterstelle“ ist mit M1.2 entfallen. Heute gibt es `noop`, `buy`, `sacrificeDrones`, `convertDronesToQueen`, `setTransportPriority`, `depart`, `setAutoMove` und seit M1.3 `setPheromones`, `strengthenGland` und `evolve` ([`engine/domain/commands-logic.ts`](../../src/app/engine/domain/commands-logic.ts)).
 
 **Geplant:**
 
-- Canvas-Renderer der Szene: Umsetzung ab AP 1.4.2
-- Offline-Catch-up: Umsetzung ab AP 1.5.1
+- Offline-Catch-up beim Laden: Umsetzung ab AP 1.5.1, dabei die endgültige Obergrenze und ein gemeinsamer Weg mit dem Nachholen im Takt
 
 ## Konsequenzen
 

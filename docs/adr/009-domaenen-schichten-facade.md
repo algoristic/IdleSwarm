@@ -46,6 +46,13 @@ Als Vorbild dient die Architektur aus PortfoliGo (Domäne × Schicht, Facades, N
 - `finds/domain` nutzt `genome/domain` zur Laufzeit, `genome/domain` nutzt `finds/domain` nur über Typen; so entsteht kein Laufzeitzyklus zwischen den beiden Fachdomänen.
 - Das HUD zeigt Pheromone und Funde über präsentationale Panels; die `HudFacade` bekommt dafür nur Kommandos (`setPheromones`, `strengthenGland`).
 
+**Umgesetzt** in M1.4 (AP 1.4.1–1.4.6):
+
+- Neue Oberflächen-Domänen ohne eigenen Teil des Zustands: `shell` (K2-Ebenen, Kamera, Modus = Route, Eingabe; reine Modus-, Kamera-, Rad-, Tasten- und Pinch-Logik in `shell/domain`, [`ShellFacade`](../../src/app/shell/feature/state/shell.facade.ts), `ShellInputDirective`, Zoom-Leiste in `shell/ui`) und `scene` (Canvas der Welt-Ebene; Bewegungsmodell und Budget rein in `scene/domain`, Renderer, Sprites und Palette in `scene/ui`, [`SceneFacade`](../../src/app/scene/feature/state/scene.facade.ts) mit Render-Takt über `GameLoop.onRender`).
+- Die Shell setzt Facades mehrerer Domänen zusammen: Ihre Route ([`shell.routes.ts`](../../src/app/shell/feature/shell.routes.ts)) stellt die Facades von Shell, Szene, HUD, Sonar und Genom bereit. Jede Ebene und jedes Overlay ist eine Smart Component in `feature` ihrer eigenen Domäne (`SonarLayerComponent`, `SceneHudComponent`, `GenomeOverlayComponent` …) und injiziert nur deren Facade; die `ShellPage` selbst nutzt nur `ShellFacade` und `HudFacade` (DNA und verfügbare Adaptionen für die Zoom-Leiste). Die eigenen Routen von HUD, Sonar und Genom entfallen.
+- Plattformzugriffe der Oberfläche liegen hinter Tokens: `VIEWPORT` ([`platform.tokens.ts`](../../src/app/shared/data-access/platform/platform.tokens.ts)), `SCENE_DISPLAY` (DPR, Zeigerart) und `PREFERS_REDUCED_MOTION`. Reduzierte Bewegung hat mit dem [`MotionPreferenceService`](../../src/app/shared/data-access/motion-preference/motion-preference.service.ts) in `shared/data-access` eine einzige Quelle für CSS, Canvas und Logik.
+- Feature-Komponenten, die ihre gerenderte Größe brauchen (Sonar- und Genom-Ebene), nutzen `ResizeObserver` direkt, nach dem Vorbild des ECharts-Wrappers.
+
 ## Konsequenzen
 
 - Fachliche Grenzen sind im Ordnerbaum sichtbar; neue Mechaniken bekommen eine eigene Domäne statt eines weiteren Ordners in `core/`.
