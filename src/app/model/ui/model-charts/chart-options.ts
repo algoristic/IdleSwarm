@@ -2,12 +2,12 @@ import type { SimEvent, SimSample } from '@app/engine/domain/runner-logic';
 import { formatAxisValue, formatElapsed } from '@app/shared/util/format/elapsed-format';
 import { formatNum, formatRate } from '@app/shared/util/format/format';
 
+import type { BotKind } from '../../domain/models/sim.model';
 import type { EventType, ReducedRun } from '../../domain/reduce-result-logic';
 import type { TimeRange } from '../../domain/wait-share-logic';
 import { BOT_LABELS } from '../bot-labels/bot-labels';
 import type { ChartPalette } from '../echart/chart-theme';
-
-export type ChartTab = 'resources' | 'rates' | 'decisions';
+import type { SampleTab } from './model-charts.model';
 
 const NO_VALUE = '–';
 const SOON = $localize`:@@uiModel-chartOptions-soon:sofort`;
@@ -50,7 +50,7 @@ function formatWait(value: number | null): string {
   return value === 0 ? SOON : formatElapsed(value);
 }
 
-export const CHART_TABS: Readonly<Record<ChartTab, TabDefinition>> = {
+export const CHART_TABS: Readonly<Record<SampleTab, TabDefinition>> = {
   resources: {
     formatValue: orDash(formatNum),
     formatAxis: formatAxisValue,
@@ -89,16 +89,35 @@ const MARKER_SYMBOLS: Readonly<Record<EventType, string>> = {
   arrived: 'circle',
 };
 const MARKER_ORDER: readonly EventType[] = ['buy', 'siteEmpty', 'arrived'];
-/** Lage der Markierungen auf der verdeckten 0–1-Achse, unabhängig von der Wertachse. */
+/**
+ * Lage der Markierungen auf der verdeckten 0–1-Achse, unabhängig von der Wertachse. Je Art eine
+ * Zeile, darin je Bot ein Versatz; die Zeile wächst mit der Zahl der Bots, damit sich Arten nicht
+ * überlagern (bei zwei Bots wie bisher 0,05).
+ */
 const MARKER_BASE = 0.03;
-const MARKER_TYPE_STEP = 0.05;
 const MARKER_BOT_STEP = 0.02;
+const MARKER_TYPE_GAP = 0.01;
+const MIN_MARKER_BOTS = 2;
 const MARKER_AXIS_INDEX = 1;
 
 const BASELINE_DASH = [6, 4];
 
+interface BotLine {
+  readonly width: number;
+  readonly opacity: number;
+  readonly type: 'solid' | readonly number[];
+}
+
+/** Die Farbe steht für die Größe; Bots unterscheiden sich an Strichstärke und Muster. */
+const BOT_LINES: Readonly<Record<BotKind, BotLine>> = {
+  active: { width: 2, opacity: 1, type: 'solid' },
+  idle: { width: 1.25, opacity: 0.7, type: 'solid' },
+  'drone-heavy': { width: 1.5, opacity: 0.9, type: [2, 3] },
+  'soldier-heavy': { width: 1.5, opacity: 0.9, type: [10, 3, 2, 3] },
+};
+
 export interface ChartInput {
-  readonly tab: ChartTab;
+  readonly tab: SampleTab;
   readonly runs: readonly ReducedRun[];
   readonly baseline: readonly ReducedRun[] | null;
   readonly logScale: boolean;
@@ -133,7 +152,7 @@ function lineSeries(
 ) {
   const bot = BOT_LABELS[run.bot];
   const prefix = isBaseline ? `${BASELINE_PREFIX} ${bot}` : bot;
-  const isIdle = run.bot === 'idle';
+  const line = BOT_LINES[run.bot];
   return {
     name: `${prefix} · ${metric.label}`,
     type: 'line' as const,
@@ -141,9 +160,9 @@ function lineSeries(
     connectNulls: false,
     color: palette.series[colorIndex % palette.series.length],
     lineStyle: {
-      width: isIdle ? 1.25 : 2,
-      opacity: (isIdle ? 0.7 : 1) * (isBaseline ? 0.7 : 1),
-      type: isBaseline ? BASELINE_DASH : ('solid' as const),
+      width: line.width,
+      opacity: line.opacity * (isBaseline ? 0.7 : 1),
+      type: isBaseline ? BASELINE_DASH : line.type,
     },
     emphasis: { disabled: true },
     data: run.samples.map((sample) =>
@@ -158,8 +177,9 @@ function markerSeries(
   botIndex: number,
   type: EventType,
   typeIndex: number,
+  typeStep: number,
 ) {
-  const y = MARKER_BASE + typeIndex * MARKER_TYPE_STEP + botIndex * MARKER_BOT_STEP;
+  const y = MARKER_BASE + typeIndex * typeStep + botIndex * MARKER_BOT_STEP;
   return {
     name: `${BOT_LABELS[run.bot]} · ${type}`,
     type: 'scatter' as const,
@@ -176,7 +196,7 @@ function markerSeries(
   };
 }
 
-export function formatTooltip(rows: readonly TooltipRow[], tab: ChartTab): string {
+export function formatTooltip(rows: readonly TooltipRow[], tab: SampleTab): string {
   const lines = rows
     .filter((row) => Array.isArray(row.value) && row.value.length === 3)
     .map((row) => {
@@ -203,9 +223,10 @@ export function buildChartOption(input: ChartInput) {
       definition.metrics.map((metric, i) => lineSeries(palette, run, metric, i, logScale, true)),
     ),
   ];
+  const typeStep = Math.max(runs.length, MIN_MARKER_BOTS) * MARKER_BOT_STEP + MARKER_TYPE_GAP;
   const marks = MARKER_ORDER.filter((type) => markers.has(type)).flatMap((type) =>
     runs.map((run, botIndex) =>
-      markerSeries(palette, run, botIndex, type, MARKER_ORDER.indexOf(type)),
+      markerSeries(palette, run, botIndex, type, MARKER_ORDER.indexOf(type), typeStep),
     ),
   );
   const zoomWindow = zoom === null ? {} : { startValue: zoom.fromMs, endValue: zoom.toMs };

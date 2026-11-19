@@ -6,7 +6,9 @@ import { SimService } from '../../data-access/sim/sim.service';
 import { defaultModelParams, sameSimConfig, toSimConfig } from '../../domain/model-params-logic';
 import type { ModelParamsValue } from '../../domain/models/model-params.model';
 import type { SimConfig } from '../../domain/models/sim.model';
+import type { StallThresholdValue } from '../../domain/models/stall.model';
 import type { ReducedRun } from '../../domain/reduce-result-logic';
+import { botStalls, defaultStallThreshold, stallThresholdMs } from '../../domain/stall-logic';
 import type { TimeRange } from '../../domain/wait-share-logic';
 
 export const RUN_DEBOUNCE_MS = 400;
@@ -28,6 +30,14 @@ export class ModelFacade {
   totalBots = this.#sim.totalBots.asReadonly();
   error = this.#sim.error.asReadonly();
   hasRuns = computed(() => this.runs().length > 0);
+
+  /** Analyse-Parameter: wertet das Ergebnis neu aus, ohne einen Lauf zu starten. */
+  stallThreshold = signal<StallThresholdValue>(defaultStallThreshold());
+  readonly #stallThresholdMs = computed(() => stallThresholdMs(this.stallThreshold()));
+  stalls = computed(() => {
+    const thresholdMs = this.#stallThresholdMs();
+    return thresholdMs === null ? null : botStalls(this.runs(), thresholdMs);
+  });
 
   baseline = signal<readonly ReducedRun[] | null>(null);
   baselineSeed = computed(() => this.baseline()?.[0]?.seed ?? null);

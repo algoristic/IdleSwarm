@@ -126,6 +126,35 @@ describe('buildChartOption', () => {
     expect(tooltip.formatter([row])).toContain('<b>1</b>');
   });
 
+  describe('mit vier Bots', () => {
+    const four: ChartInput = {
+      ...base,
+      runs: [active, idle, { ...active, bot: 'drone-heavy' }, { ...active, bot: 'soldier-heavy' }],
+      markers: new Set<EventType>(['buy', 'siteEmpty', 'arrived']),
+    };
+
+    it('unterscheidet jeden Bot an Strichstärke oder Muster', () => {
+      const series = lines(four);
+      expect(series).toHaveLength(20);
+      const styles = [0, 5, 10, 15].map((i) =>
+        JSON.stringify([series[i].lineStyle.width, series[i].lineStyle.type]),
+      );
+      expect(new Set(styles).size).toBe(4);
+      expect(series[10].color).toBe(series[0].color);
+    });
+
+    it('legt die Markierungen je Art in getrennte Zeilen ohne Überlappung', () => {
+      const ys = marks(four).map((series) => (series.data[0] as number[])[1]);
+      expect(ys).toHaveLength(12);
+      expect(new Set(ys).size).toBe(12);
+      for (let type = 0; type < 2; type++) {
+        const row = ys.slice(type * 4, type * 4 + 4);
+        const next = ys.slice(type * 4 + 4, type * 4 + 8);
+        expect(Math.max(...row)).toBeLessThan(Math.min(...next));
+      }
+    });
+  });
+
   it('färbt Linien und Markierungen aus den Tokens', () => {
     const series = buildChartOption({ ...base, markers: new Set<EventType>(['siteEmpty']) }).series;
     expect(series[0].color).toBe('color--sw-chart-1');

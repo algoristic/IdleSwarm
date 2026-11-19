@@ -22,56 +22,80 @@
     }
   </div>
 
+  @let _siteTab = siteTab();
   <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
-    <label class="inline-flex items-center gap-1">
-      <input
-        type="checkbox"
-        data-testid="model.charts.log"
-        [checked]="logScale()"
-        (change)="logScale.set(!logScale())"
-      />
-      <ng-container i18n="@@uiModel-modelCharts-logScale">Logarithmische Achse</ng-container>
-    </label>
-    <button
-      type="button"
-      [class]="button"
-      data-testid="model.charts.reset-zoom"
-      i18n="@@uiModel-modelCharts-resetZoom"
-      (click)="onResetZoom()"
-    >
-      Zoom zurücksetzen
-    </button>
-    @if (logScale()) {
+    @if (tab() !== 'siteDuration') {
+      <label class="inline-flex items-center gap-1">
+        <input
+          type="checkbox"
+          data-testid="model.charts.log"
+          [checked]="logScale()"
+          (change)="logScale.set(!logScale())"
+        />
+        <ng-container i18n="@@uiModel-modelCharts-logScale">Logarithmische Achse</ng-container>
+      </label>
+    }
+    @if (!_siteTab) {
+      <button
+        type="button"
+        [class]="button"
+        data-testid="model.charts.reset-zoom"
+        i18n="@@uiModel-modelCharts-resetZoom"
+        (click)="onResetZoom()"
+      >
+        Zoom zurücksetzen
+      </button>
+    }
+    @if (logScale() && tab() !== 'siteDuration') {
       <small class="text-xs text-fg-muted" i18n="@@uiModel-modelCharts-logHint"
         >Werte ≤ 0 und „nie“ werden hier nicht gezeichnet.</small
       >
     }
-  </div>
-
-  <div
-    class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm"
-    role="group"
-    [attr.aria-label]="markersLabel"
-  >
-    @for (marker of markerRows(); track marker.type) {
-      <label class="inline-flex flex-wrap items-center gap-1">
-        <input
-          type="checkbox"
-          [attr.data-testid]="'model.charts.marker-' + marker.type"
-          [checked]="markers().has(marker.type)"
-          (change)="onToggleMarker(marker.type)"
-        />
-        <span aria-hidden="true" [class]="marker.colorClass">{{ marker.glyph }}</span>
-        {{ marker.label }}
-        <small
-          class="text-xs text-fg-muted tabular-nums"
-          [attr.data-testid]="'model.charts.marker-count-' + marker.type"
-          i18n="@@uiModel-modelCharts-markerCount"
-          >({{ marker.shown | formatNum }} von {{ marker.total | formatNum }})</small
-        >
-      </label>
+    @if (tab() === 'siteDuration') {
+      <small
+        class="text-xs text-fg-muted"
+        data-testid="model.charts.hint-siteDuration"
+        i18n="@@uiModel-modelCharts-hint-siteDuration"
+        >Je Bot ein Balken: blass die Reise zur Futterstelle, kräftig der Aufenthalt von Ankunft bis
+        Aufbruch (halb blass: bis Laufende). Ertrag im Tooltip.</small
+      >
+    } @else if (tab() === 'soldiers') {
+      <small
+        class="text-xs text-fg-muted"
+        data-testid="model.charts.hint-soldiers"
+        i18n="@@uiModel-modelCharts-hint-soldiers"
+        >Je Bot eine Farbe: ○ vor Aufbruch, △ mitgekommen, ● nach Einnahme, ◆ Einnahme mit Kampf.
+        Verluste im Tooltip.</small
+      >
     }
   </div>
+
+  @if (!_siteTab) {
+    <div
+      class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm"
+      role="group"
+      [attr.aria-label]="markersLabel"
+    >
+      @for (marker of markerRows(); track marker.type) {
+        <label class="inline-flex flex-wrap items-center gap-1">
+          <input
+            type="checkbox"
+            [attr.data-testid]="'model.charts.marker-' + marker.type"
+            [checked]="markers().has(marker.type)"
+            (change)="onToggleMarker(marker.type)"
+          />
+          <span aria-hidden="true" [class]="marker.colorClass">{{ marker.glyph }}</span>
+          {{ marker.label }}
+          <small
+            class="text-xs text-fg-muted tabular-nums"
+            [attr.data-testid]="'model.charts.marker-count-' + marker.type"
+            i18n="@@uiModel-modelCharts-markerCount"
+            >({{ marker.shown | formatNum }} von {{ marker.total | formatNum }})</small
+          >
+        </label>
+      }
+    </div>
+  }
 
   <div
     class="h-104 min-w-0"

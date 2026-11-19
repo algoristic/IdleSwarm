@@ -4,6 +4,7 @@ import { createActiveBot } from './bots/active-bot-logic';
 import {
   MAX_EVENTS_PER_TYPE,
   MAX_SAMPLES,
+  MAX_SITES,
   reduceResult,
   sampleEveryFor,
   summarizeSites,
@@ -13,20 +14,24 @@ import {
 const HOUR_MS = 3_600_000;
 const MEGABYTE = 1_000_000;
 
-function site(index: number, durationMs: number | null): SiteMetric {
+function site(
+  index: number,
+  durationMs: number | null,
+  { travelMs = 0, dna = 0 }: { travelMs?: number; dna?: number } = {},
+): SiteMetric {
   return {
     index,
     siteType: 'algal-mat',
     startMs: index * 100,
-    travelMs: 0,
+    travelMs,
     emptyMs: null,
     departureMs: durationMs === null ? null : index * 100 + durationMs,
     durationMs,
     size: 100,
     collected: 100,
     defense: 0,
-    fought: false,
-    dna: 0,
+    fought: dna > 0,
+    dna,
     soldiersBeforeDeparture: null,
     soldiersCarried: null,
     soldiersAtArrival: 0,
@@ -73,12 +78,20 @@ describe('thinEvenly', () => {
 
 describe('summarizeSites', () => {
   it('fasst zusammen; offene Futterstellen zählen nicht zum Median', () => {
-    const sites = [site(0, 30), site(1, 10), site(2, 20), site(3, null)];
+    const sites = [
+      site(0, 30),
+      site(1, 10, { travelMs: 5, dna: 2 }),
+      site(2, 20, { travelMs: 9 }),
+      site(3, null, { travelMs: 7, dna: 3 }),
+    ];
     expect(summarizeSites(sites)).toEqual({
       count: 4,
       first: sites[0],
       last: sites[3],
       medianDurationMs: 20,
+      medianTravelMs: 7,
+      fightCount: 2,
+      dnaTotal: 5,
     });
   });
 
@@ -92,6 +105,9 @@ describe('summarizeSites', () => {
       first: null,
       last: null,
       medianDurationMs: null,
+      medianTravelMs: null,
+      fightCount: 0,
+      dnaTotal: 0,
     });
   });
 });
@@ -119,6 +135,7 @@ describe('reduceResult', () => {
     expect(run.eventTotals.arrived).toBeGreaterThan(0);
     expect(run.events.some((event) => event.type === 'departed')).toBe(false);
     expect(run.metrics.sites.count).toBe(result.metrics.sites.length);
+    expect(run.metrics.siteList).toEqual(result.metrics.sites);
     expect(run.metrics.firstBuyMs).toBe(result.metrics.firstBuyMs);
   }, 30_000);
 
@@ -132,5 +149,19 @@ describe('reduceResult', () => {
     const run = reduceResult(result, 'active', 0);
     expect(run.samples).toHaveLength(MAX_SAMPLES);
     expect(run.samples[run.samples.length - 1].timeMs).toBe(3000 * 1000);
+  });
+
+  it('begrenzt die Liste der Futterstellen und behält die Gesamtzahl', () => {
+    const result = runSimulation({
+      seed: 'viele',
+      bot: createActiveBot(),
+      durationMs: 1000,
+      sampleEveryMs: 1000,
+    });
+    const sites = Array.from({ length: 2500 }, (_, i) => site(i, 10));
+    const run = reduceResult({ ...result, metrics: { ...result.metrics, sites } }, 'active', 0);
+    expect(run.metrics.siteList).toHaveLength(MAX_SITES);
+    expect(run.metrics.siteList[MAX_SITES - 1]).toBe(sites[2499]);
+    expect(run.metrics.sites.count).toBe(2500);
   });
 });

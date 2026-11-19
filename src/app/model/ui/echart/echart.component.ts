@@ -10,7 +10,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { LineChart, ScatterChart } from 'echarts/charts';
+import { BarChart, LineChart, ScatterChart } from 'echarts/charts';
 import {
   DataZoomInsideComponent,
   DataZoomSliderComponent,
@@ -25,6 +25,7 @@ import type { TimeRange } from '../../domain/wait-share-logic';
 import { buildChartTheme, CHART_PALETTE, CHART_THEME_NAME } from './chart-theme';
 
 use([
+  BarChart,
   LineChart,
   ScatterChart,
   GridComponent,

@@ -6,7 +6,13 @@ import { EVENT_TYPES, EventType, ReducedRun } from '../../domain/reduce-result-l
 import type { TimeRange } from '../../domain/wait-share-logic';
 import { CHART_PALETTE } from '../echart/chart-theme';
 import { EchartComponent } from '../echart/echart.component';
-import { buildChartOption, ChartTab } from './chart-options';
+import { buildChartOption } from './chart-options';
+import type { ChartTab, SiteTab } from './model-charts.model';
+import { buildSiteChartOption } from './site-chart-options';
+
+function isSiteTab(tab: ChartTab): tab is SiteTab {
+  return tab === 'siteDuration' || tab === 'soldiers';
+}
 
 const MARKER_GLYPHS: Readonly<Record<EventType, string>> = {
   buy: '▲',
@@ -62,11 +68,22 @@ export class ModelChartsComponent {
     }),
   );
 
+  siteTab = computed(() => isSiteTab(this.tab()));
+
   /** Der Zoom kommt aus dem Diagramm selbst und löst darum keinen Neuaufbau aus. */
   option = computed(() => {
+    const tab = this.tab();
+    if (isSiteTab(tab)) {
+      return buildSiteChartOption({
+        tab,
+        runs: this.runs(),
+        logScale: this.logScale(),
+        palette: this.#palette,
+      });
+    }
     this.#zoomResets();
     return buildChartOption({
-      tab: this.tab(),
+      tab,
       runs: this.runs(),
       baseline: this.baseline(),
       logScale: this.logScale(),
@@ -80,6 +97,14 @@ export class ModelChartsComponent {
     { id: 'resources', label: $localize`:@@uiModel-modelCharts-tab-resources:Ressourcen` },
     { id: 'rates', label: $localize`:@@uiModel-modelCharts-tab-rates:Raten` },
     { id: 'decisions', label: $localize`:@@uiModel-modelCharts-tab-decisions:Entscheidungen` },
+    {
+      id: 'siteDuration',
+      label: $localize`:@@uiModel-modelCharts-tab-siteDuration:Dauer je Futterstelle`,
+    },
+    {
+      id: 'soldiers',
+      label: $localize`:@@uiModel-modelCharts-tab-soldiers:Soldaten vor/nach Einnahme`,
+    },
   ];
   chartsLabel = $localize`:@@uiModel-modelCharts-label:Diagramme`;
   markersLabel = $localize`:@@uiModel-modelCharts-markers:Markierungen`;

@@ -4,12 +4,18 @@ import type { SimError } from '../../data-access/sim/sim-service.model';
 import { FormModelParamsComponent } from '../../ui/form-model-params/form-model-params.component';
 import { ModelChartsComponent } from '../../ui/model-charts/model-charts.component';
 import { ModelMetricsComponent } from '../../ui/model-metrics/model-metrics.component';
+import { ModelStallsComponent } from '../../ui/model-stalls/model-stalls.component';
 import { ModelFacade } from '../state/model.facade';
 
-/** Modell-Seite (US-10.01 bis 10.05): Bot-Läufe im Worker, Diagramme und Kennzahlen. */
+/** Modell-Seite (US-10.01 bis 10.06): Bot-Läufe im Worker, Diagramme und Kennzahlen. */
 @Component({
   selector: 'app-model-page',
-  imports: [FormModelParamsComponent, ModelChartsComponent, ModelMetricsComponent],
+  imports: [
+    FormModelParamsComponent,
+    ModelChartsComponent,
+    ModelMetricsComponent,
+    ModelStallsComponent,
+  ],
   templateUrl: './model.page.html',
   host: { class: 'block' },
 })

@@ -28,6 +28,24 @@ describe('metricRows', () => {
     expect(value(rows, 'Werte am Zahlenbereich begrenzt')).toBe('nein');
   });
 
+  it('zeigt die Zyklus-Kennzahlen', () => {
+    const cycle = {
+      ...run,
+      metrics: {
+        ...run.metrics,
+        longestNoCombatCaptureMs: 2 * HOUR_MS,
+        longestSiteStayMs: 90_000,
+        sites: { ...run.metrics.sites, medianTravelMs: null, fightCount: 3, dnaTotal: 1234 },
+      },
+    };
+    const rows = metricRows([cycle], null);
+    expect(value(rows, 'Längste Strecke ohne Kampfziel')).toBe('2 h');
+    expect(value(rows, 'Längster Aufenthalt an einer Futterstelle')).toBe('1 min 30 s');
+    expect(value(rows, 'Reisezeit Median')).toBe('–');
+    expect(value(rows, 'Einnahmen mit Kampf')).toBe('3');
+    expect(value(rows, 'DNA gesamt')).toBe('1.234');
+  });
+
   it('lässt den Wartezeit-Anteil dem Ausschnitt folgen', () => {
     const full = value(metricRows([run], null), 'Anteil Wartezeit im Ausschnitt (Abtastpunkte)');
     const part = value(

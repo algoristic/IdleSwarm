@@ -344,6 +344,43 @@ describe('ModelPage', () => {
     click.mockRestore();
   });
 
+  it('wertet Stillstände mit der Schwelle aus, ohne einen Lauf zu starten', () => {
+    finishRun();
+    const before = workers[0].posted.length;
+    const threshold = byTestId<HTMLInputElement>('model.stalls.threshold') as HTMLInputElement;
+    expect(threshold.value).toBe('60');
+    // Ein 1-h-Lauf hat höchstens eine offene Strecke von 1 h; die ist nicht länger als 60 min.
+    expect(byTestId('model.stalls.active.empty')?.textContent).toContain(
+      'Keine Stillstände über der Schwelle',
+    );
+
+    type(threshold, '1');
+    debounce();
+    expect(workers[0].posted).toHaveLength(before);
+    const items = element().querySelectorAll('[data-testid="model.stalls.active.item"]');
+    expect(items.length).toBeGreaterThan(0);
+
+    type(threshold, '0');
+    expect(byTestId('model.stalls.threshold-error')).not.toBeNull();
+    expect(byTestId('model.stalls.active')).toBeNull();
+    expect(workers[0].posted).toHaveLength(before);
+  });
+
+  it('zeigt die Reiter je Futterstelle ohne Zoom und Markierungen', () => {
+    finishRun();
+    byTestId('model.charts.tab-siteDuration')?.click();
+    settle();
+    expect(lastOption().series.every((s) => (s.type as string) === 'bar')).toBe(true);
+    expect(byTestId('model.charts.marker-buy')).toBeNull();
+    expect(byTestId('model.charts.reset-zoom')).toBeNull();
+    expect(byTestId('model.charts.log')).toBeNull();
+
+    byTestId('model.charts.tab-soldiers')?.click();
+    settle();
+    expect(lastOption().series).toHaveLength(6);
+    expect(byTestId('model.charts.log')).not.toBeNull();
+  });
+
   it('beendet den Worker beim Verlassen', () => {
     fixture.destroy();
     expect(workers[0].terminated).toBe(true);

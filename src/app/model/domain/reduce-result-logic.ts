@@ -13,6 +13,8 @@ import type { BotKind } from './models/sim.model';
 const TARGET_SAMPLE_INTERVALS = 1440;
 export const MAX_SAMPLES = 2000;
 export const MAX_EVENTS_PER_TYPE = 500;
+/** Ein Lauf über 7 Tage hat einige Hundert Futterstellen; die Grenze fängt Ausreißer ab. */
+export const MAX_SITES = 1000;
 
 const MS_PER_SECOND = 1000;
 
@@ -33,9 +35,17 @@ export interface SiteSummary {
   readonly last: SiteMetric | null;
   /** Median der abgeschlossenen Futterstellen. */
   readonly medianDurationMs: number | null;
+  /** Median der Reisen; die erste Futterstelle hat keine. */
+  readonly medianTravelMs: number | null;
+  readonly fightCount: number;
+  readonly dnaTotal: number;
 }
 
-export type ReducedMetrics = Omit<SimMetrics, 'sites'> & { readonly sites: SiteSummary };
+export type ReducedMetrics = Omit<SimMetrics, 'sites'> & {
+  readonly sites: SiteSummary;
+  /** Futterstellen für Diagramme und Stillstände; ab {@link MAX_SITES} ausgedünnt. */
+  readonly siteList: readonly SiteMetric[];
+};
 
 /** Für `postMessage` verkleinertes Ergebnis eines Bot-Laufs. */
 export interface ReducedRun {
@@ -75,24 +85,25 @@ export function thinEvenly<T>(items: readonly T[], max: number): readonly T[] {
   return Array.from({ length: max }, (_, i) => items[Math.round((i * last) / (max - 1))]);
 }
 
-export function summarizeSites(sites: readonly SiteMetric[]): SiteSummary {
-  const durations = sites
-    .map((site) => site.durationMs)
-    .filter((duration) => duration !== null)
-    .sort((a, b) => a - b);
-  const middle = Math.floor(durations.length / 2);
-  let medianDurationMs: number | null = null;
-  if (durations.length > 0) {
-    medianDurationMs =
-      durations.length % 2 === 1
-        ? durations[middle]
-        : (durations[middle - 1] + durations[middle]) / 2;
+function median(values: readonly number[]): number | null {
+  if (values.length === 0) {
+    return null;
   }
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+export function summarizeSites(sites: readonly SiteMetric[]): SiteSummary {
+  const durations = sites.map((site) => site.durationMs).filter((duration) => duration !== null);
   return {
     count: sites.length,
     first: sites[0] ?? null,
     last: sites[sites.length - 1] ?? null,
-    medianDurationMs,
+    medianDurationMs: median(durations),
+    medianTravelMs: median(sites.slice(1).map((site) => site.travelMs)),
+    fightCount: sites.filter((site) => site.fought).length,
+    dnaTotal: sites.reduce((sum, site) => sum + site.dna, 0),
   };
 }
 
@@ -121,6 +132,10 @@ export function reduceResult(result: SimResult, bot: BotKind, computeMs: number)
       siteEmpty: count('siteEmpty'),
       arrived: count('arrived'),
     },
-    metrics: { ...result.metrics, sites: summarizeSites(result.metrics.sites) },
+    metrics: {
+      ...result.metrics,
+      sites: summarizeSites(result.metrics.sites),
+      siteList: thinEvenly(result.metrics.sites, MAX_SITES),
+    },
   };
 }
