@@ -13,6 +13,7 @@ Die Entscheidungen stammen aus dem [technischen Konzept](../technisches-konzept.
 | [ADR-007](007-modell-seite-echarts-balancing.md) | Modell-Seite mit ECharts nutzt dieselbe Logik wie das Spiel; Balancing-Snapshots als Tests | Angenommen | Runner, vier Bots, Modell-Seite, Zyklen und Stillstand (AP 1.2.9), Parameter je ID, Zielbänder, Upgrade-Tabelle und DNA-Fluss (M1.3) umgesetzt; Snapshots ab AP 1.5.5 |
 | [ADR-008](008-kein-backend-github-pages.md) | Kein Backend; Hosting auf GitHub Pages | Angenommen | umgesetzt; PWA in AP 1.5.6 |
 | [ADR-009](009-domaenen-schichten-facade.md) | Domänen mit Schichten; Signal-Store mit Facades, kein NgRx | Angenommen | umgesetzt (AP 1.1.10); Domäne `sonar` und `site/ui` in M1.2, Domänen `genome` und `finds` in M1.3 |
-| [ADR-010](010-tailwind-tokens.md) | Tailwind CSS v4 mit semantischen Tokens; K2-Ebenen in Komponenten-CSS | Angenommen | HUD und Modell-Seite umgesetzt (AP 1.1.10), Genom-Tokens (AP 1.3.3); K2-Shell ab M1.4 |
+| [ADR-010](010-tailwind-tokens.md) | Tailwind CSS v4 mit semantischen Tokens; K2-Ebenen in Komponenten-CSS | Angenommen | HUD und Modell-Seite umgesetzt (AP 1.1.10), Genom-Tokens (AP 1.3.3), K2-Shell (AP 1.4.1), Palette K2-K (AP 1.4.3) |
 | [ADR-011](011-i18n-localize.md) | Texte über `@angular/localize`; Übersetzung später | Angenommen | umgesetzt (AP 1.1.10); Übersetzung offen |
 | [ADR-012](012-signal-forms.md) | Formulare mit Signal Forms (`@angular/forms/signals`) | Angenommen | umgesetzt (AP 1.1.10) |
+| [ADR-013](013-webfont-nunito.md) | Webfont Nunito (variabel, latin + latin-ext) selbst gehostet | Angenommen | umgesetzt (AP 1.4.3); Vorab-Cache mit der PWA in AP 1.5.6 |

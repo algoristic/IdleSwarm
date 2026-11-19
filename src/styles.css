@@ -8,36 +8,90 @@
 /* Aktueller Eintrag in Navigation und Listen (`aria-current`). */
 @custom-variant current (&[aria-current]:not([aria-current='false']));
 
+/* Nunito (variabel, wght 200–1000), selbst gehostet (ADR-013). Die relative URL bündelt der Build
+   mit Hash nach `media/`; so stimmt der Pfad auch unter dem Base-Href `/IdleSwarm/`. */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url('./fonts/nunito/nunito-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url('./fonts/nunito/nunito-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /*
- * K2-Palette (docs/mockups/k2-zoom.html). Nur diese Tokens gibt es als Farben; Komponenten-CSS und
- * der Canvas lesen sie als `var(--sw-*)`. Textfarben haben auf `--sw-bg` und `--sw-surface`
- * mindestens 4,5:1 Kontrast.
+ * K2-K-Palette (docs/mockups/k2-kurzgesagt.html, `:root`). Nur diese Tokens gibt es als Farben;
+ * Komponenten-CSS und der Canvas lesen sie als `var(--sw-*)`. Textfarben haben auf `--sw-bg`,
+ * `--sw-surface`, `--sw-surface-raised`, `--sw-glass` und `--sw-well` mindestens 4,5:1 Kontrast,
+ * `--sw-border-control` als Rand von Bedienelementen dort mindestens 3:1. Gleiche Werte verweisen
+ * per `var()` aufeinander; `getComputedStyle` liefert sie aufgelöst.
  */
 :root {
   color-scheme: dark;
-  --sw-bg: #02070d;
-  --sw-bg-deep: #061a2b;
-  --sw-bg-glow: #0b2a40;
-  --sw-glass: rgb(8 30 46 / 0.55);
-  --sw-surface: #06192a;
-  --sw-surface-raised: #0a2438;
-  --sw-border: rgb(95 242 230 / 0.18);
-  --sw-border-control: #2a8f99;
-  --sw-fg: #d4f3f5;
-  --sw-fg-muted: #6f9aa6;
-  --sw-accent: #5ff2e6;
-  --sw-on-accent: #02070d;
-  --sw-warning: #ffc65f;
-  --sw-danger: #ff6b6b;
-  --sw-violet: #a98bff;
-  --sw-magenta: #ff5fa8;
+  --sw-bg: #090a26;
+  --sw-bg-deep: #12144a;
+  --sw-bg-glow: #1d2170;
+  /* K2-K hat massive Panels statt Glas; der Name bleibt für die bestehenden Templates. */
+  --sw-glass: var(--sw-surface);
+  --sw-surface: #1e2263;
+  --sw-surface-raised: #272c78;
+  /* Vertiefte Flächen in Panels: Balken, Umschalter, Kacheln. */
+  --sw-well: #12154a;
+  /* K2-K kommt fast ohne Konturen aus: `--sw-border` trennt nur dezent, `--sw-border-control`
+     macht Bedienelemente erkennbar. */
+  --sw-border: rgb(154 160 216 / 0.22);
+  --sw-border-control: #7b83d0;
+  --sw-fg: #f4f1ff;
+  --sw-fg-muted: #9aa0d8;
+  --sw-ink: #0b0c2a;
+  --sw-accent: #2ee6c8;
+  --sw-on-accent: var(--sw-ink);
+  /* Hauptaktion (Mockup `.btn.primary`): Gelb mit Tinte, Schlagschatten in `--sw-primary-shade`. */
+  --sw-primary: #ffd23f;
+  --sw-primary-hover: #ffe06b;
+  --sw-primary-shade: #c9940c;
+  --sw-warning: #ffd23f;
+  /* Koralle und Pink des Mockups (#ff5a5f, #ff4f9a) sind als Text auf `--sw-surface-raised` zu
+     dunkel (4,0:1) und deshalb leicht aufgehellt. */
+  --sw-danger: #ff7378;
+  --sw-magenta: #ff6dab;
+  /* Mockup `--violet-l`; das Mockup-Violett #8b6cff erreicht als Text auf den Panels nur 3,9:1. */
+  --sw-violet-light: #b9a4ff;
+  --sw-violet: var(--sw-violet-light);
+
+  /* Flacher Schlagschatten der Panels und Knöpfe, Cel-Schatten runder Flächen (Mockup `--drop`,
+     `--shade`, `.panel`, `.btn`). */
+  --sw-drop: 0 8px 0 rgb(5 6 26 / 0.45);
+  --sw-shade: inset -3px -4px 0 rgb(0 0 0 / 0.22);
+  --sw-panel: var(--sw-drop), inset 0 2px 0 rgb(255 255 255 / 0.06);
+  --sw-button: 0 4px 0 rgb(5 6 26 / 0.45);
+  --sw-button-pressed: 0 2px 0 rgb(5 6 26 / 0.45);
+  --sw-button-primary: 0 5px 0 var(--sw-primary-shade);
+  --sw-button-primary-pressed: 0 2px 0 var(--sw-primary-shade);
+  /* Körnung über den Ebenen, unter dem HUD (Mockup `body::after`, Utility `grain`). */
+  --sw-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --sw-grain-opacity: 0.09;
 
   /* Genom (Mockup K2-K): Astfarben, Zellkern und Knoten. Text in Astfarbe und `--sw-locked-fg`
      haben auch auf `--sw-nucleus` mindestens 4,5:1. */
-  --sw-branch-collect: #2ee6c8;
+  --sw-branch-collect: var(--sw-accent);
   --sw-branch-brood: #ffb02e;
   --sw-branch-combat: #ff4f9a;
-  --sw-branch-unique: #f4f1ff;
+  --sw-branch-unique: var(--sw-fg);
   --sw-nucleus: #241b6b;
   --sw-membrane: #3b2d94;
   --sw-organelle: #2f2585;
@@ -46,7 +100,7 @@
   --sw-locked: #3a3577;
   --sw-locked-fg: #8f8cc9;
   --sw-cost-muted: #2f2a6e;
-  --sw-cost-muted-fg: #9aa0d8;
+  --sw-cost-muted-fg: var(--sw-fg-muted);
 
   /* Diagramme der Modell-Seite: feste Reihenfolge, geprüft auf Kontrast und Farbsehschwäche. */
   --sw-chart-1: #3987e5;
@@ -57,15 +111,15 @@
 
   /* Szene (Mockup K2-K, `frame()`): Hintergrund, Futterstelle und Einheiten. Der Canvas liest sie
      einmal beim Start; die Schatten-Töne sind die Grundfarbe um 30 % abgedunkelt (Mockup `shade`). */
-  --sw-scene-sky-top: #1d2170;
-  --sw-scene-sky-mid: #12144a;
-  --sw-scene-sky-bottom: #090a26;
+  --sw-scene-sky-top: var(--sw-bg-glow);
+  --sw-scene-sky-mid: var(--sw-bg-deep);
+  --sw-scene-sky-bottom: var(--sw-bg);
   --sw-scene-light: rgb(170 185 255 / 0.035);
   --sw-scene-hill-far: #1a1d5e;
   --sw-scene-hill-mid: #15184f;
   --sw-scene-hill-near: #0f1140;
   --sw-scene-plankton-violet: #8b6cff;
-  --sw-scene-plankton-muted: #9aa0d8;
+  --sw-scene-plankton-muted: var(--sw-fg-muted);
   --sw-scene-site-deep: #d9602a;
   --sw-scene-site: #ff8a3d;
   --sw-scene-site-light: #ffc94a;
@@ -76,11 +130,11 @@
   --sw-scene-highlight: rgb(255 255 255 / 0.6);
   --sw-scene-bubble: #ffe3a3;
   --sw-scene-bubble-highlight: #ffffff;
-  --sw-scene-food: #ffd23f;
+  --sw-scene-food: var(--sw-primary);
   --sw-scene-food-shade: #b3932c;
   /* Textschatten der Ereigniszahlen über der Szene (Mockup `.float`). */
   --sw-scene-food-outline: #b8560f;
-  --sw-unit-drone: #2ee6c8;
+  --sw-unit-drone: var(--sw-accent);
   --sw-unit-drone-shade: #20a18c;
   --sw-unit-soldier: #ff4f9a;
   --sw-unit-soldier-shade: #b3376c;
@@ -88,6 +142,8 @@
   --sw-unit-queen-shade: #b3612b;
 
   --sw-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* Federnde Bewegung von Knöpfen und Schubladen (Mockup `--pop`). */
+  --sw-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Moduswechsel der K2-Shell (Mockup K2-K): Kamerafahrt der Ebenen und Überblendung. */
   --sw-ease-zoom: cubic-bezier(0.65, 0, 0.2, 1);
@@ -99,6 +155,9 @@
 
 @theme {
   --color-*: initial;
+  --font-sans:
+    'Nunito', 'Varela Round', 'Segoe UI Rounded', 'Arial Rounded MT Bold', 'Trebuchet MS',
+    system-ui, sans-serif;
   /* Kennzahlen und Kaufknöpfe des HUD: so viele Spalten, wie mit Mindestbreite passen. */
   --grid-template-columns-stats: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
   --grid-template-columns-actions: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
@@ -114,18 +173,25 @@
 @theme inline {
   --color-bg: var(--sw-bg);
   --color-bg-deep: var(--sw-bg-deep);
+  --color-bg-glow: var(--sw-bg-glow);
   --color-glass: var(--sw-glass);
   --color-surface: var(--sw-surface);
   --color-surface-raised: var(--sw-surface-raised);
+  --color-well: var(--sw-well);
   --color-border: var(--sw-border);
   --color-border-control: var(--sw-border-control);
   --color-fg: var(--sw-fg);
   --color-fg-muted: var(--sw-fg-muted);
+  --color-ink: var(--sw-ink);
   --color-accent: var(--sw-accent);
   --color-on-accent: var(--sw-on-accent);
+  --color-primary: var(--sw-primary);
+  --color-primary-hover: var(--sw-primary-hover);
+  --color-primary-shade: var(--sw-primary-shade);
   --color-warning: var(--sw-warning);
   --color-danger: var(--sw-danger);
   --color-violet: var(--sw-violet);
+  --color-violet-light: var(--sw-violet-light);
   --color-magenta: var(--sw-magenta);
   --color-branch-collect: var(--sw-branch-collect);
   --color-branch-brood: var(--sw-branch-brood);
@@ -144,16 +210,36 @@
   --color-unit-soldier: var(--sw-unit-soldier);
   --color-unit-queen: var(--sw-unit-queen);
   --ease-sw: var(--sw-ease);
+  --ease-pop: var(--sw-ease-pop);
+  --shadow-drop: var(--sw-drop);
+  --shadow-shade: var(--sw-shade);
+  --shadow-panel: var(--sw-panel);
+  --shadow-button: var(--sw-button);
+  --shadow-button-pressed: var(--sw-button-pressed);
+  --shadow-button-primary: var(--sw-button-primary);
+  --shadow-button-primary-pressed: var(--sw-button-primary-pressed);
+  /* Zum Kombinieren mit einem Schlagschatten: `shadow-button inset-shadow-shade`. */
+  --inset-shadow-shade: var(--sw-shade);
+}
+
+/* Körnung als Overlay (Mockup `body::after`); die Ebene darüber legt die Shell mit `z-*` fest. */
+@utility grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--sw-grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: var(--sw-grain);
 }
 
 @layer base {
   body {
-    @apply bg-bg font-sans text-fg;
+    @apply bg-bg font-sans font-semibold text-fg;
     background-image: radial-gradient(
-      ellipse at 50% 0%,
+      circle at 50% 45%,
       var(--sw-bg-glow) 0%,
-      var(--sw-bg-deep) 40%,
-      var(--sw-bg) 85%
+      var(--sw-bg-deep) 45%,
+      var(--sw-bg) 100%
     );
     background-attachment: fixed;
     min-height: 100dvh;

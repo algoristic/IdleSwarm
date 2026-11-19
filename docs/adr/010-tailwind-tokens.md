@@ -27,7 +27,9 @@ Als Vorbild dient PortfoliGo: Tailwind v4, semantische Tokens, keine Arbitrary V
 - Die Diagramme der Modell-Seite lesen ihre Farben über das Token `CHART_PALETTE` einmal aus den CSS-Variablen ([`chart-theme.ts`](../../src/app/model/ui/echart/chart-theme.ts)).
 - Seit AP 1.3.3 gibt es die Genom-Tokens aus dem Mockup K2-K (`--sw-branch-*`, `--sw-nucleus`, `--sw-membrane`, `--sw-organelle`, `--sw-cell`, `--sw-locked*`, `--sw-cost-muted*`) und die Schriftgröße `--text-2xs`. Die Genom-Ansicht nutzt Utilities; nur Membran, Pulsring und Beschriftungskontur stehen nach der K2-Ausnahme in [`genome-tree.component.css`](../../src/app/genome/ui/genome-tree/genome-tree.component.css), wie Sweep und Routenfluss der Sonar-Karte.
 
-**Offen:** K2-Ebenen, Kamera und Moduswechsel kommen mit der Shell ab M1.4. Die Token-Werte stammen noch aus der Neon-Palette von K2; sie werden mit AP 1.4.3 auf die Palette von K2-K umgestellt (Namen bleiben, Kontrast und `--sw-chart-*` neu prüfen).
+- Seit AP 1.4.3 tragen die Basis-Tokens die Palette von K2-K; die Namen sind geblieben. `--sw-glass` ist eine massive Fläche (gleich `--sw-surface`). Neu sind `--sw-well`, `--sw-ink`, `--sw-primary` (mit `-hover`, `-shade`), `--sw-violet-light`, die Schatten `--sw-drop`, `--sw-shade`, `--sw-panel`, `--sw-button*` (Utilities `shadow-drop`, `shadow-shade`, `inset-shadow-shade`, `shadow-panel`, `shadow-button*`), `--sw-ease-pop` (`ease-pop`) und die Körnung `--sw-grain` mit der Utility `grain`. Koralle, Pink und Violett des Mockups sind als Text zu dunkel; `--sw-danger` und `--sw-magenta` sind leicht aufgehellt, `--sw-violet` ist der helle Ton `--sw-violet-light`. Gleiche Werte verweisen per `var()` aufeinander (`getComputedStyle` liefert sie aufgelöst, auch für Canvas und Diagramme). Die Diagrammfarben `--sw-chart-*` sind unverändert und haben auf allen Flächen mindestens 3:1. Die Schrift Nunito regelt [ADR-013](013-webfont-nunito.md).
+
+**Offen:** Kamera-Bedienung (AP 1.4.4) und HUD-Komponenten im K2-K-Stil (AP 1.4.3, weitere Teile).
 
 ## Konsequenzen
 

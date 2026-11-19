@@ -28,6 +28,7 @@ Die K2-Shell (AP 1.4.1, US-08.01, TK §8.1) setzt Szene, Umgebung und Genom zu e
 - `--ms` (`stageSize`): Mockup-Formel `max(360, min(h · 0,86, w − 720))`, auf ganze Pixel abgerundet und nie breiter als der Viewport minus 2 · 16 px. Sonar- und Genom-Ebene setzen ihre Bühne auf `--ms` × `--ms`, damit das Zentrum der Karte bzw. des Zellkerns in der Viewport-Mitte liegt; die Legenden ragen darunter.
 - Sichtbarkeit je Modus: Overlays über die Varianten `mode-scene:`/`mode-map:`/`mode-gen:` (`opacity-0 pointer-events-none` → `opacity-100 pointer-events-auto`), Ebenen über `.shell[data-mode=…]`. Nicht aktive Ebenen und Overlays tragen zusätzlich `inert` (Tab-Fokus und Screenreader); die Welt ist nur im Genom-Modus inert.
 - Die Szene zeichnet die Futterstelle in die Viewport-Mitte; dorthin schrumpft die Kamera im Kartenmodus. Die Welt-Ebene ist `fixed inset-0`, der Canvas füllt sie.
+- Die Körnung (`grain`-Utility aus `src/styles.css`, Mockup `body::after`) liegt als `div` mit `z-4` über den Ebenen (z ≤ 3) und unter den Overlays (z = 10).
 - Klick auf die Welt im Kartenmodus führt zur Szene zurück (`shell.world.back`, nur im Kartenmodus, `tabindex="-1"`; der Tastaturweg ist der Zurück-Knopf).
 - Mausrad, Tasten W/G/Esc und Pointer kommen in AP 1.4.4; die Zoom-Leiste zeigt deshalb noch keine Hinweiszeile.
 - Test-IDs: `shell.root`, `shell.layer.{map,scene,gen}`, `shell.overlay.{scene,map,gen}`, `shell.world.back`, `shell.back`, `shell.zoom.{map,scene,gen,gen-dna,gen-count}`.
