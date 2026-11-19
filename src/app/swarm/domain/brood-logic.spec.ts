@@ -116,14 +116,13 @@ describe('applyBrood', () => {
   });
 
   it('nutzt überschriebene Parameter', () => {
-    const params = {
-      ...DEFAULT_BALANCE,
-      queenEggsPerMin: 60,
-      broodDroneShare: 0.5,
-      droneCost: 2,
-      soldierCost: 4,
+    const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 60, droneCost: 2, soldierCost: 4 };
+    // Verteilung 2 : 2 statt 3 : 1: `f = 1`, `a = 0,5`.
+    const input = {
+      ...createState({ queens: 2, food: 10 }),
+      pheromones: { drones: 2, soldiers: 2, glands: 0 },
     };
-    const { units, res } = applyBrood(createState({ queens: 2, food: 10 }), 1000, params);
+    const { units, res } = applyBrood(input, 1000, params);
     expect(units.drones.eq(1)).toBe(true);
     expect(units.soldiers.eq(1)).toBe(true);
     expect(res.food.eq(4)).toBe(true);

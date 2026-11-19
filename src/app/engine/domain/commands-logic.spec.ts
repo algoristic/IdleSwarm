@@ -105,6 +105,48 @@ describe('apply', () => {
     });
   });
 
+  describe('setPheromones', () => {
+    it('verteilt die Punkte, auch während einer Reise', () => {
+      const traveling = Object.freeze(apply(state, { type: 'depart', target: 0 }));
+      const result = applyCommand(traveling, { type: 'setPheromones', drones: 0, soldiers: 4 });
+      expect(result.state.pheromones).toEqual({ drones: 0, soldiers: 4, glands: 0 });
+      expect(result.state.travel).toBe(traveling.travel);
+      expect(result.events).toEqual([]);
+    });
+
+    it.each([
+      [3, 2],
+      [-1, 1],
+      [1.5, 1],
+    ])('bleibt bei %d : %d ohne Wirkung', (drones, soldiers) => {
+      expect(applyCommand(state, { type: 'setPheromones', drones, soldiers })).toEqual({
+        state,
+        events: [],
+      });
+      expect(apply(state, { type: 'setPheromones', drones, soldiers })).toBe(state);
+    });
+  });
+
+  describe('strengthenGland', () => {
+    const rich = Object.freeze({
+      ...state,
+      res: Object.freeze({ ...state.res, food: Num.from(250) }),
+    });
+
+    it('kauft einen Drüsenpunkt, auch während einer Reise', () => {
+      const traveling = Object.freeze(apply(rich, { type: 'depart', target: 0 }));
+      const result = applyCommand(traveling, { type: 'strengthenGland' });
+      expect(result.state.pheromones.glands).toBe(1);
+      expect(result.state.res.food.eq(150)).toBe(true);
+      expect(result.events).toEqual([]);
+    });
+
+    it('bleibt ohne genug Nahrung ohne Wirkung', () => {
+      expect(applyCommand(state, { type: 'strengthenGland' })).toEqual({ state, events: [] });
+      expect(apply(state, { type: 'strengthenGland' })).toBe(state);
+    });
+  });
+
   describe('setAutoMove', () => {
     it('setzt die Einstellungen und begrenzt die Schwelle', () => {
       const next = apply(

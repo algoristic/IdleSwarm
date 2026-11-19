@@ -4,6 +4,7 @@ import type { StrategyId } from '@app/site/domain/models/auto-move.model';
 import { depart } from '@app/site/domain/move-logic';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
+import { setPheromones, strengthenGland } from '@app/swarm/domain/pheromone-logic';
 import { convertDronesToQueen, sacrificeDrones } from '@app/swarm/domain/sacrifice-logic';
 import { setTransportPriority } from '@app/swarm/domain/transport-logic';
 import { buyUnit } from '@app/swarm/domain/units-logic';
@@ -60,6 +61,21 @@ export interface SetAutoMoveCommand {
   readonly threshold?: number;
 }
 
+/**
+ * Verteilt die Pheromonpunkte (Game-Design §4.15): ganze Zahlen ≥ 0 mit `drones + soldiers ≤ P_ges`,
+ * sonst ohne Wirkung. Kostenlos, auch während einer Reise.
+ */
+export interface SetPheromonesCommand {
+  readonly type: 'setPheromones';
+  readonly drones: number;
+  readonly soldiers: number;
+}
+
+/** Kauft einen Drüsenpunkt für `Preis_P` Nahrung; der neue Punkt ist frei (Game-Design §4.15). */
+export interface StrengthenGlandCommand {
+  readonly type: 'strengthenGland';
+}
+
 /** Alle Kommandos; neue Varianten hier ergänzen und in {@link applyCommand} behandeln. */
 export type Command =
   | NoopCommand
@@ -68,7 +84,9 @@ export type Command =
   | ConvertDronesToQueenCommand
   | SetTransportPriorityCommand
   | DepartCommand
-  | SetAutoMoveCommand;
+  | SetAutoMoveCommand
+  | SetPheromonesCommand
+  | StrengthenGlandCommand;
 
 const NO_EVENTS: readonly GameEvent[] = Object.freeze([]);
 
@@ -110,6 +128,12 @@ export function applyCommand(
       const { enabled, strategy, threshold } = cmd;
       return withoutEvents(setAutoMove(state, { enabled, strategy, threshold }, params));
     }
+    case 'setPheromones':
+      return withoutEvents(
+        setPheromones(state, cmd.drones, cmd.soldiers, params, stateModifiers(state, params)),
+      );
+    case 'strengthenGland':
+      return withoutEvents(strengthenGland(state, params));
     default:
       return assertNever(type);
   }

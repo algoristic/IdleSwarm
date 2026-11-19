@@ -2,6 +2,7 @@ import {
   broodFoodPerSecond,
   collectRatePerDrone,
   meanBroodCost,
+  pheromoneDroneShare,
   queenEggsPerMinute,
   secondsUntilAffordable,
 } from '@app/balance/domain/formulas';
@@ -14,6 +15,7 @@ import {
 } from '@app/engine/domain/bot-logic';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_SECOND, SECONDS_PER_MINUTE } from '@app/shared/util/time/time-units';
+import type { Pheromones } from '@app/swarm/domain/models/pheromones.model';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 export const ACTIVE_DECIDE_EVERY_MS = MS_PER_SECOND;
@@ -26,14 +28,19 @@ export interface ActiveBotOptions {
 
 /**
  * Zusätzlicher Ertrag einer Königin in Nahrung/s: Je Ei spart sie den Kauf von `a` Drohnen zum
- * aktuellen Preis und kostet dafür `c̄`. Ohne Zufluss für ihre Brut bringt sie nichts.
+ * aktuellen Preis und kostet dafür `c̄`; `a` folgt aus der Pheromon-Verteilung des Zustands. Ohne
+ * Zufluss für ihre Brut bringt sie nichts.
  */
-function queenGainPerSecond(view: BotView, income: Num): Num {
+function queenGainPerSecond(view: BotView, pheromones: Pheromones, income: Num): Num {
   const { params, prices, modifiers } = view;
-  const value = prices.drones.mul(params.broodDroneShare).sub(meanBroodCost(params));
-  const fundable = income.sub(broodFoodPerSecond(ONE_QUEEN, params, modifiers)).gt(Num.ZERO);
+  const value = prices.drones
+    .mul(pheromoneDroneShare(pheromones))
+    .sub(meanBroodCost(pheromones, params));
+  const fundable = income
+    .sub(broodFoodPerSecond(ONE_QUEEN, pheromones, params, modifiers))
+    .gt(Num.ZERO);
   return fundable && value.gt(Num.ZERO)
-    ? value.mul(queenEggsPerMinute(params, modifiers) / SECONDS_PER_MINUTE)
+    ? value.mul(queenEggsPerMinute(pheromones, params, modifiers) / SECONDS_PER_MINUTE)
     : Num.ZERO;
 }
 
@@ -61,7 +68,12 @@ function bestUnit(plan: CommandPlan): UnitType | null {
     income,
     Num.from(collectRatePerDrone(params, modifiers)),
   );
-  const queens = paybackSeconds(prices.queens, food, income, queenGainPerSecond(view, income));
+  const queens = paybackSeconds(
+    prices.queens,
+    food,
+    income,
+    queenGainPerSecond(view, state.pheromones, income),
+  );
   if (drones === Infinity && queens === Infinity) {
     return null;
   }

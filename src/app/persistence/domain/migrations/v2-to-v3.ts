@@ -18,8 +18,11 @@ const V3_START = Object.freeze({
   priority: 'balanced',
 });
 
-/** Generatorwerte v1 (Game-Design §2.3), ebenfalls fest, damit die Startkandidaten stabil bleiben. */
-const V3_GENERATOR_PARAMS: BalanceParams = Object.freeze({
+/**
+ * Generatorwerte v1 (Game-Design §2.3), ebenfalls fest, damit die Startkandidaten stabil bleiben.
+ * Die Migration 3 → 4 nutzt sie auch: Der Generator ist seit Version 3 unverändert.
+ */
+export const V3_GENERATOR_PARAMS: BalanceParams = Object.freeze({
   ...DEFAULT_BALANCE,
   siteSize: 20_000,
   baseRange: 5,
@@ -49,7 +52,7 @@ const V3_GENERATOR_PARAMS: BalanceParams = Object.freeze({
   whaleFallWeight: 1,
 });
 
-function readRngState(value: unknown): number {
+export function readRngState(value: unknown): number {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value >= UINT32_LIMIT) {
     throw new TypeError('rngState ist kein uint32');
   }

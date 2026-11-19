@@ -1,6 +1,21 @@
 import { compressToBase64, decompressFromBase64 } from 'lz-string';
 
 import { GameState, STATE_VERSION } from '@app/engine/domain/models/game-state.model';
+import {
+  BuffId,
+  CollectedId,
+  FindBuff,
+  Finds,
+  isBuffId,
+  isCollectedId,
+} from '@app/finds/domain/models/finds.model';
+import { GENOME_NODE_PREDECESSORS } from '@app/genome/domain/data/genome-era1.data';
+import {
+  Genome,
+  GENOME_ROOT,
+  GenomeNodeId,
+  isGenomeNodeId,
+} from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
 import { isSiteTypeId, SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import { AutoMove, isStrategyId } from '@app/site/domain/models/auto-move.model';
@@ -13,6 +28,7 @@ import {
 } from '@app/site/domain/models/map.model';
 import { Site } from '@app/site/domain/models/site.model';
 import { Travel } from '@app/site/domain/models/travel.model';
+import { Pheromones } from '@app/swarm/domain/models/pheromones.model';
 import {
   isTransportPriority,
   TransportPriority,
@@ -47,12 +63,20 @@ function readTime(value: unknown, path: string): number {
   return value;
 }
 
-function readRngState(value: unknown): number {
+function readRngState(value: unknown, path = 'rngState'): number {
   if (typeof value !== 'number' || !Number.isInteger(value)) {
-    throw invalid('rngState');
+    throw invalid(path);
   }
   if (value < 0 || value >= UINT32_LIMIT) {
-    throw invalid('rngState');
+    throw invalid(path);
+  }
+  return value;
+}
+
+/** Ganze Zahl ab `min`, z. B. Pheromonpunkte oder Fundzähler. */
+function readCount(value: unknown, path: string, min = 0): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < min) {
+    throw invalid(path);
   }
   return value;
 }
@@ -202,6 +226,82 @@ function readPriority(value: unknown): TransportPriority {
   return value;
 }
 
+/**
+ * Ob `P_v ≤ P_ges` gilt, prüft das Laden nicht: `P_ges` hängt von Balance-Werten ab, wirksam sind
+ * höchstens `P_ges` Punkte (Game-Design §4.15, §5.1).
+ */
+function readPheromones(value: unknown): Pheromones {
+  const pheromones = readRecord(value, 'pheromones');
+  return {
+    drones: readCount(pheromones['drones'], 'pheromones.drones'),
+    soldiers: readCount(pheromones['soldiers'], 'pheromones.soldiers'),
+    glands: readCount(pheromones['glands'], 'pheromones.glands'),
+  };
+}
+
+/** Bekannte reguläre Knoten, keiner doppelt, zu jedem sein Vorgänger (Datenregel, Game-Design §5.1). */
+function readGenome(value: unknown): Genome {
+  const genome = readRecord(value, 'genome');
+  const items = readArray(genome['owned'], 'genome.owned');
+  const owned: GenomeNodeId[] = items.map((id, i) => {
+    if (!isGenomeNodeId(id)) {
+      throw invalid(`genome.owned.${i}`);
+    }
+    return id;
+  });
+  const known = new Set<string>([GENOME_ROOT]);
+  for (const id of owned) {
+    if (known.has(id)) {
+      throw invalid('genome.owned');
+    }
+    known.add(id);
+  }
+  for (const id of owned) {
+    if (!known.has(GENOME_NODE_PREDECESSORS[id])) {
+      throw invalid('genome.owned');
+    }
+  }
+  return { owned };
+}
+
+/** Zähler über der benötigten Fragmentzahl bleiben erhalten; die Grenze ist ein Balance-Wert. */
+function readCollected(value: unknown): Partial<Record<CollectedId, number>> {
+  const raw = readRecord(value, 'finds.collected');
+  const collected: Partial<Record<CollectedId, number>> = {};
+  for (const [id, count] of Object.entries(raw)) {
+    if (!isCollectedId(id)) {
+      throw invalid(`finds.collected.${id}`);
+    }
+    collected[id] = readCount(count, `finds.collected.${id}`, 1);
+  }
+  return collected;
+}
+
+/** Abgelaufene Buffs sind zulässig; der nächste Schritt entfernt sie (Game-Design §5.1). */
+function readBuffs(value: unknown): FindBuff[] {
+  const items = readArray(value, 'finds.buffs');
+  const seen = new Set<BuffId>();
+  return items.map((item, i) => {
+    const buff = readRecord(item, `finds.buffs.${i}`);
+    const id = buff['id'];
+    if (!isBuffId(id) || seen.has(id)) {
+      throw invalid(`finds.buffs.${i}.id`);
+    }
+    seen.add(id);
+    return { id, expiresAtMs: readTime(buff['expiresAtMs'], `finds.buffs.${i}.expiresAtMs`) };
+  });
+}
+
+function readFinds(value: unknown): Finds {
+  const finds = readRecord(value, 'finds');
+  return {
+    rngState: readRngState(finds['rngState'], 'finds.rngState'),
+    total: readCount(finds['total'], 'finds.total'),
+    collected: readCollected(finds['collected']),
+    buffs: readBuffs(finds['buffs']),
+  };
+}
+
 /** Prüft einen rohen Stand der aktuellen Version und übernimmt nur die bekannten Felder. */
 function toGameState(value: unknown): GameState {
   const raw = readRecord(value, 'Spielstand');
@@ -238,6 +338,9 @@ function toGameState(value: unknown): GameState {
     travel: readTravel(raw['travel']),
     auto: readAuto(raw['auto']),
     priority: readPriority(raw['priority']),
+    pheromones: readPheromones(raw['pheromones']),
+    genome: readGenome(raw['genome']),
+    finds: readFinds(raw['finds']),
   };
 }
 

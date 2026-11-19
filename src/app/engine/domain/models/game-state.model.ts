@@ -1,13 +1,16 @@
+import type { Finds } from '@app/finds/domain/models/finds.model';
+import type { Genome } from '@app/genome/domain/models/genome.model';
 import type { Num } from '@app/shared/util/num/num';
 import type { AutoMove } from '@app/site/domain/models/auto-move.model';
 import type { SiteMap } from '@app/site/domain/models/map.model';
 import type { Site } from '@app/site/domain/models/site.model';
 import type { Travel } from '@app/site/domain/models/travel.model';
+import type { Pheromones } from '@app/swarm/domain/models/pheromones.model';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
 import type { Units } from '@app/swarm/domain/models/units.model';
 
 /** Aktuelle Version des Zustandsformats. */
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 export type Era = 'ursuppe';
 
@@ -44,4 +47,10 @@ export interface GameState {
   readonly auto: AutoMove;
   /** Mitnahme-Priorität beim Aufbruch (Spielereinstellung). */
   readonly priority: TransportPriority;
+  /** Verteilte Pheromonpunkte und gekaufte Drüsenpunkte (Game-Design §4.15). */
+  readonly pheromones: Pheromones;
+  /** Entwickelte reguläre Adaptionen (Game-Design §4.14). */
+  readonly genome: Genome;
+  /** Fund-RNG, Fundzähler, Sammlung und Buffs (Game-Design §4.16). */
+  readonly finds: Finds;
 }

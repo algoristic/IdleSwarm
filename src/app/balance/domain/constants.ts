@@ -20,7 +20,14 @@ export interface BalanceParams {
   readonly queenCostGrowth: number;
   readonly queenEggsPerMin: number;
   readonly queenSpace: number;
-  readonly broodDroneShare: number;
+  /** Pheromonpunkte auf Drohnen `P_d0` beim Start; ganzzahlig (Game-Design §4.15). */
+  readonly startPheromoneDrones: number;
+  /** Pheromonpunkte auf Soldaten `P_s0` beim Start; ganzzahlig. `P_0 = P_d0 + P_s0` ist abgeleitet. */
+  readonly startPheromoneSoldiers: number;
+  /** Basispreis `c_P` eines Drüsenpunkts in Nahrung (Game-Design §4.15). */
+  readonly glandCost: number;
+  /** Preisfaktor `w_P` der Drüse. */
+  readonly glandCostGrowth: number;
   readonly startFood: number;
   readonly startQueens: number;
   /** Größe der ersten Futterstelle `s_0` und Basis der Größe aller weiteren (Game-Design §4.6). */
@@ -92,7 +99,10 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   queenCostGrowth: 1.2,
   queenEggsPerMin: 6,
   queenSpace: 10,
-  broodDroneShare: 3 / 4,
+  startPheromoneDrones: 3,
+  startPheromoneSoldiers: 1,
+  glandCost: 100,
+  glandCostGrowth: 2,
   startFood: 15,
   startQueens: 1,
   siteSize: 20_000,

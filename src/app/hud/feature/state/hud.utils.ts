@@ -42,7 +42,7 @@ export const BUY_ORDER: readonly UnitType[] = ['drones', 'soldiers', 'queens'];
 
 export function toHudView(source: HudSource, params: BalanceParams): HudView {
   const { state } = source;
-  const { units, site } = state;
+  const { units, site, pheromones } = state;
   const modifiers = stateModifiers(state, params);
   return {
     food: state.res.food,
@@ -50,7 +50,7 @@ export function toHudView(source: HudSource, params: BalanceParams): HudView {
     foodRate: foodPerSecond(units, site.stock, params, modifiers),
     baseRate: baseFoodPerSecond(site.stock, params),
     droneRate: droneFoodPerSecond(units, site.stock, params, modifiers),
-    eggsPerMinute: eggsPerMinute(units, params, modifiers),
+    eggsPerMinute: eggsPerMinute(units, pheromones, params, modifiers),
     attack: totalAttack(units, params, modifiers),
     site: toSiteView(state, params, modifiers),
     space: toSpaceView(state, params, modifiers),
@@ -79,7 +79,7 @@ function toUnitView(
     count: state.units[unit],
     price,
     affordable,
-    queenEffect: unit === 'queens' ? nextQueenEffect(params, modifiers) : null,
+    queenEffect: unit === 'queens' ? nextQueenEffect(state.pheromones, params, modifiers) : null,
   };
 }
 

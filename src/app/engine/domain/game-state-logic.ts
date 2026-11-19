@@ -1,11 +1,13 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { clampAutoThreshold, swarmRange } from '@app/balance/domain/formulas';
+import { initialFinds } from '@app/finds/domain/finds-logic';
 import { Num } from '@app/shared/util/num/num';
 import { seedToRngState } from '@app/shared/util/rng/rng';
 import { START_SITE_TYPE } from '@app/site/domain/data/sites-era1.data';
 import { generateCandidates } from '@app/site/domain/generator-logic';
 import { DEFAULT_STRATEGY } from '@app/site/domain/models/auto-move.model';
 import { DEFAULT_TRANSPORT_PRIORITY } from '@app/swarm/domain/models/transport-priority.model';
+import { startPheromones } from '@app/swarm/domain/pheromone-logic';
 
 import { GameState, STATE_VERSION } from './models/game-state.model';
 
@@ -22,7 +24,8 @@ export interface InitialStateOptions {
 
 /**
  * Erzeugt den Startzustand nach Game-Design §2.1. Die Startkandidaten zieht der Generator aus dem
- * RNG; der zurückgegebene `rngState` ist entsprechend fortgeschrieben.
+ * RNG; der zurückgegebene `rngState` ist entsprechend fortgeschrieben. Der Fund-RNG entsteht
+ * getrennt davon aus dem Seed.
  */
 export function createInitialState(
   { seed, now, rngState = seedToRngState(seed) }: InitialStateOptions,
@@ -58,5 +61,9 @@ export function createInitialState(
       threshold: clampAutoThreshold(params.defaultAutoThreshold, params),
     },
     priority: DEFAULT_TRANSPORT_PRIORITY,
+    pheromones: startPheromones(params),
+    genome: { owned: [] },
+    // Eigener Strom aus dem Seed, auch wenn `rngState` übergeben wird (Game-Design §4.16, §5.1).
+    finds: initialFinds(seed),
   };
 }

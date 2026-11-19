@@ -65,6 +65,14 @@ function sampleState(): GameState {
     travel: { target: initial.map.candidates[2], remainingMs: 12_345 },
     auto: { enabled: true, strategy: 'battle-hardened', threshold: 0.25 },
     priority: 'soldiers-first',
+    pheromones: { drones: 2, soldiers: 3, glands: 1 },
+    genome: { owned: ['cilia-1', 'cilia-2', 'acid-vacuole'] },
+    finds: {
+      rngState: 123_456_789,
+      total: 7,
+      collected: { 'sulfur-pearl': 2, pumice: 1 },
+      buffs: [{ id: 'plankton-bloom', expiresAtMs: 605_000 }],
+    },
   };
 }
 
@@ -147,6 +155,19 @@ describe('encodeSave und decodeSave', () => {
     expect(json.travel).toMatchObject({ remainingMs: 12345, target: { type: 'whale-fall' } });
     expect(json.auto).toEqual({ enabled: true, strategy: 'battle-hardened', threshold: 0.25 });
     expect(json.priority).toBe('soldiers-first');
+    expect(json.pheromones).toEqual({ drones: 2, soldiers: 3, glands: 1 });
+    expect(json.genome).toEqual({ owned: ['cilia-1', 'cilia-2', 'acid-vacuole'] });
+    expect(json.finds).toEqual({
+      rngState: 123456789,
+      total: 7,
+      collected: { 'sulfur-pearl': 2, pumice: 1 },
+      buffs: [{ id: 'plankton-bloom', expiresAtMs: 605000 }],
+    });
+  });
+
+  it('speichert und lädt den Startzustand von Version 4', () => {
+    const state = createInitialState({ seed: 'idleswarm', now: NOW });
+    expectSameState(decodeSave(encodeSave(state)), state);
   });
 
   it('liefert echte Num-Werte für Kandidaten und Reiseziel', () => {
@@ -172,6 +193,9 @@ describe('encodeSave und decodeSave', () => {
     Object.freeze(state.bought);
     Object.freeze(state.map);
     Object.freeze(state.auto);
+    Object.freeze(state.pheromones);
+    Object.freeze(state.genome);
+    Object.freeze(state.finds);
     encodeSave(state);
     expect(JSON.stringify(state)).toBe(before);
   });
@@ -187,6 +211,7 @@ describe('encodeSave und decodeSave', () => {
     ['fremde Version', { version: STATE_VERSION + 1 }],
     ['Vorrat über der Größe', { site: { type: 'vent', size: Num.ONE, stock: Num.from(2) } }],
     ['unbekannte Priorität', { priority: 'queens-first' as GameState['priority'] }],
+    ['gebrochene Pheromonpunkte', { pheromones: { drones: 1.5, soldiers: 1, glands: 0 } }],
     [
       'NaN in der Restdauer',
       { travel: { target: sampleState().map.candidates[0], remainingMs: NaN } },
@@ -201,13 +226,13 @@ describe('eingefrorener Spielstand der Version 1', () => {
     const state = decodeSave(FROZEN_V1_SAVE);
     expect(state.version).toBe(STATE_VERSION);
     expect(state.seed).toBe('idleswarm');
-    // 1378881061, fortgeschrieben um die 30 Ziehungen der Startkandidaten (Migration 2 → 3).
-    expect(state.rngState).toBe(491280603);
+    // 1378881061, fortgeschrieben um je 30 Ziehungen der Startkandidaten (Migrationen 2 → 3, 3 → 4).
+    expect(state.rngState).toBe(3898647441);
     expect(state.time).toEqual({ now: 1700000360000, lastSaved: 1700000300000, played: 360000 });
     expect(state.era).toBe('ursuppe');
   });
 
-  it('bekommt die Startwerte von Version 3', () => {
+  it('bekommt die Startwerte von Version 4', () => {
     const state = decodeSave(FROZEN_V1_SAVE);
     expect(JSON.parse(JSON.stringify(state))).toMatchObject({
       res: { food: '1.5e1', dna: '0e0' },
@@ -218,6 +243,9 @@ describe('eingefrorener Spielstand der Version 1', () => {
       travel: null,
       auto: { enabled: false, strategy: 'balanced', threshold: 0 },
       priority: 'balanced',
+      pheromones: { drones: 3, soldiers: 1, glands: 0 },
+      genome: { owned: [] },
+      finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
     });
     expect(state.map.candidates).toHaveLength(6);
   });
@@ -233,9 +261,9 @@ describe('eingefrorener Spielstand der Version 2', () => {
     const state = decodeSave(FROZEN_V2_SAVE);
     expect(state.version).toBe(STATE_VERSION);
     expect(JSON.parse(JSON.stringify(state))).toEqual({
-      version: 3,
+      version: 4,
       seed: 'idleswarm',
-      rngState: 491280603,
+      rngState: 3898647441,
       time: { now: 1700000005000, lastSaved: 1700000000000, played: 5000 },
       era: 'ursuppe',
       res: { food: '1.5e1', dna: '0e0' },
@@ -251,12 +279,16 @@ describe('eingefrorener Spielstand der Version 2', () => {
       travel: null,
       auto: { enabled: false, strategy: 'balanced', threshold: 0 },
       priority: 'balanced',
+      pheromones: { drones: 3, soldiers: 1, glands: 0 },
+      genome: { owned: [] },
+      finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
     });
   });
 
-  it('bekommt dieselben Startkandidaten wie ein neues Spiel mit demselben Seed', () => {
+  it('bekommt die Startkandidaten aus dem RNG-Zustand nach der Migration 2 → 3', () => {
+    // Jede Migration der Kette erzeugt die Kandidaten neu; 3 → 4 beginnt bei 491280603.
     const state = decodeSave(FROZEN_V2_SAVE);
-    const fresh = createInitialState({ seed: 'idleswarm', now: NOW });
+    const fresh = createInitialState({ seed: 'idleswarm', now: NOW, rngState: 491280603 });
     expect(JSON.stringify(state.map.candidates)).toBe(JSON.stringify(fresh.map.candidates));
   });
 
@@ -267,48 +299,40 @@ describe('eingefrorener Spielstand der Version 2', () => {
 });
 
 describe('eingefrorener Spielstand der Version 3', () => {
-  it('wird unverändert geladen', () => {
+  it('wird migriert: Seed und Zeiten bleiben, alles Übrige beginnt neu', () => {
     const state = decodeSave(FROZEN_V3_SAVE);
     expect(state.version).toBe(STATE_VERSION);
-    expect(JSON.parse(JSON.stringify(state))).toMatchObject({
-      version: 3,
+    expect(JSON.parse(JSON.stringify(state))).toEqual({
+      version: 4,
       seed: 'idleswarm',
-      rngState: 3898647441,
+      // 3898647441, fortgeschrieben um die 30 Ziehungen der Startkandidaten (Migration 3 → 4).
+      rngState: 3011046983,
       time: { now: 1700000039000, lastSaved: 1700000039000, played: 39000 },
       era: 'ursuppe',
-      res: { food: '3.260472615368e2', dna: '0e0' },
-      units: { queens: '1e0', drones: '3.925e0', soldiers: '1.975e0' },
-      site: { type: 'algal-mat', size: '1.79670415338958e4', stock: '0e0' },
-      bought: { queens: '0e0', drones: '1e0', soldiers: '1e0' },
+      res: { food: '1.5e1', dna: '0e0' },
+      units: { queens: '1e0', drones: '0e0', soldiers: '0e0' },
+      site: { type: 'vent', size: '2e4', stock: '2e4' },
+      bought: { queens: '0e0', drones: '0e0', soldiers: '0e0' },
       map: {
-        position: { x: -1.3355202136377915, y: -2.3790464257738426 },
-        route: [
-          { type: 'vent', position: { x: 0, y: 0 } },
-          { type: 'algal-mat', position: { x: -1.3355202136377915, y: -2.3790464257738426 } },
-        ],
-        moves: 1,
+        position: { x: 0, y: 0 },
+        candidates: expect.any(Array),
+        route: [{ type: 'vent', position: { x: 0, y: 0 } }],
+        moves: 0,
       },
-      travel: {
-        target: {
-          type: 'algal-mat',
-          position: { x: -3.923380565853229, y: 0.5207710719910827 },
-          size: '2.0985931569243e4',
-          defense: '0e0',
-        },
-        remainingMs: 34866.39000847936,
-      },
-      auto: { enabled: false, strategy: 'least-resistance', threshold: 0.25 },
-      priority: 'soldiers-first',
+      travel: null,
+      auto: { enabled: false, strategy: 'balanced', threshold: 0 },
+      priority: 'balanced',
+      pheromones: { drones: 3, soldiers: 1, glands: 0 },
+      genome: { owned: [] },
+      finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
     });
     expect(state.map.candidates).toHaveLength(6);
   });
 
-  it('lässt sich weiterspielen bis zur Ankunft', () => {
-    const { state, events } = step(decodeSave(FROZEN_V3_SAVE), 35_000);
-    expect(state.travel).toBeNull();
-    expect(state.map.moves).toBe(2);
-    expect(state.site.type).toBe('algal-mat');
-    expect(events.map((event) => event.type)).toEqual(['arrived']);
+  it('lässt sich weiterspielen', () => {
+    const { state } = step(decodeSave(FROZEN_V3_SAVE), 1000);
+    expect(state.time.played).toBe(40_000);
+    expect(state.units.drones.gt(0)).toBe(true);
   });
 
   it('lässt sich wieder speichern und laden', () => {
@@ -458,6 +482,58 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     ['priority', undefined],
     ['priority', 'queens-first'],
     ['priority', null],
+    ['pheromones', undefined],
+    ['pheromones', []],
+    ['pheromones.drones', undefined],
+    ['pheromones.drones', -1],
+    ['pheromones.drones', 1.5],
+    ['pheromones.drones', '2'],
+    ['pheromones.soldiers', null],
+    ['pheromones.soldiers', -1],
+    ['pheromones.glands', undefined],
+    ['pheromones.glands', 0.5],
+    ['genome', undefined],
+    ['genome', []],
+    ['genome.owned', undefined],
+    ['genome.owned', {}],
+    ['genome.owned', ['root']],
+    ['genome.owned', ['cilia-3']],
+    ['genome.owned', [1]],
+    ['genome.owned', ['cilia-1', 'cilia-1']],
+    ['genome.owned', ['cilia-2']],
+    ['genome.owned', ['cilia-1', 'filter-feeder']],
+    ['genome.owned', ['thermosynthesis']],
+    ['finds', undefined],
+    ['finds', null],
+    ['finds.rngState', undefined],
+    ['finds.rngState', -1],
+    ['finds.rngState', 2 ** 32],
+    ['finds.rngState', 1.5],
+    ['finds.total', undefined],
+    ['finds.total', -1],
+    ['finds.total', 2.5],
+    ['finds.collected', undefined],
+    ['finds.collected', []],
+    ['finds.collected', { 'foreign-dna': 1 }],
+    ['finds.collected', { 'plankton-bloom': 1 }],
+    ['finds.collected', { pumice: 0 }],
+    ['finds.collected', { pumice: 1.5 }],
+    ['finds.collected', { pumice: '1' }],
+    ['finds.collected', { constructor: 1 }],
+    ['finds.buffs', undefined],
+    ['finds.buffs', {}],
+    ['finds.buffs', [null]],
+    ['finds.buffs', [{ id: 'warm-current' }]],
+    ['finds.buffs', [{ id: 'sulfur-pearl', expiresAtMs: 1 }]],
+    ['finds.buffs', [{ id: 'warm-current', expiresAtMs: -1 }]],
+    ['finds.buffs', [{ id: 'warm-current', expiresAtMs: '1' }]],
+    [
+      'finds.buffs',
+      [
+        { id: 'warm-current', expiresAtMs: 1 },
+        { id: 'warm-current', expiresAtMs: 2 },
+      ],
+    ],
   ])('meldet invalid für %s = %j', (path, value) => {
     expect(codeOf(() => decodeSave(encodeRaw(withField(path, value))))).toBe('invalid');
   });
@@ -497,6 +573,36 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     expect(decodeSave(encodeRaw(withField('travel.remainingMs', 0))).travel?.remainingMs).toBe(0);
   });
 
+  it('akzeptiert die Grenzen von Pheromonen, Genom und Funden', () => {
+    // `P_v ≤ P_ges` und die benötigte Fragmentzahl sind Balance-Werte und werden nicht geprüft.
+    const pheromones = { drones: 40, soldiers: 0, glands: 0 };
+    expect(decodeSave(encodeRaw(withField('pheromones', pheromones))).pheromones).toEqual(
+      pheromones,
+    );
+    const owned = ['yolk-reserve', 'cilia-2', 'cilia-1'];
+    expect(decodeSave(encodeRaw(withField('genome.owned', owned))).genome.owned).toEqual(owned);
+    expect(decodeSave(encodeRaw(withField('genome.owned', []))).genome.owned).toEqual([]);
+    const collected = { 'sulfur-pearl': 99, stromatolite: 1 };
+    expect(decodeSave(encodeRaw(withField('finds.collected', collected))).finds.collected).toEqual(
+      collected,
+    );
+    const buffs = [
+      { id: 'warm-current', expiresAtMs: 0 },
+      { id: 'plankton-bloom', expiresAtMs: 10 },
+    ];
+    expect(decodeSave(encodeRaw(withField('finds.buffs', buffs))).finds.buffs).toEqual(buffs);
+    expect(decodeSave(encodeRaw(withField('finds.rngState', 0))).finds.rngState).toBe(0);
+    expect(decodeSave(encodeRaw(withField('finds.total', 0))).finds.total).toBe(0);
+  });
+
+  it('lässt keine Fundzähler über __proto__ einschleusen', () => {
+    const json = JSON.stringify(rawSample()).replace(
+      '"collected":{',
+      '"collected":{"__proto__":{"pumice":1},',
+    );
+    expect(codeOf(() => decodeSave(compressToBase64(json)))).toBe('invalid');
+  });
+
   it('meldet future-version für neuere Stände', () => {
     expect(codeOf(() => decodeSave(encodeRaw(withField('version', STATE_VERSION + 1))))).toBe(
       'future-version',
@@ -517,6 +623,11 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     (map['route'] as Record<string, unknown>[])[0]['extra'] = 1;
     (raw['travel'] as Record<string, unknown>)['extra'] = 1;
     (raw['auto'] as Record<string, unknown>)['extra'] = 1;
+    (raw['pheromones'] as Record<string, unknown>)['extra'] = 1;
+    (raw['genome'] as Record<string, unknown>)['extra'] = 1;
+    const finds = raw['finds'] as Record<string, unknown>;
+    finds['extra'] = 1;
+    (finds['buffs'] as Record<string, unknown>[])[0]['extra'] = 1;
     expectSameState(decodeSave(encodeRaw(raw)), sampleState());
   });
 

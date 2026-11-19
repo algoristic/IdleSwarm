@@ -2,6 +2,7 @@ import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND, SECONDS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { CandidateStatus, Position } from '@app/site/domain/models/map.model';
+import type { Pheromones } from '@app/swarm/domain/models/pheromones.model';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
 import type { UnitType, Units } from '@app/swarm/domain/models/units.model';
 
@@ -172,47 +173,142 @@ export function siteMsLeft(
   return seconds === null ? null : seconds.toNumber() * MS_PER_SECOND;
 }
 
-/** Eier/min je Königin: `e_q · M_brut` (Game-Design §4.5, §4.13). */
-export function queenEggsPerMinute(
+/** Startpunkte `P_0 = P_d0 + P_s0`, Bezugsgröße der Brutrate (Game-Design §2.3, §4.15). */
+export function basePheromonePoints(params: BalanceParams): number {
+  return params.startPheromoneDrones + params.startPheromoneSoldiers;
+}
+
+/** Gesamtpunkte `P_ges = P_0 + k + P_bonus` (Game-Design §4.15). */
+export function totalPheromonePoints(
+  pheromones: Pheromones,
   params: BalanceParams,
   modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): number {
-  return params.queenEggsPerMin * modifierFactor(modifiers.broodRate);
+  return basePheromonePoints(params) + pheromones.glands + pheromoneBonus(modifiers);
 }
 
-/** Eier/min: `Q · e_q · M_brut` (Game-Design §4.5). */
+/** Verteilte Punkte `P_v = P_d + P_s` (Game-Design §4.15). */
+export function distributedPheromonePoints(pheromones: Pheromones): number {
+  return pheromones.drones + pheromones.soldiers;
+}
+
+/**
+ * Freie Punkte `P_frei = P_ges − P_v` (Game-Design §4.15). Nie negativ: Ein geladener Stand mit
+ * `P_v > P_ges` hat keine freien Punkte.
+ */
+export function freePheromonePoints(
+  pheromones: Pheromones,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return Math.max(
+    0,
+    totalPheromonePoints(pheromones, params, modifiers) - distributedPheromonePoints(pheromones),
+  );
+}
+
+/**
+ * Brutfaktor `f = min(P_v, P_ges) / P_0` (Game-Design §4.15). Wirksam sind höchstens `P_ges` Punkte,
+ * auch wenn ein geladener Stand mehr verteilt hat. Ohne Startpunkte (`P_0 = 0` über `params`) gibt es
+ * keinen Bezug; die Brut ruht dann.
+ */
+export function pheromoneBroodFactor(
+  pheromones: Pheromones,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  const base = basePheromonePoints(params);
+  if (base <= 0) {
+    return 0;
+  }
+  const effective = Math.min(
+    distributedPheromonePoints(pheromones),
+    totalPheromonePoints(pheromones, params, modifiers),
+  );
+  return Math.max(0, effective) / base;
+}
+
+/**
+ * Drohnenanteil der Brut `a = P_d / P_v` (Game-Design §4.15). Bei `P_v = 0` ruht die Brut und `a`
+ * wird nicht gebraucht; dann 0, damit `c̄` endlich bleibt.
+ */
+export function pheromoneDroneShare(pheromones: Pheromones): number {
+  const distributed = distributedPheromonePoints(pheromones);
+  return distributed > 0 ? pheromones.drones / distributed : 0;
+}
+
+/** Preis des nächsten Drüsenpunkts `c_P · w_P^k` in Nahrung, ungerundet (Game-Design §4.15). */
+export function glandPrice(pheromones: Pheromones, params: BalanceParams): Num {
+  return Num.from(params.glandCostGrowth).pow(pheromones.glands).mul(params.glandCost);
+}
+
+/** Eier/min je Königin: `e_q · f(P_v) · M_brut` (Game-Design §4.5, §4.13, §4.15). */
+export function queenEggsPerMinute(
+  pheromones: Pheromones,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return (
+    params.queenEggsPerMin *
+    pheromoneBroodFactor(pheromones, params, modifiers) *
+    modifierFactor(modifiers.broodRate)
+  );
+}
+
+/** Eier/min: `E = Q · e_q · f(P_v) · M_brut` (Game-Design §4.5, §4.15). */
 export function eggsPerMinute(
+  units: Units,
+  pheromones: Pheromones,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return units.queens.mul(queenEggsPerMinute(pheromones, params, modifiers));
+}
+
+/**
+ * Zuwachs an Eiern/min je weiterem verteilten Punkt: `Q · e_q · M_brut / P_0` (Game-Design §4.15,
+ * US-03.03: „sobald verteilt“). Gilt, solange der Punkt frei ist; ohne Startpunkte 0.
+ */
+export function eggsPerPheromonePoint(
   units: Units,
   params: BalanceParams,
   modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): Num {
-  return units.queens.mul(queenEggsPerMinute(params, modifiers));
-}
-
-/** Mittlere Brutkosten: `c̄ = a · c_d + (1 − a) · c_s`, ohne Preisfaktor (Game-Design §4.3). */
-export function meanBroodCost(params: BalanceParams): number {
-  const { broodDroneShare: share, droneCost, soldierCost } = params;
-  return share * droneCost + (1 - share) * soldierCost;
+  const base = basePheromonePoints(params);
+  if (base <= 0) {
+    return Num.ZERO;
+  }
+  return units.queens.mul((params.queenEggsPerMin * modifierFactor(modifiers.broodRate)) / base);
 }
 
 /**
- * Brut eines Schritts: `e = E / 60 · dt`, `h = min(e, N / c̄)` (Game-Design §4.3).
+ * Mittlere Brutkosten: `c̄ = a · c_d + (1 − a) · c_s` mit `a` aus den Pheromonen, ohne Preisfaktor
+ * (Game-Design §4.3, §4.15).
+ */
+export function meanBroodCost(pheromones: Pheromones, params: BalanceParams): number {
+  const share = pheromoneDroneShare(pheromones);
+  return share * params.droneCost + (1 - share) * params.soldierCost;
+}
+
+/**
+ * Brut eines Schritts: `e = E / 60 · dt`, `h = min(e, N / c̄)` (Game-Design §4.3, §4.15).
  * Bei `c̄ = 0` begrenzt die Nahrung nichts.
  */
 export function broodResult(
   units: Units,
+  pheromones: Pheromones,
   food: Num,
   dtMs: number,
   params: BalanceParams,
   modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): BroodResult {
-  const eggs = eggsPerMinute(units, params, modifiers).mul(dtMs / MS_PER_MINUTE);
-  const meanCost = meanBroodCost(params);
+  const eggs = eggsPerMinute(units, pheromones, params, modifiers).mul(dtMs / MS_PER_MINUTE);
+  const meanCost = meanBroodCost(pheromones, params);
   const fullCost = eggs.mul(meanCost);
   // Begrenzt die Nahrung, zählt sie direkt als Kosten: `h · c̄` könnte gerundet von `N` abweichen.
   const limited = meanCost > 0 && fullCost.gte(food);
   const hatched = limited ? food.div(meanCost) : eggs;
-  const share = params.broodDroneShare;
+  const share = pheromoneDroneShare(pheromones);
   return {
     hatched,
     drones: hatched.mul(share),
@@ -435,24 +531,31 @@ export function dronesPerQueen(
   return droneValue > 0 ? unitPrice('queens', bought, params).div(droneValue) : null;
 }
 
-/** Effekt einer weiteren Königin: `+e_q · M_brut` Eier/min, `+p_q*` Platz (Game-Design §4.5, §4.13). */
+/**
+ * Effekt einer weiteren Königin: `+e_q · f(P_v) · M_brut` Eier/min, `+p_q*` Platz (Game-Design §4.5,
+ * §4.13, §4.15).
+ */
 export function nextQueenEffect(
+  pheromones: Pheromones,
   params: BalanceParams,
   modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): QueenEffect {
   return {
-    eggsPerMin: Num.from(queenEggsPerMinute(params, modifiers)),
+    eggsPerMin: Num.from(queenEggsPerMinute(pheromones, params, modifiers)),
     space: Num.from(spacePerQueen(params, modifiers)),
   };
 }
 
-/** Nahrungsbedarf der Brut bei voller Eierrate: `E / 60 · c̄` (Game-Design §4.3). */
+/** Nahrungsbedarf der Brut bei voller Eierrate: `E / 60 · c̄` (Game-Design §4.3, §4.15). */
 export function broodFoodPerSecond(
   units: Units,
+  pheromones: Pheromones,
   params: BalanceParams,
   modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): Num {
-  return eggsPerMinute(units, params, modifiers).mul(meanBroodCost(params)).div(SECONDS_PER_MINUTE);
+  return eggsPerMinute(units, pheromones, params, modifiers)
+    .mul(meanBroodCost(pheromones, params))
+    .div(SECONDS_PER_MINUTE);
 }
 
 /**
@@ -461,12 +564,13 @@ export function broodFoodPerSecond(
  */
 export function netFoodPerSecond(
   units: Units,
+  pheromones: Pheromones,
   stock: Num,
   params: BalanceParams,
   modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): Num {
   return foodPerSecond(units, stock, params, modifiers).sub(
-    broodFoodPerSecond(units, params, modifiers),
+    broodFoodPerSecond(units, pheromones, params, modifiers),
   );
 }
 

@@ -30,8 +30,9 @@ export interface ParamField {
 const DEFAULT_LIMIT: ParamLimit = { min: 0 };
 const SHARE_LIMIT: ParamLimit = { min: 0, max: 1 };
 const PARAM_LIMITS: Partial<Readonly<Record<ParamKey, ParamLimit>>> = {
-  broodDroneShare: SHARE_LIMIT,
   startQueens: { min: 0, integer: true },
+  startPheromoneDrones: { min: 0, integer: true },
+  startPheromoneSoldiers: { min: 0, integer: true },
   candidateCount: { min: 1, integer: true },
   siteSpread: SHARE_LIMIT,
   sacrificeYield: SHARE_LIMIT,

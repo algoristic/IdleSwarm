@@ -1,9 +1,19 @@
 import { Num } from '@app/shared/util/num/num';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
+import type { Pheromones } from '@app/swarm/domain/models/pheromones.model';
 import type { UnitType, Units } from '@app/swarm/domain/models/units.model';
 
 import { DEFAULT_BALANCE } from './constants';
+import { combineEffects } from './effects-logic';
 import {
+  basePheromonePoints,
+  distributedPheromonePoints,
+  eggsPerPheromonePoint,
+  freePheromonePoints,
+  glandPrice,
+  pheromoneBroodFactor,
+  pheromoneDroneShare,
+  totalPheromonePoints,
   baseFoodPerSecond,
   broodFoodPerSecond,
   broodResult,
@@ -46,6 +56,13 @@ import {
   sacrificeLossShare,
   sacrificeYieldShare,
 } from './formulas';
+
+/** Startverteilung 3 : 1 ohne Drüsenpunkte (Game-Design §2.1). */
+const START_PHEROMONES: Pheromones = Object.freeze({ drones: 3, soldiers: 1, glands: 0 });
+
+function pheromones(drones: number, soldiers: number, glands = 0): Pheromones {
+  return Object.freeze({ drones, soldiers, glands });
+}
 
 function units(queens: number, drones: number, soldiers: number): Units {
   return Object.freeze({
@@ -225,29 +242,35 @@ describe('siteSecondsLeft', () => {
 
 describe('eggsPerMinute', () => {
   it('rechnet Königinnen mal Eier je Königin', () => {
-    expect(eggsPerMinute(units(3, 7, 7), DEFAULT_BALANCE).eq(18)).toBe(true);
+    expect(eggsPerMinute(units(3, 7, 7), START_PHEROMONES, DEFAULT_BALANCE).eq(18)).toBe(true);
   });
 
   it('nutzt überschriebene Parameter', () => {
     const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 2.5 };
-    expect(eggsPerMinute(units(2, 0, 0), params).eq(5)).toBe(true);
+    expect(eggsPerMinute(units(2, 0, 0), START_PHEROMONES, params).eq(5)).toBe(true);
   });
 });
 
 describe('meanBroodCost', () => {
   it('liefert 13,75 mit den Startwerten', () => {
-    expect(meanBroodCost(DEFAULT_BALANCE)).toBe(13.75);
+    expect(meanBroodCost(START_PHEROMONES, DEFAULT_BALANCE)).toBe(13.75);
   });
 
   it('nutzt überschriebene Parameter', () => {
-    const params = { ...DEFAULT_BALANCE, broodDroneShare: 0.5, droneCost: 2, soldierCost: 4 };
-    expect(meanBroodCost(params)).toBe(3);
+    const params = { ...DEFAULT_BALANCE, droneCost: 2, soldierCost: 4 };
+    expect(meanBroodCost(pheromones(2, 2), params)).toBe(3);
   });
 });
 
 describe('broodResult', () => {
   it('brütet bei genug Nahrung alle Eier des Schritts aus', () => {
-    const brood = broodResult(units(1, 10, 0), Num.from(5.2), 100, DEFAULT_BALANCE);
+    const brood = broodResult(
+      units(1, 10, 0),
+      START_PHEROMONES,
+      Num.from(5.2),
+      100,
+      DEFAULT_BALANCE,
+    );
     expect(brood.hatched.eq(0.01)).toBe(true);
     expect(brood.drones.eq(0.0075)).toBe(true);
     expect(brood.soldiers.eq(0.0025)).toBe(true);
@@ -256,14 +279,14 @@ describe('broodResult', () => {
 
   it('begrenzt die Brut auf die vorhandene Nahrung', () => {
     const food = Num.from(0.05);
-    const brood = broodResult(units(1, 0, 0), food, 100, DEFAULT_BALANCE);
+    const brood = broodResult(units(1, 0, 0), START_PHEROMONES, food, 100, DEFAULT_BALANCE);
     expect(brood.hatched.toNumber()).toBeCloseTo(0.05 / 13.75, 12);
     expect(brood.foodCost.eq(food)).toBe(true);
   });
 
   it('verbraucht genau passende Nahrung vollständig', () => {
     const food = Num.from(0.1375);
-    const brood = broodResult(units(1, 0, 0), food, 100, DEFAULT_BALANCE);
+    const brood = broodResult(units(1, 0, 0), START_PHEROMONES, food, 100, DEFAULT_BALANCE);
     expect(brood.hatched.eq(0.01)).toBe(true);
     expect(brood.foodCost.eq(food)).toBe(true);
   });
@@ -273,7 +296,13 @@ describe('broodResult', () => {
     ['ohne Nahrung', 1, 0, 100],
     ['ohne Zeit', 1, 10, 0],
   ])('brütet %s nichts aus', (_name, queens, food, dtMs) => {
-    const brood = broodResult(units(queens, 0, 0), Num.from(food), dtMs, DEFAULT_BALANCE);
+    const brood = broodResult(
+      units(queens, 0, 0),
+      START_PHEROMONES,
+      Num.from(food),
+      dtMs,
+      DEFAULT_BALANCE,
+    );
     expect(brood.hatched.isZero()).toBe(true);
     expect(brood.drones.isZero()).toBe(true);
     expect(brood.soldiers.isZero()).toBe(true);
@@ -282,7 +311,7 @@ describe('broodResult', () => {
 
   it('wird bei Kosten von 0 nicht durch Nahrung begrenzt', () => {
     const params = { ...DEFAULT_BALANCE, droneCost: 0, soldierCost: 0 };
-    const brood = broodResult(units(1, 0, 0), Num.ZERO, 1000, params);
+    const brood = broodResult(units(1, 0, 0), START_PHEROMONES, Num.ZERO, 1000, params);
     expect(brood.hatched.eq(0.1)).toBe(true);
     expect(brood.foodCost.isZero()).toBe(true);
   });
@@ -291,15 +320,137 @@ describe('broodResult', () => {
     const params = {
       ...DEFAULT_BALANCE,
       queenEggsPerMin: 60,
-      broodDroneShare: 0.5,
       droneCost: 2,
       soldierCost: 4,
     };
-    const brood = broodResult(units(2, 0, 0), Num.from(100), 1000, params);
+    const brood = broodResult(units(2, 0, 0), pheromones(2, 2), Num.from(100), 1000, params);
     expect(brood.hatched.eq(2)).toBe(true);
     expect(brood.drones.eq(1)).toBe(true);
     expect(brood.soldiers.eq(1)).toBe(true);
     expect(brood.foodCost.eq(6)).toBe(true);
+  });
+});
+
+describe('Pheromone', () => {
+  const secondGland = combineEffects([{ target: 'pheromonePoints', op: 'add', value: 1 }], null);
+
+  it('bezieht sich auf P_0 = P_d0 + P_s0 = 4', () => {
+    expect(basePheromonePoints(DEFAULT_BALANCE)).toBe(4);
+    expect(totalPheromonePoints(START_PHEROMONES, DEFAULT_BALANCE)).toBe(4);
+    expect(distributedPheromonePoints(START_PHEROMONES)).toBe(4);
+    expect(freePheromonePoints(START_PHEROMONES, DEFAULT_BALANCE)).toBe(0);
+  });
+
+  it('rechnet P_ges = P_0 + k + P_bonus', () => {
+    expect(totalPheromonePoints(pheromones(3, 1, 2), DEFAULT_BALANCE)).toBe(6);
+    expect(totalPheromonePoints(pheromones(3, 1, 2), DEFAULT_BALANCE, secondGland)).toBe(7);
+    expect(freePheromonePoints(pheromones(3, 1, 2), DEFAULT_BALANCE, secondGland)).toBe(3);
+  });
+
+  it('ergibt beim Start f = 1 und a = 3/4, also genau die Brut aus M1.2', () => {
+    expect(pheromoneBroodFactor(START_PHEROMONES, DEFAULT_BALANCE)).toBe(1);
+    expect(pheromoneDroneShare(START_PHEROMONES)).toBe(0.75);
+    expect(eggsPerMinute(units(1, 0, 0), START_PHEROMONES, DEFAULT_BALANCE).eq(6)).toBe(true);
+    expect(meanBroodCost(START_PHEROMONES, DEFAULT_BALANCE)).toBe(13.75);
+  });
+
+  it('bringt mit einem weiteren verteilten Punkt +25 % Eier/min', () => {
+    const more = pheromones(4, 1, 1);
+    expect(pheromoneBroodFactor(more, DEFAULT_BALANCE)).toBe(1.25);
+    expect(eggsPerMinute(units(1, 0, 0), more, DEFAULT_BALANCE).eq(7.5)).toBe(true);
+    expect(pheromoneDroneShare(more)).toBe(0.8);
+  });
+
+  it('lässt freie Punkte nicht brüten', () => {
+    const free = pheromones(3, 1, 1);
+    expect(freePheromonePoints(free, DEFAULT_BALANCE)).toBe(1);
+    expect(pheromoneBroodFactor(free, DEFAULT_BALANCE)).toBe(1);
+  });
+
+  it('lässt die Brut bei P_v = 0 ruhen', () => {
+    const none = pheromones(0, 0);
+    expect(pheromoneBroodFactor(none, DEFAULT_BALANCE)).toBe(0);
+    expect(pheromoneDroneShare(none)).toBe(0);
+    expect(Number.isFinite(meanBroodCost(none, DEFAULT_BALANCE))).toBe(true);
+    expect(eggsPerMinute(units(3, 0, 0), none, DEFAULT_BALANCE).isZero()).toBe(true);
+    const brood = broodResult(units(3, 0, 0), none, Num.from(100), 1000, DEFAULT_BALANCE);
+    expect(brood.hatched.isZero()).toBe(true);
+    expect(brood.foodCost.isZero()).toBe(true);
+    expect(broodFoodPerSecond(units(3, 0, 0), none, DEFAULT_BALANCE).isZero()).toBe(true);
+  });
+
+  it('lässt bei P_v > P_ges nur P_ges Punkte mit demselben Anteil wirken', () => {
+    // Nur nach einem Absenken von P_0 über params möglich (Game-Design §4.15).
+    const params = { ...DEFAULT_BALANCE, startPheromoneDrones: 1, startPheromoneSoldiers: 1 };
+    expect(totalPheromonePoints(START_PHEROMONES, params)).toBe(2);
+    expect(freePheromonePoints(START_PHEROMONES, params)).toBe(0);
+    expect(pheromoneBroodFactor(START_PHEROMONES, params)).toBe(1);
+    expect(pheromoneDroneShare(START_PHEROMONES)).toBe(0.75);
+    expect(pheromoneBroodFactor(pheromones(6, 2), DEFAULT_BALANCE)).toBe(1);
+  });
+
+  it('brütet ohne Startpunkte P_0 nicht', () => {
+    const params = { ...DEFAULT_BALANCE, startPheromoneDrones: 0, startPheromoneSoldiers: 0 };
+    expect(pheromoneBroodFactor(pheromones(2, 1, 3), params)).toBe(0);
+    expect(eggsPerPheromonePoint(units(1, 0, 0), params).isZero()).toBe(true);
+  });
+
+  it('zeigt vor dem Kauf +Q · e_q · M_brut / P_0 Eier/min je Punkt', () => {
+    expect(eggsPerPheromonePoint(units(1, 0, 0), DEFAULT_BALANCE).eq(1.5)).toBe(true);
+    expect(eggsPerPheromonePoint(units(10, 0, 0), DEFAULT_BALANCE).eq(15)).toBe(true);
+    const faster = combineEffects([{ target: 'broodRate', op: 'add', value: 1 }], null);
+    expect(eggsPerPheromonePoint(units(10, 0, 0), DEFAULT_BALANCE, faster).eq(30)).toBe(true);
+  });
+
+  it('rechnet Beispiel 11 aus Game-Design §4.15', () => {
+    const queens = units(10, 0, 0);
+    expect(eggsPerMinute(queens, START_PHEROMONES, DEFAULT_BALANCE).eq(60)).toBe(true);
+    expect(meanBroodCost(START_PHEROMONES, DEFAULT_BALANCE)).toBe(13.75);
+    expect(broodFoodPerSecond(queens, START_PHEROMONES, DEFAULT_BALANCE).toNumber()).toBeCloseTo(
+      13.75,
+      10,
+    );
+    expect(glandPrice(START_PHEROMONES, DEFAULT_BALANCE).eq(100)).toBe(true);
+    const bought = pheromones(3, 1, 1);
+    expect(totalPheromonePoints(bought, DEFAULT_BALANCE)).toBe(5);
+    expect(freePheromonePoints(bought, DEFAULT_BALANCE)).toBe(1);
+    expect(eggsPerMinute(queens, bought, DEFAULT_BALANCE).eq(60)).toBe(true);
+    const spent = pheromones(4, 1, 1);
+    expect(eggsPerMinute(queens, spent, DEFAULT_BALANCE).eq(75)).toBe(true);
+    expect(pheromoneDroneShare(spent)).toBe(0.8);
+    expect(meanBroodCost(spent, DEFAULT_BALANCE)).toBe(13);
+    expect(broodFoodPerSecond(queens, spent, DEFAULT_BALANCE).toNumber()).toBeCloseTo(16.25, 10);
+  });
+
+  it('teilt die Brut im Verhältnis P_d : P_s', () => {
+    const brood = broodResult(
+      units(1, 0, 0),
+      pheromones(1, 3),
+      Num.from(1000),
+      60_000,
+      DEFAULT_BALANCE,
+    );
+    expect(brood.hatched.eq(6)).toBe(true);
+    expect(brood.drones.eq(1.5)).toBe(true);
+    expect(brood.soldiers.eq(4.5)).toBe(true);
+  });
+});
+
+describe('glandPrice', () => {
+  it.each([
+    [0, 100],
+    [1, 200],
+    [2, 400],
+    [5, 3200],
+    [10, 102_400],
+    [20, 104_857_600],
+  ])('kostet bei k = %d %d Nahrung (Game-Design §4.15)', (glands, price) => {
+    expect(glandPrice(pheromones(3, 1, glands), DEFAULT_BALANCE).eq(price)).toBe(true);
+  });
+
+  it('nutzt überschriebene Parameter', () => {
+    const params = { ...DEFAULT_BALANCE, glandCost: 50, glandCostGrowth: 3 };
+    expect(glandPrice(pheromones(3, 1, 2), params).eq(450)).toBe(true);
   });
 });
 
@@ -357,18 +508,18 @@ describe('Platz', () => {
 
 describe('nextQueenEffect', () => {
   it('liefert Eier/min und Platz einer Königin', () => {
-    const effect = nextQueenEffect(DEFAULT_BALANCE);
+    const effect = nextQueenEffect(START_PHEROMONES, DEFAULT_BALANCE);
     expect(effect.eggsPerMin.eq(6)).toBe(true);
     expect(effect.space.eq(10)).toBe(true);
   });
 
   it('entspricht der Differenz nach einer weiteren Königin', () => {
-    const effect = nextQueenEffect(DEFAULT_BALANCE);
+    const effect = nextQueenEffect(START_PHEROMONES, DEFAULT_BALANCE);
     const before = units(2, 0, 0);
     const after = units(3, 0, 0);
     expect(
-      eggsPerMinute(after, DEFAULT_BALANCE)
-        .sub(eggsPerMinute(before, DEFAULT_BALANCE))
+      eggsPerMinute(after, START_PHEROMONES, DEFAULT_BALANCE)
+        .sub(eggsPerMinute(before, START_PHEROMONES, DEFAULT_BALANCE))
         .eq(effect.eggsPerMin),
     ).toBe(true);
     expect(
@@ -379,7 +530,11 @@ describe('nextQueenEffect', () => {
   });
 
   it('nutzt überschriebene Parameter', () => {
-    const effect = nextQueenEffect({ ...DEFAULT_BALANCE, queenEggsPerMin: 9, queenSpace: 3 });
+    const effect = nextQueenEffect(START_PHEROMONES, {
+      ...DEFAULT_BALANCE,
+      queenEggsPerMin: 9,
+      queenSpace: 3,
+    });
     expect(effect.eggsPerMin.eq(9)).toBe(true);
     expect(effect.space.eq(3)).toBe(true);
   });
@@ -387,18 +542,20 @@ describe('nextQueenEffect', () => {
 
 describe('broodFoodPerSecond', () => {
   it('rechnet den Bedarf bei voller Eierrate', () => {
-    expect(broodFoodPerSecond(units(2, 0, 0), DEFAULT_BALANCE).toNumber()).toBeCloseTo(2.75, 10);
+    expect(
+      broodFoodPerSecond(units(2, 0, 0), START_PHEROMONES, DEFAULT_BALANCE).toNumber(),
+    ).toBeCloseTo(2.75, 10);
   });
 });
 
 describe('netFoodPerSecond', () => {
   it('zieht die Brutkosten von Grundertrag und Sammeln ab', () => {
-    const net = netFoodPerSecond(units(1, 10, 0), Num.from(100), DEFAULT_BALANCE);
+    const net = netFoodPerSecond(units(1, 10, 0), START_PHEROMONES, Num.from(100), DEFAULT_BALANCE);
     expect(net.toNumber()).toBeCloseTo(2.125, 10);
   });
 
   it('wird ohne Vorrat negativ', () => {
-    const net = netFoodPerSecond(units(1, 10, 0), Num.ZERO, DEFAULT_BALANCE);
+    const net = netFoodPerSecond(units(1, 10, 0), START_PHEROMONES, Num.ZERO, DEFAULT_BALANCE);
     expect(net.toNumber()).toBeCloseTo(-1.375, 10);
   });
 });

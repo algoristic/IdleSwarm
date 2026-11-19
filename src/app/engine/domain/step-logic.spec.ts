@@ -62,8 +62,10 @@ describe('step', () => {
   });
 
   it('reicht die Parameter an die Brut weiter', () => {
-    const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 60, broodDroneShare: 1 };
-    const { state } = step(createState(), 1000, params);
+    const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 60 };
+    // Alle vier Startpunkte auf Drohnen: `f = 1`, `a = 1`.
+    const input = { ...createState(), pheromones: { drones: 4, soldiers: 0, glands: 0 } };
+    const { state } = step(input, 1000, params);
     expect(state.units.drones.eq(1)).toBe(true);
     expect(state.units.soldiers.isZero()).toBe(true);
     expect(state.res.food.eq(6.5)).toBe(true);

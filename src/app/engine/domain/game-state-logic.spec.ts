@@ -10,7 +10,7 @@ describe('createInitialState', () => {
   const state = createInitialState({ seed: 'idleswarm', now: NOW });
 
   it('setzt Version, Seed und Ära', () => {
-    expect(STATE_VERSION).toBe(3);
+    expect(STATE_VERSION).toBe(4);
     expect(state.version).toBe(STATE_VERSION);
     expect(state.seed).toBe('idleswarm');
     expect(state.era).toBe('ursuppe');
@@ -63,6 +63,15 @@ describe('createInitialState', () => {
     expect(state.travel).toBeNull();
     expect(state.auto).toEqual({ enabled: false, strategy: 'balanced', threshold: 0 });
     expect(state.priority).toBe('balanced');
+    expect(state.pheromones).toEqual({ drones: 3, soldiers: 1, glands: 0 });
+    expect(state.genome).toEqual({ owned: [] });
+    // FNV-1a von „idleswarm#finds“, getrennt vom RNG-Zustand des Generators.
+    expect(state.finds).toEqual({ rngState: 3125258866, total: 0, collected: {}, buffs: [] });
+  });
+
+  it('leitet den Fund-RNG auch bei übergebenem RNG-Zustand aus dem Seed ab', () => {
+    const custom = createInitialState({ seed: 'idleswarm', now: NOW, rngState: 3 });
+    expect(custom.finds.rngState).toBe(state.finds.rngState);
   });
 
   it('übernimmt überschriebene Parameter', () => {
@@ -75,6 +84,8 @@ describe('createInitialState', () => {
         siteSize: 500,
         candidateCount: 3,
         defaultAutoThreshold: 0.95,
+        startPheromoneDrones: 2,
+        startPheromoneSoldiers: 5,
       },
     );
     expect(custom.res.food.eq(7)).toBe(true);
@@ -84,15 +95,19 @@ describe('createInitialState', () => {
     expect(custom.map.candidates).toHaveLength(3);
     // Die Standard-Schwelle wird auf θ_max begrenzt.
     expect(custom.auto.threshold).toBe(0.9);
+    expect(custom.pheromones).toEqual({ drones: 2, soldiers: 5, glands: 0 });
   });
 
-  it('enthält nur die Felder von Version 3', () => {
+  it('enthält nur die Felder von Version 4', () => {
     expect(Object.keys(state).sort()).toEqual(
       [
         'auto',
         'bought',
         'era',
+        'finds',
+        'genome',
         'map',
+        'pheromones',
         'priority',
         'res',
         'rngState',
@@ -116,6 +131,9 @@ describe('createInitialState', () => {
     expect(Object.keys(state.units).sort()).toEqual(['drones', 'queens', 'soldiers']);
     expect(Object.keys(state.site).sort()).toEqual(['size', 'stock', 'type']);
     expect(Object.keys(state.bought).sort()).toEqual(['drones', 'queens', 'soldiers']);
+    expect(Object.keys(state.pheromones).sort()).toEqual(['drones', 'glands', 'soldiers']);
+    expect(Object.keys(state.genome)).toEqual(['owned']);
+    expect(Object.keys(state.finds).sort()).toEqual(['buffs', 'collected', 'rngState', 'total']);
   });
 
   it('teilt keine veränderlichen Teilobjekte zwischen zwei Zuständen', () => {
@@ -129,11 +147,14 @@ describe('createInitialState', () => {
     expect(other.map).not.toBe(state.map);
     expect(other.map.position).not.toBe(state.map.position);
     expect(other.auto).not.toBe(state.auto);
+    expect(other.pheromones).not.toBe(state.pheromones);
+    expect(other.genome).not.toBe(state.genome);
+    expect(other.finds).not.toBe(state.finds);
   });
 
   it('serialisiert Mengen über Num.toJSON', () => {
     expect(JSON.parse(JSON.stringify(state))).toEqual({
-      version: 3,
+      version: 4,
       seed: 'idleswarm',
       rngState: 491280603,
       time: { now: NOW, lastSaved: NOW, played: 0 },
@@ -151,6 +172,9 @@ describe('createInitialState', () => {
       travel: null,
       auto: { enabled: false, strategy: 'balanced', threshold: 0 },
       priority: 'balanced',
+      pheromones: { drones: 3, soldiers: 1, glands: 0 },
+      genome: { owned: [] },
+      finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
     });
     expect(JSON.parse(JSON.stringify(state.map.candidates[0]))).toEqual({
       type: 'algal-mat',

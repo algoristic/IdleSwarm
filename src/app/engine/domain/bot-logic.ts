@@ -88,12 +88,13 @@ class LazyBotView implements BotView {
   }
 
   get netFoodPerSecond(): Num {
-    const { units, site } = this.state;
-    return netFoodPerSecond(units, site.stock, this.params, this.modifiers);
+    const { units, pheromones, site } = this.state;
+    return netFoodPerSecond(units, pheromones, site.stock, this.params, this.modifiers);
   }
 
   get eggsPerMinute(): Num {
-    return eggsPerMinute(this.state.units, this.params, this.modifiers);
+    const { units, pheromones } = this.state;
+    return eggsPerMinute(units, pheromones, this.params, this.modifiers);
   }
 
   forState(state: GameState): BotView {

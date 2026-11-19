@@ -46,7 +46,6 @@ describe('parseParam', () => {
 
 describe('paramLimit', () => {
   it.each([
-    'broodDroneShare',
     'sacrificeYield',
     'minSacrificeLoss',
     'balancedMaxLossShare',
@@ -65,6 +64,8 @@ describe('paramLimit', () => {
   it('verlangt ganzzahlige Zählwerte', () => {
     expect(paramLimit('candidateCount')).toEqual({ min: 1, integer: true });
     expect(paramLimit('startQueens')).toEqual({ min: 0, integer: true });
+    expect(paramLimit('startPheromoneDrones')).toEqual({ min: 0, integer: true });
+    expect(paramLimit('startPheromoneSoldiers')).toEqual({ min: 0, integer: true });
   });
 
   it('lässt Wachstumsfaktoren nach oben offen', () => {
@@ -156,9 +157,14 @@ describe('paramFields', () => {
     expect(fields.find((f) => f.key === 'queenCost')?.changed).toBe(false);
   });
 
-  it('begrenzt den Brutanteil auf 0 bis 1', () => {
-    const fields = paramFields(DEFAULT_BALANCE, { broodDroneShare: '1,5' });
-    expect(fields.find((f) => f.key === 'broodDroneShare')?.value).toBeNull();
+  it('begrenzt Anteile auf 0 bis 1', () => {
+    const fields = paramFields(DEFAULT_BALANCE, { sacrificeYield: '1,5' });
+    expect(fields.find((f) => f.key === 'sacrificeYield')?.value).toBeNull();
+  });
+
+  it('verlangt ganzzahlige Pheromonpunkte beim Start', () => {
+    const fields = paramFields(DEFAULT_BALANCE, { startPheromoneDrones: '2,5' });
+    expect(fields.find((f) => f.key === 'startPheromoneDrones')?.value).toBeNull();
   });
 });
 
