@@ -44,10 +44,10 @@
           >{{ set.progress.found | formatNum }} / {{ set.progress.total | formatNum }}</span
         >
       </div>
-      <ul class="mt-1 grid grid-cols-3 gap-2">
+      <ul class="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
         @for (field of set.fields; track field.id) {
           <li
-            class="rounded-md border border-border bg-surface-raised p-2 text-center text-sm data-unknown:border-border-control data-unknown:bg-surface data-unknown:text-fg-muted"
+            class="rounded-md border border-border bg-surface-raised p-2 text-center text-sm hyphens-auto wrap-break-word data-unknown:border-border-control data-unknown:bg-surface data-unknown:text-fg-muted"
             data-testid="hud.finds.field"
             [attr.data-unknown]="field.known ? null : ''"
           >
@@ -108,10 +108,10 @@
           {{ fragments.progress.total | formatNum }}</span
         >
       </div>
-      <ul class="mt-1 grid grid-cols-3 gap-2">
+      <ul class="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
         @for (field of fragments.fields; track $index) {
           <li
-            class="rounded-md border border-border bg-surface-raised p-2 text-center text-sm data-unknown:border-border-control data-unknown:bg-surface data-unknown:text-fg-muted"
+            class="rounded-md border border-border bg-surface-raised p-2 text-center text-sm hyphens-auto wrap-break-word data-unknown:border-border-control data-unknown:bg-surface data-unknown:text-fg-muted"
             data-testid="hud.finds.field"
             [attr.data-unknown]="field.known ? null : ''"
           >

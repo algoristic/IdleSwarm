@@ -119,6 +119,7 @@
     (click)="onStrengthenGland()"
     i18n="@@uiHud-pheromonePanel-gland"
   >
-    Pheromon-Drüse stärken · +1 Punkt · {{ gland.price | formatNum }} N
+    Pheromon-Drüse stärken · +1 Punkt ·
+    <span class="whitespace-nowrap">{{ gland.price | formatNum }} N</span>
   </button>
 </section>
