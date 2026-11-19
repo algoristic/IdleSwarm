@@ -9,9 +9,21 @@ export const TARGET_VERDICTS = ['capturable', 'too-strong', 'out-of-range', 'une
 
 export type TargetVerdict = (typeof TARGET_VERDICTS)[number];
 
-/** Erwartete Verluste `L` an Soldaten und `L / S'` in Prozent (Game-Design §4.8). */
+/** Warum der Knopf „Aufbrechen“ gesperrt ist; `unexplored` trennt die Umgebung von `out-of-range`. */
+export type TargetBlocker = DepartureBlocker | 'unexplored';
+
+/**
+ * Menge mit dem angezeigten Wert als Zahl für die ICU-Mehrzahl. `shown` ist so gerundet wie die
+ * Pipe, mit der das Template `amount` zeigt (`formatUp` bzw. `formatDown`).
+ */
+export interface CountView {
+  readonly amount: Num;
+  readonly shown: number;
+}
+
+/** Erwartete Verluste `L` an Soldaten (aufgerundet) und `L / S'` in Prozent (Game-Design §4.8). */
 export interface ExpectedLosses {
-  readonly soldiers: Num;
+  readonly soldiers: CountView;
   readonly percent: Num;
 }
 
@@ -46,7 +58,7 @@ export interface TargetView {
   readonly strategyChoice: boolean;
   readonly selected: boolean;
   /** Warum kein Aufbruch möglich ist; `null`, wenn er möglich ist. */
-  readonly blocker: DepartureBlocker | null;
+  readonly blocker: TargetBlocker | null;
   /** `null` bei unerforschten Zielen: Sie zeigen nur „?“ (US-04.03). */
   readonly details: TargetDetails | null;
 }
@@ -54,17 +66,19 @@ export interface TargetView {
 /** Vorschau des Transports mit der aktuellen Priorität (US-04.06). */
 export interface TransportView {
   readonly priority: TransportPriority;
-  readonly carriedDrones: Num;
-  readonly carriedSoldiers: Num;
-  readonly leftDrones: Num;
-  readonly leftSoldiers: Num;
+  /** Abgerundet wie `formatDown`. */
+  readonly carriedDrones: CountView;
+  readonly carriedSoldiers: CountView;
+  /** Aufgerundet wie `formatUp`; `null`, wenn angezeigt keine zurückbleiben. */
+  readonly leftDrones: CountView | null;
+  readonly leftSoldiers: CountView | null;
   readonly fitsAll: boolean;
 }
 
 /** Drohnen → Königin (US-04.08). */
 export interface QueenConversionView {
   readonly drones: Num;
-  /** `k_q` in Drohnen; `null`, wenn keine Umwandlung möglich ist. */
-  readonly price: Num | null;
+  /** `k_q` in Drohnen, aufgerundet wie `formatUp`; `null`, wenn keine Umwandlung möglich ist. */
+  readonly price: CountView | null;
   readonly possible: boolean;
 }

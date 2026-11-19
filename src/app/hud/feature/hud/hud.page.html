@@ -103,7 +103,15 @@
       [valueText]="spaceText"
       [warning]="hud.space.warning"
     />
-    @if (hud.space.warning) {
+    @if (hud.space.overfull) {
+      <p
+        class="mt-1 text-warning"
+        data-testid="hud.space.overfull"
+        i18n="@@featureHud-hud-space-overfull"
+      >
+        Zu wenig Platz: Beim Weiterziehen bleiben Einheiten zurück.
+      </p>
+    } @else if (hud.space.warning) {
       <p
         class="mt-1 text-warning"
         data-testid="hud.space.warning"

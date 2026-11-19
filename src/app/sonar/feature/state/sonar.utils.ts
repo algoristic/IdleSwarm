@@ -1,7 +1,11 @@
 import { type BalanceParams, TICK_MS, TICKS_PER_SECOND } from '@app/balance/domain/constants';
 import { siteSecondsLeft, swarmRange } from '@app/balance/domain/formulas';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
-import { barPercent } from '@app/shared/util/format/display-format';
+import {
+  barPercent,
+  roundDownForDisplay,
+  roundUpForDisplay,
+} from '@app/shared/util/format/display-format';
 import { Num } from '@app/shared/util/num/num';
 import { assessTargets, type CombatAssessment } from '@app/site/domain/combat-logic';
 import { candidateInfos, type CandidateInfo } from '@app/site/domain/map-logic';
@@ -14,7 +18,9 @@ import { planTransport } from '@app/swarm/domain/transport-logic';
 import { maxThresholdPercent, thresholdToPercent } from '../../domain/auto-threshold-logic';
 import type { MoveSettingsView } from '../../ui/form-move-settings/form-move-settings.component.model';
 import type {
+  CountView,
   QueenConversionView,
+  TargetBlocker,
   TargetDetails,
   TargetVerdict,
   TargetView,
@@ -31,7 +37,9 @@ export function toSonarView(source: SonarSource, params: BalanceParams): SonarVi
   const range = swarmRange(params);
   const infos = candidateInfos(candidates, position, range, params);
   const combats = assessTargets(state, params);
-  const chosen = strategyTarget(state, state.auto.strategy, params);
+  const traveling = state.travel !== null;
+  // Während der Reise gelten Strategieziel und Transportvorschau erst nach der Ankunft wieder.
+  const chosen = traveling ? null : strategyTarget(state, state.auto.strategy, params);
   const selectedIndex = isIndex(source.selected, candidates.length) ? source.selected : chosen;
   const targets = candidates.map((candidate, index) =>
     toTargetView(state, candidate, index, infos[index], combats[index], {
@@ -47,7 +55,7 @@ export function toSonarView(source: SonarSource, params: BalanceParams): SonarVi
     targets,
     selected: selectedIndex === null ? null : targets[selectedIndex],
     strategyTarget: chosen,
-    transport: toTransportView(state, params),
+    transport: traveling ? null : toTransportView(state, params),
     queen: toQueenView(state, params),
     forfeitedStock:
       state.travel === null && state.site.stock.gt(Num.ZERO) ? state.site.stock : null,
@@ -74,7 +82,7 @@ function toTargetView(
     verdict: toVerdict(info, combat),
     strategyChoice,
     selected,
-    blocker: departureBlocker(state, index, params),
+    blocker: toBlocker(state, index, info, params),
     details: info.status === 'unexplored' ? null : toDetails(candidate, info, combat),
   };
 }
@@ -90,6 +98,17 @@ function toVerdict(info: CandidateInfo, combat: CombatAssessment): TargetVerdict
   }
 }
 
+function toBlocker(
+  state: GameState,
+  index: number,
+  info: CandidateInfo,
+  params: BalanceParams,
+): TargetBlocker | null {
+  const blocker = departureBlocker(state, index, params);
+  // Der Kern unterscheidet unerforscht nicht von außer Reichweite; die Umgebung nennt es eigens.
+  return blocker === 'out-of-range' && info.status === 'unexplored' ? 'unexplored' : blocker;
+}
+
 function toDetails(
   candidate: SiteCandidate,
   info: CandidateInfo,
@@ -97,8 +116,10 @@ function toDetails(
 ): TargetDetails {
   const { attack, capturable } = combat;
   const { defense } = candidate;
-  // Gemeinsame Skala: Der stärkere Wert füllt den Balken.
-  const scale = attack.max(defense);
+  // Gemeinsame Skala: Der stärkere Wert füllt den Balken. Der Angriff zählt wie angezeigt
+  // (abgerundet), damit ein Rest wie 0,3 neben der Anzeige „0 vs. 0“ keinen vollen Balken füllt.
+  const shownAttack = roundDownForDisplay(attack);
+  const scale = shownAttack.max(defense);
   const share = (value: Num) => (scale.gt(Num.ZERO) ? barPercent(value.div(scale)) : 0);
   return {
     type: candidate.type,
@@ -110,8 +131,10 @@ function toDetails(
     rewardsDna: info.dna.gt(Num.ZERO),
     findChancePercent: info.findChance * PERCENT,
     attack,
-    losses: capturable ? { soldiers: combat.losses, percent: combat.lossShare.mul(PERCENT) } : null,
-    attackBarPercent: share(attack),
+    losses: capturable
+      ? { soldiers: countUp(combat.losses), percent: combat.lossShare.mul(PERCENT) }
+      : null,
+    attackBarPercent: share(shownAttack),
     defenseBarPercent: share(defense),
   };
 }
@@ -123,7 +146,8 @@ function toCurrentSiteView({ units, site }: GameState, params: BalanceParams): C
     stock,
     size,
     stockPercent: size.isZero() ? 0 : barPercent(stock.div(size)),
-    secondsLeft: siteSecondsLeft(units, stock, params),
+    // Leer ist leer: `siteSecondsLeft` liefert sonst 0 s statt keiner Angabe.
+    secondsLeft: stock.isZero() ? null : siteSecondsLeft(units, stock, params),
   };
 }
 
@@ -140,18 +164,19 @@ function toTransportView(state: GameState, params: BalanceParams): TransportView
   const { carried, leftBehind, fitsAll } = planTransport(state.units, state.priority, params);
   return {
     priority: state.priority,
-    carriedDrones: carried.drones,
-    carriedSoldiers: carried.soldiers,
-    leftDrones: leftBehind.drones,
-    leftSoldiers: leftBehind.soldiers,
+    carriedDrones: countDown(carried.drones),
+    carriedSoldiers: countDown(carried.soldiers),
+    leftDrones: nonZero(countUp(leftBehind.drones)),
+    leftSoldiers: nonZero(countUp(leftBehind.soldiers)),
     fitsAll,
   };
 }
 
 function toQueenView(state: GameState, params: BalanceParams): QueenConversionView {
+  const price = queenPriceInDrones(state, params);
   return {
     drones: state.units.drones,
-    price: queenPriceInDrones(state, params),
+    price: price === null ? null : countUp(price),
     possible: canConvertDronesToQueen(state, params),
   };
 }
@@ -164,4 +189,16 @@ function toSettingsView({ auto, priority }: GameState, params: BalanceParams): M
     thresholdPercent: thresholdToPercent(auto.threshold),
     maxThresholdPercent: maxThresholdPercent(params),
   };
+}
+
+function countUp(amount: Num): CountView {
+  return { amount, shown: roundUpForDisplay(amount).toNumber() };
+}
+
+function countDown(amount: Num): CountView {
+  return { amount, shown: roundDownForDisplay(amount).toNumber() };
+}
+
+function nonZero(count: CountView): CountView | null {
+  return count.shown > 0 ? count : null;
 }

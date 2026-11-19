@@ -68,6 +68,17 @@ describe('toHudView', () => {
     expect(view(noQueens(2)).space).toMatchObject({ usagePercent: null, barPercent: 100 });
   });
 
+  it('meldet Überbelegung erst, wenn mehr belegt als verfügbar ist', () => {
+    const drones = (count: number) => (state: GameState) => ({
+      ...state,
+      units: { queens: Num.ONE, drones: Num.from(count), soldiers: Num.ZERO },
+    });
+    // Platz 10: Bei 10 Drohnen warnt das HUD, überbelegt ist es erst darüber.
+    expect(view(drones(10)).space).toMatchObject({ warning: true, overfull: false });
+    expect(view(drones(10.5)).space).toMatchObject({ warning: true, overfull: true });
+    expect(view(drones(0)).space.overfull).toBe(false);
+  });
+
   it('zeigt die DNA', () => {
     const hud = view((state) => ({ ...state, res: { ...state.res, dna: Num.from(13.55) } }));
     expect(hud.dna.toNumber()).toBe(13.55);

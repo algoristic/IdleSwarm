@@ -32,7 +32,9 @@
         </span>
         <span class="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
           <span
+            class="data-stale:text-fg-muted"
             [class]="verdictTones[target.verdict]"
+            [attr.data-stale]="target.blocker === 'traveling' ? '' : null"
             [attr.data-testid]="'sonar.targets.' + target.index + '.verdict'"
             >{{ verdictLabels[target.verdict] }}</span
           >

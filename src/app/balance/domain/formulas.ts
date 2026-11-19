@@ -206,6 +206,11 @@ export function isSpaceWarning(units: Units, params: BalanceParams): boolean {
   return spaceUsed(units, params).gte(spaceAvailable(units, params).mul(SPACE_WARNING_SHARE));
 }
 
+/** Belegung über dem Platz: Beim Aufbruch bleiben Einheiten zurück (Game-Design §4.9). */
+export function isSpaceOverfull(units: Units, params: BalanceParams): boolean {
+  return spaceUsed(units, params).gt(spaceAvailable(units, params));
+}
+
 /**
  * Wie viele Einheiten mit Platzbedarf `space` in `capacity` passen, höchstens `count`. Ohne
  * Platzbedarf passen alle.

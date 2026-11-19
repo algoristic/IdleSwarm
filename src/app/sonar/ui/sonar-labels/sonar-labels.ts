@@ -1,8 +1,7 @@
 import type { StrategyId } from '@app/site/domain/models/auto-move.model';
-import type { DepartureBlocker } from '@app/site/domain/move-logic';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
 
-import type { TargetVerdict } from '../models/target.model';
+import type { TargetBlocker, TargetVerdict } from '../models/target.model';
 
 /** Namen der Strategien (Game-Design §4.12, US-04.10). */
 export const STRATEGY_LABELS: Readonly<Record<StrategyId, string>> = {
@@ -27,10 +26,11 @@ export const VERDICT_LABELS: Readonly<Record<TargetVerdict, string>> = {
 };
 
 /** Grund, warum der Knopf „Aufbrechen“ gesperrt ist (Game-Design §4.11). */
-export const BLOCKER_LABELS: Readonly<Record<DepartureBlocker, string>> = {
+export const BLOCKER_LABELS: Readonly<Record<TargetBlocker, string>> = {
   traveling: $localize`:@@uiSonar-sonarLabels-blocker-traveling:Der Schwarm ist schon unterwegs.`,
   'unknown-target': $localize`:@@uiSonar-sonarLabels-blocker-unknownTarget:Dieses Ziel gibt es nicht mehr.`,
   'out-of-range': $localize`:@@uiSonar-sonarLabels-blocker-outOfRange:Das Ziel liegt außer Reichweite.`,
+  unexplored: $localize`:@@uiSonar-sonarLabels-blocker-unexplored:Das Ziel ist unerforscht und lässt sich noch nicht ansteuern.`,
   'too-strong': $localize`:@@uiSonar-sonarLabels-blocker-tooStrong:Die Abwehr ist zu stark. Mehr Soldaten nötig oder eine andere Priorität wählen.`,
 };
 

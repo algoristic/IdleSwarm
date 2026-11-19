@@ -138,6 +138,7 @@ describe('HudPage', () => {
     setUnits({ drones: 9 });
 
     expect(text('hud.space.warning')).toBe('Der Platz wird knapp.');
+    expect(query('hud.space.overfull')).toBeNull();
     expect(query('hud.space.value')?.hasAttribute('data-warning')).toBe(true);
     expect(
       spaceBar()?.querySelector('[data-testid="hud.meter.fill"]')?.hasAttribute('data-warning'),
@@ -148,6 +149,10 @@ describe('HudPage', () => {
     setUnits({ queens: 2, drones: 15, soldiers: 3 });
 
     expect(text('hud.space.value')).toBe('21 / 20 (105 %)');
+    expect(text('hud.space.overfull')).toBe(
+      'Zu wenig Platz: Beim Weiterziehen bleiben Einheiten zurück.',
+    );
+    expect(query('hud.space.warning')).toBeNull();
     expect(spaceBar()?.getAttribute('aria-valuenow')).toBe('100');
     expect(
       (spaceBar()?.querySelector('[data-testid="hud.meter.fill"]') as HTMLElement).style.width,
@@ -159,7 +164,7 @@ describe('HudPage', () => {
 
     expect(text('hud.space.value')).toBe('2 / 0');
     expect(spaceBar()?.getAttribute('aria-valuenow')).toBe('100');
-    expect(query('hud.space.warning')).not.toBeNull();
+    expect(query('hud.space.overfull')).not.toBeNull();
   });
 
   it('meldet ein noch nie gespeichertes Spiel', () => {

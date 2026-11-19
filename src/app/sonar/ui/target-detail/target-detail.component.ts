@@ -28,7 +28,8 @@ import {
 })
 export class TargetDetailComponent {
   target = input.required<TargetView>();
-  transport = input.required<TransportView>();
+  /** `null` während der Reise: Die Vorschau gilt erst nach der Ankunft wieder. */
+  transport = input.required<TransportView | null>();
   queen = input.required<QueenConversionView>();
   /** Restvorrat, der beim Aufbruch verfällt; `null` ohne Rest oder während der Reise. */
   forfeitedStock = input.required<Num | null>();

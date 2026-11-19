@@ -26,6 +26,8 @@ export interface SpaceView {
   /** Füllstand des Balkens von 0 bis 100. */
   readonly barPercent: number;
   readonly warning: boolean;
+  /** Belegt mehr als verfügbar: Beim Weiterziehen bleiben Einheiten zurück (Game-Design §4.11). */
+  readonly overfull: boolean;
 }
 
 export interface HudView {

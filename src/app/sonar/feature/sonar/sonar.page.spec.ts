@@ -25,6 +25,19 @@ describe('SonarPage', () => {
     element().querySelector(`[data-testid="${testId}"]`) as T | null;
   const text = (testId: string) => query(testId)?.textContent?.replace(/\s+/g, ' ').trim();
 
+  function setUnits(units: { queens: number; drones: number; soldiers: number }): void {
+    store.replace({
+      ...store.state(),
+      priority: 'drones-first',
+      units: {
+        queens: Num.from(units.queens),
+        drones: Num.from(units.drones),
+        soldiers: Num.from(units.soldiers),
+      },
+    });
+    fixture.detectChanges();
+  }
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [SonarPage],
@@ -53,8 +66,33 @@ describe('SonarPage', () => {
     expect(text('sonar.targets.1.verdict')).toBe('✗ zu stark – mehr Soldaten nötig');
     expect(text('sonar.targets.2.type')).toBe('?');
     expect(text('sonar.detail.type')).toBe('Algenmatte');
+    expect(text('sonar.detail.losses')).toBe('keine');
     expect(text('sonar.detail.forfeit')).toBe(
       'Beim Aufbruch verfällt der Restvorrat von 20.000 Nahrung.',
+    );
+  });
+
+  it('markiert das Strategieziel in der Statuszeile und nennt die Mitnahme in Ein- und Mehrzahl', () => {
+    // Geschützte Leerzeichen: kein Umbruch zwischen „◆“ und „=“.
+    expect(query('sonar.status.range')?.textContent).toContain(
+      '◆\u00a0=\u00a0Ziel der Strategie „Ausgewogen“',
+    );
+    setUnits({ queens: 1, drones: 9, soldiers: 1 });
+
+    expect(text('sonar.transport.carried')).toBe('Kommen mit: 9 Drohnen, 0 Soldaten');
+    expect(text('sonar.transport.left-behind')).toBe('Bleiben zurück und gehen verloren: 1 Soldat');
+    setUnits({ queens: 1, drones: 11, soldiers: 1 });
+    expect(text('sonar.transport.left-behind')).toBe(
+      'Bleiben zurück und gehen verloren: 1 Drohne und 1 Soldat',
+    );
+  });
+
+  it('nennt für unerforschte Ziele einen eigenen Sperrgrund', () => {
+    query('sonar.targets.2.select')?.click();
+    fixture.detectChanges();
+
+    expect(text('sonar.detail.blocker')).toBe(
+      'Das Ziel ist unerforscht und lässt sich noch nicht ansteuern.',
     );
   });
 
@@ -78,5 +116,11 @@ describe('SonarPage', () => {
     expect(text('sonar.status.travel')).toContain('Unterwegs nach Algenmatte');
     expect(text('sonar.detail.blocker')).toBe('Der Schwarm ist schon unterwegs.');
     expect(query('sonar.detail.forfeit')).toBeNull();
+    expect(text('sonar.status.new-targets')).toBe('Nach der Ankunft gibt es neue Ziele.');
+    expect(query('sonar.targets.stale')).not.toBeNull();
+    expect(query('sonar.targets.0.strategy-choice')).toBeNull();
+    expect(query('sonar.targets.0.verdict')?.hasAttribute('data-stale')).toBe(true);
+    expect(query('sonar.transport.carried')).toBeNull();
+    expect(query('sonar.transport.after-arrival')).not.toBeNull();
   });
 });

@@ -18,7 +18,7 @@ export interface CurrentSiteView {
   readonly size: Num;
   /** Füllstand von 0 bis 100. */
   readonly stockPercent: number;
-  /** `null`, wenn nichts abgebaut wird. */
+  /** `null`, wenn der Vorrat leer ist oder nichts abgebaut wird. */
   readonly secondsLeft: Num | null;
 }
 
@@ -36,9 +36,10 @@ export interface SonarView {
   readonly targets: readonly TargetView[];
   /** Ziel im Detailpanel: die Wahl des Spielers, sonst das Ziel der Strategie. */
   readonly selected: TargetView | null;
-  /** Index des Ziels der gewählten Strategie; `null`, wenn sie keines findet. */
+  /** Index des Ziels der gewählten Strategie; `null`, wenn sie keines findet oder während der Reise. */
   readonly strategyTarget: number | null;
-  readonly transport: TransportView;
+  /** `null` während der Reise: Nach der Ankunft gilt eine neue Vorschau. */
+  readonly transport: TransportView | null;
   readonly queen: QueenConversionView;
   /** Restvorrat, der beim Aufbruch verfällt; `null` ohne Rest oder während der Reise. */
   readonly forfeitedStock: Num | null;

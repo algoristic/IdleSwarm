@@ -4,6 +4,7 @@ import {
   droneFoodPerSecond,
   eggsPerMinute,
   foodPerSecond,
+  isSpaceOverfull,
   isSpaceWarning,
   nextQueenEffect,
   sacrificeFood,
@@ -112,13 +113,15 @@ function toSacrificeView({ units }: GameState, params: BalanceParams): Sacrifice
 function toSpaceView({ units }: GameState, params: BalanceParams): SpaceView {
   const usage = spaceUsage(units, params);
   const used = spaceUsed(units, params);
+  const available = spaceAvailable(units, params);
   return {
     used,
-    available: spaceAvailable(units, params),
+    available,
     usagePercent: usage === null ? null : usage.mul(100),
     // Ohne verfügbaren Platz ist jede belegte Einheit schon zu viel.
     barPercent: usage !== null ? barPercent(usage) : used.isZero() ? 0 : 100,
     warning: isSpaceWarning(units, params),
+    overfull: isSpaceOverfull(units, params),
   };
 }
 

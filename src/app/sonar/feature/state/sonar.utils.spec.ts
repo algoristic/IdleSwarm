@@ -63,7 +63,7 @@ describe('toSonarView', () => {
       null,
       'too-strong',
       'out-of-range',
-      'out-of-range',
+      'unexplored',
     ]);
   });
 
@@ -80,7 +80,9 @@ describe('toSonarView', () => {
     expect(details?.findChancePercent).toBeCloseTo(10);
     expect(details?.attack.toNumber()).toBe(34);
     // L = 34 · 0,5 · (26 / 34)² ≈ 9,94 (Game-Design Beispiel 8)
-    expect(details?.losses?.soldiers.toNumber()).toBeCloseTo(9.94, 2);
+    expect(details?.losses?.soldiers.amount.toNumber()).toBeCloseTo(9.94, 2);
+    // Aufgerundet wie `formatUp`: Die Mehrzahl richtet sich nach der angezeigten 10.
+    expect(details?.losses?.soldiers.shown).toBe(10);
     expect(details?.losses?.percent.toNumber()).toBeCloseTo(29.2, 1);
     expect(details?.rewardsDna).toBe(true);
     expect(details?.attackBarPercent).toBe(100);
@@ -91,7 +93,18 @@ describe('toSonarView', () => {
     const { targets } = view();
     expect(targets[2].details?.losses).toBeNull();
     expect(targets[0].details?.rewardsDna).toBe(false);
-    expect(targets[0].details?.losses?.soldiers.toNumber()).toBe(0);
+    expect(targets[0].details?.losses?.soldiers.shown).toBe(0);
+  });
+
+  it('lässt beide Balken leer, wenn Angriff und Abwehr angezeigt 0 sind', () => {
+    const bars = (soldiers: number) => {
+      const details = view(state({}, { queens: 20, drones: 0, soldiers })).targets[0].details;
+      return [details?.attackBarPercent, details?.defenseBarPercent];
+    };
+    expect(bars(0)).toEqual([0, 0]);
+    // Ein Rest nach Verlusten erscheint abgerundet als 0 und füllt keinen Balken.
+    expect(bars(0.3)).toEqual([0, 0]);
+    expect(bars(1)).toEqual([100, 0]);
   });
 
   it('markiert das Ziel der gewählten Strategie', () => {
@@ -122,20 +135,45 @@ describe('toSonarView', () => {
     const crowded = view(
       state({ priority: 'drones-first' }, { queens: 1, drones: 10, soldiers: 5 }),
     );
-    expect(sonar.transport.fitsAll).toBe(true);
+    expect(sonar.transport?.fitsAll).toBe(true);
     expect(crowded.transport).toMatchObject({ priority: 'drones-first', fitsAll: false });
-    expect(crowded.transport.carriedDrones.toNumber()).toBe(10);
-    expect(crowded.transport.carriedSoldiers.toNumber()).toBe(0);
-    expect(crowded.transport.leftDrones.toNumber()).toBe(0);
-    expect(crowded.transport.leftSoldiers.toNumber()).toBe(5);
+    expect(crowded.transport?.carriedDrones.shown).toBe(10);
+    expect(crowded.transport?.carriedSoldiers.shown).toBe(0);
+    // Angezeigt 0 Zurückgelassene fallen weg.
+    expect(crowded.transport?.leftDrones).toBeNull();
+    expect(crowded.transport?.leftSoldiers?.amount.toNumber()).toBe(5);
+    expect(crowded.transport?.leftSoldiers?.shown).toBe(5);
     expect(crowded.targets[1].verdict).toBe('too-strong');
     expect(crowded.targets[1].blocker).toBe('too-strong');
     expect(crowded.targets[0].blocker).toBeNull();
   });
 
+  it('rundet Zurückgelassene wie die Anzeige auf', () => {
+    // Platz 10, belegt 9,5 Drohnen + 0,4 Soldaten · 2 = 10,3; mit Drohnen zuerst bleiben 0,15 Soldaten.
+    const { transport } = view(
+      state({ priority: 'drones-first' }, { queens: 1, drones: 9.5, soldiers: 0.4 }),
+    );
+    expect(transport?.leftDrones).toBeNull();
+    expect(transport?.leftSoldiers?.amount.toNumber()).toBeCloseTo(0.15);
+    expect(transport?.leftSoldiers?.shown).toBe(1);
+    expect(transport?.carriedDrones.shown).toBe(9);
+  });
+
+  it('sperrt unerforschte Ziele mit eigenem Grund', () => {
+    const { targets } = view();
+    expect(targets[4].status).toBe('unexplored');
+    expect(targets[4].blocker).toBe('unexplored');
+    expect(targets[3].blocker).toBe('out-of-range');
+  });
+
   it('sperrt während der Reise jeden Aufbruch und zeigt die Restdauer', () => {
     const sonar = view(state({ travel: { target: CANDIDATES[1], remainingMs: 12_500 } }));
     expect(sonar.targets.every((t) => t.blocker === 'traveling')).toBe(true);
+    // Strategieziel und Mitnahme gelten erst nach der Ankunft wieder.
+    expect(sonar.strategyTarget).toBeNull();
+    expect(sonar.targets.some((t) => t.strategyChoice)).toBe(false);
+    expect(sonar.selected).toBeNull();
+    expect(sonar.transport).toBeNull();
     expect(sonar.travel?.type).toBe('vent');
     expect(sonar.travel?.secondsLeft.toNumber()).toBe(12.5);
     expect(sonar.forfeitedStock).toBeNull();
@@ -146,10 +184,19 @@ describe('toSonarView', () => {
     expect(view(state({ site: { ...base.site, stock: Num.ZERO } })).forfeitedStock).toBeNull();
   });
 
+  it('nennt die Restzeit des Vorrats nur, solange einer da ist', () => {
+    const drones = { queens: 1, drones: 5, soldiers: 0 };
+    expect(view(state({}, drones)).site.secondsLeft?.toNumber()).toBeGreaterThan(0);
+    const empty = view(state({ site: { ...base.site, stock: Num.ZERO } }, drones));
+    expect(empty.site.secondsLeft).toBeNull();
+    expect(empty.site.stockPercent).toBe(0);
+  });
+
   it('nennt die Kosten einer Königin in Drohnen', () => {
     const queen = (drones: number) => view(state({}, { queens: 1, drones, soldiers: 0 })).queen;
     // 60 / (0,5 · 10) = 12 Drohnen (Game-Design Beispiel 6)
-    expect(queen(11).price?.toNumber()).toBe(12);
+    expect(queen(11).price?.amount.toNumber()).toBe(12);
+    expect(queen(11).price?.shown).toBe(12);
     expect(queen(11).possible).toBe(false);
     expect(queen(12).possible).toBe(true);
   });

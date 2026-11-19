@@ -1,5 +1,6 @@
 @let sonar = facade.sonar();
 @let panel = 'min-w-0 rounded-lg border border-border bg-glass p-3';
+@let strategyName = strategyLabels[sonar.settings.strategy];
 
 <main class="mx-auto grid max-w-240 gap-3 p-4 wrap-anywhere md:grid-cols-2">
   <header class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 md:col-span-full">
@@ -33,6 +34,13 @@
           >Ankunft in etwa {{ travel.secondsLeft | formatDuration }}</ng-container
         >
       </p>
+      <p
+        class="font-semibold"
+        data-testid="sonar.status.new-targets"
+        i18n="@@featureSonar-sonar-newTargets"
+      >
+        Nach der Ankunft gibt es neue Ziele.
+      </p>
     } @else {
       <p data-testid="sonar.status.site">
         {{ siteTypeLabels[sonar.site.type] }} ·
@@ -55,12 +63,19 @@
         >Reichweite {{ sonar.range | formatNum }}</ng-container
       >
       ·
-      <ng-container i18n="@@featureSonar-sonar-strategy">Strategie</ng-container>
-      {{ strategyLabels[sonar.settings.strategy] }}:
-      @if (sonar.strategyTarget === null) {
-        <ng-container i18n="@@featureSonar-sonar-noStrategyTarget">kein Ziel</ng-container>
+      @if (sonar.travel) {
+        <ng-container i18n="@@featureSonar-sonar-strategyName"
+          >Strategie „{{ strategyName }}“</ng-container
+        >
+      } @else if (sonar.strategyTarget === null) {
+        <ng-container i18n="@@featureSonar-sonar-strategyNoTarget"
+          >Strategie „{{ strategyName }}“ findet kein Ziel</ng-container
+        >
       } @else {
-        <ng-container i18n="@@featureSonar-sonar-strategyTarget">Ziel ◆ markiert</ng-container>
+        <!-- Geschützte Leerzeichen halten „◆ =“ beim Umbruch zusammen. -->
+        <ng-container i18n="@@featureSonar-sonar-strategyMark"
+          >◆&nbsp;=&nbsp;Ziel der Strategie „{{ strategyName }}“</ng-container
+        >
       }
     </p>
   </section>
@@ -73,6 +88,15 @@
     >
       Ziele
     </h2>
+    @if (sonar.travel) {
+      <p
+        class="mb-2 text-sm text-fg-muted"
+        data-testid="sonar.targets.stale"
+        i18n="@@featureSonar-sonar-staleTargets"
+      >
+        Ziele vom bisherigen Standort, nur zur Ansicht.
+      </p>
+    }
     <app-target-list [targets]="sonar.targets" (selectedTarget)="facade.select($event)" />
   </section>
 

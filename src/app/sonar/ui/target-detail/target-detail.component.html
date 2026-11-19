@@ -1,5 +1,4 @@
 @let _target = target();
-@let _transport = transport();
 @let _queen = queen();
 @let meter = 'h-2 overflow-hidden rounded-md border border-border-control bg-surface-raised';
 
@@ -59,12 +58,17 @@
         </dt>
         <dd data-testid="sonar.detail.losses">
           @if (details.losses; as losses) {
-            <ng-container i18n="@@uiSonar-targetDetail-lossesValue"
-              >{{ losses.soldiers | formatUp }} Soldaten ({{
-                losses.percent | formatNum
-              }}
-              %)</ng-container
-            >
+            @if (losses.soldiers.shown === 0) {
+              <ng-container i18n="@@uiSonar-targetDetail-noLosses">keine</ng-container>
+            } @else {
+              <ng-container i18n="@@uiSonar-targetDetail-lossesCount"
+                >{losses.soldiers.shown, plural,
+                  =1 {{{ losses.soldiers.amount | formatUp }} Soldat}
+                  other {{{ losses.soldiers.amount | formatUp }} Soldaten}
+                }
+                ({{ losses.percent | formatNum }} %)</ng-container
+              >
+            }
           } @else {
             –
           }
@@ -117,41 +121,88 @@
   }
 
   <p
-    class="font-semibold"
+    class="font-semibold data-stale:text-fg-muted"
     data-testid="sonar.detail.verdict"
     [class]="verdictTones[_target.verdict]"
+    [attr.data-stale]="_target.blocker === 'traveling' ? '' : null"
   >
     {{ verdictLabels[_target.verdict] }}
   </p>
 
-  <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-transport-title">
-    <h3 id="sonar-transport-title" class="text-sm font-semibold">
-      <ng-container i18n="@@uiSonar-targetDetail-transportTitle">Mitnahme</ng-container>:
-      <span data-testid="sonar.transport.priority">{{ priorityLabels[_transport.priority] }}</span>
-    </h3>
-    <p data-testid="sonar.transport.carried" i18n="@@uiSonar-targetDetail-carried">
-      Kommen mit: {{ _transport.carriedDrones | formatDown }} Drohnen,
-      {{ _transport.carriedSoldiers | formatDown }} Soldaten
+  @if (transport(); as _transport) {
+    @let leftDrones = _transport.leftDrones;
+    @let leftSoldiers = _transport.leftSoldiers;
+    <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-transport-title">
+      <h3 id="sonar-transport-title" class="text-sm font-semibold">
+        <ng-container i18n="@@uiSonar-targetDetail-transportTitle">Mitnahme</ng-container>:
+        <span data-testid="sonar.transport.priority">{{
+          priorityLabels[_transport.priority]
+        }}</span>
+      </h3>
+      <p data-testid="sonar.transport.carried" i18n="@@uiSonar-targetDetail-carriedCount">
+        Kommen mit:
+        {_transport.carriedDrones.shown, plural,
+          =1 {{{ _transport.carriedDrones.amount | formatDown }} Drohne}
+          other {{{ _transport.carriedDrones.amount | formatDown }} Drohnen}
+
+        },
+        {_transport.carriedSoldiers.shown, plural,
+          =1 {{{ _transport.carriedSoldiers.amount | formatDown }} Soldat}
+          other {{{ _transport.carriedSoldiers.amount | formatDown }} Soldaten}
+        }
+      </p>
+      @if (_transport.fitsAll) {
+        <p
+          class="text-sm text-fg-muted"
+          data-testid="sonar.transport.fits-all"
+          i18n="@@uiSonar-targetDetail-fitsAll"
+        >
+          Der Platz reicht, niemand bleibt zurück.
+        </p>
+      } @else {
+        <p class="text-warning" data-testid="sonar.transport.left-behind">
+          @if (leftDrones && leftSoldiers) {
+            <ng-container i18n="@@uiSonar-targetDetail-leftBehindBoth"
+              >Bleiben zurück und gehen verloren:
+              {leftDrones.shown, plural,
+                =1 {{{ leftDrones.amount | formatUp }} Drohne}
+                other {{{ leftDrones.amount | formatUp }} Drohnen}
+              }
+              und
+              {leftSoldiers.shown, plural,
+                =1 {{{ leftSoldiers.amount | formatUp }} Soldat}
+                other {{{ leftSoldiers.amount | formatUp }} Soldaten}
+              }</ng-container
+            >
+          } @else if (leftDrones) {
+            <ng-container i18n="@@uiSonar-targetDetail-leftBehindDrones"
+              >Bleiben zurück und gehen verloren:
+              {leftDrones.shown, plural,
+                =1 {{{ leftDrones.amount | formatUp }} Drohne}
+                other {{{ leftDrones.amount | formatUp }} Drohnen}
+              }</ng-container
+            >
+          } @else if (leftSoldiers) {
+            <ng-container i18n="@@uiSonar-targetDetail-leftBehindSoldiers"
+              >Bleiben zurück und gehen verloren:
+              {leftSoldiers.shown, plural,
+                =1 {{{ leftSoldiers.amount | formatUp }} Soldat}
+                other {{{ leftSoldiers.amount | formatUp }} Soldaten}
+              }</ng-container
+            >
+          }
+        </p>
+      }
+    </section>
+  } @else {
+    <p
+      class="text-sm text-fg-muted"
+      data-testid="sonar.transport.after-arrival"
+      i18n="@@uiSonar-targetDetail-transportAfterArrival"
+    >
+      Die Vorschau der Mitnahme gibt es nach der Ankunft wieder.
     </p>
-    @if (_transport.fitsAll) {
-      <p
-        class="text-sm text-fg-muted"
-        data-testid="sonar.transport.fits-all"
-        i18n="@@uiSonar-targetDetail-fitsAll"
-      >
-        Der Platz reicht, niemand bleibt zurück.
-      </p>
-    } @else {
-      <p
-        class="text-warning"
-        data-testid="sonar.transport.left-behind"
-        i18n="@@uiSonar-targetDetail-leftBehind"
-      >
-        Bleiben zurück und gehen verloren: {{ _transport.leftDrones | formatUp }} Drohnen,
-        {{ _transport.leftSoldiers | formatUp }} Soldaten
-      </p>
-    }
-  </section>
+  }
 
   <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-queen-title">
     <h3
@@ -163,9 +214,13 @@
     </h3>
     <p class="text-sm text-fg-muted" data-testid="sonar.queen.price">
       @if (_queen.price; as price) {
-        <ng-container i18n="@@uiSonar-targetDetail-queenPrice"
-          >Kostet {{ price | formatUp }} Drohnen, vorhanden
-          {{ _queen.drones | formatDown }}.</ng-container
+        <ng-container i18n="@@uiSonar-targetDetail-queenPriceCount"
+          >Kostet
+          {price.shown, plural,
+            =1 {{{ price.amount | formatUp }} Drohne}
+            other {{{ price.amount | formatUp }} Drohnen}
+
+          }, vorhanden {{ _queen.drones | formatDown }}.</ng-container
         >
       } @else {
         <ng-container i18n="@@uiSonar-targetDetail-queenUnavailable"

@@ -2,7 +2,7 @@
 @let threshold = _form.thresholdPercent;
 @let thresholdError = threshold().invalid() && (threshold().touched() || threshold().dirty());
 @let control =
-  'min-w-0 rounded border border-border-control bg-surface-raised px-1.5 py-1 aria-invalid:border-warning';
+  'min-h-11 min-w-0 rounded border border-border-control bg-surface-raised px-1.5 py-1 aria-invalid:border-warning';
 
 <form class="grid gap-3" [formRoot]="_form">
   <label class="grid gap-1">
