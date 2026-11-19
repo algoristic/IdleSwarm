@@ -6,6 +6,8 @@ import type { TransportPriority } from '@app/swarm/domain/models/transport-prior
 import type { UnitType, Units } from '@app/swarm/domain/models/units.model';
 
 import type { BalanceParams } from './constants';
+import { effectValue, modifierFactor, NEUTRAL_MODIFIERS } from './effects-logic';
+import type { Modifiers } from './models/effect.model';
 
 /** Ab diesem Anteil des verfügbaren Platzes wird gewarnt (Game-Design §4.5, US-02.04). */
 const SPACE_WARNING_SHARE = 0.9;
@@ -84,14 +86,22 @@ export function unitPrice(type: UnitType, bought: Units, params: BalanceParams):
   return Num.from(params[growth]).pow(bought[type]).mul(params[cost]);
 }
 
-/** Nahrung/s der Drohnen: `D · r_d · M_sammeln` mit `M_sammeln = 1` bis M1.3, ohne Vorratsgrenze. */
-function droneCollectRate(units: Units, params: BalanceParams): Num {
-  return units.drones.mul(params.droneCollectRate);
+/** Nahrung/s je Drohne: `r_d · M_sammeln` (Game-Design §4.3, §4.13). */
+export function collectRatePerDrone(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return params.droneCollectRate * modifierFactor(modifiers.collectRate);
+}
+
+/** Nahrung/s der Drohnen: `D · r_d · M_sammeln`, ohne Vorratsgrenze. */
+function droneCollectRate(units: Units, params: BalanceParams, modifiers: Modifiers): Num {
+  return units.drones.mul(collectRatePerDrone(params, modifiers));
 }
 
 /** Abbaurate der Futterstelle: `g_0 + D · r_d · M_sammeln`, ohne Vorratsgrenze (Game-Design §4.3). */
-function siteYieldRate(units: Units, params: BalanceParams): Num {
-  return droneCollectRate(units, params).add(params.baseFoodRate);
+function siteYieldRate(units: Units, params: BalanceParams, modifiers: Modifiers): Num {
+  return droneCollectRate(units, params, modifiers).add(params.baseFoodRate);
 }
 
 /** Angezeigter Grundertrag in Nahrung/s; bei leerem Vorrat 0 (Game-Design §4.1). */
@@ -100,24 +110,40 @@ export function baseFoodPerSecond(stock: Num, params: BalanceParams): Num {
 }
 
 /** Angezeigte Nahrung/s der Drohnen; bei leerem Vorrat 0 (Game-Design §4.5). */
-export function droneFoodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
-  return stock.isZero() ? Num.ZERO : droneCollectRate(units, params);
+export function droneFoodPerSecond(
+  units: Units,
+  stock: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return stock.isZero() ? Num.ZERO : droneCollectRate(units, params, modifiers);
 }
 
 /** Nahrung/s gesamt: `g_0 + D · r_d · M_sammeln`; bei leerem Vorrat 0 (Game-Design §4.5). */
-export function foodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
-  return stock.isZero() ? Num.ZERO : siteYieldRate(units, params);
+export function foodPerSecond(
+  units: Units,
+  stock: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return stock.isZero() ? Num.ZERO : siteYieldRate(units, params, modifiers);
 }
 
 /**
  * Ertrag eines Schritts aus Grundertrag und Sammeln: `F = min((g_0 + D · r_d · M_sammeln) · dt, V)`
  * (Game-Design §4.3).
  */
-export function collectGain(units: Units, stock: Num, dtMs: number, params: BalanceParams): Num {
+export function collectGain(
+  units: Units,
+  stock: Num,
+  dtMs: number,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
   if (stock.isZero()) {
     return Num.ZERO;
   }
-  const gain = siteYieldRate(units, params).mul(dtMs / MS_PER_SECOND);
+  const gain = siteYieldRate(units, params, modifiers).mul(dtMs / MS_PER_SECOND);
   return gain.gt(Num.ZERO) ? gain.min(stock) : Num.ZERO;
 }
 
@@ -125,20 +151,42 @@ export function collectGain(units: Units, stock: Num, dtMs: number, params: Bala
  * Restzeit der Futterstelle in Sekunden: `V / (g_0 + D · r_d · M_sammeln)` (Game-Design §4.5).
  * Ohne Abbaurate gibt es keine Schätzung, auch nicht bei leerem Vorrat.
  */
-export function siteSecondsLeft(units: Units, stock: Num, params: BalanceParams): Num | null {
-  const rate = siteYieldRate(units, params);
+export function siteSecondsLeft(
+  units: Units,
+  stock: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num | null {
+  const rate = siteYieldRate(units, params, modifiers);
   return rate.gt(Num.ZERO) ? stock.div(rate) : null;
 }
 
 /** Restzeit der Futterstelle in Millisekunden; `null` wie bei {@link siteSecondsLeft}. */
-export function siteMsLeft(units: Units, stock: Num, params: BalanceParams): number | null {
-  const seconds = siteSecondsLeft(units, stock, params);
+export function siteMsLeft(
+  units: Units,
+  stock: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number | null {
+  const seconds = siteSecondsLeft(units, stock, params, modifiers);
   return seconds === null ? null : seconds.toNumber() * MS_PER_SECOND;
 }
 
-/** Eier/min: `Q · e_q · M_brut` mit `M_brut = 1` bis M1.3 (Game-Design §4.5). */
-export function eggsPerMinute(units: Units, params: BalanceParams): Num {
-  return units.queens.mul(params.queenEggsPerMin);
+/** Eier/min je Königin: `e_q · M_brut` (Game-Design §4.5, §4.13). */
+export function queenEggsPerMinute(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return params.queenEggsPerMin * modifierFactor(modifiers.broodRate);
+}
+
+/** Eier/min: `Q · e_q · M_brut` (Game-Design §4.5). */
+export function eggsPerMinute(
+  units: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return units.queens.mul(queenEggsPerMinute(params, modifiers));
 }
 
 /** Mittlere Brutkosten: `c̄ = a · c_d + (1 − a) · c_s`, ohne Preisfaktor (Game-Design §4.3). */
@@ -156,8 +204,9 @@ export function broodResult(
   food: Num,
   dtMs: number,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): BroodResult {
-  const eggs = eggsPerMinute(units, params).mul(dtMs / MS_PER_MINUTE);
+  const eggs = eggsPerMinute(units, params, modifiers).mul(dtMs / MS_PER_MINUTE);
   const meanCost = meanBroodCost(params);
   const fullCost = eggs.mul(meanCost);
   // Begrenzt die Nahrung, zählt sie direkt als Kosten: `h · c̄` könnte gerundet von `N` abweichen.
@@ -172,19 +221,47 @@ export function broodResult(
   };
 }
 
-/** Gesamtangriff: `S · a_s` (Game-Design §4.5). */
-export function totalAttack(units: Units, params: BalanceParams): Num {
-  return soldierAttack(units.soldiers, params);
+/** Angriff je Soldat `a_s* = max(0, (a_s + Σ add) · Π mul)` (Game-Design §4.13). */
+export function attackPerSoldier(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return effectValue(params.soldierAttack, modifiers.attackPerSoldier);
 }
 
-/** Angriff `A = S · a_s` einer Anzahl Soldaten, z. B. der mitkommenden `S'` (Game-Design §4.8). */
-export function soldierAttack(soldiers: Num, params: BalanceParams): Num {
-  return soldiers.mul(params.soldierAttack);
+/** Gesamtangriff: `S · a_s*` (Game-Design §4.5, §4.13). */
+export function totalAttack(
+  units: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return soldierAttack(units.soldiers, params, modifiers);
 }
 
-/** Verfügbarer Platz: `Q · p_q` (Game-Design §4.5). */
-export function spaceAvailable(units: Units, params: BalanceParams): Num {
-  return units.queens.mul(params.queenSpace);
+/** Angriff `A = S · a_s*` einer Anzahl Soldaten, z. B. der mitkommenden `S'` (Game-Design §4.8). */
+export function soldierAttack(
+  soldiers: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return soldiers.mul(attackPerSoldier(params, modifiers));
+}
+
+/** Platz je Königin `p_q* = max(0, (p_q + Σ add) · Π mul)` (Game-Design §4.13). */
+export function spacePerQueen(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return effectValue(params.queenSpace, modifiers.spacePerQueen);
+}
+
+/** Verfügbarer Platz: `C = Q · p_q*` (Game-Design §4.5, §4.13). */
+export function spaceAvailable(
+  units: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return units.queens.mul(spacePerQueen(params, modifiers));
 }
 
 /** Belegter Platz: `D · p_d + S · p_s`; darf den verfügbaren übersteigen (Game-Design §4.5). */
@@ -193,19 +270,33 @@ export function spaceUsed(units: Units, params: BalanceParams): Num {
 }
 
 /** Auslastung als Anteil (1 = 100 %); ohne verfügbaren Platz gibt es keinen Wert. */
-export function spaceUsage(units: Units, params: BalanceParams): Num | null {
-  const available = spaceAvailable(units, params);
+export function spaceUsage(
+  units: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num | null {
+  const available = spaceAvailable(units, params, modifiers);
   return available.isZero() ? null : spaceUsed(units, params).div(available);
 }
 
 /** Warnschwelle: `belegt ≥ 0,9 · verfügbar`, also auch immer bei 0 verfügbarem Platz. */
-export function isSpaceWarning(units: Units, params: BalanceParams): boolean {
-  return spaceUsed(units, params).gte(spaceAvailable(units, params).mul(SPACE_WARNING_SHARE));
+export function isSpaceWarning(
+  units: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): boolean {
+  return spaceUsed(units, params).gte(
+    spaceAvailable(units, params, modifiers).mul(SPACE_WARNING_SHARE),
+  );
 }
 
 /** Belegung über dem Platz: Beim Aufbruch bleiben Einheiten zurück (Game-Design §4.9). */
-export function isSpaceOverfull(units: Units, params: BalanceParams): boolean {
-  return spaceUsed(units, params).gt(spaceAvailable(units, params));
+export function isSpaceOverfull(
+  units: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): boolean {
+  return spaceUsed(units, params).gt(spaceAvailable(units, params, modifiers));
 }
 
 /**
@@ -224,8 +315,9 @@ export function carriedUnits(
   units: Units,
   priority: TransportPriority,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): Units {
-  const capacity = spaceAvailable(units, params).max(Num.ZERO);
+  const capacity = spaceAvailable(units, params, modifiers).max(Num.ZERO);
   const used = spaceUsed(units, params);
   if (used.lte(capacity)) {
     return units;
@@ -257,21 +349,42 @@ export function isCapturable(attack: Num, defense: Num): boolean {
 }
 
 /**
- * Erwartete Verluste `L = S · λ · (B / A)^κ · M_verlust` mit `M_verlust = 1` bis M1.3
- * (Game-Design §4.8); 0 bei `B = 0`, auch bei `A = 0`. Für nicht einnehmbare Ziele ist `B / A` auf 1
- * begrenzt, `L` also höchstens `λ · S`.
+ * Erwartete Verluste `L = S · λ · (B / A)^κ · M_verlust` mit `A = S · a_s*` (Game-Design §4.8,
+ * §4.13); 0 bei `B = 0`, auch bei `A = 0`. Für nicht einnehmbare Ziele ist `B / A` auf 1 begrenzt,
+ * `L` also höchstens `λ · S · M_verlust`. Wegen `M_verlust ≥ 0` sind die Verluste nie negativ.
  */
-export function expectedLosses(soldiers: Num, defense: Num, params: BalanceParams): Num {
+export function expectedLosses(
+  soldiers: Num,
+  defense: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
   if (!defense.gt(Num.ZERO) || !soldiers.gt(Num.ZERO)) {
     return Num.ZERO;
   }
-  const cap = soldiers.mul(params.lossFactor);
-  const attack = soldiers.mul(params.soldierAttack);
+  // `M_verlust` steckt im Faktor der Obergrenze: eine Multiplikation weniger, neutral bitgleich.
+  const cap = soldiers.mul(params.lossFactor * modifierFactor(modifiers.combatLoss));
+  const attack = soldierAttack(soldiers, params, modifiers);
   if (!attack.gt(Num.ZERO)) {
     return cap;
   }
   const ratio = defense.div(attack).min(Num.ONE);
   return cap.mul(ratio.pow(params.lossExponent)).min(cap);
+}
+
+/**
+ * Nahrung aus Gefallenen bei der Ankunft (Autophagie, Game-Design §4.13): `L · ρ · c_s`, nur mit
+ * freigeschaltetem `fallenRecycling`, sonst 0.
+ */
+export function recycledFood(
+  losses: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  if (!modifiers.fallenRecycling || !losses.gt(Num.ZERO)) {
+    return Num.ZERO;
+  }
+  return losses.mul(params.fallenRecycleYield * params.soldierCost).max(Num.ZERO);
 }
 
 /** Erwarteter Verlustanteil `L / S'` (Game-Design §4.5); 0 bei `L = 0`. */
@@ -280,49 +393,81 @@ export function expectedLossShare(losses: Num, soldiers: Num): Num {
 }
 
 /**
- * Ausbeute beim Opfern `η = min(η_0 · M_ausbeute, 1 − v_min)` (Game-Design §4.10). Einzige Quelle der
- * Ausbeute: Adaptionen ab M1.3 ergänzen hier ihren Modifikator `M_ausbeute` (bis dahin 1).
+ * Ausbeute beim Opfern `η = min(η_0 · M_ausbeute, 1 − v_min)` (Game-Design §4.10, §4.13). Einzige
+ * Quelle der Ausbeute: Der Umwandlungsverlust sinkt nie unter `v_min`, egal wie viele Effekte
+ * `M_ausbeute` erhöhen.
  */
-export function sacrificeYieldShare(params: BalanceParams): number {
-  const yieldModifier = 1;
+export function sacrificeYieldShare(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  const yieldModifier = modifierFactor(modifiers.sacrificeYield);
   return Math.min(params.sacrificeYield * yieldModifier, 1 - params.minSacrificeLoss);
 }
 
 /** Umwandlungsverlust `1 − η`, vor dem Opfern angezeigt (Game-Design §4.10, US-04.07). */
-export function sacrificeLossShare(params: BalanceParams): number {
-  return 1 - sacrificeYieldShare(params);
+export function sacrificeLossShare(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return 1 - sacrificeYieldShare(params, modifiers);
 }
 
 /** Nahrung aus `n` geopferten Drohnen: `n · η · c_d`, zum Basispreis (Game-Design §4.10). */
-export function sacrificeFood(count: Num, params: BalanceParams): Num {
-  return count.mul(sacrificeYieldShare(params) * params.droneCost);
+export function sacrificeFood(
+  count: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return count.mul(sacrificeYieldShare(params, modifiers) * params.droneCost);
 }
 
 /**
  * Drohnen je Königin `k_q = Preis_Königin / (η · c_d)` zum aktuellen Königinnenpreis
  * (Game-Design §4.10). Ohne positiven Drohnenwert `η · c_d` ist keine Umwandlung möglich: `null`.
  */
-export function dronesPerQueen(bought: Units, params: BalanceParams): Num | null {
-  const droneValue = sacrificeYieldShare(params) * params.droneCost;
+export function dronesPerQueen(
+  bought: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num | null {
+  const droneValue = sacrificeYieldShare(params, modifiers) * params.droneCost;
   return droneValue > 0 ? unitPrice('queens', bought, params).div(droneValue) : null;
 }
 
-/** Effekt einer weiteren Königin: `+e_q · M_brut` Eier/min, `+p_q` Platz (Game-Design §4.5). */
-export function nextQueenEffect(params: BalanceParams): QueenEffect {
-  return { eggsPerMin: Num.from(params.queenEggsPerMin), space: Num.from(params.queenSpace) };
+/** Effekt einer weiteren Königin: `+e_q · M_brut` Eier/min, `+p_q*` Platz (Game-Design §4.5, §4.13). */
+export function nextQueenEffect(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): QueenEffect {
+  return {
+    eggsPerMin: Num.from(queenEggsPerMinute(params, modifiers)),
+    space: Num.from(spacePerQueen(params, modifiers)),
+  };
 }
 
 /** Nahrungsbedarf der Brut bei voller Eierrate: `E / 60 · c̄` (Game-Design §4.3). */
-export function broodFoodPerSecond(units: Units, params: BalanceParams): Num {
-  return eggsPerMinute(units, params).mul(meanBroodCost(params)).div(SECONDS_PER_MINUTE);
+export function broodFoodPerSecond(
+  units: Units,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return eggsPerMinute(units, params, modifiers).mul(meanBroodCost(params)).div(SECONDS_PER_MINUTE);
 }
 
 /**
  * Nettozufluss: Nahrung/s gesamt minus Nahrungsbedarf der Brut. Kann negativ sein; die Brut pausiert
  * dann real anteilig (Game-Design §4.3), die Nahrung fällt also nicht unter 0.
  */
-export function netFoodPerSecond(units: Units, stock: Num, params: BalanceParams): Num {
-  return foodPerSecond(units, stock, params).sub(broodFoodPerSecond(units, params));
+export function netFoodPerSecond(
+  units: Units,
+  stock: Num,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): Num {
+  return foodPerSecond(units, stock, params, modifiers).sub(
+    broodFoodPerSecond(units, params, modifiers),
+  );
 }
 
 /** Kaufbedingung `N ≥ Preis` (Game-Design §4.2); ein negativer Preis ist nie bezahlbar. */
@@ -349,9 +494,19 @@ export function siteTypeWeight(type: SiteTypeId, params: BalanceParams): number 
   return params[SITE_TYPE_PARAMS[type].weight];
 }
 
-/** Fundchance eines Futterstellentyps; nur Anzeige, gezogen ab M1.3 (Game-Design §4.5). */
-export function siteFindChance(type: SiteTypeId, params: BalanceParams): number {
-  return params[SITE_TYPE_PARAMS[type].findChance];
+/**
+ * Fundchance je Ziehung `p = min(1, p_Typ · M_fund)` eines Futterstellentyps (Game-Design §4.13,
+ * §4.16); bis zu den Funden nur Anzeige.
+ */
+export function siteFindChance(
+  type: SiteTypeId,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return Math.min(
+    1,
+    params[SITE_TYPE_PARAMS[type].findChance] * modifierFactor(modifiers.findChance),
+  );
 }
 
 /**
@@ -442,11 +597,19 @@ export function positionAt(origin: Position, distance: number, angle: number): P
 }
 
 /**
- * Aktuelle Reichweite `R = R_0` (Game-Design §4.5). Einzige Quelle der Reichweite: Adaptionen ab
- * M1.3 ergänzen hier ihren Modifikator.
+ * Aktuelle Reichweite `R = R_0 + Σ add(range)` (Game-Design §4.7, §4.13). Einzige Quelle der
+ * Reichweite, für Generator, Status und Aufbruch.
  */
-export function swarmRange(params: BalanceParams): number {
-  return params.baseRange;
+export function swarmRange(
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): number {
+  return effectValue(params.baseRange, modifiers.range);
+}
+
+/** Zusätzliche Pheromonpunkte `P_bonus = Σ add(pheromonePoints)` (Game-Design §4.13, §4.15). */
+export function pheromoneBonus(modifiers: Modifiers = NEUTRAL_MODIFIERS): number {
+  return effectValue(0, modifiers.pheromonePoints);
 }
 
 /** `d ≤ R` mit Rechentoleranz (Game-Design §4.6, §4.7). */

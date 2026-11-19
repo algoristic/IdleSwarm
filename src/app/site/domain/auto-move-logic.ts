@@ -1,5 +1,7 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { clampAutoThreshold } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 
 import { type AutoMove, isStrategyId } from './models/auto-move.model';
@@ -53,10 +55,14 @@ export function isAutoMoveDue(state: GameState, params: BalanceParams): boolean 
  * Schritt (3) des Simulationsschritts: Bei fälligem Auslöser Aufbruch zum Ziel der Strategie mit
  * `auto: true`. Ohne Auslöser oder Ziel kommt derselbe Zustand ohne Ereignis zurück.
  */
-export function applyAutoMove(state: GameState, params: BalanceParams): SiteResult {
+export function applyAutoMove(
+  state: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): SiteResult {
   if (!isAutoMoveDue(state, params)) {
     return { state, events: [] };
   }
-  const target = strategyTarget(state, state.auto.strategy, params);
-  return target === null ? { state, events: [] } : depart(state, target, true, params);
+  const target = strategyTarget(state, state.auto.strategy, params, modifiers);
+  return target === null ? { state, events: [] } : depart(state, target, true, params, modifiers);
 }

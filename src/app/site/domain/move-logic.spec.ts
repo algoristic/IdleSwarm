@@ -1,4 +1,5 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { combineEffects } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -248,5 +249,35 @@ describe('arrive (Game-Design §4.11)', () => {
     expect(state.units.soldiers.gte(0)).toBe(true);
     const [event] = events;
     expect(event.type === 'arrived' && event.losses.lte(34)).toBe(true);
+  });
+});
+
+describe('arrive mit Effekten (Game-Design §4.13, Beispiel 10)', () => {
+  const modifiers = combineEffects(
+    [
+      { target: 'attackPerSoldier', op: 'add', value: 0.2 },
+      { target: 'fallenRecycling', op: 'unlock' },
+      { target: 'combatLoss', op: 'mul', value: 0.75 },
+    ],
+    null,
+  );
+
+  it('kämpft mit a_s* und M_verlust und gibt Nahrung aus Gefallenen zurück', () => {
+    const input = deepFreeze(depart(stateWith(), 0, false, DEFAULT_BALANCE).state);
+    const { state, events } = arrive(input, DEFAULT_BALANCE, modifiers);
+    expect(state.units.soldiers.toNumber()).toBeCloseTo(34 - 5.18, 2);
+    expect(state.res.food.sub(input.res.food).toNumber()).toBeCloseTo(64.7, 1);
+    expect(state.res.dna.toNumber()).toBeCloseTo(13.55, 2);
+    const [event] = events;
+    if (event.type !== 'arrived') {
+      throw new Error('arrived erwartet');
+    }
+    expect(event.losses.toNumber()).toBeCloseTo(5.18, 2);
+  });
+
+  it('gibt ohne Autophagie keine Nahrung zurück', () => {
+    const input = deepFreeze(depart(stateWith(), 0, false, DEFAULT_BALANCE).state);
+    const withoutRecycling = { ...modifiers, fallenRecycling: false };
+    expect(arrive(input, DEFAULT_BALANCE, withoutRecycling).state.res.food).toBe(input.res.food);
   });
 });

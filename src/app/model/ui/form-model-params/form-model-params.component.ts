@@ -92,6 +92,7 @@ export class FormModelParamsComponent {
     dnaExponent: $localize`:@@uiModel-formModelParams-hint-dnaExponent:Exponent der DNA-Belohnung`,
     lossFactor: $localize`:@@uiModel-formModelParams-hint-lossFactor:Verlustfaktor`,
     lossExponent: $localize`:@@uiModel-formModelParams-hint-lossExponent:Verlustexponent`,
+    fallenRecycleYield: $localize`:@@uiModel-formModelParams-hint-fallenRecycleYield:Nahrung je Gefallenem als Anteil der Soldatenkosten (Autophagie, 0 bis 1)`,
     sacrificeYield: $localize`:@@uiModel-formModelParams-hint-sacrificeYield:Ausbeute beim Opfern von Drohnen (0 bis 1)`,
     minSacrificeLoss: $localize`:@@uiModel-formModelParams-hint-minSacrificeLoss:Mindest-Umwandlungsverlust beim Opfern`,
     travelSecondsPerDistance: $localize`:@@uiModel-formModelParams-hint-travelSecondsPerDistance:Reisedauer in s je Distanzeinheit`,

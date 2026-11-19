@@ -1,4 +1,5 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import {
   candidateStatus,
   distanceBetween,
@@ -6,6 +7,7 @@ import {
   siteFindChance,
   travelDurationMs,
 } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { Num } from '@app/shared/util/num/num';
 
 import type { CandidateStatus, Position, SiteCandidate } from './models/map.model';
@@ -28,13 +30,14 @@ export function candidateInfo(
   position: Position,
   range: number,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): CandidateInfo {
   const distance = distanceBetween(position, candidate.position);
   return {
     distance,
     status: candidateStatus(distance, range, params),
     dna: dnaReward(candidate.defense, params),
-    findChance: siteFindChance(candidate.type, params),
+    findChance: siteFindChance(candidate.type, params, modifiers),
     travelMs: travelDurationMs(distance, params),
   };
 }
@@ -45,6 +48,9 @@ export function candidateInfos(
   position: Position,
   range: number,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): readonly CandidateInfo[] {
-  return candidates.map((candidate) => candidateInfo(candidate, position, range, params));
+  return candidates.map((candidate) =>
+    candidateInfo(candidate, position, range, params, modifiers),
+  );
 }

@@ -1,5 +1,7 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { swarmRange } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import type { Num } from '@app/shared/util/num/num';
 
@@ -45,15 +47,15 @@ const ORDERS: Readonly<Record<StrategyId, Order>> = {
 
 const FALLBACK_ORDER = chain(largerSize, nearer);
 
-function options(state: GameState, params: BalanceParams): Option[] {
+function options(state: GameState, params: BalanceParams, modifiers: Modifiers): Option[] {
   const { candidates, position } = state.map;
-  const range = swarmRange(params);
+  const range = swarmRange(params, modifiers);
   return candidates.flatMap((candidate, index) => {
-    const { distance, status } = candidateInfo(candidate, position, range, params);
+    const { distance, status } = candidateInfo(candidate, position, range, params, modifiers);
     if (status !== 'in-range') {
       return [];
     }
-    const combat = assessTarget(state, candidate, params);
+    const combat = assessTarget(state, candidate, params, modifiers);
     return combat.capturable
       ? [{ index, distance, size: candidate.size, defense: candidate.defense, combat }]
       : [];
@@ -73,8 +75,9 @@ export function strategyTarget(
   state: GameState,
   strategy: StrategyId,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): number | null {
-  const all = options(state, params);
+  const all = options(state, params, modifiers);
   const eligible =
     strategy === 'balanced'
       ? all.filter((option) => option.combat.lossShare.lte(params.balancedMaxLossShare))

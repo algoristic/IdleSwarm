@@ -1,6 +1,8 @@
 import {
   broodFoodPerSecond,
+  collectRatePerDrone,
   meanBroodCost,
+  queenEggsPerMinute,
   secondsUntilAffordable,
 } from '@app/balance/domain/formulas';
 import {
@@ -27,11 +29,11 @@ export interface ActiveBotOptions {
  * aktuellen Preis und kostet dafür `c̄`. Ohne Zufluss für ihre Brut bringt sie nichts.
  */
 function queenGainPerSecond(view: BotView, income: Num): Num {
-  const { params, prices } = view;
+  const { params, prices, modifiers } = view;
   const value = prices.drones.mul(params.broodDroneShare).sub(meanBroodCost(params));
-  const fundable = income.sub(broodFoodPerSecond(ONE_QUEEN, params)).gt(Num.ZERO);
+  const fundable = income.sub(broodFoodPerSecond(ONE_QUEEN, params, modifiers)).gt(Num.ZERO);
   return fundable && value.gt(Num.ZERO)
-    ? value.mul(params.queenEggsPerMin / SECONDS_PER_MINUTE)
+    ? value.mul(queenEggsPerMinute(params, modifiers) / SECONDS_PER_MINUTE)
     : Num.ZERO;
 }
 
@@ -50,10 +52,15 @@ function paybackSeconds(price: Num, food: Num, income: Num, gainPerSecond: Num):
 /** Spart bewusst: Ist die beste Einheit noch zu teuer, wird nichts Schlechteres gekauft. */
 function bestUnit(plan: CommandPlan): UnitType | null {
   const { view, state } = plan;
-  const { prices, params } = view;
+  const { prices, params, modifiers } = view;
   const food = state.res.food;
   const income = view.netFoodPerSecond;
-  const drones = paybackSeconds(prices.drones, food, income, Num.from(params.droneCollectRate));
+  const drones = paybackSeconds(
+    prices.drones,
+    food,
+    income,
+    Num.from(collectRatePerDrone(params, modifiers)),
+  );
   const queens = paybackSeconds(prices.queens, food, income, queenGainPerSecond(view, income));
   if (drones === Infinity && queens === Infinity) {
     return null;

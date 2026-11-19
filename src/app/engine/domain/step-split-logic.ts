@@ -2,6 +2,7 @@ import { BalanceParams } from '@app/balance/domain/constants';
 import { clampAutoThreshold, siteMsLeft } from '@app/balance/domain/formulas';
 
 import { GameState } from './models/game-state.model';
+import { stateModifiers } from './modifiers-logic';
 
 /**
  * Nächster Zeitpunkt, an dem ein Schritt geteilt wird: die Ankunft oder der vorhergesagte Auslöser
@@ -20,7 +21,8 @@ export function nextSplitMs(state: GameState, timeMs: number, params: BalancePar
     return Infinity;
   }
   const threshold = clampAutoThreshold(auto.threshold, params);
-  const msLeft = siteMsLeft(units, site.stock.sub(site.size.mul(threshold)), params);
+  const stockAbove = site.stock.sub(site.size.mul(threshold));
+  const msLeft = siteMsLeft(units, stockAbove, params, stateModifiers(state, params));
   // Ist der Auslöser schon erreicht, fand die Strategie kein Ziel; dann gibt es nichts zu teilen.
   return msLeft !== null && msLeft > 0 ? timeMs + Math.ceil(msLeft) : Infinity;
 }

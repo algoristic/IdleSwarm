@@ -6,7 +6,9 @@ import {
   swarmRange,
   travelDurationMs,
 } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
+import { stateModifiers } from '@app/engine/domain/modifiers-logic';
 import {
   barPercent,
   roundDownForDisplay,
@@ -56,29 +58,31 @@ const PERCENT = 100;
 export function toSonarView(source: SonarSource, params: BalanceParams): SonarView {
   const { state } = source;
   const { candidates, position } = state.map;
-  const range = swarmRange(params);
-  const infos = candidateInfos(candidates, position, range, params);
-  const combats = assessTargets(state, params);
+  const modifiers = stateModifiers(state, params);
+  const range = swarmRange(params, modifiers);
+  const infos = candidateInfos(candidates, position, range, params, modifiers);
+  const combats = assessTargets(state, params, modifiers);
   const traveling = state.travel !== null;
   // Während der Reise gelten Strategieziel und Transportvorschau erst nach der Ankunft wieder.
-  const chosen = traveling ? null : strategyTarget(state, state.auto.strategy, params);
+  const chosen = traveling ? null : strategyTarget(state, state.auto.strategy, params, modifiers);
   const selectedIndex = isIndex(source.selected, candidates.length) ? source.selected : chosen;
   const targets = candidates.map((candidate, index) =>
     toTargetView(state, candidate, index, infos[index], combats[index], {
       strategyChoice: index === chosen,
       selected: index === selectedIndex,
       params,
+      modifiers,
     }),
   );
   return {
-    site: toCurrentSiteView(state, params),
+    site: toCurrentSiteView(state, params, modifiers),
     range,
     travel: toTravelView(state),
     targets,
     selected: selectedIndex === null ? null : targets[selectedIndex],
     strategyTarget: chosen,
-    transport: traveling ? null : toTransportView(state, params),
-    queen: toQueenView(state, params),
+    transport: traveling ? null : toTransportView(state, params, modifiers),
+    queen: toQueenView(state, params, modifiers),
     forfeitedStock:
       state.travel === null && state.site.stock.gt(Num.ZERO) ? state.site.stock : null,
     settings: toSettingsView(state, params),
@@ -200,16 +204,21 @@ function toTargetView(
   index: number,
   info: CandidateInfo,
   combat: CombatAssessment,
-  flags: { strategyChoice: boolean; selected: boolean; params: BalanceParams },
+  flags: {
+    strategyChoice: boolean;
+    selected: boolean;
+    params: BalanceParams;
+    modifiers: Modifiers;
+  },
 ): TargetView {
-  const { strategyChoice, selected, params } = flags;
+  const { strategyChoice, selected, params, modifiers } = flags;
   return {
     index,
     status: info.status,
     verdict: toVerdict(info, combat),
     strategyChoice,
     selected,
-    blocker: toBlocker(state, index, info, params),
+    blocker: toBlocker(state, index, info, params, modifiers),
     details: info.status === 'unexplored' ? null : toDetails(candidate, info, combat),
   };
 }
@@ -230,8 +239,9 @@ function toBlocker(
   index: number,
   info: CandidateInfo,
   params: BalanceParams,
+  modifiers: Modifiers,
 ): TargetBlocker | null {
-  const blocker = departureBlocker(state, index, params);
+  const blocker = departureBlocker(state, index, params, modifiers);
   // Der Kern unterscheidet unerforscht nicht von außer Reichweite; die Umgebung nennt es eigens.
   return blocker === 'out-of-range' && info.status === 'unexplored' ? 'unexplored' : blocker;
 }
@@ -266,7 +276,11 @@ function toDetails(
   };
 }
 
-function toCurrentSiteView({ units, site }: GameState, params: BalanceParams): CurrentSiteView {
+function toCurrentSiteView(
+  { units, site }: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): CurrentSiteView {
   const { type, stock, size } = site;
   return {
     type,
@@ -274,7 +288,7 @@ function toCurrentSiteView({ units, site }: GameState, params: BalanceParams): C
     size,
     stockPercent: size.isZero() ? 0 : barPercent(stock.div(size)),
     // Leer ist leer: `siteSecondsLeft` liefert sonst 0 s statt keiner Angabe.
-    secondsLeft: stock.isZero() ? null : siteSecondsLeft(units, stock, params),
+    secondsLeft: stock.isZero() ? null : siteSecondsLeft(units, stock, params, modifiers),
   };
 }
 
@@ -287,8 +301,17 @@ function toTravelView({ travel }: GameState): TravelView | null {
       };
 }
 
-function toTransportView(state: GameState, params: BalanceParams): TransportView {
-  const { carried, leftBehind, fitsAll } = planTransport(state.units, state.priority, params);
+function toTransportView(
+  state: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): TransportView {
+  const { carried, leftBehind, fitsAll } = planTransport(
+    state.units,
+    state.priority,
+    params,
+    modifiers,
+  );
   return {
     priority: state.priority,
     carriedDrones: countDown(carried.drones),
@@ -299,12 +322,16 @@ function toTransportView(state: GameState, params: BalanceParams): TransportView
   };
 }
 
-function toQueenView(state: GameState, params: BalanceParams): QueenConversionView {
-  const price = queenPriceInDrones(state, params);
+function toQueenView(
+  state: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): QueenConversionView {
+  const price = queenPriceInDrones(state, params, modifiers);
   return {
     drones: state.units.drones,
     price: price === null ? null : countUp(price),
-    possible: canConvertDronesToQueen(state, params),
+    possible: canConvertDronesToQueen(state, params, modifiers),
   };
 }
 

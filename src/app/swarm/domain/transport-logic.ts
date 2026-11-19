@@ -1,5 +1,7 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { carriedUnits } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 
 import { isTransportPriority, TransportPriority } from './models/transport-priority.model';
@@ -20,8 +22,9 @@ export function planTransport(
   units: Units,
   priority: TransportPriority,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): TransportResult {
-  const carried = carriedUnits(units, priority, params);
+  const carried = carriedUnits(units, priority, params, modifiers);
   return {
     carried,
     leftBehind: {
@@ -37,8 +40,12 @@ export function planTransport(
  * Wendet den Transport mit der Priorität aus dem Zustand an: Zurückgelassene gehen ohne Rückerstattung
  * verloren (Game-Design §4.11, Aufbruch). Passt alles, kommt derselbe Zustand zurück.
  */
-export function applyTransport(state: GameState, params: BalanceParams): GameState {
-  const carried = carriedUnits(state.units, state.priority, params);
+export function applyTransport(
+  state: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): GameState {
+  const carried = carriedUnits(state.units, state.priority, params, modifiers);
   return carried === state.units ? state : { ...state, units: carried };
 }
 

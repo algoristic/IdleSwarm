@@ -43,6 +43,7 @@ describe('DEFAULT_BALANCE', () => {
       dnaExponent: 0.8,
       lossFactor: 0.5,
       lossExponent: 2,
+      fallenRecycleYield: 0.5,
       sacrificeYield: 0.5,
       minSacrificeLoss: 0.1,
       travelSecondsPerDistance: 10,

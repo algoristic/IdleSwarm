@@ -30,6 +30,7 @@ export function createInitialState(
 ): GameState {
   const siteSize = Num.from(params.siteSize);
   const origin = { x: 0, y: 0 };
+  // Ein neues Spiel hat noch keine Quellen für Effekte, die Reichweite ist also `R_0`.
   const generated = generateCandidates(
     { origin, moves: 0, range: swarmRange(params), rngState },
     params,

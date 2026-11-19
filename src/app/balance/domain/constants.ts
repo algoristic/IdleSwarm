@@ -44,6 +44,8 @@ export interface BalanceParams {
   readonly dnaExponent: number;
   readonly lossFactor: number;
   readonly lossExponent: number;
+  /** Anteil `ρ` von `c_s`, der je gefallenem Soldat als Nahrung zurückkommt (Autophagie, Game-Design §4.13). */
+  readonly fallenRecycleYield: number;
   readonly sacrificeYield: number;
   readonly minSacrificeLoss: number;
   /** Reisedauer `t_r` in Sekunden je Distanzeinheit (Game-Design §4.11). */
@@ -109,6 +111,7 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   dnaExponent: 0.8,
   lossFactor: 0.5,
   lossExponent: 2,
+  fallenRecycleYield: 0.5,
   sacrificeYield: 0.5,
   minSacrificeLoss: 0.1,
   travelSecondsPerDistance: 10,

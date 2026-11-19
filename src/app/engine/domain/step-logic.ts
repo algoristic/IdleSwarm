@@ -6,6 +6,7 @@ import { applyBrood } from '@app/swarm/domain/brood-logic';
 
 import type { GameEvent, StepResult } from './models/game-event.model';
 import type { GameState } from './models/game-state.model';
+import { stateModifiers } from './modifiers-logic';
 
 export type { GameEvent, StepResult } from './models/game-event.model';
 
@@ -23,6 +24,9 @@ function advanceTime(state: GameState, dtMs: number): GameState {
  * (3) Auto-Weiterziehen. Endet eine Reise im Schritt, wird er an der Ankunft geteilt: Bis dahin ruht
  * das Sammeln und die Brut läuft, danach läuft der Rest wie ein Schritt ohne Reise. So liegt die
  * Ankunft unabhängig von `dtMs` exakt.
+ *
+ * Die Modifikatoren (Game-Design §4.13) gelten je Teil des Schritts: im Reiseteil ohne bedingte
+ * Effekte, nach der Ankunft mit dem Typ der neuen Futterstelle.
  *
  * @throws RangeError bei negativem oder nicht endlichem `dtMs`.
  */
@@ -44,26 +48,28 @@ export function step(
   if (travel !== null) {
     // (0) Reise: Grundertrag und Sammeln ruhen, die Brut läuft (Game-Design §4.11).
     const travelMs = Math.min(restMs, travel.remainingMs);
+    const modifiers = stateModifiers(current, params);
     if (travelMs > 0) {
-      current = advanceTime(applyBrood(current, travelMs, params), travelMs);
+      current = advanceTime(applyBrood(current, travelMs, params, modifiers), travelMs);
     }
     restMs -= travelMs;
     const remainingMs = travel.remainingMs - travelMs;
     if (remainingMs > 0) {
       current = { ...current, travel: { ...travel, remainingMs } };
     } else {
-      const arrived = arrive(current, params);
+      const arrived = arrive(current, params, modifiers);
       current = arrived.state;
       events.push(...arrived.events);
     }
   }
   if (restMs > 0 && current.travel === null) {
     // (1) und (2); frisch gesammelte Nahrung steht der Brut sofort zur Verfügung.
-    const collected = collectStep(current, restMs, current.time.played, params);
+    const modifiers = stateModifiers(current, params);
+    const collected = collectStep(current, restMs, current.time.played, params, modifiers);
     events.push(...collected.events);
-    current = advanceTime(applyBrood(collected.state, restMs, params), restMs);
+    current = advanceTime(applyBrood(collected.state, restMs, params, modifiers), restMs);
   }
-  const auto = applyAutoMove(current, params);
+  const auto = applyAutoMove(current, params, stateModifiers(current, params));
   events.push(...auto.events);
   return { state: auto.state, events: events.length > 0 ? events : NO_EVENTS };
 }

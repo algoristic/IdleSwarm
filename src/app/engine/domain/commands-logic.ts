@@ -10,6 +10,7 @@ import { buyUnit } from '@app/swarm/domain/units-logic';
 
 import type { GameEvent, StepResult } from './models/game-event.model';
 import type { GameState } from './models/game-state.model';
+import { stateModifiers } from './modifiers-logic';
 
 /** Kommando ohne Wirkung. */
 export interface NoopCommand {
@@ -96,13 +97,15 @@ export function applyCommand(
     case 'buy':
       return withoutEvents(buyUnit(state, cmd.unit, params));
     case 'sacrificeDrones':
-      return withoutEvents(sacrificeDrones(state, cmd.count, params));
+      return withoutEvents(
+        sacrificeDrones(state, cmd.count, params, stateModifiers(state, params)),
+      );
     case 'convertDronesToQueen':
-      return withoutEvents(convertDronesToQueen(state, params));
+      return withoutEvents(convertDronesToQueen(state, params, stateModifiers(state, params)));
     case 'setTransportPriority':
       return withoutEvents(setTransportPriority(state, cmd.priority));
     case 'depart':
-      return depart(state, cmd.target, false, params);
+      return depart(state, cmd.target, false, params, stateModifiers(state, params));
     case 'setAutoMove': {
       const { enabled, strategy, threshold } = cmd;
       return withoutEvents(setAutoMove(state, { enabled, strategy, threshold }, params));

@@ -36,6 +36,7 @@ const PARAM_LIMITS: Partial<Readonly<Record<ParamKey, ParamLimit>>> = {
   siteSpread: SHARE_LIMIT,
   sacrificeYield: SHARE_LIMIT,
   minSacrificeLoss: SHARE_LIMIT,
+  fallenRecycleYield: SHARE_LIMIT,
   balancedMaxLossShare: SHARE_LIMIT,
   defaultAutoThreshold: SHARE_LIMIT,
   maxAutoThreshold: SHARE_LIMIT,

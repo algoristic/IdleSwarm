@@ -1,5 +1,7 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
-import { swarmRange } from '@app/balance/domain/formulas';
+import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
+import { recycledFood, swarmRange } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
 import { planTransport } from '@app/swarm/domain/transport-logic';
@@ -30,6 +32,7 @@ export function departureBlocker(
   state: GameState,
   target: number,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): DepartureBlocker | null {
   const { candidates, position } = state.map;
   if (state.travel !== null) {
@@ -39,14 +42,20 @@ export function departureBlocker(
     return 'unknown-target';
   }
   const candidate = candidates[target];
-  if (candidateInfo(candidate, position, swarmRange(params), params).status !== 'in-range') {
+  const range = swarmRange(params, modifiers);
+  if (candidateInfo(candidate, position, range, params, modifiers).status !== 'in-range') {
     return 'out-of-range';
   }
-  return assessTarget(state, candidate, params).capturable ? null : 'too-strong';
+  return assessTarget(state, candidate, params, modifiers).capturable ? null : 'too-strong';
 }
 
-export function canDepart(state: GameState, target: number, params: BalanceParams): boolean {
-  return departureBlocker(state, target, params) === null;
+export function canDepart(
+  state: GameState,
+  target: number,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): boolean {
+  return departureBlocker(state, target, params, modifiers) === null;
 }
 
 /**
@@ -58,14 +67,16 @@ export function depart(
   target: number,
   auto: boolean,
   params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
 ): SiteResult {
-  if (!canDepart(state, target, params)) {
+  if (!canDepart(state, target, params, modifiers)) {
     return { state, events: NO_EVENTS };
   }
   const { map, site, units, priority } = state;
   const candidate = map.candidates[target];
-  const { distance, travelMs } = candidateInfo(candidate, map.position, swarmRange(params), params);
-  const { carried, leftBehind } = planTransport(units, priority, params);
+  const range = swarmRange(params, modifiers);
+  const { distance, travelMs } = candidateInfo(candidate, map.position, range, params, modifiers);
+  const { carried, leftBehind } = planTransport(units, priority, params, modifiers);
   return {
     state: {
       ...state,
@@ -88,30 +99,43 @@ export function depart(
 }
 
 /**
- * Ankunft am Reiseziel (Game-Design §4.11): Kampf mit den vorhandenen Soldaten, DNA, neue
- * Futterstelle mit vollem Vorrat, Route, `z + 1` und neue Kandidaten um die neue Position. Das
- * Ereignis trägt die Spielzeit des Zustands. Ohne Reise kommt derselbe Zustand zurück.
+ * Ankunft am Reiseziel (Game-Design §4.11): Kampf mit den vorhandenen Soldaten, DNA, Autophagie
+ * (§4.13), neue Futterstelle mit vollem Vorrat, Route, `z + 1` und neue Kandidaten um die neue
+ * Position. Das Ereignis trägt die Spielzeit des Zustands. Ohne Reise kommt derselbe Zustand zurück.
+ *
+ * `modifiers` gelten bei der Ankunft, also noch während der Reise: Bedingte Effekte zählen nicht.
+ * Bedingungen gibt es in Ära I nur beim Sammeln, Kampf und Reichweite betreffen sie nicht.
  */
-export function arrive(state: GameState, params: BalanceParams): SiteResult {
+export function arrive(
+  state: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers = NEUTRAL_MODIFIERS,
+): SiteResult {
   const { travel, map, res, units } = state;
   if (travel === null) {
     return { state, events: NO_EVENTS };
   }
   const { target } = travel;
   // Dieselbe Rechnung wie `applyCapture`; der Verlust ist auf die vorhandenen Soldaten begrenzt.
-  const combat = assessCombat(units.soldiers, target.defense, params);
+  const combat = assessCombat(units.soldiers, target.defense, params, modifiers);
   const losses = combat.losses.min(units.soldiers);
+  const recycled = recycledFood(losses, params, modifiers);
   const moves = map.moves + 1;
   const position = { ...target.position };
+  const range = swarmRange(params, modifiers);
   const generated = generateCandidates(
-    { origin: position, moves, range: swarmRange(params), rngState: state.rngState },
+    { origin: position, moves, range, rngState: state.rngState },
     params,
   );
+  const food = recycled.isZero() ? res.food : res.food.add(recycled);
   return {
     state: {
       ...state,
       rngState: generated.rngState,
-      res: combat.dna.isZero() ? res : { ...res, dna: res.dna.add(combat.dna) },
+      res:
+        combat.dna.isZero() && food === res.food
+          ? res
+          : { ...res, food, dna: res.dna.add(combat.dna) },
       units: losses.isZero() ? units : { ...units, soldiers: units.soldiers.sub(losses) },
       site: { type: target.type, size: target.size, stock: target.size },
       map: {

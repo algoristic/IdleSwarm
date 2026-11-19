@@ -6,6 +6,7 @@ import {
   netFoodPerSecond,
   unitPrice,
 } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { Num } from '@app/shared/util/num/num';
 import type { StrategyId } from '@app/site/domain/models/auto-move.model';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
@@ -14,6 +15,7 @@ import type { Units } from '@app/swarm/domain/models/units.model';
 
 import { apply, Command } from './commands-logic';
 import type { GameState } from './models/game-state.model';
+import { stateModifiers } from './modifiers-logic';
 
 /** Obergrenze je Entscheidung; hält Läufe mit Preis 0 aus `params` endlich. */
 const MAX_BUYS_PER_DECISION = 1000;
@@ -26,6 +28,8 @@ export interface BotView {
   readonly timeMs: number;
   readonly params: BalanceParams;
   readonly prices: UnitPrices;
+  /** Modifikatoren des Zustands (Game-Design §4.13). */
+  readonly modifiers: Modifiers;
   /** Nahrung/s aus Grundertrag und Drohnen. */
   readonly foodPerSecond: Num;
   /** Nahrung/s gesamt minus Brutkosten bei voller Eierrate. */
@@ -75,16 +79,21 @@ class LazyBotView implements BotView {
     return this.pricesFor(this.state.bought);
   }
 
+  get modifiers(): Modifiers {
+    return stateModifiers(this.state, this.params);
+  }
+
   get foodPerSecond(): Num {
-    return foodPerSecond(this.state.units, this.state.site.stock, this.params);
+    return foodPerSecond(this.state.units, this.state.site.stock, this.params, this.modifiers);
   }
 
   get netFoodPerSecond(): Num {
-    return netFoodPerSecond(this.state.units, this.state.site.stock, this.params);
+    const { units, site } = this.state;
+    return netFoodPerSecond(units, site.stock, this.params, this.modifiers);
   }
 
   get eggsPerMinute(): Num {
-    return eggsPerMinute(this.state.units, this.params);
+    return eggsPerMinute(this.state.units, this.params, this.modifiers);
   }
 
   forState(state: GameState): BotView {

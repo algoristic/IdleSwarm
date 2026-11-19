@@ -16,8 +16,10 @@ import {
   totalAttack,
   unitPrice,
 } from '@app/balance/domain/formulas';
+import type { Modifiers } from '@app/balance/domain/models/effect.model';
 import type { LogEntry } from '@app/engine/data-access/game-store/game-store-service.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
+import { stateModifiers } from '@app/engine/domain/modifiers-logic';
 import { isValidTimestamp } from '@app/shared/util/format/date-format';
 import {
   barPercent,
@@ -41,18 +43,19 @@ export const BUY_ORDER: readonly UnitType[] = ['drones', 'soldiers', 'queens'];
 export function toHudView(source: HudSource, params: BalanceParams): HudView {
   const { state } = source;
   const { units, site } = state;
+  const modifiers = stateModifiers(state, params);
   return {
     food: state.res.food,
     dna: state.res.dna,
-    foodRate: foodPerSecond(units, site.stock, params),
+    foodRate: foodPerSecond(units, site.stock, params, modifiers),
     baseRate: baseFoodPerSecond(site.stock, params),
-    droneRate: droneFoodPerSecond(units, site.stock, params),
-    eggsPerMinute: eggsPerMinute(units, params),
-    attack: totalAttack(units, params),
-    site: toSiteView(state, params),
-    space: toSpaceView(state, params),
-    units: BUY_ORDER.map((unit) => toUnitView(state, unit, params)),
-    sacrifice: toSacrificeView(state, params),
+    droneRate: droneFoodPerSecond(units, site.stock, params, modifiers),
+    eggsPerMinute: eggsPerMinute(units, params, modifiers),
+    attack: totalAttack(units, params, modifiers),
+    site: toSiteView(state, params, modifiers),
+    space: toSpaceView(state, params, modifiers),
+    units: BUY_ORDER.map((unit) => toUnitView(state, unit, params, modifiers)),
+    sacrifice: toSacrificeView(state, params, modifiers),
     lastSavedAt:
       source.lastSavedAt !== null && isValidTimestamp(source.lastSavedAt)
         ? source.lastSavedAt
@@ -61,7 +64,12 @@ export function toHudView(source: HudSource, params: BalanceParams): HudView {
   };
 }
 
-function toUnitView(state: GameState, unit: UnitType, params: BalanceParams): UnitView {
+function toUnitView(
+  state: GameState,
+  unit: UnitType,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): UnitView {
   const affordable = canBuy(state, unit, params);
   const rounded = roundUpForDisplay(unitPrice(unit, state.bought, params));
   // Aufgerundet verlangte ein kaufbarer Knopf bei 10,8 Nahrung und Preis 10,7 sichtbar 11 von 10.
@@ -71,7 +79,7 @@ function toUnitView(state: GameState, unit: UnitType, params: BalanceParams): Un
     count: state.units[unit],
     price,
     affordable,
-    queenEffect: unit === 'queens' ? nextQueenEffect(params) : null,
+    queenEffect: unit === 'queens' ? nextQueenEffect(params, modifiers) : null,
   };
 }
 
@@ -80,15 +88,19 @@ export function toLogView(log: readonly LogEntry[]): readonly LogEntryView[] {
   return [...log].reverse();
 }
 
-function toSiteView({ units, site, travel }: GameState, params: BalanceParams): SiteView {
+function toSiteView(
+  { units, site, travel }: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): SiteView {
   const { stock, size } = site;
   return {
     type: site.type,
-    rate: foodPerSecond(units, stock, params),
+    rate: foodPerSecond(units, stock, params, modifiers),
     stock,
     size,
     stockPercent: size.isZero() ? 0 : barPercent(stock.div(size)),
-    secondsLeft: siteSecondsLeft(units, stock, params),
+    secondsLeft: siteSecondsLeft(units, stock, params, modifiers),
     empty: stock.isZero(),
     travel:
       travel === null
@@ -100,26 +112,30 @@ function toSiteView({ units, site, travel }: GameState, params: BalanceParams): 
   };
 }
 
-function toSacrificeView({ units }: GameState, params: BalanceParams): SacrificeView {
+function toSacrificeView(
+  { units }: GameState,
+  params: BalanceParams,
+  modifiers: Modifiers,
+): SacrificeView {
   return {
     maxCount: units.drones.floor().toNumber(),
-    foodPerDrone: sacrificeFood(Num.ONE, params),
-    lossPercent: sacrificeLossShare(params) * 100,
+    foodPerDrone: sacrificeFood(Num.ONE, params, modifiers),
+    lossPercent: sacrificeLossShare(params, modifiers) * 100,
   };
 }
 
-function toSpaceView({ units }: GameState, params: BalanceParams): SpaceView {
-  const usage = spaceUsage(units, params);
+function toSpaceView({ units }: GameState, params: BalanceParams, modifiers: Modifiers): SpaceView {
+  const usage = spaceUsage(units, params, modifiers);
   const used = spaceUsed(units, params);
-  const available = spaceAvailable(units, params);
+  const available = spaceAvailable(units, params, modifiers);
   return {
     used,
     available,
     usagePercent: usage === null ? null : usage.mul(100),
     // Ohne verfügbaren Platz ist jede belegte Einheit schon zu viel.
     barPercent: usage !== null ? barPercent(usage) : used.isZero() ? 0 : 100,
-    warning: isSpaceWarning(units, params),
-    overfull: isSpaceOverfull(units, params),
+    warning: isSpaceWarning(units, params, modifiers),
+    overfull: isSpaceOverfull(units, params, modifiers),
   };
 }
 
