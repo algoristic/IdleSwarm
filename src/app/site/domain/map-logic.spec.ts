@@ -33,7 +33,7 @@ describe('candidateInfo', () => {
   it('leitet DNA und Fundchance ab', () => {
     const info = candidateInfo(candidate(3, 0, 26), { x: 0, y: 0 }, 5, DEFAULT_BALANCE);
     expect(info.dna.toNumber()).toBeCloseTo(13.55, 2);
-    expect(info.findChance).toBe(0.1);
+    expect(info.findChance).toBe(0.2);
     expect(info.travelMs).toBe(30_000);
   });
 

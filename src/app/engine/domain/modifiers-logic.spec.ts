@@ -98,6 +98,44 @@ describe('stateModifiers (Game-Design §4.13)', () => {
     expect(modifierFactor(stateModifiers(traveling, params).collectRate)).toBe(1);
   });
 
+  it('nimmt Badges vollständiger Sets und laufende Buffs auf (Game-Design §4.16, §4.17)', () => {
+    const badge: GameState = {
+      ...initial,
+      finds: { ...initial.finds, collected: { pumice: 1, 'foam-ball': 1, 'clay-bead': 1 } },
+    };
+    expect(modifierFactor(stateModifiers(badge, params).findChance)).toBeCloseTo(1.1, 12);
+    const buffed: GameState = {
+      ...badge,
+      time: { ...badge.time, played: 1000 },
+      finds: { ...badge.finds, buffs: [{ id: 'warm-current', expiresAtMs: 1001 }] },
+    };
+    expect(modifierFactor(stateModifiers(buffed, params).broodRate)).toBe(1.5);
+    // Buffs wirken auch unterwegs, nach dem Ablauf nicht mehr.
+    const traveling: GameState = {
+      ...buffed,
+      travel: { target: initial.map.candidates[0], remainingMs: 1000 },
+    };
+    expect(modifierFactor(stateModifiers(traveling, params).broodRate)).toBe(1.5);
+    const expired: GameState = { ...buffed, time: { ...buffed.time, played: 1001 } };
+    expect(modifierFactor(stateModifiers(expired, params).broodRate)).toBe(1);
+    expect(stateEffects(expired, params)).toEqual([
+      { target: 'findChance', op: 'add', value: 0.1 },
+    ]);
+  });
+
+  it('schaltet einzigartige Adaptionen über die gefundenen Fragmente frei', () => {
+    const before: GameState = {
+      ...initial,
+      finds: { ...initial.finds, collected: { 'sulfur-pearl': 4 } },
+    };
+    const after: GameState = {
+      ...initial,
+      finds: { ...initial.finds, collected: { 'sulfur-pearl': 5 } },
+    };
+    expect(attackPerSoldier(params, stateModifiers(before, params))).toBe(1);
+    expect(attackPerSoldier(params, stateModifiers(after, params))).toBe(2);
+  });
+
   it('deckt mit Chemotaxis (R 5 → 6) sofort Ziele auf, auch während einer Reise', () => {
     const candidate = { ...initial.map.candidates[0], position: { x: 5.5, y: 0 } };
     const traveling: GameState = {

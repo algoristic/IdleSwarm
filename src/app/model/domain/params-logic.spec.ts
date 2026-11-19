@@ -87,6 +87,20 @@ describe('paramLimit', () => {
     expect(paramLimit('genomeCostGrowth')).toEqual({ min: 0 });
   });
 
+  it('begrenzt Fund- und Badge-Werte (Game-Design §4.16, §4.17)', () => {
+    expect(paramLimit('findHarvestDraws')).toEqual({ min: 0, integer: true });
+    expect(paramLimit('findSpread')).toEqual({ min: 0, max: 1 });
+    expect(paramLimit('nutrientBubbleShare')).toEqual({ min: 0, max: 1 });
+    expect(paramLimit('foreignDnaFactor')).toEqual({ min: 0 });
+    expect(paramLimit('foreignDnaWeight')).toEqual({ min: 0 });
+    expect(paramLimit('pumiceWeight')).toEqual({ min: 0 });
+    expect(paramLimit('planktonBloomFactor')).toEqual({ min: 1 });
+    expect(paramLimit('warmCurrentSeconds')).toEqual({ min: 0 });
+    expect(paramLimit('matRelicsBadgeEffect')).toEqual({ min: 0 });
+    expect(paramLimit('whaleRelicsBadgeEffect')).toEqual({ min: 0, max: 1 });
+    expect(paramLimit('ventFindChance')).toEqual({ min: 0, max: 1 });
+  });
+
   it('wird von allen Standardwerten erfüllt', () => {
     expect(paramFields(DEFAULT_BALANCE, {}).filter((field) => field.value === null)).toEqual([]);
   });

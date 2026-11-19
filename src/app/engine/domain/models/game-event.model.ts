@@ -1,10 +1,11 @@
+import type { FindsEvent } from '@app/finds/domain/models/finds-event.model';
 import type { GenomeEvent } from '@app/genome/domain/models/genome-event.model';
 import type { SiteEvent } from '@app/site/domain/models/site-event.model';
 
 import type { GameState } from './game-state.model';
 
 /** Ereignisse fürs Log: Codes mit IDs und Rohwerten, die Texte setzt die Oberfläche. */
-export type GameEvent = SiteEvent | GenomeEvent;
+export type GameEvent = SiteEvent | GenomeEvent | FindsEvent;
 
 export type GameEventType = GameEvent['type'];
 

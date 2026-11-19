@@ -90,4 +90,67 @@ describe('eventLogText', () => {
       eventLogText({ type: 'evolved', playedMs: 0, node: 'chemotaxis', cost: Num.from(253) }),
     ).toBe('Adaption entwickelt: Chemotaxis · −253 DNA');
   });
+
+  describe('Funde', () => {
+    const found = (change: Partial<Extract<GameEvent, { type: 'found' }>> = {}): GameEvent => ({
+      type: 'found',
+      playedMs: 0,
+      siteType: 'vent',
+      trigger: 'arrival',
+      threshold: null,
+      entry: 'foreign-dna',
+      kind: 'dna',
+      replaced: null,
+      amount: null,
+      buffExpiresAtMs: null,
+      fragment: null,
+      unlocked: null,
+      badge: null,
+      ...change,
+    });
+
+    it('meldet DNA und Nahrung abgerundet mit Futterstelle und Auslöser', () => {
+      expect(eventLogText(found({ amount: Num.from(13.97) }))).toBe(
+        'Fund: Fremde DNA · +13 DNA · Hydrothermaler Schlot, Einnahme',
+      );
+      expect(
+        eventLogText(
+          found({
+            entry: 'nutrient-bubble',
+            kind: 'food',
+            amount: Num.from(1000.6),
+            trigger: 'harvest',
+            threshold: 2,
+          }),
+        ),
+      ).toBe('Fund: Nährstoffblase · +1.000 Nahrung · Hydrothermaler Schlot, Abbau-Schwelle 2');
+    });
+
+    it('nennt beim Ersatz den ursprünglichen Eintrag', () => {
+      expect(eventLogText(found({ replaced: 'pyrite', amount: Num.from(11) }))).toBe(
+        'Fund: Fremde DNA statt Pyrit · +11 DNA · Hydrothermaler Schlot, Einnahme',
+      );
+    });
+
+    it('meldet Buff-Ablauf, Fragmentfortschritt, Freischaltung und Badge', () => {
+      expect(
+        eventLogText(found({ entry: 'plankton-bloom', kind: 'buff', buffExpiresAtMs: 660_000 })),
+      ).toBe('Fund: Planktonblüte · wirkt bis 11 min · Hydrothermaler Schlot, Einnahme');
+      expect(
+        eventLogText(
+          found({
+            entry: 'thermophile',
+            kind: 'fragment',
+            fragment: { found: 3, required: 3 },
+            unlocked: 'thermosynthesis',
+          }),
+        ),
+      ).toBe(
+        'Fund: Thermophile Mikrobe · 3 / 3 · Thermosynthese freigeschaltet · Hydrothermaler Schlot, Einnahme',
+      );
+      expect(
+        eventLogText(found({ entry: 'magnetite', kind: 'collectible', badge: 'deep-stones' })),
+      ).toBe('Fund: Magnetit · Badge Steinkundler erhalten · Hydrothermaler Schlot, Einnahme');
+    });
+  });
 });

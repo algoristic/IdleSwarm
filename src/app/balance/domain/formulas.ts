@@ -1,4 +1,11 @@
 import type {
+  BuffId,
+  CollectionSetId,
+  FindEntryId,
+  NUTRIENT_BUBBLE,
+  FOREIGN_DNA,
+} from '@app/finds/domain/models/finds.model';
+import type {
   GenomeNodeId,
   GenomeTier,
   UniqueAdaptationId,
@@ -111,6 +118,62 @@ export const UNIQUE_ADAPTATION_PARAMS: Readonly<
   'algal-symbiosis': { effect: 'algalSymbiosisEffect', fragments: 'algalSymbiosisFragments' },
   'crystal-sense': { effect: 'crystalSenseEffect', fragments: 'crystalSenseFragments' },
   'sulfur-shell': { effect: 'sulfurShellEffect', fragments: 'sulfurShellFragments' },
+};
+
+type ParamKey = keyof BalanceParams;
+
+/** Schlüssel je Eintrag der Fundtabelle: das Gewicht, dazu je Fundart die Menge bzw. der Buff. */
+export type FindEntryParamKeys<Id extends FindEntryId = FindEntryId> = Id extends typeof FOREIGN_DNA
+  ? Readonly<Record<'weight' | 'dnaFactor', ParamKey>>
+  : Id extends typeof NUTRIENT_BUBBLE
+    ? Readonly<Record<'weight' | 'foodShare', ParamKey>>
+    : Id extends BuffId
+      ? Readonly<Record<'weight' | 'factor' | 'seconds', ParamKey>>
+      : Readonly<Record<'weight', ParamKey>>;
+
+/**
+ * Parameter je Eintrag der Fundtabelle (Game-Design §2.3, Parameter je ID, §4.16): Gewicht
+ * `<id>Weight`; für Fremde DNA `φ_D`, für die Nährstoffblase `φ_N`, für Buffs `μ_B` und `T_B`.
+ */
+export const FIND_ENTRY_PARAMS: { readonly [Id in FindEntryId]: FindEntryParamKeys<Id> } = {
+  'foreign-dna': { weight: 'foreignDnaWeight', dnaFactor: 'foreignDnaFactor' },
+  'nutrient-bubble': { weight: 'nutrientBubbleWeight', foodShare: 'nutrientBubbleShare' },
+  'plankton-bloom': {
+    weight: 'planktonBloomWeight',
+    factor: 'planktonBloomFactor',
+    seconds: 'planktonBloomSeconds',
+  },
+  'warm-current': {
+    weight: 'warmCurrentWeight',
+    factor: 'warmCurrentFactor',
+    seconds: 'warmCurrentSeconds',
+  },
+  thermophile: { weight: 'thermophileWeight' },
+  'sulfur-pearl': { weight: 'sulfurPearlWeight' },
+  chloroplast: { weight: 'chloroplastWeight' },
+  'primal-crystal': { weight: 'primalCrystalWeight' },
+  stromatolite: { weight: 'stromatoliteWeight' },
+  'biofilm-disc': { weight: 'biofilmDiscWeight' },
+  'green-pearl': { weight: 'greenPearlWeight' },
+  pyrite: { weight: 'pyriteWeight' },
+  'basalt-pebble': { weight: 'basaltPebbleWeight' },
+  magnetite: { weight: 'magnetiteWeight' },
+  'bone-splinter': { weight: 'boneSplinterWeight' },
+  'fat-pearl': { weight: 'fatPearlWeight' },
+  'tooth-scale': { weight: 'toothScaleWeight' },
+  pumice: { weight: 'pumiceWeight' },
+  'foam-ball': { weight: 'foamBallWeight' },
+  'clay-bead': { weight: 'clayBeadWeight' },
+};
+
+export type BadgeParamKeys = Readonly<Record<'effect', ParamKey>>;
+
+/** Parameter je Badge (Game-Design §2.3, Parameter je ID, §4.17): Bonus `<setId>BadgeEffect`. */
+export const BADGE_PARAMS: Readonly<Record<CollectionSetId, BadgeParamKeys>> = {
+  'mat-relics': { effect: 'matRelicsBadgeEffect' },
+  'deep-stones': { effect: 'deepStonesBadgeEffect' },
+  'whale-relics': { effect: 'whaleRelicsBadgeEffect' },
+  drift: { effect: 'driftBadgeEffect' },
 };
 
 /**
@@ -692,6 +755,79 @@ export function weightedIndex(random: number, weights: readonly number[]): numbe
 /** Zufallsfaktor `u = 1 − σ + 2σ · r` (Game-Design §4.6). */
 export function spreadFactor(random: number, params: BalanceParams): number {
   return 1 - params.siteSpread + 2 * params.siteSpread * random;
+}
+
+/** Ziehungsgewicht `<id>Weight` eines Eintrags der Fundtabelle (Game-Design §4.16). */
+export function findEntryWeight(id: FindEntryId, params: BalanceParams): number {
+  return params[FIND_ENTRY_PARAMS[id].weight];
+}
+
+/** Zufallsfaktor der Fundmengen `u_F = 1 − σ_F + 2σ_F · r` (Game-Design §4.16). */
+export function findSpreadFactor(random: number, params: BalanceParams): number {
+  return 1 - params.findSpread + 2 * params.findSpread * random;
+}
+
+/**
+ * DNA eines Funds `φ_D · d_0 · (b_0 · γ_B^z)^δ · u_F`, wie die DNA eines Schlots in Distanz 1 beim
+ * aktuellen Zugzähler `z`, ohne Rundung (Game-Design §4.16).
+ */
+export function findDna(moves: number, spread: number, params: BalanceParams): Num {
+  return Num.from(params.siteDefenseGrowth)
+    .pow(moves)
+    .mul(params.siteDefenseBase)
+    .pow(params.dnaExponent)
+    .mul(params.foreignDnaFactor * params.dnaBase * spread);
+}
+
+/** Nahrung eines Funds `φ_N · G · u_F` mit der Größe der aktuellen Futterstelle (Game-Design §4.16). */
+export function findFood(size: Num, spread: number, params: BalanceParams): Num {
+  return size.mul(params.nutrientBubbleShare * spread);
+}
+
+/**
+ * Neuer Ablauf eines Buffs `max(Ablauf_alt, t) + T_B` in Spielzeit (ms); ein weiterer Fund
+ * verlängert einen laufenden Buff (Game-Design §4.16). `previousMs` ist `null` ohne Eintrag.
+ */
+export function buffExpiresAtMs(
+  id: BuffId,
+  previousMs: number | null,
+  playedMs: number,
+  params: BalanceParams,
+): number {
+  const start = previousMs === null ? playedMs : Math.max(previousMs, playedMs);
+  return start + params[FIND_ENTRY_PARAMS[id].seconds] * MS_PER_SECOND;
+}
+
+/** Faktor `μ_B` eines Buffs (Game-Design §4.16). */
+export function buffFactor(id: BuffId, params: BalanceParams): number {
+  return params[FIND_ENTRY_PARAMS[id].factor];
+}
+
+/** Zahl der Abbau-Schwellen `n_A` je Futterstelle; als ganze Zahl verwendet (Game-Design §4.16). */
+export function harvestDrawCount(params: BalanceParams): number {
+  return Math.max(0, Math.floor(params.findHarvestDraws));
+}
+
+/**
+ * Vorrat an der Abbau-Schwelle `j`: `G · (n_A − j) / n_A`, also abgebauter Anteil `j / n_A`; bei
+ * `j = n_A` genau 0 (Game-Design §4.16).
+ */
+export function harvestThresholdStock(size: Num, threshold: number, params: BalanceParams): Num {
+  const count = harvestDrawCount(params);
+  return threshold >= count ? Num.ZERO : size.mul((count - threshold) / count);
+}
+
+/**
+ * Erreichte Abbau-Schwellen der Futterstelle: größtes `j ≤ n_A` mit `V ≤ G · (n_A − j) / n_A`, 0
+ * ohne. Abgeleitet aus `V` und `G`, nicht gespeichert (Game-Design §4.16, §5.1).
+ */
+export function reachedHarvestThresholds(size: Num, stock: Num, params: BalanceParams): number {
+  const count = harvestDrawCount(params);
+  let reached = 0;
+  while (reached < count && stock.lte(harvestThresholdStock(size, reached + 1, params))) {
+    reached++;
+  }
+  return reached;
 }
 
 /** Distanz eines Kandidaten `d = d_min + (d_max − d_min) · r` (Game-Design §4.6). */

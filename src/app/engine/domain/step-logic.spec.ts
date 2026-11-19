@@ -176,8 +176,11 @@ describe('step', () => {
       state = deepFreeze(result.state);
     }
     expect(state.time).toEqual({ now: NOW + 3_600_000, lastSaved: NOW, played: 3_600_000 });
-    // Die Brut lässt die Drohnen wachsen; ohne Auto-Weiterziehen bleibt es beim leeren Vorrat.
-    expect(events.map((event) => event.type)).toEqual(['siteDepleted']);
+    // Die Brut lässt die Drohnen wachsen; ohne Auto-Weiterziehen bleibt es beim leeren Vorrat. Die
+    // Funde an den Abbau-Schwellen ziehen aus dem eigenen Strom, der Generator-RNG bleibt.
+    expect(events.filter((event) => event.type !== 'found').map((event) => event.type)).toEqual([
+      'siteDepleted',
+    ]);
     expect(state.rngState).toBe(input.rngState);
   });
 });
@@ -391,10 +394,12 @@ describe('step mit Weiterziehen', () => {
       expect(step(withAuto(500.2, { threshold: 0.5 }), TICK_MS, params).state.travel).toBeNull();
       const { state, events } = step(withAuto(500.1, { threshold: 0.5 }), TICK_MS, params);
       expect(state.travel?.target).toBe(EXAMPLE_3[3]);
-      const [departure] = events;
-      expect(departure.type === 'departed' && departure.forfeitedStock.toNumber()).toBeCloseTo(
+      const departure = events.find((event) => event.type === 'departed');
+      // Der Schritt teilt an der Abbau-Schwelle 50 % (V = 500): Danach sammeln auch die im ersten
+      // Teil geschlüpften Drohnen, darum etwas mehr als 0,15.
+      expect(departure?.type === 'departed' && departure.forfeitedStock.toNumber()).toBeCloseTo(
         500.1 - 0.15,
-        10,
+        4,
       );
     });
 
@@ -410,5 +415,140 @@ describe('step mit Weiterziehen', () => {
       expect(events.map((event) => event.type)).toEqual(['arrived']);
       expect(state.travel).toBeNull();
     });
+  });
+});
+
+describe('step mit Funden (Game-Design §4.16)', () => {
+  /** Ohne Königin keine Brut: Die Abbaurate ist dann über den ganzen Lauf konstant. */
+  const params: BalanceParams = {
+    ...DEFAULT_BALANCE,
+    startQueens: 0,
+    ventFindChance: 1,
+    algalMatFindChance: 1,
+    planktonBloomWeight: 200,
+    planktonBloomSeconds: 20,
+  };
+
+  function harvesting(): GameState {
+    const base = createInitialState({ seed: 'funde', now: NOW }, params);
+    return deepFreeze({
+      ...base,
+      units: { ...base.units, drones: Num.from(10) },
+      site: { ...base.site, size: Num.from(1000), stock: Num.from(1000) },
+    });
+  }
+
+  function run(input: GameState, totalMs: number, dtMs: number) {
+    let state = input;
+    const events: GameEvent[] = [];
+    for (let t = 0; t < totalMs; t += dtMs) {
+      const result = step(state, Math.min(dtMs, totalMs - t), params);
+      state = deepFreeze(result.state);
+      events.push(...result.events);
+    }
+    return { state, events };
+  }
+
+  const summary = (events: readonly GameEvent[]) =>
+    events.map((event) =>
+      event.type === 'found'
+        ? { type: event.type, entry: event.entry, threshold: event.threshold }
+        : { type: event.type },
+    );
+
+  it('zieht an jeder Abbau-Schwelle in aufsteigender Reihenfolge, an 100 % nach siteDepleted', () => {
+    const { events } = step(harvesting(), 400_000, params);
+    expect(summary(events).map((event) => event.type)).toEqual([
+      'found',
+      'found',
+      'found',
+      'siteDepleted',
+      'found',
+    ]);
+    const thresholds = events.flatMap((event) => (event.type === 'found' ? [event.threshold] : []));
+    expect(thresholds).toEqual([1, 2, 3, 4]);
+    // Der erste Fund jedes Spiels ist DNA.
+    expect(events[0]).toMatchObject({ type: 'found', entry: 'foreign-dna', trigger: 'harvest' });
+  });
+
+  it('liefert mit einem großen Schritt dieselben Funde und Zustände wie mit vielen kleinen', () => {
+    const big = step(harvesting(), 400_000, params);
+    const small = run(harvesting(), 400_000, TICK_MS);
+    expect(summary(small.events)).toEqual(summary(big.events));
+    expect(summary(big.events).filter((event) => event.type === 'found').length).toBe(4);
+    // Planktonblüte (×1,5 auf das Sammeln der Drohnen) verkürzt die Abbauzeit, ihr Ablauf teilt.
+    expect(
+      big.events.some((event) => event.type === 'found' && event.entry === 'plankton-bloom'),
+    ).toBe(true);
+    big.events.forEach((event, index) => {
+      expect(small.events[index].playedMs).toBeCloseTo(event.playedMs, 6);
+    });
+    const { finds } = big.state;
+    expect(small.state.finds.rngState).toBe(finds.rngState);
+    expect(small.state.finds.total).toBe(finds.total);
+    expect(small.state.finds.collected).toEqual(finds.collected);
+    expect(small.state.finds.buffs).toEqual(finds.buffs);
+    expect(small.state.res.food.toNumber()).toBeCloseTo(big.state.res.food.toNumber(), 6);
+    expect(small.state.res.dna.toNumber()).toBeCloseTo(big.state.res.dna.toNumber(), 10);
+    expect(small.state.time).toEqual(big.state.time);
+    expect(small.state.rngState).toBe(harvesting().rngState);
+  });
+
+  it('setzt einen Buff, wirkt bis zum Ablauf und entfernt ihn an der Schrittgrenze', () => {
+    const base = harvesting();
+    // Ohne weitere Funde: Vorrat groß, Schwellen weit weg.
+    const input = deepFreeze({
+      ...base,
+      site: { ...base.site, size: Num.from(1e9), stock: Num.from(1e9) },
+      finds: { ...base.finds, buffs: [{ id: 'plankton-bloom' as const, expiresAtMs: 150 }] },
+    });
+    // 1,5 + 10 · 0,2 · 1,5 = 4,5 Nahrung/s bis 150 ms, danach 3,5 Nahrung/s.
+    const first = step(input, TICK_MS, params);
+    expect(first.state.finds.buffs).toEqual([{ id: 'plankton-bloom', expiresAtMs: 150 }]);
+    const second = step(first.state, TICK_MS, params);
+    expect(second.state.finds.buffs).toEqual([]);
+    const gained = second.state.res.food.sub(input.res.food).toNumber();
+    expect(gained).toBeCloseTo(4.5 * 0.15 + 3.5 * 0.05, 10);
+    // Ein Schritt über den Ablauf hinweg rechnet genauso.
+    const whole = step(input, 2 * TICK_MS, params);
+    expect(whole.state.finds.buffs).toEqual([]);
+    expect(whole.state.res.food.toNumber()).toBeCloseTo(second.state.res.food.toNumber(), 10);
+    // Ein abgelaufener geladener Eintrag verschwindet im nächsten Schritt.
+    const loaded = deepFreeze({
+      ...input,
+      finds: { ...input.finds, buffs: [{ id: 'warm-current' as const, expiresAtMs: 0 }] },
+    });
+    expect(step(loaded, TICK_MS, params).state.finds.buffs).toEqual([]);
+  });
+
+  it('zieht bei der Ankunft nach arrived, für die neue Futterstelle', () => {
+    const base = harvesting();
+    const target = base.map.candidates.findIndex((candidate) => candidate.type === 'algal-mat');
+    const departedState = applyCommand(base, { type: 'depart', target }, params).state;
+    const travelMs = departedState.travel?.remainingMs ?? 0;
+    const { state, events } = step(departedState, travelMs + TICK_MS, params);
+    expect(events.map((event) => event.type).slice(0, 2)).toEqual(['arrived', 'found']);
+    expect(events[1]).toMatchObject({
+      playedMs: events[0].playedMs,
+      siteType: 'algal-mat',
+      trigger: 'arrival',
+      threshold: null,
+      entry: 'foreign-dna',
+    });
+    // DNA mit z = 1 wie ein Schlot in Distanz 1: (20 · 1,35)^0,8 · u_F
+    const found = events[1];
+    const amount = found.type === 'found' ? (found.amount?.toNumber() ?? 0) : 0;
+    expect(amount / 27 ** 0.8).toBeGreaterThanOrEqual(0.8);
+    expect(amount / 27 ** 0.8).toBeLessThan(1.2);
+    expect(state.finds.total).toBe(1);
+  });
+
+  it('zieht beim Aufbruch nicht', () => {
+    const base = harvesting();
+    const half = deepFreeze({ ...base, site: { ...base.site, stock: Num.from(600) } });
+    const target = half.map.candidates.findIndex((candidate) => candidate.type === 'algal-mat');
+    const { state, events } = applyCommand(half, { type: 'depart', target }, params);
+    expect(events.map((event) => event.type)).toEqual(['departed']);
+    expect(state.finds).toBe(half.finds);
   });
 });

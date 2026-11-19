@@ -78,7 +78,7 @@ describe('toSonarView', () => {
   it('nennt Werte, Verluste und Balken eines einnehmbaren Ziels', () => {
     const details = view().targets[1].details;
     expect(details?.travelSeconds.toNumber()).toBe(30);
-    expect(details?.findChancePercent).toBeCloseTo(10);
+    expect(details?.findChancePercent).toBeCloseTo(20);
     expect(details?.attack.toNumber()).toBe(34);
     // L = 34 · 0,5 · (26 / 34)² ≈ 9,94 (Game-Design Beispiel 8)
     expect(details?.losses?.soldiers.amount.toNumber()).toBeCloseTo(9.94, 2);

@@ -55,6 +55,12 @@ import {
   sacrificeFood,
   sacrificeLossShare,
   sacrificeYieldShare,
+  buffExpiresAtMs,
+  findDna,
+  findFood,
+  findSpreadFactor,
+  harvestThresholdStock,
+  reachedHarvestThresholds,
 } from './formulas';
 
 /** Startverteilung 3 : 1 ohne Drüsenpunkte (Game-Design §2.1). */
@@ -656,11 +662,12 @@ describe('Futterstellen-Generator (Game-Design §4.6)', () => {
 
   it('liest Gewicht und Fundchance aus der Typtabelle', () => {
     expect(siteTypeWeight('whale-fall', DEFAULT_BALANCE)).toBe(1);
-    expect(siteFindChance('algal-mat', DEFAULT_BALANCE)).toBe(0.05);
-    expect(siteFindChance('vent', DEFAULT_BALANCE)).toBe(0.1);
-    expect(siteFindChance('bacterial-mat', DEFAULT_BALANCE)).toBe(0.15);
-    expect(siteFindChance('methane-seep', DEFAULT_BALANCE)).toBe(0.2);
-    expect(siteFindChance('whale-fall', DEFAULT_BALANCE)).toBe(0.3);
+    // Fundchancen ab M1.3 (Game-Design §2.3).
+    expect(siteFindChance('algal-mat', DEFAULT_BALANCE)).toBe(0.15);
+    expect(siteFindChance('vent', DEFAULT_BALANCE)).toBe(0.2);
+    expect(siteFindChance('bacterial-mat', DEFAULT_BALANCE)).toBe(0.25);
+    expect(siteFindChance('methane-seep', DEFAULT_BALANCE)).toBe(0.3);
+    expect(siteFindChance('whale-fall', DEFAULT_BALANCE)).toBe(0.4);
   });
 
   it('liefert keine DNA ohne Abwehr', () => {
@@ -857,5 +864,39 @@ describe('Drohnen opfern (Game-Design §4.10)', () => {
   it('hat ohne positiven Drohnenwert keinen Preis in Drohnen', () => {
     expect(dronesPerQueen(units(0, 0, 0), { ...DEFAULT_BALANCE, droneCost: 0 })).toBeNull();
     expect(dronesPerQueen(units(0, 0, 0), { ...DEFAULT_BALANCE, sacrificeYield: 0 })).toBeNull();
+  });
+});
+
+describe('Funde (Game-Design §4.16)', () => {
+  it('rechnet die DNA je Fund mit z (Tabelle, u_F = 1)', () => {
+    const dna = [0, 1, 5, 10, 20].map((z) => findDna(z, 1, DEFAULT_BALANCE).toNumber());
+    expect(dna[0]).toBeCloseTo(10.99, 2);
+    expect(dna[1]).toBeCloseTo(13.97, 2);
+    expect(dna[2]).toBeCloseTo(36.5, 1);
+    expect(dna[3]).toBeCloseTo(121, 0);
+    expect(dna[4] / 1338).toBeCloseTo(1, 2);
+    expect(findDna(27, 1, DEFAULT_BALANCE).toNumber() / 7180).toBeCloseTo(1, 2);
+  });
+
+  it('rechnet Nahrung, Streuung und Buff-Ablauf', () => {
+    expect(findFood(Num.from(20_000), 1, DEFAULT_BALANCE).toNumber()).toBeCloseTo(1000, 10);
+    expect(findSpreadFactor(0, DEFAULT_BALANCE)).toBeCloseTo(0.8, 12);
+    expect(findSpreadFactor(0.5, DEFAULT_BALANCE)).toBeCloseTo(1, 12);
+    expect(buffExpiresAtMs('plankton-bloom', null, 1_000, DEFAULT_BALANCE)).toBe(601_000);
+    expect(buffExpiresAtMs('plankton-bloom', 5_000, 1_000, DEFAULT_BALANCE)).toBe(605_000);
+    expect(buffExpiresAtMs('warm-current', 500, 1_000, DEFAULT_BALANCE)).toBe(601_000);
+  });
+
+  it('leitet die Abbau-Schwellen aus V und G ab', () => {
+    const size = Num.from(1000);
+    expect(
+      [1, 2, 3, 4].map((j) => harvestThresholdStock(size, j, DEFAULT_BALANCE).toNumber()),
+    ).toEqual([750, 500, 250, 0]);
+    const reached = (stock: number): number =>
+      reachedHarvestThresholds(size, Num.from(stock), DEFAULT_BALANCE);
+    expect([1000, 751, 750, 500, 0.1, 0].map(reached)).toEqual([0, 0, 1, 2, 3, 4]);
+    expect(
+      reachedHarvestThresholds(size, Num.ZERO, { ...DEFAULT_BALANCE, findHarvestDraws: 0 }),
+    ).toBe(0);
   });
 });

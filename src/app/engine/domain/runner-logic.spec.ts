@@ -254,7 +254,8 @@ describe('runSimulation', () => {
       });
 
     it('hält Käufe, leere Futterstellen, Aufbruch und Ankunft mit Zeitstempel fest', () => {
-      const { events } = manual();
+      // Funde prüft ein eigener Test; hier zählt der Ablauf der Futterstellen.
+      const events = manual().events.filter((event) => event.type !== 'found');
       expect(events.slice(0, 7)).toEqual([
         ...Array.from({ length: 5 }, () => ({ timeMs: 0, type: 'buy', unit: 'drones' })),
         { timeMs: 100_000, type: 'siteEmpty', site: 0 },
@@ -267,6 +268,30 @@ describe('runSimulation', () => {
       expect(events[7]).toMatchObject({ siteType: 'algal-mat' });
       expect(events[7].timeMs).toBeCloseTo(120_000 + travelMs, 3);
       expect(events[8].timeMs).toBeCloseTo(120_000 + travelMs + secondSiteMs, 3);
+    });
+
+    it('hält Funde mit Futterstelle, Eintrag und Art fest (Game-Design §4.16)', () => {
+      const { events } = run(scripted({ 0: FIVE_DRONES, 120_000: [{ type: 'depart', target }] }), {
+        params: { ...MOVING, ventFindChance: 1, algalMatFindChance: 1 },
+        durationMs: 5 * MINUTE_MS,
+        stepMs: 30_000,
+      });
+      const found = events.filter((event) => event.type === 'found');
+      // Vier Abbau-Schwellen am Schlot (je 25 s), eine Ziehung bei der Ankunft, vier an der Algenmatte.
+      expect(found.map((event) => event.site)).toEqual([0, 0, 0, 0, 1, 1, 1, 1, 1]);
+      expect(found.slice(0, 4).map((event) => event.timeMs)).toEqual([
+        25_000, 50_000, 75_000, 100_000,
+      ]);
+      expect(found[0]).toEqual({
+        timeMs: 25_000,
+        type: 'found',
+        site: 0,
+        entry: 'foreign-dna',
+        kind: 'dna',
+        replaced: null,
+      });
+      const arrival = events.findIndex((event) => event.type === 'arrived');
+      expect(events[arrival + 1]).toMatchObject({ type: 'found', site: 1 });
     });
 
     it('misst die Dauer je Futterstelle bis zum Aufbruch und die Reise getrennt', () => {
@@ -310,7 +335,7 @@ describe('runSimulation', () => {
           durationMs: 5 * MINUTE_MS,
           stepMs,
         });
-        const moves = events.filter((event) => event.type !== 'buy');
+        const moves = events.filter((event) => event.type !== 'buy' && event.type !== 'found');
         expect(moves.map(typeAndSite)).toEqual([
           { type: 'siteEmpty', site: 0 },
           { type: 'departed', site: 0 },
@@ -372,7 +397,13 @@ describe('runSimulation', () => {
         // Der grobe Schritt prüft, dass der Zeitpunkt nicht an der Schrittweite hängt.
         stepMs: 7000,
       });
-      expect(events).toEqual([{ timeMs: 20_000, type: 'siteEmpty', site: 0 }]);
+      expect(events.filter((event) => event.type !== 'found')).toEqual([
+        { timeMs: 20_000, type: 'siteEmpty', site: 0 },
+      ]);
+      // Funde an den Abbau-Schwellen liegen exakt bei 25 %, 50 %, 75 % und 100 % (je 5 s).
+      for (const event of events.filter((event) => event.type === 'found')) {
+        expect(event.timeMs).toBeCloseTo(Math.round(event.timeMs / 5_000) * 5_000, 6);
+      }
       expect(metrics.sites[0].emptyMs).toBe(20_000);
       // Ohne Aufbruch bleibt die Dauer offen.
       expect(metrics.firstSiteMs).toBeNull();
@@ -396,7 +427,7 @@ describe('runSimulation', () => {
         params: { siteSize: 500 },
         durationMs: 20 * MINUTE_MS,
       });
-      const cycle = events.filter((event) => event.type !== 'buy');
+      const cycle = events.filter((event) => event.type !== 'buy' && event.type !== 'found');
       expect(metrics.sites.length).toBeGreaterThan(2);
       const order = ['siteEmpty', 'departed', 'arrived'] as const;
       cycle.forEach((event, index) => {
@@ -707,7 +738,9 @@ describe('runSimulation', () => {
         const exactStartMs = exact.metrics.sites[index + 1].startMs;
         expect(relativeError(site.startMs, exactStartMs)).toBeLessThan(SITE_TOLERANCE);
       });
-      expect(coarseEnd.queens).toBe(exactEnd.queens);
+      // Funde beschleunigen den Verlauf; liegt ein Königinnenkauf knapp am Laufende, fällt er mit
+      // der kleinen Verschiebung des groben Schritts vor oder hinter das Ende.
+      expect(Math.abs(coarseEnd.queens - exactEnd.queens)).toBeLessThanOrEqual(1);
       expect(relativeError(coarseEnd.drones, exactEnd.drones)).toBeLessThan(UNIT_TOLERANCE);
       expect(relativeError(coarseEnd.soldiers, exactEnd.soldiers)).toBeLessThan(UNIT_TOLERANCE);
     });

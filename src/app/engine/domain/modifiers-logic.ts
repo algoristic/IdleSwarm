@@ -1,6 +1,8 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
 import { combineEffects } from '@app/balance/domain/effects-logic';
 import type { Effect, Modifiers } from '@app/balance/domain/models/effect.model';
+import { badgeEffects } from '@app/finds/domain/collection-logic';
+import { buffEffects } from '@app/finds/domain/finds-logic';
 import type { EffectPreview } from '@app/genome/domain/genome-logic';
 import { genomeEffects, nodeEffectPreview } from '@app/genome/domain/genome-logic';
 import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
@@ -14,8 +16,15 @@ import type { GameState } from './models/game-state.model';
  * ihre Effekte hier bei.
  */
 export function stateEffects(state: GameState, params: BalanceParams): readonly Effect[] {
-  // Badges (§4.17) und laufende Buffs (§4.16) kommen mit den Funden hinzu, als weitere Quellen hier.
-  return genomeEffects(state.genome, state.finds, params);
+  const { finds, genome, time } = state;
+  const genomeSources = genomeEffects(genome, finds, params);
+  const badges = badgeEffects(finds, params);
+  // Buffs wirken nur, solange `expiresAtMs > time.played` (Game-Design §4.16).
+  const buffs = buffEffects(finds, time.played, params);
+  if (badges.length === 0 && buffs.length === 0) {
+    return genomeSources;
+  }
+  return [...genomeSources, ...badges, ...buffs];
 }
 
 /** Typ, gegen den Bedingungen `when: { siteType }` geprüft werden; während einer Reise `null`. */

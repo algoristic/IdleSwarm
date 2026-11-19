@@ -7,11 +7,15 @@
   <div role="log" aria-labelledby="log-title" data-testid="hud.log.list">
     <ol class="mt-2 grid gap-1 empty:hidden">
       @for (item of items(); track item.id) {
-        <li class="flex flex-wrap gap-x-2 text-sm" data-testid="hud.log.entry">
+        <li
+          class="flex flex-wrap gap-x-2 text-sm"
+          [attr.data-kind]="item.kind"
+          data-testid="hud.log.entry"
+        >
           <span class="shrink-0 text-fg-muted tabular-nums" data-testid="hud.log.time">{{
             item.playedMs | formatElapsed
           }}</span>
-          <span class="min-w-0" data-testid="hud.log.text">{{ item.text }}</span>
+          <span [class]="item.textClass" data-testid="hud.log.text">{{ item.text }}</span>
         </li>
       }
     </ol>

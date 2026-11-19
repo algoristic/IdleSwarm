@@ -85,7 +85,10 @@ describe('GameStore', () => {
     it('nimmt Ereignisse aus Ticks auf, die Rückgabe von tick bleibt', () => {
       store.replace(almostEmpty());
       const events = store.tick(TICK_MS);
-      expect(events.map((e) => e.type)).toEqual(['siteDepleted']);
+      // Das neue Spiel hat einen zufälligen Seed; Funde an den Abbau-Schwellen sind möglich.
+      expect(events.map((e) => e.type).filter((type) => type !== 'found')).toEqual([
+        'siteDepleted',
+      ]);
       expect(store.log().map((entry) => entry.event)).toEqual(events);
     });
 
@@ -101,20 +104,25 @@ describe('GameStore', () => {
       store.tick(TICK_MS);
       store.dispatch({ type: 'depart', target: reachableTarget(store.state()) });
       const log = store.log();
-      expect(log.map((entry) => entry.event.type)).toEqual(['siteDepleted', 'departed']);
-      expect(log[1].id).toBeGreaterThan(log[0].id);
+      const moves = log.filter((entry) => entry.event.type !== 'found');
+      expect(moves.map((entry) => entry.event.type)).toEqual(['siteDepleted', 'departed']);
+      expect(moves[1].id).toBeGreaterThan(moves[0].id);
+      expect(log.map((entry) => entry.id)).toEqual(
+        [...log.map((entry) => entry.id)].sort((x, y) => x - y),
+      );
     });
 
     it('behält höchstens die letzten Einträge', () => {
-      const total = LOG_MAX_ENTRIES + 5;
-      for (let i = 0; i < total; i++) {
+      // Je Tick mindestens `siteDepleted`, dazu ggf. Funde an den Abbau-Schwellen.
+      let total = 0;
+      while (total < LOG_MAX_ENTRIES + 5) {
         store.replace(almostEmpty());
-        store.tick(TICK_MS);
+        total += store.tick(TICK_MS).length;
       }
       const log = store.log();
       expect(log).toHaveLength(LOG_MAX_ENTRIES);
-      // Die fünf ältesten sind herausgefallen, die neuesten stehen am Ende.
-      expect(log[0].id).toBe(5);
+      // Die ältesten sind herausgefallen, die neuesten stehen am Ende.
+      expect(log[0].id).toBe(total - LOG_MAX_ENTRIES);
       expect(log[LOG_MAX_ENTRIES - 1].id).toBe(total - 1);
     });
 

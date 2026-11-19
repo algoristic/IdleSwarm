@@ -1,5 +1,6 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { isAffordable, secondsUntilAffordable } from '@app/balance/domain/formulas';
+import type { FindEntryId, FindKind } from '@app/finds/domain/models/finds.model';
 import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
@@ -79,7 +80,8 @@ export interface SimSample {
 /**
  * Ereignisse eines Laufs; `site` ist der Index in {@link SimMetrics.sites}. `departed` nennt die
  * verlassene Futterstelle und den Typ des Ziels, `arrived` die neue Futterstelle, `evolved` den
- * entwickelten Genom-Knoten (Markierung „Adaption gekauft“, US-10.02).
+ * entwickelten Genom-Knoten (Markierung „Adaption gekauft“, US-10.02), `found` einen Fund an der
+ * aktuellen Futterstelle mit wirksamem Eintrag, Art und ggf. ersetztem Eintrag (Game-Design §4.16).
  */
 export type SimEvent =
   | { readonly timeMs: number; readonly type: 'buy'; readonly unit: UnitType }
@@ -97,7 +99,15 @@ export type SimEvent =
       readonly site: number;
       readonly siteType: SiteTypeId;
     }
-  | { readonly timeMs: number; readonly type: 'evolved'; readonly node: GenomeNodeId };
+  | { readonly timeMs: number; readonly type: 'evolved'; readonly node: GenomeNodeId }
+  | {
+      readonly timeMs: number;
+      readonly type: 'found';
+      readonly site: number;
+      readonly entry: FindEntryId;
+      readonly kind: FindKind;
+      readonly replaced: FindEntryId | null;
+    };
 
 /**
  * Futterstelle von der Ankunft (die erste bei 0) bis zum Aufbruch. Die Felder zu Reise, Kampf und
@@ -405,6 +415,17 @@ class Recorder {
         }
         case 'evolved':
           this.events.push({ timeMs, type: 'evolved', node: event.node });
+          break;
+        case 'found':
+          // Bei der Ankunft steht `found` nach `arrived`; `last` ist dann schon die neue Futterstelle.
+          this.events.push({
+            timeMs,
+            type: 'found',
+            site: last,
+            entry: event.entry,
+            kind: event.kind,
+            replaced: event.replaced,
+          });
           break;
       }
     }

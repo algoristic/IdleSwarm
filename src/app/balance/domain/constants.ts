@@ -113,6 +113,45 @@ export interface BalanceParams {
   readonly crystalSenseFragments: number;
   readonly sulfurShellEffect: number;
   readonly sulfurShellFragments: number;
+  /** Abbau-Ziehungen `n_A` je Futterstelle, bei `j / n_A` abgebautem Vorrat; ganzzahlig (§4.16). */
+  readonly findHarvestDraws: number;
+  /** Streuung `σ_F` des Zufallsfaktors `u_F` der Fundmengen um 1 (Game-Design §4.16). */
+  readonly findSpread: number;
+  // Einträge der Fundtabelle (Game-Design §2.3, Parameter je ID, §4.16): Gewicht je Eintrag, dazu
+  // `φ_D`, `φ_N` und je Buff Faktor `μ_B` und Dauer `T_B` in s; zugeordnet über `FIND_ENTRY_PARAMS`.
+  readonly foreignDnaWeight: number;
+  /** `φ_D`: DNA eines Funds relativ zur DNA eines Schlots in Distanz 1 beim aktuellen `z`. */
+  readonly foreignDnaFactor: number;
+  readonly nutrientBubbleWeight: number;
+  /** `φ_N`: Nahrung eines Funds als Anteil der Größe `G` der aktuellen Futterstelle. */
+  readonly nutrientBubbleShare: number;
+  readonly planktonBloomWeight: number;
+  readonly planktonBloomFactor: number;
+  readonly planktonBloomSeconds: number;
+  readonly warmCurrentWeight: number;
+  readonly warmCurrentFactor: number;
+  readonly warmCurrentSeconds: number;
+  readonly thermophileWeight: number;
+  readonly sulfurPearlWeight: number;
+  readonly chloroplastWeight: number;
+  readonly primalCrystalWeight: number;
+  readonly stromatoliteWeight: number;
+  readonly biofilmDiscWeight: number;
+  readonly greenPearlWeight: number;
+  readonly pyriteWeight: number;
+  readonly basaltPebbleWeight: number;
+  readonly magnetiteWeight: number;
+  readonly boneSplinterWeight: number;
+  readonly fatPearlWeight: number;
+  readonly toothScaleWeight: number;
+  readonly pumiceWeight: number;
+  readonly foamBallWeight: number;
+  readonly clayBeadWeight: number;
+  // Badges (Game-Design §4.17): Bonus je Set, zugeordnet über `BADGE_PARAMS`.
+  readonly matRelicsBadgeEffect: number;
+  readonly deepStonesBadgeEffect: number;
+  readonly whaleRelicsBadgeEffect: number;
+  readonly driftBadgeEffect: number;
 }
 
 /** Werte v1 aus Game-Design §2.3. */
@@ -163,23 +202,23 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   maxAutoThreshold: 0.9,
   algalMatSizeFactor: 0.5,
   algalMatDefenseFactor: 0,
-  algalMatFindChance: 0.05,
+  algalMatFindChance: 0.15,
   algalMatWeight: 1,
   ventSizeFactor: 1,
   ventDefenseFactor: 1,
-  ventFindChance: 0.1,
+  ventFindChance: 0.2,
   ventWeight: 1,
   bacterialMatSizeFactor: 1.5,
   bacterialMatDefenseFactor: 2.5,
-  bacterialMatFindChance: 0.15,
+  bacterialMatFindChance: 0.25,
   bacterialMatWeight: 1,
   methaneSeepSizeFactor: 2.5,
   methaneSeepDefenseFactor: 2,
-  methaneSeepFindChance: 0.2,
+  methaneSeepFindChance: 0.3,
   methaneSeepWeight: 1,
   whaleFallSizeFactor: 3,
   whaleFallDefenseFactor: 3,
-  whaleFallFindChance: 0.3,
+  whaleFallFindChance: 0.4,
   whaleFallWeight: 1,
   cilia1Effect: 0.2,
   cilia2Effect: 0.3,
@@ -204,4 +243,37 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   crystalSenseFragments: 2,
   sulfurShellEffect: 1,
   sulfurShellFragments: 5,
+  findHarvestDraws: 4,
+  findSpread: 0.2,
+  foreignDnaWeight: 30,
+  // Aus der Tabelle „DNA je Fund“ in §4.16 (z = 0: 20^0,8 ≈ 10,99), also ohne Abschlag.
+  foreignDnaFactor: 1,
+  nutrientBubbleWeight: 20,
+  nutrientBubbleShare: 0.05,
+  planktonBloomWeight: 8,
+  planktonBloomFactor: 1.5,
+  planktonBloomSeconds: 600,
+  warmCurrentWeight: 8,
+  warmCurrentFactor: 1.5,
+  warmCurrentSeconds: 600,
+  thermophileWeight: 5,
+  sulfurPearlWeight: 5,
+  chloroplastWeight: 5,
+  primalCrystalWeight: 5,
+  stromatoliteWeight: 3,
+  biofilmDiscWeight: 3,
+  greenPearlWeight: 3,
+  pyriteWeight: 3,
+  basaltPebbleWeight: 3,
+  magnetiteWeight: 3,
+  boneSplinterWeight: 3,
+  fatPearlWeight: 3,
+  toothScaleWeight: 3,
+  pumiceWeight: 3,
+  foamBallWeight: 3,
+  clayBeadWeight: 3,
+  matRelicsBadgeEffect: 0.05,
+  deepStonesBadgeEffect: 0.05,
+  whaleRelicsBadgeEffect: 0.95,
+  driftBadgeEffect: 0.1,
 });

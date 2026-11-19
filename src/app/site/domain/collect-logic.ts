@@ -53,3 +53,28 @@ export function collectStep(
   const atMs = playedMs + (msLeft === null ? dtMs : Math.min(dtMs, msLeft));
   return { state: next, events: [{ type: 'siteDepleted', playedMs: atMs, siteType: site.type }] };
 }
+
+/**
+ * Sammelt genau bis zum Vorrat `stock` (≤ Vorrat), z. B. bis zu einer Abbau-Schwelle der Funde
+ * (Game-Design §4.16): Nahrung `+= V − stock`, Vorrat exakt `stock`. `atMs` ist die Spielzeit, zu der
+ * die konstante Abbaurate den Vorrat dorthin bringt; fällt er auf 0, meldet es dort `siteDepleted`.
+ * Ohne Abbau kommt derselbe Zustand zurück.
+ */
+export function collectToStock(state: GameState, stock: Num, atMs: number): SiteResult {
+  const { res, site } = state;
+  if (!stock.lt(site.stock)) {
+    return { state, events: [] };
+  }
+  const next: GameState = {
+    ...state,
+    res: { ...res, food: res.food.add(site.stock.sub(stock)) },
+    site: { ...site, stock },
+  };
+  if (!stock.isZero()) {
+    return { state: next, events: [] };
+  }
+  return {
+    state: next,
+    events: [{ type: 'siteDepleted', playedMs: atMs, siteType: site.type }],
+  };
+}

@@ -324,11 +324,18 @@ describe('HudPage', () => {
 
       store.tick(TICK_MS);
       fixture.detectChanges();
-      const entries = element().querySelectorAll('[data-testid="hud.log.entry"]');
-      expect(entries).toHaveLength(1);
-      expect(entries[0].querySelector('[data-testid="hud.log.text"]')?.textContent).toContain(
+      // Neben `siteDepleted` können Funde an den Abbau-Schwellen stehen; sie sind hervorgehoben.
+      const entries = [...element().querySelectorAll('[data-testid="hud.log.entry"]')];
+      const depleted = entries.filter((entry) => entry.getAttribute('data-kind') === 'default');
+      expect(depleted).toHaveLength(1);
+      expect(depleted[0].querySelector('[data-testid="hud.log.text"]')?.textContent).toContain(
         'Futterstelle leer',
       );
+      for (const entry of entries.filter((item) => item.getAttribute('data-kind') === 'found')) {
+        expect(entry.querySelector('[data-testid="hud.log.text"]')?.className).toContain(
+          'text-accent',
+        );
+      }
       expect(query('hud.log.empty')).toBeNull();
       expect(query('hud.site.move-link')).not.toBeNull();
     });

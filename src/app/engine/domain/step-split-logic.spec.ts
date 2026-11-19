@@ -7,8 +7,14 @@ import { GameState } from './models/game-state.model';
 import { nextSplitMs } from './step-split-logic';
 
 describe('nextSplitMs', () => {
-  // Abbaurate g_0 + D · r_d = 1 + 1 · 1 = 2 Nahrung/s.
-  const params: BalanceParams = { ...DEFAULT_BALANCE, baseFoodRate: 1, droneCollectRate: 1 };
+  // Abbaurate g_0 + D · r_d = 1 + 1 · 1 = 2 Nahrung/s. Ohne Abbau-Schwellen der Funde, damit nur
+  // Ankunft und Auto-Auslöser teilen; die Schwellen prüft ein eigener Block.
+  const params: BalanceParams = {
+    ...DEFAULT_BALANCE,
+    baseFoodRate: 1,
+    droneCollectRate: 1,
+    findHarvestDraws: 0,
+  };
   const NOW_MS = 5_000;
 
   function swarm(
@@ -73,5 +79,50 @@ describe('nextSplitMs', () => {
     const idle = { ...params, baseFoodRate: 0 };
     const state = { ...swarm(), units: { ...swarm().units, drones: Num.ZERO } };
     expect(nextSplitMs(state, NOW_MS, idle)).toBe(Infinity);
+  });
+
+  describe('Funde (Game-Design §4.16)', () => {
+    const findParams: BalanceParams = { ...params, findHarvestDraws: 4 };
+
+    it('teilt an der nächsten Abbau-Schwelle', () => {
+      // Schwellen bei 75, 50, 25 und 0; von 100 bis 75 bei 2 Nahrung/s 12,5 s.
+      const state = swarm({ enabled: false });
+      expect(nextSplitMs(state, NOW_MS, findParams)).toBe(NOW_MS + 12_500);
+      // Von 60 bis 50: 5 s; die Schwelle bei 75 ist schon erreicht.
+      expect(nextSplitMs(swarm({ enabled: false, stock: 60 }), NOW_MS, findParams)).toBe(
+        NOW_MS + 5_000,
+      );
+    });
+
+    it('nimmt den früheren Punkt von Abbau-Schwelle und Auto-Auslöser', () => {
+      // Auto-Auslöser bei 20 (40 s), Schwelle bei 75 (12,5 s).
+      expect(nextSplitMs(swarm(), NOW_MS, findParams)).toBe(NOW_MS + 12_500);
+    });
+
+    it('teilt am Ablauf eines Buffs, auch während der Reise', () => {
+      const base = swarm({ enabled: false });
+      const state: GameState = {
+        ...base,
+        finds: {
+          ...base.finds,
+          buffs: [{ id: 'plankton-bloom', expiresAtMs: base.time.played + 2_000.4 }],
+        },
+      };
+      expect(nextSplitMs(state, NOW_MS, findParams)).toBe(NOW_MS + 2_001);
+      const traveling = {
+        ...state,
+        travel: { target: state.map.candidates[0], remainingMs: 9_000 },
+      };
+      expect(nextSplitMs(traveling, NOW_MS, findParams)).toBe(NOW_MS + 2_001);
+    });
+
+    it('übergeht abgelaufene Buffs', () => {
+      const base = swarm({ enabled: false, stock: 0 });
+      const state: GameState = {
+        ...base,
+        finds: { ...base.finds, buffs: [{ id: 'warm-current', expiresAtMs: base.time.played }] },
+      };
+      expect(nextSplitMs(state, NOW_MS, findParams)).toBe(Infinity);
+    });
   });
 });

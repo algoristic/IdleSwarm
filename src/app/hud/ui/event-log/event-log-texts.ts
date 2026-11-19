@@ -1,7 +1,13 @@
 import type { GameEvent } from '@app/engine/domain/models/game-event.model';
-import { GENOME_NODE_LABELS } from '@app/genome/ui/genome-labels/genome-labels';
+import type { FoundEvent } from '@app/finds/domain/models/finds-event.model';
+import { BADGE_LABELS, FIND_ENTRY_LABELS } from '@app/finds/ui/finds-labels/finds-labels';
+import {
+  GENOME_NODE_LABELS,
+  UNIQUE_ADAPTATION_LABELS,
+} from '@app/genome/ui/genome-labels/genome-labels';
 import { formatDown, formatUp, roundUpForDisplay } from '@app/shared/util/format/display-format';
-import { formatRate } from '@app/shared/util/format/format';
+import { formatElapsed } from '@app/shared/util/format/elapsed-format';
+import { formatNum, formatRate } from '@app/shared/util/format/format';
 import { Num } from '@app/shared/util/num/num';
 import type { ArrivedEvent, DepartedEvent } from '@app/site/domain/models/site-event.model';
 import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels';
@@ -9,7 +15,7 @@ import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels
 const SEPARATOR = ' · ';
 
 /**
- * Text eines Log-Eintrags (US-04.05, US-04.09, US-05.03). DNA abgerundet wie die Mengen; Zurückgelassene und
+ * Text eines Log-Eintrags (US-04.05, US-04.09, US-05.03, US-06.01). DNA abgerundet wie die Mengen; Zurückgelassene und
  * Verluste aufgerundet wie die Vorschau der Umgebung, damit ein Bruchteil nicht verschwindet.
  */
 export function eventLogText(event: GameEvent): string {
@@ -30,7 +36,57 @@ export function eventLogText(event: GameEvent): string {
         $localize`:@@uiHud-eventLog-evolved-cost:−${cost}:cost: DNA`,
       ].join(SEPARATOR);
     }
+    case 'found':
+      return foundText(event);
   }
+}
+
+/**
+ * Fund (Game-Design §4.16): Eintrag, bei einem Ersatz der ursprüngliche Eintrag, dann Wirkung,
+ * Futterstelle und Auslöser. DNA und Nahrung abgerundet wie die Mengen, der Buff-Ablauf als
+ * Spielzeit wie die Zeiten des Logs.
+ */
+function foundText(event: FoundEvent): string {
+  const entry = FIND_ENTRY_LABELS[event.entry];
+  const parts = [
+    event.replaced === null
+      ? $localize`:@@uiHud-eventLog-found:Fund: ${entry}:entry:`
+      : $localize`:@@uiHud-eventLog-found-replaced:Fund: ${entry}:entry: statt ${FIND_ENTRY_LABELS[event.replaced]}:replaced:`,
+  ];
+  if (event.amount !== null) {
+    const amount = formatDown(event.amount);
+    parts.push(
+      event.kind === 'dna'
+        ? $localize`:@@uiHud-eventLog-found-dna:+${amount}:amount: DNA`
+        : $localize`:@@uiHud-eventLog-found-food:+${amount}:amount: Nahrung`,
+    );
+  }
+  if (event.buffExpiresAtMs !== null) {
+    const until = formatElapsed(event.buffExpiresAtMs);
+    parts.push($localize`:@@uiHud-eventLog-found-buff:wirkt bis ${until}:until:`);
+  }
+  if (event.fragment !== null) {
+    const found = formatNum(event.fragment.found);
+    const required = formatNum(event.fragment.required);
+    parts.push($localize`:@@uiHud-eventLog-found-fragment:${found}:found: / ${required}:required:`);
+  }
+  if (event.unlocked !== null) {
+    const adaptation = UNIQUE_ADAPTATION_LABELS[event.unlocked];
+    parts.push(
+      $localize`:@@uiHud-eventLog-found-unlocked:${adaptation}:adaptation: freigeschaltet`,
+    );
+  }
+  if (event.badge !== null) {
+    const badge = BADGE_LABELS[event.badge];
+    parts.push($localize`:@@uiHud-eventLog-found-badge:Badge ${badge}:badge: erhalten`);
+  }
+  const site = SITE_TYPE_LABELS[event.siteType];
+  parts.push(
+    event.threshold === null
+      ? $localize`:@@uiHud-eventLog-found-arrival:${site}:site:, Einnahme`
+      : $localize`:@@uiHud-eventLog-found-harvest:${site}:site:, Abbau-Schwelle ${formatNum(event.threshold)}:threshold:`,
+  );
+  return parts.join(SEPARATOR);
 }
 
 function departedText(event: DepartedEvent): string {

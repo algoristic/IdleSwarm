@@ -151,7 +151,8 @@ describe('PersistenceService', () => {
       writeSave();
       store.replace(depleting(store.state()));
       store.tick(TICK_MS);
-      expect(store.log()).toHaveLength(1);
+      // `siteDepleted`, je nach Seed dazu Funde an den Abbau-Schwellen.
+      expect(store.log().length).toBeGreaterThanOrEqual(1);
 
       expect(persistence.restore()).toBe('loaded');
       expect(store.log()).toEqual([]);

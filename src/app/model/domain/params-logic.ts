@@ -1,9 +1,13 @@
 import { BalanceParams } from '@app/balance/domain/constants';
 import {
+  BADGE_PARAMS,
+  FIND_ENTRY_PARAMS,
   GENOME_NODE_PARAMS,
   SITE_TYPE_PARAMS,
   UNIQUE_ADAPTATION_PARAMS,
 } from '@app/balance/domain/formulas';
+import { COLLECTION_SETS } from '@app/finds/domain/data/finds-era1.data';
+import { BUFF_IDS } from '@app/finds/domain/models/finds.model';
 import { GENOME_NODES, UNIQUE_ADAPTATIONS } from '@app/genome/domain/data/genome-era1.data';
 import type { EffectSpec } from '@app/genome/domain/models/genome.model';
 import { NumberRange, parseDecimal } from '@app/shared/util/parse/parse';
@@ -47,6 +51,9 @@ const PARAM_LIMITS: Partial<Readonly<Record<ParamKey, ParamLimit>>> = {
   balancedMaxLossShare: SHARE_LIMIT,
   defaultAutoThreshold: SHARE_LIMIT,
   maxAutoThreshold: SHARE_LIMIT,
+  findHarvestDraws: { min: 0, integer: true },
+  findSpread: SHARE_LIMIT,
+  nutrientBubbleShare: SHARE_LIMIT,
 };
 
 // Je Futterstellentyp aus der Tabelle in `balance`, damit neue Typen von selbst erfasst werden.
@@ -93,6 +100,13 @@ const GENOME_LIMITS: ReadonlyMap<ParamKey, ParamLimit> = new Map([
   }),
 ]);
 
+// Buff-Faktoren sind `mul` auf steigende Ziele, Badge-Boni folgen der Datenregel ihres Effekts.
+// Gewichte, `φ_D` und Buff-Dauern bleiben ab 0 (Game-Design §4.16, §4.17).
+const FIND_LIMITS: ReadonlyMap<ParamKey, ParamLimit> = new Map([
+  ...BUFF_IDS.map((id) => [FIND_ENTRY_PARAMS[id].factor, RAISING_FACTOR_LIMIT] as const),
+  ...COLLECTION_SETS.map((set) => [BADGE_PARAMS[set.id].effect, effectLimit(set.badge)] as const),
+]);
+
 /**
  * Grenzen der Konstante; Anteile in [0; 1], Zählwerte ganzzahlig, Effektwerte nach der Datenregel,
  * sonst ab 0.
@@ -101,6 +115,7 @@ export function paramLimit(key: ParamKey): ParamLimit {
   return (
     PARAM_LIMITS[key] ??
     GENOME_LIMITS.get(key) ??
+    FIND_LIMITS.get(key) ??
     (FIND_CHANCE_KEYS.has(key) ? SHARE_LIMIT : DEFAULT_LIMIT)
   );
 }
