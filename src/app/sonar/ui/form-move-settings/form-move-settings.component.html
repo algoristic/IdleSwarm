@@ -22,28 +22,6 @@
   </label>
 
   <fieldset class="grid min-w-0 gap-1.5">
-    <legend class="mb-1 text-sm text-fg-muted" i18n="@@uiSonar-formMoveSettings-strategy">
-      Strategie
-    </legend>
-    <div class="flex flex-wrap gap-1.5">
-      @for (strategy of strategies; track strategy) {
-        <label
-          class="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded border border-border-control bg-surface-raised px-2.5 py-1 has-checked:border-accent has-checked:text-accent"
-        >
-          <input
-            type="radio"
-            [value]="strategy"
-            [attr.data-testid]="'sonar.settings.strategy.' + strategy"
-            [formField]="_form.strategy"
-            (change)="onChangeStrategy()"
-          />
-          {{ strategyLabels[strategy] }}
-        </label>
-      }
-    </div>
-  </fieldset>
-
-  <fieldset class="grid min-w-0 gap-1.5">
     <legend class="mb-1 text-sm text-fg-muted" i18n="@@uiSonar-formMoveSettings-auto">
       Auto-Weiterziehen
     </legend>

@@ -41,6 +41,7 @@ import {
   travelLine,
 } from '../../domain/sonar-map-logic';
 import type { MoveSettingsView } from '../../ui/form-move-settings/form-move-settings.component.model';
+import type { CurrentSiteView, TravelView } from '../../ui/models/site-status.model';
 import type {
   CountView,
   QueenConversionView,
@@ -51,7 +52,7 @@ import type {
   TransportView,
 } from '../../ui/models/target.model';
 import type { MapNodeView, SonarMapView } from '../../ui/sonar-map/sonar-map.component.model';
-import type { CurrentSiteView, SonarSource, SonarView, TravelView } from './sonar.model';
+import type { SonarSource, SonarView } from './sonar.model';
 
 const PERCENT = 100;
 

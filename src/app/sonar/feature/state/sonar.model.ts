@@ -1,8 +1,8 @@
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import type { Num } from '@app/shared/util/num/num';
-import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 
 import type { MoveSettingsView } from '../../ui/form-move-settings/form-move-settings.component.model';
+import type { CurrentSiteView, TravelView } from '../../ui/models/site-status.model';
 import type { QueenConversionView, TargetView, TransportView } from '../../ui/models/target.model';
 import type { SonarMapView } from '../../ui/sonar-map/sonar-map.component.model';
 
@@ -11,21 +11,6 @@ export interface SonarSource {
   readonly state: GameState;
   /** Vom Spieler gewähltes Ziel (Index in `map.candidates`); `null` folgt der Strategie. */
   readonly selected: number | null;
-}
-
-export interface CurrentSiteView {
-  readonly type: SiteTypeId;
-  readonly stock: Num;
-  readonly size: Num;
-  /** Füllstand von 0 bis 100. */
-  readonly stockPercent: number;
-  /** `null`, wenn der Vorrat leer ist oder nichts abgebaut wird. */
-  readonly secondsLeft: Num | null;
-}
-
-export interface TravelView {
-  readonly type: SiteTypeId;
-  readonly secondsLeft: Num;
 }
 
 export interface SonarView {

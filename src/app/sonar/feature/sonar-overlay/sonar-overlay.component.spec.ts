@@ -81,10 +81,10 @@ describe('SonarLayerComponent und SonarOverlayComponent', () => {
     );
   });
 
-  it('markiert das Strategieziel in der Statuszeile und nennt die Mitnahme in Ein- und Mehrzahl', () => {
+  it('erklärt das Strategieziel in der Legende und nennt die Mitnahme in Ein- und Mehrzahl', () => {
     // Geschützte Leerzeichen: kein Umbruch zwischen „◆“ und „=“.
-    expect(query('sonar.status.range')?.textContent).toContain(
-      '◆\u00a0=\u00a0Ziel der Strategie „Ausgewogen“',
+    expect(query('sonar.map.legend.strategy')?.textContent).toContain(
+      '◆\u00a0=\u00a0Ziel der Strategie',
     );
     setUnits({ queens: 1, drones: 9, soldiers: 1 });
 
@@ -94,6 +94,34 @@ describe('SonarLayerComponent und SonarOverlayComponent', () => {
     expect(text('sonar.transport.left-behind')).toBe(
       'Bleiben zurück und gehen verloren: 1 Drohne und 1 Soldat',
     );
+  });
+
+  it('zeigt Standort, Reichweite und was ohne Entscheidung passiert', () => {
+    expect(text('sonar.status.range')).toBe('Umgebung · Reichweite 5');
+    expect(text('sonar.status.site')).toContain(
+      'Hydrothermaler Schlot Vorrat 20.000 / 20.000 (100 %)',
+    );
+    expect(text('sonar.note')).toContain(
+      'Auto-Weiterziehen ist aus: Ohne Entscheidung bleibt der Schwarm hier.',
+    );
+
+    store.replace({ ...store.state(), auto: { ...store.state().auto, enabled: true } });
+    fixture.detectChanges();
+    expect(text('sonar.note')).toContain(
+      'Ohne Entscheidung zieht der Schwarm bei leerem Vorrat nach Strategie „Ausgewogen“ weiter.',
+    );
+  });
+
+  it('schaltet die Strategie über den Umschalter im Titel', () => {
+    const button = (id: string) => query(`sonar.settings.strategy.${id}`);
+    expect(button('balanced')?.getAttribute('aria-pressed')).toBe('true');
+
+    button('battle-hardened')?.click();
+    fixture.detectChanges();
+
+    expect(store.state().auto.strategy).toBe('battle-hardened');
+    expect(button('battle-hardened')?.getAttribute('aria-pressed')).toBe('true');
+    expect(button('balanced')?.getAttribute('aria-pressed')).toBe('false');
   });
 
   it('nennt für unerforschte Ziele einen eigenen Sperrgrund', () => {
@@ -126,6 +154,7 @@ describe('SonarLayerComponent und SonarOverlayComponent', () => {
     expect(text('sonar.detail.blocker')).toBe('Der Schwarm ist schon unterwegs.');
     expect(query('sonar.detail.forfeit')).toBeNull();
     expect(text('sonar.status.new-targets')).toBe('Nach der Ankunft gibt es neue Ziele.');
+    expect(query('sonar.map.legend.strategy')).toBeNull();
     expect(query('sonar.targets.stale')).not.toBeNull();
     expect(query('sonar.targets.0.strategy-choice')).toBeNull();
     expect(query('sonar.targets.0.verdict')?.hasAttribute('data-stale')).toBe(true);

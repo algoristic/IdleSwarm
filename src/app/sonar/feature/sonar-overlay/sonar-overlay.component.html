@@ -1,129 +1,89 @@
 @let sonar = facade.sonar();
-@let panel = 'min-w-0 rounded-lg border border-border bg-glass p-3';
-@let strategyName = strategyLabels[sonar.settings.strategy];
+@let panel = 'pointer-events-auto fixed rounded-3xl bg-surface shadow-panel';
+@let summary =
+  'flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-lg text-xs font-black tracking-widest text-primary uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
-<div class="grid gap-3 wrap-anywhere">
-  <h2 class="text-2xl font-semibold" i18n="@@featureSonar-sonarOverlay-title">Umgebung</h2>
+<h2 class="sr-only" i18n="@@featureSonar-sonarOverlay-title">Umgebung</h2>
 
-  <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-status-title" [class]="panel">
-    <h2
-      id="sonar-status-title"
-      class="text-lg font-semibold"
-      i18n="@@featureSonar-sonarOverlay-statusTitle"
+<app-sonar-title
+  class="top-4 left-1/2 w-max max-w-md -translate-x-1/2 px-5 py-3"
+  [class]="panel"
+  [range]="sonar.range"
+  [site]="sonar.site"
+  [travel]="sonar.travel"
+  [strategy]="sonar.settings.strategy"
+  [strategyTarget]="sonar.strategyTarget"
+  (changedStrategy)="facade.setStrategy($event)"
+/>
+
+<div
+  class="top-1/2 right-4 grid max-h-11/12 w-84 -translate-y-1/2 content-start gap-4 overflow-y-auto p-5 wrap-anywhere"
+  data-testid="sonar.side"
+  [class]="panel"
+>
+  @if (sonar.selected; as selected) {
+    <app-target-detail
+      [target]="selected"
+      [transport]="sonar.transport"
+      [queen]="sonar.queen"
+      [forfeitedStock]="sonar.forfeitedStock"
+      (clickedDepart)="facade.depart($event)"
+      (clickedConvertDronesToQueen)="facade.convertDronesToQueen()"
+    />
+  } @else {
+    <p
+      class="text-sm text-fg-muted"
+      data-testid="sonar.detail.empty"
+      i18n="@@featureSonar-sonarOverlay-noSelection"
     >
-      Standort
-    </h2>
-    @if (sonar.travel; as travel) {
-      <p data-testid="sonar.status.travel">
-        <ng-container i18n="@@featureSonar-sonarOverlay-traveling">Unterwegs nach</ng-container>
-        {{ siteTypeLabels[travel.type] }} ·
-        <ng-container i18n="@@featureSonar-sonarOverlay-arrival"
-          >Ankunft in etwa {{ travel.secondsLeft | formatDuration }}</ng-container
-        >
-      </p>
-      <p
-        class="font-semibold"
-        data-testid="sonar.status.new-targets"
-        i18n="@@featureSonar-sonarOverlay-newTargets"
-      >
-        Nach der Ankunft gibt es neue Ziele.
-      </p>
-    } @else {
-      <p data-testid="sonar.status.site">
-        {{ siteTypeLabels[sonar.site.type] }} ·
-        <ng-container i18n="@@featureSonar-sonarOverlay-stock"
-          >Vorrat {{ sonar.site.stock | formatUp }} / {{ sonar.site.size | formatDown }} ({{
-            sonar.site.stockPercent | formatNum
-          }}
-          %)</ng-container
-        >
-        @if (sonar.site.secondsLeft; as seconds) {
-          ·
-          <ng-container i18n="@@featureSonar-sonarOverlay-timeLeft"
-            >leer in etwa {{ seconds | formatDuration }}</ng-container
-          >
-        }
-      </p>
-    }
-    <p class="text-sm text-fg-muted" data-testid="sonar.status.range">
-      <ng-container i18n="@@featureSonar-sonarOverlay-range"
-        >Reichweite {{ sonar.range | formatNum }}</ng-container
-      >
-      ·
-      @if (sonar.travel) {
-        <ng-container i18n="@@featureSonar-sonarOverlay-strategyName"
-          >Strategie „{{ strategyName }}“</ng-container
-        >
-      } @else if (sonar.strategyTarget === null) {
-        <ng-container i18n="@@featureSonar-sonarOverlay-strategyNoTarget"
-          >Strategie „{{ strategyName }}“ findet kein Ziel</ng-container
-        >
-      } @else {
-        <!-- Geschützte Leerzeichen halten „◆ =“ beim Umbruch zusammen. -->
-        <ng-container i18n="@@featureSonar-sonarOverlay-strategyMark"
-          >◆&nbsp;=&nbsp;Ziel der Strategie „{{ strategyName }}“</ng-container
-        >
-      }
+      Ein Ziel auswählen, um Details zu sehen.
     </p>
-  </section>
+  }
 
-  <section aria-labelledby="sonar-targets-title" [class]="panel">
-    <h2
-      id="sonar-targets-title"
-      class="mb-2 text-lg font-semibold"
-      i18n="@@featureSonar-sonarOverlay-targetsTitle"
-    >
-      Ziele
-    </h2>
-    @if (sonar.travel) {
-      <p
-        class="mb-2 text-sm text-fg-muted"
-        data-testid="sonar.targets.stale"
-        i18n="@@featureSonar-sonarOverlay-staleTargets"
+  <app-move-note [site]="sonar.site" [travel]="sonar.travel" [settings]="sonar.settings" />
+
+  <!-- Auf/Zu ist lokaler Zustand des Elements, nicht im Spielstand. -->
+  <details class="group border-t-3 border-well pt-1">
+    <summary data-testid="sonar.targets.toggle" [class]="summary">
+      <span i18n="@@featureSonar-sonarOverlay-targetsToggle"
+        >Ziele ({{ sonar.targets.length | formatNum }})</span
       >
-        Ziele vom bisherigen Standort, nur zur Ansicht.
-      </p>
-    }
-    <app-target-list [targets]="sonar.targets" (selectedTarget)="facade.select($event)" />
-  </section>
-
-  <div class="grid content-start gap-3">
-    <div [class]="panel">
-      @if (sonar.selected; as selected) {
-        <app-target-detail
-          [target]="selected"
-          [transport]="sonar.transport"
-          [queen]="sonar.queen"
-          [forfeitedStock]="sonar.forfeitedStock"
-          (clickedDepart)="facade.depart($event)"
-          (clickedConvertDronesToQueen)="facade.convertDronesToQueen()"
-        />
-      } @else {
+      <span
+        class="transition-transform group-open:rotate-90 motion-reduce:transition-none"
+        aria-hidden="true"
+        >▸</span
+      >
+    </summary>
+    <div class="grid gap-2 pt-1">
+      @if (sonar.travel) {
         <p
-          class="text-fg-muted"
-          data-testid="sonar.detail.empty"
-          i18n="@@featureSonar-sonarOverlay-noSelection"
+          class="text-sm text-fg-muted"
+          data-testid="sonar.targets.stale"
+          i18n="@@featureSonar-sonarOverlay-staleTargets"
         >
-          Ein Ziel auswählen, um Details zu sehen.
+          Ziele vom bisherigen Standort, nur zur Ansicht.
         </p>
       }
+      <app-target-list [targets]="sonar.targets" (selectedTarget)="facade.select($event)" />
     </div>
+  </details>
 
-    <section aria-labelledby="sonar-settings-title" [class]="panel">
-      <h2
-        id="sonar-settings-title"
-        class="mb-2 text-lg font-semibold"
-        i18n="@@featureSonar-sonarOverlay-settingsTitle"
+  <details class="group border-t-3 border-well pt-1">
+    <summary data-testid="sonar.settings.toggle" [class]="summary">
+      <span i18n="@@featureSonar-sonarOverlay-settingsToggle">Weiterziehen</span>
+      <span
+        class="transition-transform group-open:rotate-90 motion-reduce:transition-none"
+        aria-hidden="true"
+        >▸</span
       >
-        Einstellungen
-      </h2>
+    </summary>
+    <div class="pt-1">
       <app-form-move-settings
         [settings]="sonar.settings"
         (changedPriority)="facade.setPriority($event)"
-        (changedStrategy)="facade.setStrategy($event)"
         (changedAutoEnabled)="facade.setAutoEnabled($event)"
         (changedThresholdPercent)="facade.setAutoThresholdPercent($event)"
       />
-    </section>
-  </div>
+    </div>
+  </details>
 </div>

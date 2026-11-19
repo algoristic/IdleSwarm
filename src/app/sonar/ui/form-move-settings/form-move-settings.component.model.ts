@@ -14,7 +14,6 @@ export interface MoveSettingsView {
 /** Werte, die die Controls bearbeiten; die Schwelle als Text. */
 export interface MoveSettingsFormValue {
   readonly priority: TransportPriority;
-  readonly strategy: StrategyId;
   readonly autoEnabled: boolean;
   readonly thresholdPercent: string;
 }

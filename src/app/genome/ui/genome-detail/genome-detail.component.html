@@ -1,26 +1,40 @@
 @let _detail = detail();
+@let box = 'grid gap-1.5 rounded-2xl bg-well px-3.5 py-3 text-sm tabular-nums';
+@let row = 'flex flex-wrap items-baseline justify-between gap-x-3';
+@let value = 'ml-auto text-right font-extrabold';
 @let button =
-  'min-h-11 cursor-pointer justify-self-start rounded border border-accent bg-surface-raised px-4 py-1 font-semibold hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:text-fg-muted';
+  'min-h-11 w-full cursor-pointer rounded-full bg-primary px-4 py-3 font-black text-on-accent shadow-button-primary transition ease-pop hover:enabled:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:enabled:translate-y-0.5 active:enabled:shadow-button-primary-pressed disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-fg-muted disabled:shadow-none';
 
-<div class="grid gap-2">
-  <p class="text-sm font-semibold" [class]="kindTone()" data-testid="genome.detail.kind">
-    {{ kind() }}
-  </p>
-  <h2 class="text-lg font-semibold" data-testid="genome.detail.name">{{ name() }}</h2>
-  <p class="text-sm text-fg-muted" data-testid="genome.detail.description">{{ description() }}</p>
+<div class="grid gap-3">
+  <header class="grid gap-0.5">
+    <p
+      class="text-xs font-black tracking-widest uppercase"
+      [class]="kindTone()"
+      data-testid="genome.detail.kind"
+    >
+      {{ kind() }}
+    </p>
+    <h2 class="text-2xl leading-tight font-black" data-testid="genome.detail.name">{{ name() }}</h2>
+    <p class="text-sm leading-relaxed text-fg-muted" data-testid="genome.detail.description">
+      {{ description() }}
+    </p>
+  </header>
 
   @switch (_detail.kind) {
     @case ('root') {
-      <p class="font-semibold" data-testid="genome.detail.root" i18n="@@uiGenome-genomeDetail-root">
+      <p class="font-black" data-testid="genome.detail.root" i18n="@@uiGenome-genomeDetail-root">
         ✓ immer entwickelt
       </p>
     }
     @case ('node') {
-      <dl class="grid gap-y-2 tabular-nums">
-        <div>
-          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
+      <dl [class]="box">
+        <div class="grid gap-0.5">
+          <dt class="text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
           @for (effect of _detail.effects; track effect.target) {
-            <dd [attr.data-testid]="'genome.detail.effects.' + effect.target">
+            <dd
+              class="text-right font-extrabold"
+              [attr.data-testid]="'genome.detail.effects.' + effect.target"
+            >
               {{ targetLabels[effect.target] }}
               @if (effect.kind === 'unlock') {
                 @if (effect.before) {
@@ -50,11 +64,9 @@
             </dd>
           }
         </div>
-        <div>
-          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-predecessor">
-            Voraussetzung
-          </dt>
-          <dd data-testid="genome.detail.predecessor">
+        <div [class]="row">
+          <dt class="text-fg-muted" i18n="@@uiGenome-genomeDetail-predecessor">Voraussetzung</dt>
+          <dd data-testid="genome.detail.predecessor" [class]="value">
             {{ predecessorName() }}
             @if (_detail.predecessor.evolved) {
               <span class="text-accent">✓</span>
@@ -63,9 +75,14 @@
             }
           </dd>
         </div>
-        <div>
-          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-price">Preis</dt>
-          <dd data-testid="genome.detail.price" i18n="@@uiGenome-genomeDetail-priceValue">
+        <div [class]="row">
+          <dt class="text-fg-muted" i18n="@@uiGenome-genomeDetail-price">Preis</dt>
+          <dd
+            class="text-violet"
+            data-testid="genome.detail.price"
+            i18n="@@uiGenome-genomeDetail-priceValue"
+            [class]="value"
+          >
             {{ _detail.cost | formatNum }} DNA
           </dd>
         </div>
@@ -74,7 +91,7 @@
       @switch (_detail.status) {
         @case ('evolved') {
           <p
-            class="font-semibold"
+            class="text-sm font-black"
             [class]="kindTone()"
             data-testid="genome.detail.evolved"
             i18n="@@uiGenome-genomeDetail-evolved"
@@ -115,11 +132,14 @@
       }
     }
     @case ('unique') {
-      <dl class="grid gap-y-2 tabular-nums">
-        <div>
-          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
+      <dl [class]="box">
+        <div class="grid gap-0.5">
+          <dt class="text-fg-muted" i18n="@@uiGenome-genomeDetail-effect">Effekt</dt>
           @for (effect of _detail.effects; track effect.target) {
-            <dd [attr.data-testid]="'genome.detail.effects.' + effect.target">
+            <dd
+              class="text-right font-extrabold"
+              [attr.data-testid]="'genome.detail.effects.' + effect.target"
+            >
               {{ targetLabels[effect.target] }}
               @if (effect.kind === 'value') {
                 @switch (effect.format) {
@@ -135,16 +155,22 @@
                 }
               }
               @if (effect.siteType; as siteType) {
-                <span class="text-fg-muted" i18n="@@uiGenome-genomeDetail-siteCondition"
+                <span
+                  class="font-semibold text-fg-muted"
+                  i18n="@@uiGenome-genomeDetail-siteCondition"
                   >(nur an: {{ siteTypeLabels[siteType] }})</span
                 >
               }
             </dd>
           }
         </div>
-        <div>
-          <dt class="text-sm text-fg-muted" i18n="@@uiGenome-genomeDetail-unlock">Freischaltung</dt>
-          <dd data-testid="genome.detail.progress" i18n="@@uiGenome-genomeDetail-progress">
+        <div [class]="row">
+          <dt class="text-fg-muted" i18n="@@uiGenome-genomeDetail-unlock">Freischaltung</dt>
+          <dd
+            data-testid="genome.detail.progress"
+            i18n="@@uiGenome-genomeDetail-progress"
+            [class]="value"
+          >
             Fund: {{ fragmentLabels[_detail.fragment] }} {{ _detail.progress.found | formatNum }} /
             {{ _detail.progress.required | formatNum }}
           </dd>
@@ -153,7 +179,7 @@
 
       @if (_detail.status === 'evolved') {
         <p
-          class="font-semibold"
+          class="text-sm font-black"
           [class]="kindTone()"
           data-testid="genome.detail.evolved"
           i18n="@@uiGenome-genomeDetail-unlocked"
@@ -176,4 +202,12 @@
       }
     }
   }
+
+  <p
+    class="border-t-3 border-well pt-3 text-xs leading-relaxed text-fg-muted"
+    data-testid="genome.detail.note"
+    i18n="@@uiGenome-genomeDetail-note"
+  >
+    Im Hintergrund läuft der Schwarm weiter – unscharf, aber lebendig.
+  </p>
 </div>

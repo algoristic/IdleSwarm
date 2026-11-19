@@ -38,7 +38,6 @@ describe('FormMoveSettingsComponent', () => {
     emitted = [];
     const component = fixture.componentInstance;
     component.changedPriority.subscribe((value) => emitted.push({ kind: 'priority', value }));
-    component.changedStrategy.subscribe((value) => emitted.push({ kind: 'strategy', value }));
     component.changedAutoEnabled.subscribe((value) => emitted.push({ kind: 'auto', value }));
     component.changedThresholdPercent.subscribe((value) =>
       emitted.push({ kind: 'threshold', value }),
@@ -47,24 +46,21 @@ describe('FormMoveSettingsComponent', () => {
   });
 
   it('zeigt die Einstellungen aus dem Spielstand', () => {
-    render({ priority: 'soldiers-first', strategy: 'battle-hardened', thresholdPercent: 30 });
+    render({ priority: 'soldiers-first', thresholdPercent: 30 });
     expect(query<HTMLSelectElement>('sonar.settings.priority').value).toBe('soldiers-first');
-    expect(query<HTMLInputElement>('sonar.settings.strategy.battle-hardened').checked).toBe(true);
     expect(query<HTMLInputElement>('sonar.auto.enabled').checked).toBe(false);
     expect(threshold().value).toBe('30');
   });
 
-  it('meldet Priorität, Strategie und Auto sofort', () => {
+  it('meldet Priorität und Auto sofort', () => {
     const select = query<HTMLSelectElement>('sonar.settings.priority');
     select.value = 'drones-first';
     select.dispatchEvent(new Event('input'));
     select.dispatchEvent(new Event('change'));
-    query<HTMLInputElement>('sonar.settings.strategy.least-resistance').click();
     query<HTMLInputElement>('sonar.auto.enabled').click();
 
     expect(emitted).toEqual([
       { kind: 'priority', value: 'drones-first' },
-      { kind: 'strategy', value: 'least-resistance' },
       { kind: 'auto', value: true },
     ]);
   });
@@ -93,6 +89,10 @@ describe('FormMoveSettingsComponent', () => {
     threshold().value = '7';
     threshold().dispatchEvent(new Event('input'));
     render();
+    expect(threshold().value).toBe('7');
+
+    // Ein Strategiewechsel betrifft das Formular nicht und setzt die Eingabe nicht zurück.
+    render({ strategy: 'battle-hardened' });
     expect(threshold().value).toBe('7');
 
     render({ thresholdPercent: 4 });

@@ -1,11 +1,27 @@
 @let _target = target();
 @let _queen = queen();
-@let meter = 'h-2 overflow-hidden rounded-md border border-border-control bg-surface-raised';
+@let row = 'flex flex-wrap items-baseline justify-between gap-x-3';
+@let value = 'ml-auto text-right font-extrabold';
 
 <section class="grid gap-3" aria-labelledby="sonar-detail-title">
-  <header>
-    <p class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-kicker">Ziel</p>
-    <h2 id="sonar-detail-title" class="text-lg font-semibold" data-testid="sonar.detail.type">
+  <header class="grid gap-0.5">
+    <p class="text-xs font-black tracking-widest text-fg-muted uppercase tabular-nums">
+      @if (_target.details; as details) {
+        <ng-container i18n="@@uiSonar-targetDetail-kickerDistance"
+          >Ziel · Distanz
+          <span data-testid="sonar.detail.distance">{{
+            details.distance | formatRate
+          }}</span></ng-container
+        >
+      } @else {
+        <ng-container i18n="@@uiSonar-targetDetail-kicker">Ziel</ng-container>
+      }
+    </p>
+    <h2
+      id="sonar-detail-title"
+      class="text-2xl leading-tight font-black"
+      data-testid="sonar.detail.type"
+    >
       @if (_target.details; as details) {
         {{ siteTypeLabels[details.type] }}
       } @else {
@@ -23,40 +39,32 @@
   </header>
 
   @if (_target.details; as details) {
-    <dl class="grid grid-cols-stats gap-x-4 gap-y-2 tabular-nums">
-      <div>
-        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-size">
-          Größe (Nahrungsvorrat)
-        </dt>
-        <dd data-testid="sonar.detail.size">{{ details.size | formatDown }}</dd>
+    <dl class="grid gap-1.5 rounded-2xl bg-well px-3.5 py-3 text-sm tabular-nums">
+      <div [class]="row">
+        <dt class="text-fg-muted" i18n="@@uiSonar-targetDetail-size">Größe (Nahrungsvorrat)</dt>
+        <dd data-testid="sonar.detail.size" [class]="value">{{ details.size | formatDown }}</dd>
       </div>
-      <div>
-        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-distance">Distanz</dt>
-        <dd data-testid="sonar.detail.distance">{{ details.distance | formatRate }}</dd>
+      <div [class]="row">
+        <dt class="text-fg-muted" i18n="@@uiSonar-targetDetail-travelTime">Reisedauer</dt>
+        <dd data-testid="sonar.detail.travel-time" [class]="value">
+          {{ details.travelSeconds | formatDuration }}
+        </dd>
       </div>
-      <div>
-        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-travelTime">Reisedauer</dt>
-        <dd data-testid="sonar.detail.travel-time">{{ details.travelSeconds | formatDuration }}</dd>
+      <div [class]="row">
+        <dt class="text-fg-muted" i18n="@@uiSonar-targetDetail-dna">DNA-Belohnung</dt>
+        <dd class="text-violet" data-testid="sonar.detail.dna" [class]="value">
+          +{{ details.dna | formatDown }}
+        </dd>
       </div>
-      <div>
-        <dt class="text-sm text-fg-muted">{{ defenseLabel }}</dt>
-        <dd data-testid="sonar.detail.defense">{{ details.defense | formatNum }}</dd>
-      </div>
-      <div>
-        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-dna">DNA-Belohnung</dt>
-        <dd class="text-violet" data-testid="sonar.detail.dna">+{{ details.dna | formatDown }}</dd>
-      </div>
-      <div>
-        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-findChance">Fundchance</dt>
-        <dd data-testid="sonar.detail.find-chance">
+      <div [class]="row">
+        <dt class="text-fg-muted" i18n="@@uiSonar-targetDetail-findChance">Fundchance</dt>
+        <dd data-testid="sonar.detail.find-chance" [class]="value">
           {{ details.findChancePercent | formatNum }} %
         </dd>
       </div>
-      <div>
-        <dt class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-losses">
-          Erwartete Verluste
-        </dt>
-        <dd data-testid="sonar.detail.losses">
+      <div [class]="row">
+        <dt class="text-fg-muted" i18n="@@uiSonar-targetDetail-losses">Erwartete Verluste</dt>
+        <dd data-testid="sonar.detail.losses" [class]="value">
           @if (details.losses; as losses) {
             @if (losses.soldiers.shown === 0) {
               <ng-container i18n="@@uiSonar-targetDetail-noLosses">keine</ng-container>
@@ -76,52 +84,39 @@
       </div>
     </dl>
 
-    <div class="grid gap-1 tabular-nums">
-      <p data-testid="sonar.detail.versus">
-        {{ attackLabel }} {{ details.attack | formatDown }}
+    <div class="grid gap-2 tabular-nums">
+      <p class="text-xs text-fg-muted" data-testid="sonar.detail.versus">
+        {{ attackLabel }}
+        <span class="font-extrabold text-fg">{{ details.attack | formatDown }}</span>
         <ng-container i18n="@@uiSonar-targetDetail-versus">vs.</ng-container>
-        {{ defenseLabel }} {{ details.defense | formatNum }}
+        {{ defenseLabel }}
+        <span class="font-extrabold text-fg" data-testid="sonar.detail.defense">{{
+          details.defense | formatNum
+        }}</span>
       </p>
-      <div
-        role="meter"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        [class]="meter"
-        [attr.aria-label]="attackLabel"
-        [attr.aria-valuenow]="details.attackBarPercent"
-        [attr.aria-valuetext]="details.attack | formatDown"
-      >
+      <!-- Balken wie Mockup `.vsbar`: Angriff als Breite, Abwehr als Marke; die Zahlen stehen darüber. -->
+      <div class="relative h-4 rounded-lg bg-well" aria-hidden="true">
         <div
-          class="h-full bg-accent data-weak:bg-danger"
+          class="absolute inset-y-0 left-0 rounded-lg bg-accent shadow-shade data-weak:bg-danger"
           data-testid="sonar.detail.attack-bar"
           [attr.data-weak]="_target.verdict === 'too-strong' ? '' : null"
           [style.width.%]="details.attackBarPercent"
         ></div>
-      </div>
-      <div
-        role="meter"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        [class]="meter"
-        [attr.aria-label]="defenseLabel"
-        [attr.aria-valuenow]="details.defenseBarPercent"
-        [attr.aria-valuetext]="details.defense | formatNum"
-      >
         <div
-          class="h-full bg-magenta"
+          class="absolute -inset-y-1.5 w-1.5 -translate-x-1/2 rounded-sm bg-magenta"
           data-testid="sonar.detail.defense-bar"
-          [style.width.%]="details.defenseBarPercent"
+          [style.left.%]="details.defenseBarPercent"
         ></div>
       </div>
     </div>
   } @else {
-    <p class="text-fg-muted" i18n="@@uiSonar-targetDetail-unexplored">
+    <p class="text-sm text-fg-muted" i18n="@@uiSonar-targetDetail-unexplored">
       Außerhalb der Wahrnehmung. Mehr Reichweite deckt das Ziel auf.
     </p>
   }
 
   <p
-    class="font-semibold data-stale:text-fg-muted"
+    class="text-sm font-black data-stale:text-fg-muted"
     data-testid="sonar.detail.verdict"
     [class]="verdictTones[_target.verdict]"
     [attr.data-stale]="_target.blocker === 'traveling' ? '' : null"
@@ -132,8 +127,8 @@
   @if (transport(); as _transport) {
     @let leftDrones = _transport.leftDrones;
     @let leftSoldiers = _transport.leftSoldiers;
-    <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-transport-title">
-      <h3 id="sonar-transport-title" class="text-sm font-semibold">
+    <section class="grid gap-1 text-sm tabular-nums" aria-labelledby="sonar-transport-title">
+      <h3 id="sonar-transport-title" class="font-extrabold">
         <ng-container i18n="@@uiSonar-targetDetail-transportTitle">Mitnahme</ng-container>:
         <span data-testid="sonar.transport.priority">{{
           priorityLabels[_transport.priority]
@@ -153,7 +148,7 @@
       </p>
       @if (_transport.fitsAll) {
         <p
-          class="text-sm text-fg-muted"
+          class="text-fg-muted"
           data-testid="sonar.transport.fits-all"
           i18n="@@uiSonar-targetDetail-fitsAll"
         >
@@ -204,15 +199,11 @@
     </p>
   }
 
-  <section class="grid gap-1 tabular-nums" aria-labelledby="sonar-queen-title">
-    <h3
-      id="sonar-queen-title"
-      class="text-sm font-semibold"
-      i18n="@@uiSonar-targetDetail-queenTitle"
-    >
+  <section class="grid gap-1.5 text-sm tabular-nums" aria-labelledby="sonar-queen-title">
+    <h3 id="sonar-queen-title" class="font-extrabold" i18n="@@uiSonar-targetDetail-queenTitle">
       Mehr Platz: Drohnen → Königin
     </h3>
-    <p class="text-sm text-fg-muted" data-testid="sonar.queen.price">
+    <p class="text-fg-muted" data-testid="sonar.queen.price">
       @if (_queen.price; as price) {
         <ng-container i18n="@@uiSonar-targetDetail-queenPriceCount"
           >Kostet
@@ -230,7 +221,7 @@
     </p>
     <button
       type="button"
-      class="min-h-11 cursor-pointer justify-self-start rounded border border-border-control bg-surface-raised px-2.5 py-1 hover:enabled:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+      class="min-h-11 cursor-pointer justify-self-start rounded-full bg-surface-raised px-3.5 py-2 font-extrabold shadow-button transition ease-pop hover:enabled:bg-accent hover:enabled:text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:enabled:translate-y-0.5 active:enabled:shadow-button-pressed disabled:cursor-not-allowed disabled:text-fg-muted disabled:shadow-none"
       data-testid="sonar.queen.convert"
       [disabled]="!_queen.possible"
       i18n="@@uiSonar-targetDetail-queenConvert"
@@ -250,10 +241,10 @@
     </p>
   }
 
-  <div class="grid gap-1">
+  <div class="grid gap-1.5">
     <button
       type="button"
-      class="min-h-11 cursor-pointer justify-self-start rounded border border-accent bg-surface-raised px-4 py-1 font-semibold hover:enabled:bg-surface disabled:cursor-not-allowed disabled:border-border-control disabled:text-fg-muted"
+      class="min-h-11 w-full cursor-pointer rounded-full bg-primary px-4 py-3 font-black text-on-accent shadow-button-primary transition ease-pop hover:enabled:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:enabled:translate-y-0.5 active:enabled:shadow-button-primary-pressed disabled:cursor-not-allowed disabled:bg-surface-raised disabled:text-fg-muted disabled:shadow-none"
       data-testid="sonar.detail.depart"
       aria-describedby="sonar-depart-blocker"
       [disabled]="_target.blocker !== null"

@@ -4,14 +4,13 @@ import { FIND_ENTRY_LABELS } from '@app/finds/ui/finds-labels/finds-labels';
 import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
 import { formatNum } from '@app/shared/util/format/format';
 
-import { GENOME_BRANCHES, GenomeNodeStatus } from '../../domain/models/genome.model';
+import { GenomeNodeStatus } from '../../domain/models/genome.model';
 import {
   GENOME_BRANCH_LABELS,
   GENOME_STATUS_LABELS,
-  GENOME_TONE_BACKGROUNDS,
+  GENOME_UNIQUE_KIND_LABEL,
   GENOME_TONE_FILLS,
   GENOME_TONE_STROKES,
-  GENOME_UNIQUE_KIND_LABEL,
   genomeEntryLabel,
 } from '../genome-labels/genome-labels';
 import type { GenomeEntryId } from '../models/genome-entry.model';
@@ -74,8 +73,8 @@ const TAG_TEXT_FILLS: Readonly<Record<GenomeNodeStatus, string>> = {
 
 /**
  * Radialer Genom-Baum im Zellkern im K2-Stil (US-05.02, US-05.04): Membran, Organellen, gebogene
- * Äste und Knoten mit Statusdarstellung, darunter die Legende. Jeder Knoten ist ein Knopf;
- * verfügbare pulsieren.
+ * Äste und Knoten mit Statusdarstellung; die Legende steht im Titel des Genom-Modus. Jeder
+ * Knoten ist ein Knopf; verfügbare pulsieren.
  */
 @Component({
   selector: 'app-genome-tree',
@@ -87,13 +86,8 @@ const TAG_TEXT_FILLS: Readonly<Record<GenomeNodeStatus, string>> = {
 export class GenomeTreeComponent {
   tree = input.required<GenomeTreeView>();
 
-  branches = GENOME_BRANCHES;
-  branchLabels = GENOME_BRANCH_LABELS;
-  statusLabels = GENOME_STATUS_LABELS;
-  uniqueKindLabel = GENOME_UNIQUE_KIND_LABEL;
   toneFills = GENOME_TONE_FILLS;
   toneStrokes = GENOME_TONE_STROKES;
-  toneBackgrounds = GENOME_TONE_BACKGROUNDS;
   edgeWidths = EDGE_WIDTHS;
   edgeOpacities = EDGE_OPACITIES;
   edgeDashes = EDGE_DASHES;

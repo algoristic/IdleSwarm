@@ -1,33 +1,50 @@
 @let genome = facade.genome();
-@let panel = 'min-w-0 rounded-lg border border-border bg-glass p-3';
+@let panel = 'pointer-events-auto fixed rounded-3xl bg-surface shadow-panel';
 
-<div class="grid gap-3 wrap-anywhere">
-  <h2 class="text-2xl font-semibold" i18n="@@featureGenome-genomeOverlay-title">Genom</h2>
-
-  <section
-    class="flex flex-wrap items-baseline gap-x-6 gap-y-1 tabular-nums"
-    aria-labelledby="genome-status-title"
-    [class]="panel"
+<section
+  class="top-4 left-1/2 grid w-max max-w-md -translate-x-1/2 justify-items-center gap-1 px-5 py-3 text-center tabular-nums"
+  aria-labelledby="genome-title"
+  [class]="panel"
+>
+  <p
+    class="text-xs font-extrabold tracking-widest text-fg-muted uppercase"
+    i18n="@@featureGenome-genomeOverlay-kicker"
   >
-    <h2 id="genome-status-title" class="sr-only" i18n="@@featureGenome-genomeOverlay-statusTitle">
-      Bestand
-    </h2>
-    <p data-testid="genome.status.dna" i18n="@@featureGenome-genomeOverlay-dna">
-      <span class="text-lg font-semibold text-violet">{{ genome.dna | formatDown }}</span> DNA
-    </p>
-    <p data-testid="genome.status.available" i18n="@@featureGenome-genomeOverlay-available">
-      {genome.availableCount, plural,
+    Zellkern · Genetische Adaption
+  </p>
+  <h2
+    id="genome-title"
+    class="text-2xl leading-tight font-black"
+    i18n="@@featureGenome-genomeOverlay-title"
+  >
+    Genom
+  </h2>
+  <p class="flex flex-wrap justify-center gap-x-2 text-xs text-fg-muted">
+    <span data-testid="genome.status.dna" i18n="@@featureGenome-genomeOverlay-dna"
+      ><span class="text-sm font-black text-violet">{{ genome.dna | formatDown }}</span> DNA</span
+    >
+    <span aria-hidden="true">·</span>
+    <span
+      data-testid="genome.status.available"
+      i18n="@@featureGenome-genomeOverlay-available"
+      >{genome.availableCount, plural,
         =0 {Keine Adaption verfügbar}
         =1 {1 Adaption verfügbar}
         other {{{ genome.availableCount | formatNum }} Adaptionen verfügbar}
-      }
-    </p>
-  </section>
+      }</span
+    >
+  </p>
+  <app-genome-legend class="mt-1" />
+</section>
 
-  <section aria-labelledby="genome-detail-title" [class]="panel">
-    <h2 id="genome-detail-title" class="sr-only" i18n="@@featureGenome-genomeOverlay-detailTitle">
-      Gewählte Adaption
-    </h2>
-    <app-genome-detail [detail]="genome.detail" (clickedEvolve)="facade.evolve($event)" />
-  </section>
-</div>
+<section
+  class="top-1/2 right-4 max-h-11/12 w-84 -translate-y-1/2 overflow-y-auto p-5 wrap-anywhere"
+  aria-labelledby="genome-detail-title"
+  data-testid="genome.side"
+  [class]="panel"
+>
+  <h2 id="genome-detail-title" class="sr-only" i18n="@@featureGenome-genomeOverlay-detailTitle">
+    Gewählte Adaption
+  </h2>
+  <app-genome-detail [detail]="genome.detail" (clickedEvolve)="facade.evolve($event)" />
+</section>

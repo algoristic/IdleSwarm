@@ -1,0 +1,43 @@
+@let _site = site();
+@let _settings = settings();
+
+<p
+  class="border-t-3 border-well pt-3 text-xs leading-relaxed text-fg-muted tabular-nums"
+  data-testid="sonar.note"
+>
+  @if (travel()) {
+    <span data-testid="sonar.status.new-targets" i18n="@@uiSonar-moveNote-newTargets"
+      >Nach der Ankunft gibt es neue Ziele.</span
+    >
+  } @else {
+    @if (_site.secondsLeft; as seconds) {
+      <ng-container i18n="@@uiSonar-moveNote-hereTimeLeft"
+        >Hier: {{ siteTypeLabels[_site.type] }} · Vorrat {{ _site.stockPercent | formatNum }} % ·
+        leer in etwa {{ seconds | formatDuration }}.</ng-container
+      >
+    } @else {
+      <ng-container i18n="@@uiSonar-moveNote-here"
+        >Hier: {{ siteTypeLabels[_site.type] }} · Vorrat
+        {{ _site.stockPercent | formatNum }} %.</ng-container
+      >
+    }
+    @if (!_settings.autoEnabled) {
+      <ng-container i18n="@@uiSonar-moveNote-autoOff"
+        >Auto-Weiterziehen ist aus: Ohne Entscheidung bleibt der Schwarm hier.</ng-container
+      >
+    } @else if (_settings.thresholdPercent === 0) {
+      <ng-container i18n="@@uiSonar-moveNote-autoEmpty"
+        >Ohne Entscheidung zieht der Schwarm bei leerem Vorrat nach Strategie
+        <b class="font-black text-accent">„{{ strategyLabels[_settings.strategy] }}“</b>
+        weiter.</ng-container
+      >
+    } @else {
+      <ng-container i18n="@@uiSonar-moveNote-autoThreshold"
+        >Ohne Entscheidung zieht der Schwarm bei höchstens
+        {{ _settings.thresholdPercent | formatNum }} % Vorrat nach Strategie
+        <b class="font-black text-accent">„{{ strategyLabels[_settings.strategy] }}“</b>
+        weiter.</ng-container
+      >
+    }
+  }
+</p>

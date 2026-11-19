@@ -199,7 +199,7 @@
         }
       } @else {
         <circle
-          class="fill-bg stroke-fg-muted"
+          class="fill-bg-deep stroke-fg-muted"
           stroke-width="2.5"
           stroke-linecap="round"
           stroke-dasharray="1 6"
@@ -244,36 +244,3 @@
     </text>
   </g>
 </svg>
-
-<ul
-  class="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-fg-muted"
-  data-testid="sonar.map.legend"
->
-  <li class="flex items-center gap-1.5">
-    <span class="size-3 rounded-full bg-accent" aria-hidden="true"></span>
-    <span i18n="@@uiSonar-sonarMap-legend-capturable">einnehmbar</span>
-  </li>
-  <li class="flex items-center gap-1.5">
-    <span class="size-3 rounded-full bg-danger" aria-hidden="true"></span>
-    <span i18n="@@uiSonar-sonarMap-legend-tooStrong">zu stark</span>
-  </li>
-  <li class="flex items-center gap-1.5">
-    <span class="size-3 rounded-full bg-fg-muted" aria-hidden="true"></span>
-    <span i18n="@@uiSonar-sonarMap-legend-outOfRange">außer Reichweite</span>
-  </li>
-  <li class="flex items-center gap-1.5">
-    <span
-      class="size-3 rounded-full border-2 border-dashed border-fg-muted"
-      aria-hidden="true"
-    ></span>
-    <span i18n="@@uiSonar-sonarMap-legend-unexplored">unerforscht</span>
-  </li>
-  <li class="flex items-center gap-1.5">
-    <span class="size-3 rounded-full bg-violet" aria-hidden="true"></span>
-    <span i18n="@@uiSonar-sonarMap-legend-trail">bisherige Route</span>
-  </li>
-  <li class="flex items-center gap-1.5">
-    <span class="size-3 rounded-full bg-magenta" aria-hidden="true"></span>
-    <span i18n="@@uiSonar-sonarMap-legend-defense">Abwehr</span>
-  </li>
-</ul>
