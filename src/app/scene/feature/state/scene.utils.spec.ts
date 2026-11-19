@@ -15,7 +15,7 @@ const source = (overrides: Partial<SceneSource> = {}): SceneSource => ({
   height: 800,
   devicePixelRatio: 3,
   coarsePointer: false,
-  reduceParticles: false,
+  reducedMotion: false,
   ...overrides,
 });
 

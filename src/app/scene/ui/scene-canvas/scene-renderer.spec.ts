@@ -52,7 +52,7 @@ const frame = (overrides: Partial<SceneFrame> = {}): SceneFrame => ({
   traveling: false,
   stockShare: 0.5,
   yieldParticleRate: 6,
-  reduceParticles: false,
+  reducedMotion: false,
   ...overrides,
 });
 
@@ -71,12 +71,44 @@ describe('SceneRenderer', () => {
     renderer?.draw(1000, frame());
     expect(canvas.width).toBe(1600);
     expect(canvas.height).toBe(1200);
-    // Hintergrund, Hügel, 120 Plankton, 6 Blasen, 52 Agenten (frisch: unsichtbar), Teilchen.
-    expect(calls.drawImage).toBeGreaterThanOrEqual(2 + 120 + 6);
+    // Hintergrund mit Hügeln, 120 Plankton, Schein, 6 Blasen, 52 Agenten (frisch: unsichtbar), Teilchen.
+    expect(calls.drawImage).toBeGreaterThanOrEqual(1 + 120 + 1 + 6);
 
     calls.drawImage = 0;
-    renderer?.draw(5000, frame({ traveling: true, reduceParticles: true }));
+    renderer?.draw(5000, frame({ traveling: true, reducedMotion: true }));
     // Unterwegs ohne Futterstelle und Teilchen; Plankton halbiert, Agenten eingeblendet.
-    expect(calls.drawImage).toBe(2 + 60 + 52);
+    expect(calls.drawImage).toBe(1 + 60 + 52);
+  });
+
+  it('zeichnet den Hintergrund erst neu, wenn die Lichtkegel spürbar geschwankt sind', () => {
+    // Nur der Hintergrund kopiert in Offscreen-Canvas (die Hügel); Sprites malen ohne `drawImage`.
+    const offscreen = { drawImage: 0 };
+    const renderer = SceneRenderer.create(fakeCanvas({ drawImage: 0 }), palette, () =>
+      fakeCanvas(offscreen),
+    );
+    renderer?.draw(1000, frame());
+    expect(offscreen.drawImage).toBe(1);
+    renderer?.draw(1016, frame());
+    expect(offscreen.drawImage).toBe(1);
+    renderer?.draw(4000, frame());
+    expect(offscreen.drawImage).toBe(2);
+  });
+
+  it('lässt die Lichtkegel bei reduzierter Bewegung stillstehen und zeichnet keine Blasen', () => {
+    const calls = { drawImage: 0 };
+    const offscreen = { drawImage: 0 };
+    const renderer = SceneRenderer.create(fakeCanvas(calls), palette, () => fakeCanvas(offscreen));
+    const still = frame({
+      reducedMotion: true,
+      yieldParticleRate: 0,
+      sprites: { queens: 0, drones: 0, soldiers: 0 },
+    });
+    renderer?.draw(1000, still);
+    renderer?.draw(20_000, still);
+    expect(offscreen.drawImage).toBe(1);
+    calls.drawImage = 0;
+    renderer?.draw(21_000, still);
+    // Hintergrund, 60 Plankton, Schein; keine Blasen.
+    expect(calls.drawImage).toBe(1 + 60 + 1);
   });
 });

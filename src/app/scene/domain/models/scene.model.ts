@@ -80,6 +80,9 @@ export interface SceneFrame {
   readonly stockShare: number;
   /** Ertragsteilchen je Sekunde (gedeckelt). */
   readonly yieldParticleRate: number;
-  /** Hook für „Partikel reduzieren“ (Einstellung ab AP 1.4.6). */
-  readonly reduceParticles: boolean;
+  /**
+   * Reduzierte Bewegung (US-08.08): halb so viel Plankton und Ertragsteilchen, keine Blasen,
+   * stille Lichtkegel. Agenten bewegen sich weiter, weil sie den Spielzustand zeigen.
+   */
+  readonly reducedMotion: boolean;
 }

@@ -6,6 +6,7 @@ import { GameLoop } from '@app/engine/data-access/game-loop/game-loop.service';
 import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
 import { KEY_VALUE_STORE } from '@app/persistence/data-access/persistence/persistence-service.tokens';
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
+import { MotionPreferenceService } from '@app/shared/data-access/motion-preference/motion-preference.service';
 import { CLOCK } from '@app/shared/data-access/platform/platform.tokens';
 
 import { shellRoutes } from '../shell.routes';
@@ -43,6 +44,7 @@ describe('ShellPage: Desktop-Eingabe', () => {
         GameStore,
         GameLoop,
         PersistenceService,
+        MotionPreferenceService,
         {
           provide: KEY_VALUE_STORE,
           useValue: { getItem: () => null, setItem: () => undefined, removeItem: () => undefined },
@@ -86,6 +88,36 @@ describe('ShellPage: Desktop-Eingabe', () => {
     await press('Escape');
     expect(byTestId('hud.drawers.finds.panel')?.hasAttribute('data-open')).toBe(false);
     expect(url()).toBe('/');
+  });
+
+  it('gibt den Fokus nach Esc aus der Schublade an ihren Reiter zurück', async () => {
+    byTestId('hud.drawers.finds.tab')?.click();
+    await settle();
+    expect(document.activeElement).toBe(byTestId('hud.drawers.finds.panel'));
+
+    await press('Escape');
+    expect(document.activeElement).toBe(byTestId('hud.drawers.finds.tab'));
+  });
+
+  it('setzt den Fokus nach einem Moduswechsel auf den Titel des Modus, nicht beim Laden', async () => {
+    await settle();
+    expect(document.activeElement).toBe(document.body);
+
+    await press('w');
+    await settle();
+    const mapTitle = byTestId('shell.overlay.map')?.querySelector('app-sonar-title');
+    expect(document.activeElement).toBe(mapTitle);
+    expect(mapTitle?.getAttribute('aria-label')).toBe('Umgebung');
+
+    byTestId('shell.zoom.gen')?.click();
+    await settle();
+    expect(document.activeElement?.textContent).toContain('Genom');
+
+    byTestId('shell.back')?.click();
+    await settle();
+    expect(document.activeElement).toBe(
+      byTestId('shell.overlay.scene')?.querySelector('app-feeding-site'),
+    );
   });
 
   it('nennt die Tastenkürzel an der Zoom-Leiste', () => {

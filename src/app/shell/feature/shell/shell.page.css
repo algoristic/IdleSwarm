@@ -63,13 +63,11 @@
 }
 
 /* Reduzierte Bewegung: keine Kamerafahrt, nur kurze Überblendung der Ebenen. */
-@media (prefers-reduced-motion: reduce) {
-  .shell__layer {
-    transition: opacity var(--sw-zoom-reduced-duration) linear;
-  }
+:host-context([data-motion='reduced']) .shell__layer {
+  transition: opacity var(--sw-zoom-reduced-duration) linear;
+}
 
-  .shell__layer--sonar,
-  .shell__layer--genome {
-    transform: none;
-  }
+:host-context([data-motion='reduced']) .shell__layer--sonar,
+:host-context([data-motion='reduced']) .shell__layer--genome {
+  transform: none;
 }

@@ -17,8 +17,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .event-log__entry {
-    animation-name: event-log-fade;
-  }
+:host-context([data-motion='reduced']) .event-log__entry {
+  animation-name: event-log-fade;
 }

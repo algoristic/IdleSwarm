@@ -27,8 +27,8 @@ export function toSceneFrame(source: SceneSource, params: BalanceParams): SceneF
     sprites: spriteCounts(unitCounts(state.units), budget),
     traveling,
     stockShare: site.size.isZero() ? 0 : site.stock.div(site.size).toNumber(),
-    yieldParticleRate: yieldParticleRate(rate, source.reduceParticles),
-    reduceParticles: source.reduceParticles,
+    yieldParticleRate: yieldParticleRate(rate, source.reducedMotion),
+    reducedMotion: source.reducedMotion,
   };
 }
 

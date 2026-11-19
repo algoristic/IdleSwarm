@@ -4,7 +4,7 @@ import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { Plankton, SceneParticle } from './models/scene.model';
 import { clamp01, MOCKUP_FRAME_MS, positiveModulo } from './scene-agent-logic';
 
-/** Plankton im Hintergrund (Mockup: 120); „Partikel reduzieren“ halbiert. */
+/** Plankton im Hintergrund (Mockup: 120); reduzierte Bewegung halbiert. */
 export const PLANKTON_COUNT = 120;
 export const PLANKTON_COLOR_COUNT = 5;
 

@@ -16,8 +16,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .zoom-bar__badge {
-    animation: none;
-  }
+:host-context([data-motion='reduced']) .zoom-bar__badge {
+  animation: none;
 }

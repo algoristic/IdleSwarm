@@ -317,6 +317,22 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       expect(isOpen('sacrifice')).toBe(false);
     });
 
+    it('setzt beim Öffnen den Fokus in die Schublade und beim Schließen zurück auf den Reiter', async () => {
+      tab('finds').focus();
+      tab('finds').click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement).toBe(panel('finds'));
+
+      const hud = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof SceneHudComponent,
+      ).componentInstance as SceneHudComponent;
+      expect(hud.closeDrawer()).toBe(true);
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(tab('finds'));
+      expect(hud.closeDrawer()).toBe(false);
+    });
+
     it('bleibt beim Takt offen', () => {
       tab('pheromones').click();
       fixture.detectChanges();

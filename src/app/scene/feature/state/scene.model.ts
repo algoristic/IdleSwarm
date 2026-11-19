@@ -8,7 +8,7 @@ export interface SceneSource {
   readonly height: number;
   readonly devicePixelRatio: number;
   readonly coarsePointer: boolean;
-  readonly reduceParticles: boolean;
+  readonly reducedMotion: boolean;
 }
 
 /** Horizontale Lage einer Ereigniszahl über der Futterstelle, damit sich Zahlen nicht verdecken. */

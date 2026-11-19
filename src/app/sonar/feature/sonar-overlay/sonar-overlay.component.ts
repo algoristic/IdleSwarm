@@ -1,4 +1,4 @@
-import { Component, inject, input, linkedSignal } from '@angular/core';
+import { Component, ElementRef, inject, input, linkedSignal, viewChild } from '@angular/core';
 
 import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
 
@@ -35,10 +35,19 @@ export class SonarOverlayComponent {
   /** Kartenmodus aktiv; beim Wechsel klappt das Bottom-Sheet wieder ein (wie die Schubladen). */
   active = input(true);
 
+  title = viewChild.required<string, ElementRef<HTMLElement>>('title', { read: ElementRef });
+
   /** Bottom-Sheet aufgeklappt; lokaler UI-Zustand, auf größeren Bildschirmen ohne Wirkung. */
   sheetOpen = linkedSignal({ source: this.active, computation: () => false });
 
+  titleLabel = $localize`:@@featureSonar-sonarOverlay-titleRegion:Umgebung`;
+
   onToggleSheet(): void {
     this.sheetOpen.update((open) => !open);
+  }
+
+  /** Fokus auf den Titel nach einem Moduswechsel (TK §8.5); die Shell ruft das auf. */
+  focusTitle(): void {
+    this.title().nativeElement.focus({ preventScroll: true });
   }
 }

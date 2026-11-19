@@ -17,6 +17,8 @@ import {
 const EDITABLE_SELECTOR =
   'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
 
+const TOUCH_EVENTS = ['touchstart', 'touchmove', 'touchend', 'touchcancel'] as const;
+
 /** Spielfläche (`touch-action: none` in `shell.page.css`): Nur dort beginnt ein Pinch. */
 const PINCH_SURFACE_SELECTOR = '.shell__layer';
 
@@ -43,6 +45,11 @@ export class ShellInputDirective {
   #wheelLockedUntilMs = Number.NEGATIVE_INFINITY;
   #pinch = PINCH_IDLE;
   #clickBlockedUntilMs = Number.NEGATIVE_INFINITY;
+  /**
+   * Der Browser hat die Pointer der laufenden Geste übernommen (`pointercancel`, etwa weil ein Finger
+   * den Genom-Baum schon verschiebt); bis alle Finger los sind, kommt der Pinch aus Touch Events.
+   */
+  #touchFallback = false;
 
   constructor() {
     const host = this.#host.nativeElement;
@@ -52,11 +59,15 @@ export class ShellInputDirective {
     const onPointerMove = (event: PointerEvent): void => this.#onPointerMove(event);
     const onPointerUp = (event: PointerEvent): void => this.#onPointerUp(event);
     const onClick = (event: MouseEvent): void => this.#onClick(event);
+    const onTouch = (event: TouchEvent): void => this.#onTouch(event);
     host.addEventListener('wheel', onWheel, { passive: true });
     host.addEventListener('pointerdown', onPointerDown, { passive: true });
     host.addEventListener('pointermove', onPointerMove, { passive: true });
     host.addEventListener('pointerup', onPointerUp, { passive: true });
     host.addEventListener('pointercancel', onPointerUp, { passive: true });
+    for (const type of TOUCH_EVENTS) {
+      host.addEventListener(type, onTouch, { passive: true });
+    }
     // Capture: Der Klick nach einer Geste erreicht weder Knöpfe noch Links der Ebenen.
     host.addEventListener('click', onClick, { capture: true });
     this.#document.addEventListener('keydown', onKeydown);
@@ -66,6 +77,9 @@ export class ShellInputDirective {
       host.removeEventListener('pointermove', onPointerMove);
       host.removeEventListener('pointerup', onPointerUp);
       host.removeEventListener('pointercancel', onPointerUp);
+      for (const type of TOUCH_EVENTS) {
+        host.removeEventListener(type, onTouch);
+      }
       host.removeEventListener('click', onClick, { capture: true });
       this.#document.removeEventListener('keydown', onKeydown);
     });
@@ -112,7 +126,54 @@ export class ShellInputDirective {
   }
 
   #onPointerUp(event: PointerEvent): void {
-    const release = pinchUp(this.#pinch, event.pointerId);
+    if (
+      event.type === 'pointercancel' &&
+      this.#pinch.points.some((point) => point.id === event.pointerId)
+    ) {
+      this.#touchFallback = true;
+    }
+    this.#release(event.pointerId);
+  }
+
+  /**
+   * Ersatz, solange der Browser die Pointer übernommen hat: Touch Events kommen weiter (passiv) und
+   * speisen denselben Zustandsautomaten. Ohne `pointercancel` bleiben sie unbeachtet, sonst zählte
+   * jede Bewegung doppelt.
+   */
+  #onTouch(event: TouchEvent): void {
+    // Eine neue Geste (alle Finger neu) beginnt wieder mit Pointer Events.
+    if (event.type === 'touchstart' && event.touches.length === event.changedTouches.length) {
+      this.#touchFallback = false;
+    }
+    if (!this.#touchFallback) {
+      return;
+    }
+    if (event.type === 'touchstart' || event.type === 'touchmove') {
+      for (const touch of Array.from(event.touches)) {
+        const point = touchPoint(touch);
+        if (!this.#pinch.points.some((known) => known.id === point.id)) {
+          this.#pinch = pinchDown(this.#pinch, point);
+        } else if (event.type === 'touchmove') {
+          const move = pinchMove(this.#pinch, point);
+          this.#pinch = move.state;
+          if (move.zoom) {
+            this.zoomedPinch.emit(move.zoom);
+          }
+        }
+      }
+      return;
+    }
+    for (const touch of Array.from(event.changedTouches)) {
+      this.#release(touchPoint(touch).id);
+    }
+    if (event.touches.length === 0) {
+      this.#touchFallback = false;
+      this.#pinch = PINCH_IDLE;
+    }
+  }
+
+  #release(id: number): void {
+    const release = pinchUp(this.#pinch, id);
     this.#pinch = release.state;
     if (release.endedMultiTouch) {
       this.#clickBlockedUntilMs = this.#clock.monotonic() + PINCH_CLICK_GUARD_MS;
@@ -166,4 +227,11 @@ export class ShellInputDirective {
 
 function pinchPoint(event: PointerEvent): PinchPoint {
   return { id: event.pointerId, x: event.clientX, y: event.clientY };
+}
+
+/** Touch-IDs liegen in einem eigenen Bereich, damit sie keine Pointer-ID treffen. */
+const TOUCH_ID_OFFSET = -1_000_000;
+
+function touchPoint(touch: Touch): PinchPoint {
+  return { id: TOUCH_ID_OFFSET - touch.identifier, x: touch.clientX, y: touch.clientY };
 }

@@ -37,14 +37,19 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .genome-tree__membrane {
-    animation: none;
-  }
+/* Reduzierte Bewegung (`data-motion` an `<html>`): Membran und Puls stehen still. */
+:host-context([data-motion='reduced']) .genome-tree__membrane {
+  animation: none;
+}
 
-  /* Ohne Bewegung bleibt der Ring als ruhiger Hinweis stehen. */
-  .genome-tree__pulse {
-    animation: none;
-    opacity: 0.6;
-  }
+/* Ohne Bewegung bleibt der Ring als ruhiger Hinweis stehen. */
+:host-context([data-motion='reduced']) .genome-tree__pulse {
+  animation: none;
+  opacity: 0.6;
+}
+
+/* Außerhalb des Genom-Modus ist die Ebene inert und unsichtbar; die Animation ruht (Akku, US-09.03). */
+:host-context([inert]) .genome-tree__membrane,
+:host-context([inert]) .genome-tree__pulse {
+  animation-play-state: paused;
 }

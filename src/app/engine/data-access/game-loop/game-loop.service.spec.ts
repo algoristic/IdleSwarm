@@ -1,9 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 
 import { TICK_MS } from '@app/balance/domain/constants';
+import { Num } from '@app/shared/util/num/num';
+import { MS_PER_HOUR } from '@app/shared/util/time/time-units';
 
 import { GameStore } from '../game-store/game-store.service';
-import { GameLoop, MAX_TICKS_PER_WAKE } from './game-loop.service';
+import {
+  CATCH_UP_STEP_MS,
+  GameLoop,
+  MAX_CATCH_UP_MS,
+  MAX_TICKS_PER_WAKE,
+} from './game-loop.service';
 
 const NOW = 1_700_000_000_000;
 
@@ -90,16 +97,58 @@ describe('GameLoop', () => {
       expect(played()).toBe(60_100);
     });
 
-    it('deckelt Zeitsprünge, verwirft den Rest und gleicht die Uhr ab', () => {
+    it('holt einen großen Rückstand nach Rückkehr in den Tab in groben Schritten nach', () => {
       loop.start();
-      vi.setSystemTime(NOW + 3_600_000);
-      wake(3_600_050);
-      expect(played()).toBe(60_000);
+      const startNow = store.state().time.now;
+      const tick = vi.spyOn(store, 'tick');
+      setHidden(true);
+      // Gedrosselter oder eingefrorener Timer: eine Stunde ohne Aufwachen.
+      wake(MS_PER_HOUR + 50);
+      expect(played()).toBe(MS_PER_HOUR);
+      expect(store.state().time.now).toBe(startNow + MS_PER_HOUR);
+      expect(tick.mock.calls.length).toBeLessThanOrEqual(MS_PER_HOUR / CATCH_UP_STEP_MS + 10);
+      setHidden(false);
+      wake(50);
+      expect(played()).toBe(MS_PER_HOUR + 100);
+    });
+
+    it('teilt das Nachholen wie der Runner, damit das Auto-Weiterziehen rechtzeitig aufbricht', () => {
+      const base = store.state();
+      // Viele Drohnen leeren die Startstelle schnell; das Auto-Weiterziehen zieht mehrmals weiter.
+      const fresh = {
+        ...base,
+        auto: { ...base.auto, enabled: true },
+        units: { ...base.units, drones: Num.from(200) },
+      };
+      store.replace(fresh);
+      loop.start();
+      wake(MS_PER_HOUR);
+      const caughtUp = store.state();
+
+      // Dieselbe Zeit Tick für Tick: gleiche Zahl an Aufbrüchen bzw. Ankünften.
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [GameStore] });
+      const reference = TestBed.inject(GameStore);
+      reference.replace(fresh);
+      for (let i = 0; i < MS_PER_HOUR / TICK_MS; i++) {
+        reference.tick(TICK_MS);
+      }
+      expect(caughtUp.map.route.length).toBeGreaterThan(2);
+      expect(caughtUp.map.route.length).toBe(reference.state().map.route.length);
+      const food = reference.state().res.food.toNumber();
+      expect(Math.abs(caughtUp.res.food.toNumber() - food)).toBeLessThanOrEqual(food * 0.02 + 1);
+    });
+
+    it('deckelt das Nachholen, verwirft den Rest und gleicht die Uhr ab', () => {
+      loop.start();
+      vi.setSystemTime(NOW + MAX_CATCH_UP_MS + MS_PER_HOUR);
+      wake(MAX_CATCH_UP_MS + MS_PER_HOUR + 50);
+      expect(played()).toBe(MAX_CATCH_UP_MS);
       expect(store.state().time.now).toBe(Date.now());
       wake(99);
-      expect(played()).toBe(60_000);
+      expect(played()).toBe(MAX_CATCH_UP_MS);
       wake(1);
-      expect(played()).toBe(60_100);
+      expect(played()).toBe(MAX_CATCH_UP_MS + 100);
     });
 
     it('tickt nach stop nicht mehr', () => {

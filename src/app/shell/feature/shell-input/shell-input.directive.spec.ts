@@ -63,6 +63,19 @@ describe('ShellInputDirective', () => {
     byTestId(testId).dispatchEvent(event);
   };
 
+  /** Touch Event mit Fingern `[id, x]`; jsdom kennt `TouchEvent` nicht vollständig. */
+  const touch = (
+    type: string,
+    touches: readonly (readonly [number, number])[],
+    changed: readonly (readonly [number, number])[],
+  ) => {
+    const list = (points: readonly (readonly [number, number])[]) =>
+      points.map(([identifier, clientX]) => ({ identifier, clientX, clientY: 0 }));
+    const event = new Event(type, { bubbles: true });
+    Object.assign(event, { touches: list(touches), changedTouches: list(changed) });
+    byTestId('layer').dispatchEvent(event);
+  };
+
   beforeEach(() => {
     now = 10_000;
     TestBed.configureTestingModule({
@@ -166,6 +179,63 @@ describe('ShellInputDirective', () => {
       pointer('layer', 'pointerdown', 4, 200, 'mouse');
       pointer('layer', 'pointermove', 4, 400, 'mouse');
       expect(host().pinches).toEqual([]);
+    });
+
+    it('erkennt den Pinch über Touch Events, wenn der Browser die Pointer übernommen hat', () => {
+      // Ein Finger verschiebt schon (Genom-Baum), der Browser bricht ab; der zweite kommt dazu.
+      pointer('layer', 'pointerdown', 1, 100);
+      touch('touchstart', [[0, 100]], [[0, 100]]);
+      pointer('layer', 'pointercancel', 1, 100);
+      touch('touchmove', [[0, 110]], [[0, 110]]);
+      touch(
+        'touchstart',
+        [
+          [0, 110],
+          [1, 300],
+        ],
+        [[1, 300]],
+      );
+      touch(
+        'touchmove',
+        [
+          [0, 110],
+          [1, 160],
+        ],
+        [[1, 160]],
+      );
+      expect(host().pinches).toEqual(['out']);
+      touch(
+        'touchend',
+        [],
+        [
+          [0, 110],
+          [1, 160],
+        ],
+      );
+
+      // Ohne Abbruch zählen nur die Pointer, Touch Events nicht doppelt.
+      pointer('layer', 'pointerdown', 2, 100);
+      touch('touchstart', [[2, 100]], [[2, 100]]);
+      pointer('layer', 'pointerdown', 3, 200);
+      touch(
+        'touchstart',
+        [
+          [2, 100],
+          [3, 200],
+        ],
+        [[3, 200]],
+      );
+      touch(
+        'touchmove',
+        [
+          [2, 100],
+          [3, 400],
+        ],
+        [[3, 400]],
+      );
+      expect(host().pinches).toEqual(['out']);
+      pointer('layer', 'pointermove', 3, 400);
+      expect(host().pinches).toEqual(['out', 'in']);
     });
 
     it('unterdrückt den Klick während und kurz nach einer Geste, nicht beim Tippen', () => {

@@ -28,10 +28,8 @@
 }
 
 /* Reduzierte Bewegung: nur ein- und ausblenden, ohne Steigen. */
-@media (prefers-reduced-motion: reduce) {
-  .scene-world__popup {
-    animation-name: scene-world-fade;
-  }
+:host-context([data-motion='reduced']) .scene-world__popup {
+  animation-name: scene-world-fade;
 }
 
 @keyframes scene-world-fade {

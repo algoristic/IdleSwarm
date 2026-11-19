@@ -3,6 +3,7 @@ import { computed, DestroyRef, inject, Injectable, Signal, signal } from '@angul
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { GameLoop } from '@app/engine/data-access/game-loop/game-loop.service';
 import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
+import { MotionPreferenceService } from '@app/shared/data-access/motion-preference/motion-preference.service';
 import { CLOCK, VIEWPORT } from '@app/shared/data-access/platform/platform.tokens';
 
 import type { SceneFrame } from '../../domain/models/scene.model';
@@ -24,15 +25,13 @@ export class SceneFacade {
   readonly #clock = inject(CLOCK);
   readonly #viewport = inject(VIEWPORT);
   readonly #display = inject(SCENE_DISPLAY);
+  readonly #motion = inject(MotionPreferenceService);
   readonly #destroyRef = inject(DestroyRef);
 
   readonly #size = this.#watchSize();
   readonly #coarsePointer = this.#display.coarsePointer();
   // Ereignisse vor dem Start der Szene (etwa beim Laden) zeigen keine Zahlen.
   readonly #popupsAfterId = this.#store.log().at(-1)?.id ?? -1;
-
-  /** Hook für „Partikel reduzieren“; die Einstellung dazu kommt mit AP 1.4.6. */
-  reduceParticles = signal(false);
 
   /** Wird nur im Render-Takt gelesen, nicht im Template. */
   frame = computed<SceneFrame>(() => {
@@ -44,7 +43,7 @@ export class SceneFacade {
         height: size.height,
         devicePixelRatio: size.pixelRatio,
         coarsePointer: this.#coarsePointer,
-        reduceParticles: this.reduceParticles(),
+        reducedMotion: this.#motion.reducedMotion(),
       },
       DEFAULT_BALANCE,
     );

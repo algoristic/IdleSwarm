@@ -7,6 +7,22 @@
 @custom-variant mode-gen (&:where([data-mode='gen'] *));
 /* Aktueller Eintrag in Navigation und Listen (`aria-current`). */
 @custom-variant current (&[aria-current]:not([aria-current='false']));
+/*
+ * Reduzierte Bewegung (US-08.08, TK §8.5): `data-motion` an `<html>` setzt der
+ * `MotionPreferenceService` aus `prefers-reduced-motion` und der Einstellung im Spiel. Solange es
+ * fehlt (vor dem Start der App), gilt die Media-Query. Komponenten-CSS liest dasselbe Attribut über
+ * `:host-context([data-motion='reduced'])`. Statt `motion-reduce:` immer `motion-reduced:`.
+ */
+@custom-variant motion-reduced {
+  &:where([data-motion='reduced'] *) {
+    @slot;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:where(:root:not([data-motion]) *) {
+      @slot;
+    }
+  }
+}
 
 /* Nunito (variabel, wght 200–1000), selbst gehostet (ADR-013). Die relative URL bündelt der Build
    mit Hash nach `media/`; so stimmt der Pfad auch unter dem Base-Href `/IdleSwarm/`. */

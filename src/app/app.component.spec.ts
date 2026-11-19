@@ -9,6 +9,7 @@ import { DEV_BUILD } from '@app/model/feature/state/model.guards';
 import { ECHARTS_INIT, EchartInstance } from '@app/model/ui/echart/echart.component';
 import { KEY_VALUE_STORE } from '@app/persistence/data-access/persistence/persistence-service.tokens';
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
+import { MotionPreferenceService } from '@app/shared/data-access/motion-preference/motion-preference.service';
 
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
@@ -23,6 +24,7 @@ describe('AppComponent', () => {
         GameStore,
         GameLoop,
         PersistenceService,
+        MotionPreferenceService,
         {
           provide: KEY_VALUE_STORE,
           useValue: { getItem: () => null, setItem: () => undefined, removeItem: () => undefined },

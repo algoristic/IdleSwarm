@@ -1,6 +1,7 @@
 /*
  * K2-Ausnahme (CLAUDE.md §4): sichere Bereiche (`env(safe-area-inset-*)`) für Titel, Aktionsleiste
- * und die untere Zeile; Utilities kennen `env()` nicht ohne freie Werte.
+ * und die untere Zeile; Utilities kennen `env()` nicht ohne freie Werte. Dazu die Sichtbarkeit der
+ * Schubladen (Sonderfall, siehe unten).
  */
 @media (width < 75rem) {
   .scene-hud__stack {
@@ -20,4 +21,14 @@
   .scene-hud__bar {
     padding-bottom: calc(0.625rem + env(safe-area-inset-bottom));
   }
+}
+
+/*
+ * Eine öffnende Schublade wird sofort sichtbar, damit der Fokus hineinkann (TK §8.5); `transition-all`
+ * hielte sie sonst im ersten Frame unsichtbar. Beim Schließen bleibt sie bis zum Ende des
+ * Ausblendens sichtbar (dann gilt wieder `transition-all` bzw. bei reduzierter Bewegung nur
+ * `opacity`).
+ */
+.scene-hud__drawer[data-open] {
+  transition-property: opacity, transform, translate, scale;
 }

@@ -55,11 +55,17 @@ const PLANKTON_OPACITY = 0.22;
 const TRAVEL_DRIFT_PER_MS = 0.00004;
 /** Größere Frame-Lücken (Tab im Hintergrund) zählen nicht für die Drift. */
 const MAX_FRAME_GAP_MS = 100;
+/**
+ * Himmel, Lichtkegel und Hügel liegen vorgerendert in einem Bild und werden erst neu gezeichnet,
+ * wenn ein Kegel um so viele CSS-Pixel geschwankt ist; sonst kosteten die großen Flächen jeden Frame.
+ */
+const BACKDROP_SWAY_STEP = 0.5;
 
 /**
- * Zeichnet die Szene nach Mockup K2-K (`frame()`) in ein Canvas 2D. Hintergrund und Hügel sind je
- * Größe vorgerendert, Einheiten und Teilchen sind Sprites. Die Futterstelle liegt im Zentrum des
- * Viewports (Fixpunkt der Kamera im Kartenmodus).
+ * Zeichnet die Szene nach Mockup K2-K (`frame()`) in ein Canvas 2D. Himmel, Lichtkegel und Hügel
+ * liegen vorgerendert in einem Bild (neu bei Größenwechsel und spürbarem Schwanken der Kegel),
+ * Einheiten, Teilchen und der Schein der Futterstelle sind Sprites. Die Futterstelle liegt im
+ * Zentrum des Viewports (Fixpunkt der Kamera im Kartenmodus).
  */
 export class SceneRenderer {
   readonly #canvas: HTMLCanvasElement;
@@ -72,9 +78,10 @@ export class SceneRenderer {
   #ratio = 0;
   #scale = 1;
   #sprites: SceneSprites | null = null;
-  #background: HTMLCanvasElement | null = null;
   #hills: HTMLCanvasElement | null = null;
-  #siteGlow: CanvasGradient | null = null;
+  #backdrop: HTMLCanvasElement | null = null;
+  #backdropSways: readonly number[] | null = null;
+  #siteGlow: Sprite | null = null;
   #agents: SceneAgents = createSceneAgents();
   readonly #plankton: readonly Plankton[];
   readonly #particleSeed: number;
@@ -119,7 +126,11 @@ export class SceneRenderer {
       this.#resize(frame);
     }
     const sprites = this.#sprites;
-    if (!sprites || !this.#background || !this.#hills) {
+    if (!sprites || !this.#hills) {
+      return;
+    }
+    const backdrop = this.#syncBackdrop(nowMs, frame);
+    if (!backdrop) {
       return;
     }
     this.#syncAgents(nowMs, frame);
@@ -135,10 +146,8 @@ export class SceneRenderer {
     const ctx = this.#ctx;
     ctx.globalAlpha = 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(this.#background, 0, 0);
+    ctx.drawImage(backdrop, 0, 0);
     ctx.setTransform(this.#ratio, 0, 0, this.#ratio, 0, 0);
-    this.#drawLightCones(nowMs);
-    ctx.drawImage(this.#hills, 0, 0, this.#width, this.#height);
     this.#drawPlankton(nowMs, frame, sprites);
 
     // Ab hier Szene-Koordinaten: Ursprung in der Futterstelle, Maßstab nach Viewport.
@@ -171,14 +180,8 @@ export class SceneRenderer {
       this.#ratio * this.#scale,
       this.#createCanvas,
     );
-    this.#background = this.#prerender(deviceWidth, deviceHeight, (ctx) => {
-      const sky = ctx.createLinearGradient(0, 0, 0, this.#height);
-      sky.addColorStop(0, this.#palette.skyTop);
-      sky.addColorStop(0.55, this.#palette.skyMid);
-      sky.addColorStop(1, this.#palette.skyBottom);
-      ctx.fillStyle = sky;
-      ctx.fillRect(0, 0, this.#width, this.#height);
-    });
+    this.#backdrop = this.#createCanvas(deviceWidth, deviceHeight);
+    this.#backdropSways = null;
     this.#hills = this.#prerender(deviceWidth, deviceHeight, (ctx) => {
       HILLS.forEach(([base, amplitude, frequency, phase], index) => {
         const baseline = this.#height * base;
@@ -195,11 +198,52 @@ export class SceneRenderer {
         ctx.fill();
       });
     });
-    // In Szene-Koordinaten angelegt; gilt deshalb unter jeder späteren Szene-Transformation.
-    const glow = this.#ctx.createRadialGradient(0, 0, 0, 0, 0, SITE_GLOW_RADIUS);
-    glow.addColorStop(0, this.#palette.siteGlow);
-    glow.addColorStop(1, this.#palette.siteGlowEnd);
-    this.#siteGlow = glow;
+    // Als Sprite vorgerendert: Ein Bild zu kopieren ist billiger, als den Verlauf je Frame zu füllen.
+    const resolution = this.#ratio * this.#scale;
+    const glowSize = Math.max(1, Math.ceil(SITE_GLOW_RADIUS * 2 * resolution));
+    const glowImage = this.#createCanvas(glowSize, glowSize);
+    const glowCtx = glowImage.getContext('2d');
+    if (glowCtx) {
+      glowCtx.setTransform(resolution, 0, 0, resolution, glowSize / 2, glowSize / 2);
+      const glow = glowCtx.createRadialGradient(0, 0, 0, 0, 0, SITE_GLOW_RADIUS);
+      glow.addColorStop(0, this.#palette.siteGlow);
+      glow.addColorStop(1, this.#palette.siteGlowEnd);
+      glowCtx.fillStyle = glow;
+      dot(glowCtx, 0, 0, SITE_GLOW_RADIUS);
+    }
+    this.#siteGlow = glowCtx ? { image: glowImage, extent: SITE_GLOW_RADIUS } : null;
+  }
+
+  /**
+   * Zeichnet Himmel, Lichtkegel und Hügel neu, sobald ein Kegel um `BACKDROP_SWAY_STEP` geschwankt
+   * ist; bei reduzierter Bewegung stehen die Kegel still. `null` ohne 2D-Kontext.
+   */
+  #syncBackdrop(nowMs: number, frame: SceneFrame): HTMLCanvasElement | null {
+    const backdrop = this.#backdrop;
+    const hills = this.#hills;
+    const ctx = backdrop?.getContext('2d');
+    if (!backdrop || !hills || !ctx) {
+      return null;
+    }
+    const sways = LIGHT_CONES.map(([, , phase]) =>
+      frame.reducedMotion ? 0 : Math.sin(nowMs / 5000 + phase) * this.#width * 0.03,
+    );
+    const cached = this.#backdropSways;
+    if (cached && sways.every((sway, i) => Math.abs(sway - cached[i]) < BACKDROP_SWAY_STEP)) {
+      return backdrop;
+    }
+    this.#backdropSways = sways;
+    ctx.setTransform(this.#ratio, 0, 0, this.#ratio, 0, 0);
+    const sky = ctx.createLinearGradient(0, 0, 0, this.#height);
+    sky.addColorStop(0, this.#palette.skyTop);
+    sky.addColorStop(0.55, this.#palette.skyMid);
+    sky.addColorStop(1, this.#palette.skyBottom);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, this.#width, this.#height);
+    this.#drawLightCones(ctx, sways);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(hills, 0, 0);
+    return backdrop;
   }
 
   #prerender(
@@ -226,13 +270,12 @@ export class SceneRenderer {
     }
   }
 
-  #drawLightCones(nowMs: number): void {
-    const ctx = this.#ctx;
+  #drawLightCones(ctx: CanvasRenderingContext2D, sways: readonly number[]): void {
     const w = this.#width;
     const h = this.#height;
     ctx.fillStyle = this.#palette.light;
-    for (const [center, width, phase] of LIGHT_CONES) {
-      const sway = Math.sin(nowMs / 5000 + phase) * w * 0.03;
+    for (const [index, [center, width]] of LIGHT_CONES.entries()) {
+      const sway = sways[index];
       ctx.beginPath();
       ctx.moveTo(center * w - width * w * 0.4, 0);
       ctx.lineTo(center * w + width * w * 0.4, 0);
@@ -244,8 +287,8 @@ export class SceneRenderer {
 
   #drawPlankton(nowMs: number, frame: SceneFrame, sprites: SceneSprites): void {
     const ctx = this.#ctx;
-    // „Partikel reduzieren“: nur jedes zweite Teilchen.
-    const step = frame.reduceParticles ? 2 : 1;
+    // Reduzierte Bewegung: nur jedes zweite Teilchen.
+    const step = frame.reducedMotion ? 2 : 1;
     for (let i = 0; i < this.#plankton.length; i += step) {
       const plankton = this.#plankton[i];
       const point = planktonPoint(plankton, nowMs, this.#drift);
@@ -271,8 +314,7 @@ export class SceneRenderer {
     const k = pulse * scale;
 
     if (this.#siteGlow) {
-      ctx.fillStyle = this.#siteGlow;
-      dot(ctx, 0, 0, SITE_GLOW_RADIUS);
+      this.#drawSprite(this.#siteGlow, 0, 0, 1);
     }
     ctx.fillStyle = palette.site[1];
     for (const [radius, alpha] of WARM_ZONES) {
@@ -294,7 +336,9 @@ export class SceneRenderer {
     ctx.ellipse(-34 * scale, -38 * scale, 13 * scale, 7 * scale, -0.7, 0, Math.PI * 2);
     ctx.fill();
 
-    for (let i = 0; i < BUBBLE_COUNT; i++) {
+    // Reduzierte Bewegung: keine aufsteigenden Blasen.
+    const bubbles = frame.reducedMotion ? 0 : BUBBLE_COUNT;
+    for (let i = 0; i < bubbles; i++) {
       const item = bubble(i, nowMs);
       ctx.globalAlpha = item.opacity * opacity;
       this.#drawSprite(sprites.bubble, item.x, item.y, item.size / sprites.bubble.extent);

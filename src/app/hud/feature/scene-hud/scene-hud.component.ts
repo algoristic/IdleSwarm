@@ -1,4 +1,15 @@
-import { Component, inject, input, linkedSignal } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+  linkedSignal,
+  viewChild,
+  viewChildren,
+} from '@angular/core';
 
 import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
 
@@ -35,11 +46,18 @@ import { HUD_DRAWERS, HudDrawer } from '../state/hud.model';
 })
 export class SceneHudComponent {
   facade = inject(HudFacade);
+  readonly #document = inject(DOCUMENT);
+  readonly #injector = inject(Injector);
 
   /** Ist die Szene der aktive Modus? Beim Wechsel schließt die offene Schublade (Mockup `setMode`). */
   active = input(false);
 
   drawers = HUD_DRAWERS;
+
+  title = viewChild.required<string, ElementRef<HTMLElement>>('title', { read: ElementRef });
+  /** Schubladen und Reiter in der Reihenfolge von `drawers`. */
+  drawerPanels = viewChildren<ElementRef<HTMLElement>>('drawerPanel');
+  drawerTabs = viewChildren<ElementRef<HTMLElement>>('drawerTab');
 
   /** Höchstens eine Schublade ist offen; lokaler UI-Zustand, nie im Spielstand. */
   openDrawer = linkedSignal<boolean, HudDrawer | null>({
@@ -47,6 +65,7 @@ export class SceneHudComponent {
     computation: () => null,
   });
 
+  titleLabel = $localize`:@@featureHud-sceneHud-titleRegion:Schwarm`;
   spaceLabel = $localize`:@@featureHud-sceneHud-space-title:Platz`;
   drawerLabels: Readonly<Record<HudDrawer, string>> = {
     pheromones: $localize`:@@featureHud-sceneHud-drawer-pheromones:Pheromone`,
@@ -54,16 +73,51 @@ export class SceneHudComponent {
     sacrifice: $localize`:@@featureHud-sceneHud-drawer-sacrifice:Drohnen opfern`,
   };
 
+  /**
+   * Öffnet die Schublade und setzt den Fokus hinein (TK §8.5); erneuter Klick schließt sie, der Fokus
+   * bleibt dann auf dem Reiter.
+   */
   onToggleDrawer(drawer: HudDrawer): void {
-    this.openDrawer.update((open) => (open === drawer ? null : drawer));
+    if (this.openDrawer() === drawer) {
+      this.closeDrawer();
+      return;
+    }
+    this.openDrawer.set(drawer);
+    // Erst nach dem Rendern ist die Schublade sichtbar und nicht mehr inert.
+    afterNextRender(
+      () => this.#drawerElement(this.drawerPanels(), drawer)?.focus({ preventScroll: true }),
+      {
+        injector: this.#injector,
+      },
+    );
   }
 
-  /** Schließt die offene Schublade (Esc der Shell); `false`, wenn keine offen war. */
+  /**
+   * Schließt die offene Schublade (Esc der Shell); `false`, wenn keine offen war. Lag der Fokus in
+   * ihr, kehrt er auf ihren Reiter zurück, statt mit der inerten Schublade verloren zu gehen.
+   */
   closeDrawer(): boolean {
-    if (this.openDrawer() === null) {
+    const open = this.openDrawer();
+    if (open === null) {
       return false;
+    }
+    const panel = this.#drawerElement(this.drawerPanels(), open);
+    if (panel?.contains(this.#document.activeElement)) {
+      this.#drawerElement(this.drawerTabs(), open)?.focus();
     }
     this.openDrawer.set(null);
     return true;
+  }
+
+  /** Fokus auf den Titel nach einem Moduswechsel (TK §8.5); die Shell ruft das auf. */
+  focusTitle(): void {
+    this.title().nativeElement.focus({ preventScroll: true });
+  }
+
+  #drawerElement(
+    elements: readonly ElementRef<HTMLElement>[],
+    drawer: HudDrawer,
+  ): HTMLElement | undefined {
+    return elements[this.drawers.indexOf(drawer)]?.nativeElement;
   }
 }

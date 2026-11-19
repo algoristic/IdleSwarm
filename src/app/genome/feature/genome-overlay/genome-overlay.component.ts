@@ -1,4 +1,12 @@
-import { Component, inject, input, linkedSignal, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
 
 import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
 import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
@@ -25,6 +33,8 @@ export class GenomeOverlayComponent {
   /** Genom-Modus aktiv; beim Wechsel klappt das Bottom-Sheet wieder ein (wie die Schubladen). */
   active = input(true);
 
+  title = viewChild.required<ElementRef<HTMLElement>>('title');
+
   /** Lokaler UI-Zustand, nur auf dem Smartphone wirksam: Legende und Bottom-Sheet aufgeklappt. */
   legendOpen = signal(false);
   sheetOpen = linkedSignal({ source: this.active, computation: () => false });
@@ -35,5 +45,10 @@ export class GenomeOverlayComponent {
 
   onToggleSheet(): void {
     this.sheetOpen.update((open) => !open);
+  }
+
+  /** Fokus auf den Titel nach einem Moduswechsel (TK §8.5); die Shell ruft das auf. */
+  focusTitle(): void {
+    this.title().nativeElement.focus({ preventScroll: true });
   }
 }

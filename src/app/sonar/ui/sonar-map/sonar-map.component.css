@@ -30,9 +30,14 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sonar-map__sweep,
-  .sonar-map__route {
-    animation: none;
-  }
+/* Reduzierte Bewegung (`data-motion` an `<html>`): Sweep und Routenfluss stehen still. */
+:host-context([data-motion='reduced']) .sonar-map__sweep,
+:host-context([data-motion='reduced']) .sonar-map__route {
+  animation: none;
+}
+
+/* Außerhalb des Kartenmodus ist die Ebene inert und unsichtbar; die Animation ruht (Akku, US-09.03). */
+:host-context([inert]) .sonar-map__sweep,
+:host-context([inert]) .sonar-map__route {
+  animation-play-state: paused;
 }
