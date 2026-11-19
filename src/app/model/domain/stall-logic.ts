@@ -1,8 +1,8 @@
 import { spanMs, stallSpans, TimeSpan } from '@app/engine/domain/cycle-metrics-logic';
+import { parseWholeNumber } from '@app/shared/util/parse/parse';
 import { MS_PER_MINUTE } from '@app/shared/util/time/time-units';
 
 import type { BotStalls, Stall, StallKind, StallThresholdValue } from './models/stall.model';
-import { parseParam } from './params-logic';
 import type { ReducedRun } from './reduce-result-logic';
 
 /** Analyse-Parameter der Modell-Seite, keine Spielkonstante (US-10.06). */
@@ -14,10 +14,9 @@ export function defaultStallThreshold(): StallThresholdValue {
   return { minutes: String(DEFAULT_STALL_THRESHOLD_MINUTES) };
 }
 
-/** Ganze Minuten ab 1; `null` bei ungültiger Eingabe. */
+/** Ganze Minuten ab 1, deutsch geschrieben (`1.000`); `null` bei ungültiger Eingabe. */
 export function parseStallThresholdMinutes(text: string): number | null {
-  const value = parseParam(text, MIN_THRESHOLD);
-  return value !== null && Number.isInteger(value) ? value : null;
+  return parseWholeNumber(text, MIN_THRESHOLD);
 }
 
 export function stallThresholdMs(value: StallThresholdValue): number | null {

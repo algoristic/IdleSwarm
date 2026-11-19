@@ -44,12 +44,12 @@ describe('parseStallThresholdMinutes', () => {
     ['60', 60],
     [' 5 ', 5],
     ['1', 1],
-    ['90,0', 90],
+    ['1.000', 1000],
   ])('liest %s als %d', (text, minutes) => {
     expect(parseStallThresholdMinutes(text)).toBe(minutes);
   });
 
-  it.each(['0', '-5', '1,5', 'abc', '', '1.000'])('lehnt %s ab', (text) => {
+  it.each(['0', '-5', '1,5', '90,0', '6e1', 'abc', ''])('lehnt %s ab', (text) => {
     expect(parseStallThresholdMinutes(text)).toBeNull();
   });
 

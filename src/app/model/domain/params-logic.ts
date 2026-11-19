@@ -1,13 +1,11 @@
 import { BalanceParams } from '@app/balance/domain/constants';
+import { NumberRange, parseDecimal } from '@app/shared/util/parse/parse';
 
 export type ParamKey = keyof BalanceParams;
 export type ParamOverrides = Partial<Record<ParamKey, number>>;
 export type ParamDrafts = Readonly<Partial<Record<ParamKey, string>>>;
 
-export interface ParamLimit {
-  readonly min: number;
-  readonly max?: number;
-}
+export type ParamLimit = NumberRange;
 
 export interface ParamField {
   readonly key: ParamKey;
@@ -24,27 +22,13 @@ const PARAM_LIMITS: Partial<Readonly<Record<ParamKey, ParamLimit>>> = {
   broodDroneShare: { min: 0, max: 1 },
 };
 
-const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
-/** `20.000` meint auf Deutsch 20000, wäre als Dezimalzahl aber 20; daher abgelehnt. */
-const THOUSANDS_PATTERN = /^[+-]?\d{1,3}(?:\.\d{3})+$/;
-
 export function formatParam(value: number): string {
   return String(value).replace('.', ',');
 }
 
 /** Liest eine Eingabe mit Komma oder Punkt; `null`, wenn sie ungültig ist oder die Grenzen verletzt. */
 export function parseParam(text: string, limit: ParamLimit = DEFAULT_LIMIT): number | null {
-  const trimmed = text.trim();
-  if (THOUSANDS_PATTERN.test(trimmed)) {
-    return null;
-  }
-  const normalized = trimmed.replace(',', '.');
-  if (!NUMBER_PATTERN.test(normalized)) {
-    return null;
-  }
-  const value = Number(normalized);
-  const inRange = value >= limit.min && (limit.max === undefined || value <= limit.max);
-  return Number.isFinite(value) && inRange ? value : null;
+  return parseDecimal(text, limit);
 }
 
 /** Felder direkt aus dem Objekt, damit neue Konstanten von selbst erscheinen. */

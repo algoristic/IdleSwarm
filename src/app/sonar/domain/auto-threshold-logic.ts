@@ -1,4 +1,5 @@
 import type { BalanceParams } from '@app/balance/domain/constants';
+import { parseWholeNumber } from '@app/shared/util/parse/parse';
 
 const PERCENT = 100;
 
@@ -21,10 +22,5 @@ export function maxThresholdPercent(params: BalanceParams): number {
 
 /** Liest eine Eingabe wie `25` als ganze Prozent von 0 bis `maxPercent`; sonst `null`. */
 export function parseThresholdPercent(text: string, maxPercent: number): number | null {
-  const trimmed = text.trim();
-  if (!/^\d{1,3}$/.test(trimmed)) {
-    return null;
-  }
-  const percent = Number(trimmed);
-  return percent <= maxPercent ? percent : null;
+  return parseWholeNumber(text, { min: 0, max: maxPercent });
 }
