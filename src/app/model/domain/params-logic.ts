@@ -1,4 +1,5 @@
 import { BalanceParams } from '@app/balance/domain/constants';
+import { SITE_TYPE_PARAMS } from '@app/balance/domain/formulas';
 import { NumberRange, parseDecimal } from '@app/shared/util/parse/parse';
 
 export type ParamKey = keyof BalanceParams;
@@ -40,13 +41,16 @@ const PARAM_LIMITS: Partial<Readonly<Record<ParamKey, ParamLimit>>> = {
   maxAutoThreshold: SHARE_LIMIT,
 };
 
-// Je Futterstellentyp über das Namensmuster, damit neue Typen von selbst erfasst werden.
-const FIND_CHANCE_SUFFIX = 'FindChance';
-const WEIGHT_SUFFIX = 'Weight';
+// Je Futterstellentyp aus der Tabelle in `balance`, damit neue Typen von selbst erfasst werden.
+const SITE_TYPE_KEYS = Object.values(SITE_TYPE_PARAMS);
+const FIND_CHANCE_KEYS: ReadonlySet<ParamKey> = new Set(
+  SITE_TYPE_KEYS.map((keys) => keys.findChance),
+);
+const WEIGHT_KEYS: ReadonlySet<ParamKey> = new Set(SITE_TYPE_KEYS.map((keys) => keys.weight));
 
 /** Grenzen der Konstante; Anteile in [0; 1], Zählwerte ganzzahlig, sonst ab 0. */
 export function paramLimit(key: ParamKey): ParamLimit {
-  return PARAM_LIMITS[key] ?? (key.endsWith(FIND_CHANCE_SUFFIX) ? SHARE_LIMIT : DEFAULT_LIMIT);
+  return PARAM_LIMITS[key] ?? (FIND_CHANCE_KEYS.has(key) ? SHARE_LIMIT : DEFAULT_LIMIT);
 }
 
 export function formatParam(value: number): string {
@@ -111,9 +115,7 @@ export function paramConflicts(drafts: ParamDrafts): ParamConflicts {
   if (defaultThreshold !== null && maxThreshold !== null && defaultThreshold > maxThreshold) {
     conflicts.maxAutoThreshold = 'autoThreshold';
   }
-  const weightKeys = (Object.keys(drafts) as ParamKey[]).filter((key) =>
-    key.endsWith(WEIGHT_SUFFIX),
-  );
+  const weightKeys = (Object.keys(drafts) as ParamKey[]).filter((key) => WEIGHT_KEYS.has(key));
   const weights = weightKeys.map(value);
   if (weights.length > 0 && weights.every((weight) => weight === 0)) {
     for (const key of weightKeys) {

@@ -1,5 +1,5 @@
 import { Num } from '@app/shared/util/num/num';
-import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
+import { MS_PER_MINUTE, MS_PER_SECOND, SECONDS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { CandidateStatus, Position } from '@app/site/domain/models/map.model';
 import type { TransportPriority } from '@app/swarm/domain/models/transport-priority.model';
@@ -9,8 +9,6 @@ import type { BalanceParams } from './constants';
 
 /** Ab diesem Anteil des verfügbaren Platzes wird gewarnt (Game-Design §4.5, US-02.04). */
 const SPACE_WARNING_SHARE = 0.9;
-
-const SECONDS_PER_MINUTE = 60;
 
 /** Parameter der Kostenkurve je Einheitentyp (Game-Design §2.3). */
 const COST_CURVES: Readonly<
@@ -28,12 +26,12 @@ const COST_CURVES: Readonly<
  */
 const DISTANCE_TOLERANCE = 1e-6;
 
-type SiteTypeParamKeys = Readonly<
+export type SiteTypeParamKeys = Readonly<
   Record<'size' | 'defense' | 'findChance' | 'weight', keyof BalanceParams>
 >;
 
 /** Parameter je Futterstellentyp (Game-Design §2.3, `siteTypes`). */
-const SITE_TYPE_PARAMS: Readonly<Record<SiteTypeId, SiteTypeParamKeys>> = {
+export const SITE_TYPE_PARAMS: Readonly<Record<SiteTypeId, SiteTypeParamKeys>> = {
   'algal-mat': {
     size: 'algalMatSizeFactor',
     defense: 'algalMatDefenseFactor',

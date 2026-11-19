@@ -1,8 +1,5 @@
-import { MS_PER_SECOND } from '../time/time-units';
+import { MS_PER_SECOND, SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from '../time/time-units';
 import { formatNum, formatRate } from './format';
-
-const SECONDS_PER_MINUTE = 60;
-const SECONDS_PER_HOUR = 3600;
 
 const SECONDS_FORMAT = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
 const SMALL_FORMAT = new Intl.NumberFormat('de-DE', { maximumSignificantDigits: 2 });

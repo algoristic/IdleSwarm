@@ -11,12 +11,10 @@ import {
   nextMultipleMs,
 } from '@app/engine/domain/bot-logic';
 import { Num } from '@app/shared/util/num/num';
-import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
+import { MS_PER_SECOND, SECONDS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 export const ACTIVE_DECIDE_EVERY_MS = MS_PER_SECOND;
-
-const SECONDS_PER_MINUTE = 60;
 
 const ONE_QUEEN = { queens: Num.ONE, drones: Num.ZERO, soldiers: Num.ZERO };
 

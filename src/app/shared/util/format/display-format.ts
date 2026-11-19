@@ -1,4 +1,5 @@
 import { Num, NumLike } from '../num/num';
+import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from '../time/time-units';
 import { formatNum } from './format';
 
 /** Ab hier kürzt `formatNum` auf Kurzformen, ab `SCIENTIFIC_FROM` auf wissenschaftliche Notation. */
@@ -6,8 +7,6 @@ const SHORT_FROM = 6;
 const SCIENTIFIC_FROM = 24;
 const COMPACT_FRACTION_DIGITS = 2;
 
-const SECONDS_PER_MINUTE = 60;
-const SECONDS_PER_HOUR = 3600;
 /** Darüber sind Minuten bedeutungslos und `number` wäre nicht mehr verlässlich. */
 const HOURS_ONLY_FROM_SECONDS = 1e9;
 

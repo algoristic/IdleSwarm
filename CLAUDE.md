@@ -45,7 +45,7 @@
 - Die Spiellogik ist reines, deterministisches TypeScript in den `domain`-Schichten. Spiel, Offline-Catch-up, Headless-Runner und Modell-Seite rufen dieselben Funktionen auf (TK §5.1). Die Modell-Seite enthält keine Kopie der Spiellogik.
 - Formeln und Konstanten stehen nur in `balance/domain`, alle Konstanten sind über `params` überschreibbar (ADR-007).
 - Große Zahlen laufen nur über den `Num`-Typ, nie direkt über `break_infinity.js` (ADR-002).
-- Zeit wird nur über Konstanten umgerechnet: Zeiteinheiten (ms je Sekunde/Minute/Stunde) kommen aus `shared/util/time/time-units`, der Spieltakt (`TICK_MS`, `TICKS_PER_SECOND`) aus `balance/domain`; nie Literale wie `100`, `1000` oder `60_000`.
+- Zeit wird nur über Konstanten umgerechnet: Zeiteinheiten (ms je Sekunde/Minute/Stunde, Sekunden je Minute/Stunde) kommen aus `shared/util/time/time-units`, der Spieltakt (`TICK_MS`, `TICKS_PER_SECOND`) aus `balance/domain`; nie Literale wie `100`, `1000` oder `60_000`.
 - Zufall nur über den seeded RNG im State (ADR-003).
 - IDs in Spieldaten (Einheiten, Futterstellentypen, Adaptionen, Funde) sind stabil; Spielstände speichern nur IDs. Eine Änderung am Spielstand-Format braucht eine Migration (ADR-005).
 - Änderungen an Formeln oder Konstanten werden auf der Modell-Seite geprüft (Pacing-Ziele, Projektplan §3.5).

@@ -13,7 +13,7 @@ paths:
 | Pfad | Inhalt |
 | --- | --- |
 | `balance/domain/constants.ts` | `BalanceParams`, `DEFAULT_BALANCE`, Spieltakt `TICK_MS`, `TICKS_PER_SECOND`; einzige Quelle für Konstanten (Game-Design §2.3). Zeiteinheiten (`MS_PER_SECOND` …) stehen in `shared/util/time/time-units.ts` |
-| `balance/domain/formulas.ts` | alle Formeln: Preise, Raten, Brut, Platz, Restzeiten, `isAffordable`; seit M1.2 Generator (`candidateSize`, `candidateDefense` …), Reichweite und Status, Transport (`carriedUnits`), Kampf (`expectedLosses`, `dnaReward`), Opfern, `travelDurationMs`, `clampAutoThreshold` |
+| `balance/domain/formulas.ts` | alle Formeln: Preise, Raten, Brut, Platz, Restzeiten, `isAffordable`; seit M1.2 Generator (`candidateSize`, `candidateDefense` …), Reichweite und Status, Transport (`carriedUnits`), Kampf (`expectedLosses`, `dnaReward`), Opfern, `travelDurationMs`, `clampAutoThreshold`; exportiert `SITE_TYPE_PARAMS` (Parameterschlüssel je Futterstellentyp, genutzt von `model/domain/params-logic`) |
 | `swarm/domain/models/units.model.ts`, `transport-priority.model.ts` | `UNIT_TYPES`, `UnitType`, `Units`; `TRANSPORT_PRIORITIES` (stabile IDs) |
 | `swarm/domain/units-logic.ts`, `brood-logic.ts` | `canBuy`, `buyUnit`; Brut-Teil des Schritts (`applyBrood`) |
 | `swarm/domain/transport-logic.ts` | `planTransport` (mitkommend/zurückgelassen), `applyTransport`, `setTransportPriority` |

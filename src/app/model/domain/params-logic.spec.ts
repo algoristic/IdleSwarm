@@ -120,6 +120,17 @@ describe('paramConflicts', () => {
     expect(paramConflicts({ ...allWeights('0'), ventWeight: '0,1' })).toEqual({});
   });
 
+  it('zählt nur die Gewichte der Typtabelle, nicht jeden Schlüssel auf „Weight“', () => {
+    const drafts = { ...allWeights('0'), pheromoneWeight: '0' } as ParamDrafts;
+    expect(Object.keys(paramConflicts(drafts))).toEqual([
+      'algalMatWeight',
+      'ventWeight',
+      'bacterialMatWeight',
+      'methaneSeepWeight',
+      'whaleFallWeight',
+    ]);
+  });
+
   it('überlässt ungültige Eingaben der Feldprüfung', () => {
     expect(paramConflicts({ ...defaults, candidateMinDistance: 'x' })).toEqual({});
     expect(paramConflicts({ ...allWeights('0'), ventWeight: 'x' })).toEqual({});

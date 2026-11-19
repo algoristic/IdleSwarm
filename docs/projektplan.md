@@ -292,7 +292,7 @@ flowchart TB
 | 1.5.2 | Spielstand-Verwaltung | Autosave, Export/Import, Zurücksetzen | 0,5–1 | US-07.04, 07.05 |
 | 1.5.3 | Einstellungen | Zahlenformat, Animationen, Autosave-Intervall | 0,5–1 | US-09.01 |
 | 1.5.4 | Onboarding | Kontextuelle Hinweise, schrittweise Freischaltung der Oberfläche | 1–1,5 | US-09.04 |
-| 1.5.5 | Balancing | Zielwerte festlegen, Bot-Läufe, Anpassen, Kennzahlen als Regressions-Snapshots | 2–3 | US-10.09 |
+| 1.5.5 | Balancing | Zielwerte festlegen, Bot-Läufe, Anpassen, Kennzahlen als Regressions-Snapshots; aus der M1.2-Durchsicht: neu bewerten, ob die längste Wartezeit für „Aktiv“ (Ziel ≤ 60 s) das Warten misst oder eher die Kaufkraft am Spielbeginn | 2–3 | US-10.09 |
 | 1.5.6 | PWA | Manifest, Service Worker, Icons | 0,5 | US-07.06 |
 | 1.5.7 | E2E-Tests | Smoke-Tests für Desktop- und Mobile-Viewport | 1–1,5 | – |
 | 1.5.8 | Playtest & Release | 3–5 externe Testspieler, Bugfixing, Release 1.0 | 2–3 | – |

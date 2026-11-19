@@ -598,7 +598,7 @@ Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbän
 
 ### 6.1 Messung M1.2
 
-> **Gemessen** mit dem Headless-Runner (Stand AP 1.2.9, mit Weiterziehen, Kampf, Transport und den vier Bots). **Die Mess-Definitionen sind weiterhin vorläufig, die Entscheidung des Product Owners ist offen.**
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.2.9, mit Weiterziehen, Kampf, Transport und den vier Bots). **Die Mess-Definitionen ([6.2](#62-messung-m11-historisch)) sind entschieden (M1.2).** Die Bewertung „Aktiv ≤ 60 s über die längste Wartezeit“ wird im Balancing (AP 1.5.5) neu bewertet, weil die längste Wartezeit von Aktiv am Spielbeginn eher die Kaufkraft misst als das Warten.
 
 **Messaufbau**
 
@@ -688,7 +688,7 @@ Die letzte Strecke „Kein Aufbruch“ ist jeweils offen bis zum Laufende.
 
 > **Hinweis M1.2:** Diese Messungen stammen aus M1.1 und nutzen das inzwischen entfallene [Provisorium aus §4.4](#44-leere-futterstelle-provisorium-bis-m12). Aktuell ist die [Messung M1.2](#61-messung-m12).
 
-> **Gemessen** mit dem Headless-Runner (Stand AP 1.1.9, ohne Klick, mit Grundertrag `g_0 = 1,5`). Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. **Die Mess-Definitionen unten sind vorläufig, die Entscheidung des Product Owners ist offen.**
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.1.9, ohne Klick, mit Grundertrag `g_0 = 1,5`). Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert. Die Mess-Definitionen unten waren damals vorläufig; heute sind sie entschieden, siehe [6.1](#61-messung-m12).
 
 **Messaufbau**
 
@@ -697,7 +697,7 @@ Die letzte Strecke „Kein Aufbruch“ ist jeweils offen bis zum Laufende.
 - **Idle:** schaut alle 5 min vorbei und kauft dann alles Bezahlbare, Königin vor Drohne. Soldaten kauft er nicht.
 - Beide lösen bei leerem Vorrat „Neue Futterstelle“ aus: Aktiv bei der nächsten Entscheidung, Idle beim nächsten Besuch.
 
-**Mess-Definitionen (vorläufig, Entscheidung des Product Owners offen)**
+**Mess-Definitionen (entschieden mit M1.2, siehe [6.1](#61-messung-m12))**
 
 - Kauflücken und längste Wartezeit der ersten 30 min werden mit `siteSize: 1e12` gemessen, damit das [Provisorium](#44-leere-futterstelle-provisorium-bis-m12) sie nicht verfälscht. Die Futterstellen werden mit der echten Größe 20.000 gemessen.
 - **Längste Wartezeit** (`longestWaitMs`): längste zusammenhängende Strecke der ersten 30 min, in der nach den Entscheidungen des Bots weder Königin noch Drohne bezahlbar ist.
