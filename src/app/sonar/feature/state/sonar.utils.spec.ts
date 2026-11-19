@@ -4,6 +4,7 @@ import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
 import type { SiteCandidate } from '@app/site/domain/models/map.model';
 
+import { HERE_RADIUS, MAP_CENTER, MAP_RADIUS } from '../../domain/sonar-map-logic';
 import type { SonarSource } from './sonar.model';
 import { toSonarView } from './sonar.utils';
 
@@ -211,6 +212,66 @@ describe('toSonarView', () => {
       autoEnabled: true,
       thresholdPercent: 30,
       maxThresholdPercent: 90,
+    });
+  });
+
+  describe('Sonar-Karte', () => {
+    // Kandidaten bis Distanz 6,5: sieben Ringe.
+    const unit = MAP_RADIUS / 7;
+    const atOrigin = (change: Partial<GameState> = {}) =>
+      state({
+        map: {
+          ...base.map,
+          candidates: CANDIDATES,
+          position: { x: 0, y: 0 },
+          route: [
+            { type: 'vent', position: { x: -2, y: 0 } },
+            { type: 'vent', position: { x: 0, y: 0 } },
+          ],
+        },
+        ...change,
+      });
+
+    it('legt ganze Ringe von außen nach innen und die Reichweite in den Maßstab', () => {
+      const { map } = view(atOrigin());
+      expect(map.rings.map((ring) => ring.distance)).toEqual([7, 6, 5, 4, 3, 2, 1]);
+      expect(map.rings[0].radius).toBeCloseTo(MAP_RADIUS);
+      expect(map.range.radius).toBeCloseTo(5 * unit);
+      expect(map.rings.find((ring) => ring.distance === 5)?.labeled).toBe(false);
+    });
+
+    it('setzt Ziele relativ zur eigenen Position und übernimmt deren Urteil', () => {
+      const { map, targets } = view(atOrigin());
+      const x = Math.round((MAP_CENTER + 2 * unit) * 10) / 10;
+      expect(map.nodes[0].translate).toBe(`translate(${x} ${MAP_CENTER})`);
+      expect(map.nodes.map((node) => node.target)).toEqual(targets);
+      expect(map.nodes.map((node) => node.dimmed)).toEqual([false, false, false, true, true]);
+      expect(map.nodes[0].defenseDash).toBeNull();
+      expect(map.nodes[2].defenseDash).not.toBeNull();
+    });
+
+    it('zeigt die bisherige Route bis zur eigenen Position', () => {
+      const { trail } = view(atOrigin()).map;
+      expect(trail.points).toHaveLength(1);
+      expect(trail.path).toMatch(/L400 400$/);
+    });
+
+    it('zeigt die Route nur zum gewählten Ziel in Reichweite', () => {
+      expect(view(atOrigin(), 1).map.route).toMatch(
+        new RegExp(`^M${MAP_CENTER + HERE_RADIUS} 400 Q`),
+      );
+      expect(view(atOrigin(), 3).map.route).toBeNull();
+    });
+
+    it('zeigt während der Reise die Reiseroute mit Fortschritt statt der Auswahl', () => {
+      const traveling = atOrigin({ travel: { target: CANDIDATES[1], remainingMs: 15_000 } });
+      const { map } = view(traveling, 1);
+      expect(map.route).toBeNull();
+      expect(map.nodes.every((node) => node.dimmed)).toBe(true);
+      // Reise über Distanz 3 dauert 30 s; nach der Hälfte liegt der Schwarm mittig auf der Linie.
+      const end = MAP_CENTER + 3 * unit;
+      expect(map.travel?.swarm.x).toBeCloseTo((MAP_CENTER + HERE_RADIUS + end) / 2, 0);
+      expect(map.travel?.swarm.y).toBe(MAP_CENTER);
     });
   });
 });

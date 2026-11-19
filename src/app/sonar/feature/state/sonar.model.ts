@@ -4,6 +4,7 @@ import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 
 import type { MoveSettingsView } from '../../ui/form-move-settings/form-move-settings.component.model';
 import type { QueenConversionView, TargetView, TransportView } from '../../ui/models/target.model';
+import type { SonarMapView } from '../../ui/sonar-map/sonar-map.component.model';
 
 /** Was die Umgebung liest; `selected` ist lokaler UI-Zustand der Facade, nicht im Spielstand. */
 export interface SonarSource {
@@ -44,4 +45,6 @@ export interface SonarView {
   /** Restvorrat, der beim Aufbruch verfällt; `null` ohne Rest oder während der Reise. */
   readonly forfeitedStock: Num | null;
   readonly settings: MoveSettingsView;
+  /** Sonar-Karte: Zentrum ist die aktuelle Position, während der Reise noch der Ausgangsort. */
+  readonly map: SonarMapView;
 }

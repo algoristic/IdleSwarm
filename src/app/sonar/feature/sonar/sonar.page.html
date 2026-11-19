@@ -80,6 +80,11 @@
     </p>
   </section>
 
+  <section class="md:col-span-full" aria-labelledby="sonar-map-title" [class]="panel">
+    <h2 id="sonar-map-title" class="sr-only" i18n="@@featureSonar-sonar-mapTitle">Sonar-Karte</h2>
+    <app-sonar-map [map]="sonar.map" (selectedTarget)="facade.select($event)" />
+  </section>
+
   <section aria-labelledby="sonar-targets-title" [class]="panel">
     <h2
       id="sonar-targets-title"

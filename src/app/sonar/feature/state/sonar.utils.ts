@@ -1,5 +1,10 @@
 import { type BalanceParams, TICK_MS, TICKS_PER_SECOND } from '@app/balance/domain/constants';
-import { siteSecondsLeft, swarmRange } from '@app/balance/domain/formulas';
+import {
+  distanceBetween,
+  siteSecondsLeft,
+  swarmRange,
+  travelDurationMs,
+} from '@app/balance/domain/formulas';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import {
   barPercent,
@@ -16,6 +21,21 @@ import { canConvertDronesToQueen, queenPriceInDrones } from '@app/swarm/domain/s
 import { planTransport } from '@app/swarm/domain/transport-logic';
 
 import { maxThresholdPercent, thresholdToPercent } from '../../domain/auto-threshold-logic';
+import {
+  approachPath,
+  arcDash,
+  HERE_RADIUS,
+  MAP_CENTER,
+  MAP_RADIUS,
+  MAP_SIZE,
+  mapScale,
+  nodeRadii,
+  spokes,
+  sweepPath,
+  toMapPoint,
+  trail,
+  travelLine,
+} from '../../domain/sonar-map-logic';
 import type { MoveSettingsView } from '../../ui/form-move-settings/form-move-settings.component.model';
 import type {
   CountView,
@@ -26,6 +46,7 @@ import type {
   TargetView,
   TransportView,
 } from '../../ui/models/target.model';
+import type { MapNodeView, SonarMapView } from '../../ui/sonar-map/sonar-map.component.model';
 import type { CurrentSiteView, SonarSource, SonarView, TravelView } from './sonar.model';
 
 const MS_PER_SECOND = TICK_MS * TICKS_PER_SECOND;
@@ -60,7 +81,112 @@ export function toSonarView(source: SonarSource, params: BalanceParams): SonarVi
     forfeitedStock:
       state.travel === null && state.site.stock.gt(Num.ZERO) ? state.site.stock : null,
     settings: toSettingsView(state, params),
+    map: toMapView(state, targets, infos, range, params),
   };
+}
+
+/** Geometrie der Sonar-Karte (US-04.12); Urteile und Auswahl kommen aus den `targets`. */
+function toMapView(
+  state: GameState,
+  targets: readonly TargetView[],
+  infos: readonly CandidateInfo[],
+  range: number,
+  params: BalanceParams,
+): SonarMapView {
+  const { candidates, position, route } = state.map;
+  const scale = mapScale(
+    range,
+    infos.map((info) => info.distance),
+  );
+  const radii = nodeRadii(
+    candidates.map((candidate, i) => (targets[i].details ? candidate.size : null)),
+  );
+  const points = candidates.map((candidate) =>
+    toMapPoint(candidate.position, position, scale.unit),
+  );
+  const nodes = targets.map((target, i) => toMapNode(target, points[i], radii[i]));
+  const selected = targets.find((target) => target.selected);
+  const routeTarget =
+    state.travel === null && selected?.status === 'in-range' ? points[selected.index] : null;
+  return {
+    viewBox: `0 0 ${MAP_SIZE} ${MAP_SIZE}`,
+    center: MAP_CENTER,
+    outerRadius: MAP_RADIUS,
+    labelX: MAP_CENTER + LABEL_GAP,
+    rings: Array.from({ length: scale.rings }, (_v, i) => {
+      const distance = scale.rings - i;
+      return {
+        distance,
+        radius: distance * scale.unit,
+        labelY: MAP_CENTER - distance * scale.unit - LABEL_GAP,
+        labeled: Math.abs(distance - range) >= 0.5,
+      };
+    }),
+    spokes: spokes(scale),
+    sweep: sweepPath(),
+    range: {
+      value: range,
+      radius: range * scale.unit,
+      labelY: MAP_CENTER - range * scale.unit - LABEL_GAP,
+    },
+    trail: trail(
+      route.map((point) => point.position),
+      position,
+      scale.unit,
+    ),
+    nodes,
+    route: routeTarget === null ? null : approachPath(routeTarget),
+    travel: toMapTravel(state, scale.unit, params),
+    here: {
+      type: state.site.type,
+      translate: `translate(${MAP_CENTER} ${MAP_CENTER})`,
+      radius: HERE_RADIUS,
+      labelY: HERE_RADIUS + HERE_LABEL_GAP,
+    },
+  };
+}
+
+const LABEL_GAP = 7;
+const HERE_LABEL_GAP = 20;
+
+function toMapNode(
+  target: TargetView,
+  point: { x: number; y: number },
+  radius: number,
+): MapNodeView {
+  const { details } = target;
+  const halo = radius + 6;
+  return {
+    target,
+    translate: `translate(${point.x} ${point.y})`,
+    radius,
+    ballScale: `scale(${radius})`,
+    haloRadius: halo,
+    selectionRadius: radius + 14,
+    focusRadius: radius + 18,
+    defenseDash:
+      details === null || !details.defense.gt(Num.ZERO)
+        ? null
+        : arcDash(halo, details.defenseBarPercent / PERCENT),
+    labelY: radius + 24,
+    dnaY: radius + 39,
+    markY: -(radius + 20),
+    dimmed: target.status !== 'in-range' || target.blocker === 'traveling',
+  };
+}
+
+function toMapTravel(
+  state: GameState,
+  unit: number,
+  params: BalanceParams,
+): SonarMapView['travel'] {
+  const { travel, map } = state;
+  if (travel === null) {
+    return null;
+  }
+  const totalMs = travelDurationMs(distanceBetween(map.position, travel.target.position), params);
+  const progress = totalMs > 0 ? 1 - travel.remainingMs / totalMs : 1;
+  return travelLine(toMapPoint(travel.target.position, map.position, unit), progress);
 }
 
 function isIndex(value: number | null, length: number): value is number {

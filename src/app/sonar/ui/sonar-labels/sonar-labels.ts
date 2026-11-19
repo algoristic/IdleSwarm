@@ -41,3 +41,19 @@ export const VERDICT_TONES: Readonly<Record<TargetVerdict, string>> = {
   'out-of-range': 'text-fg-muted',
   unexplored: 'text-fg-muted',
 };
+
+/** Füllfarbe der Ziele auf der Sonar-Karte je Urteil (US-04.12). */
+export const VERDICT_FILLS: Readonly<Record<TargetVerdict, string>> = {
+  capturable: 'fill-accent',
+  'too-strong': 'fill-danger',
+  'out-of-range': 'fill-fg-muted',
+  unexplored: 'fill-fg-muted',
+};
+
+/** Linienfarbe von Halo und Rand der Ziele auf der Sonar-Karte je Urteil. */
+export const VERDICT_STROKES: Readonly<Record<TargetVerdict, string>> = {
+  capturable: 'stroke-accent',
+  'too-strong': 'stroke-danger',
+  'out-of-range': 'stroke-fg-muted',
+  unexplored: 'stroke-fg-muted',
+};
