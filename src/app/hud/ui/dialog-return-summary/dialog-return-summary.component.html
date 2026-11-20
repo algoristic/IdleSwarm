@@ -1,0 +1,110 @@
+@let _summary = summary();
+@let hatchedRows = hatched();
+@let lostRows = lost();
+@let arrivalRows = arrivals();
+@let findRows = finds();
+
+<div class="grid gap-4">
+  <p class="text-fg-muted" data-testid="hud.return.duration">
+    <ng-container i18n="@@uiHud-dialogReturnSummary-duration"
+      >Dein Schwarm hat
+      <span class="font-extrabold text-fg tabular-nums">{{
+        _summary.caughtUpSeconds | formatDuration
+      }}</span>
+      ohne dich weitergemacht.</ng-container
+    >
+  </p>
+
+  @if (_summary.capped) {
+    <p class="rounded-2xl bg-well px-4 py-3 text-sm text-warning" data-testid="hud.return.capped">
+      <ng-container i18n="@@uiHud-dialogReturnSummary-capped"
+        >Nachgeholt werden höchstens
+        <span class="tabular-nums">{{ _summary.caughtUpSeconds | formatDuration }}</span>;
+        <span class="tabular-nums">{{ _summary.discardedSeconds | formatDuration }}</span> sind
+        verfallen.</ng-container
+      >
+    </p>
+  }
+
+  <dl class="grid grid-cols-kv gap-x-4 gap-y-1">
+    <dt class="text-fg-muted" i18n="@@uiHud-dialogReturnSummary-food">Nahrung</dt>
+    <dd class="text-right font-extrabold text-primary tabular-nums" data-testid="hud.return.food">
+      +{{ _summary.foodGained | formatDown }}
+    </dd>
+    <dt class="text-fg-muted" i18n="@@uiHud-dialogReturnSummary-dna">DNA</dt>
+    <dd class="text-right font-extrabold text-violet tabular-nums" data-testid="hud.return.dna">
+      +{{ _summary.dna | formatDown }}
+    </dd>
+    @for (row of hatchedRows; track row.unit) {
+      <dt class="text-fg-muted">{{ row.name }}</dt>
+      <dd
+        class="text-right font-extrabold text-accent tabular-nums"
+        [attr.data-testid]="'hud.return.hatched.' + row.unit"
+      >
+        +{{ row.count | formatDown }}
+      </dd>
+    }
+    @for (row of lostRows; track row.unit) {
+      <dt class="text-fg-muted">
+        <ng-container i18n="@@uiHud-dialogReturnSummary-lost">{{ row.name }} verloren</ng-container>
+      </dt>
+      <dd
+        class="text-right font-extrabold text-magenta tabular-nums"
+        [attr.data-testid]="'hud.return.lost.' + row.unit"
+      >
+        −{{ row.count | formatUp }}
+      </dd>
+    }
+  </dl>
+
+  @if (_summary.departures > 0 || arrivalRows.length > 0) {
+    <section class="grid gap-1" data-testid="hud.return.travel">
+      <h3 class="font-extrabold" i18n="@@uiHud-dialogReturnSummary-departures">
+        {_summary.departures, plural,
+          =1 {1 Weiterzug}
+          other {{{ _summary.departures | formatNum }} Weiterzüge}
+        }
+      </h3>
+      @if (arrivalRows.length > 0) {
+        <ul class="grid gap-0.5 text-sm text-fg-muted">
+          @for (row of arrivalRows; track row.siteType) {
+            <li [attr.data-testid]="'hud.return.arrivals.' + row.siteType">
+              {{ row.name }}
+              @if (row.count > 1) {
+                <span class="tabular-nums">× {{ row.count | formatNum }}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  @if (_summary.findCount > 0) {
+    <section class="grid gap-1" data-testid="hud.return.finds">
+      <h3 class="font-extrabold text-primary" i18n="@@uiHud-dialogReturnSummary-finds">
+        {_summary.findCount, plural, =1 {1 Fund} other {{{ _summary.findCount | formatNum }} Funde}}
+      </h3>
+      <ul class="grid gap-0.5 text-sm text-fg-muted">
+        @for (row of findRows; track row.entry) {
+          <li [attr.data-testid]="'hud.return.finds.' + row.entry">
+            {{ row.name }}
+            @if (row.count > 1) {
+              <span class="tabular-nums">× {{ row.count | formatNum }}</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <button
+    type="button"
+    class="mt-2 min-h-11 w-full cursor-pointer touch-manipulation rounded-full bg-primary px-4 py-3 font-black text-on-accent shadow-button-primary hover:bg-primary-hover active:translate-y-0.5 active:shadow-button-primary-pressed motion-reduced:active:translate-y-0"
+    data-testid="hud.return.continue"
+    i18n="@@uiHud-dialogReturnSummary-continue"
+    (click)="onContinue()"
+  >
+    Weiter
+  </button>
+</div>

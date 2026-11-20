@@ -171,6 +171,10 @@
   --sw-zoom-fade-duration: 0.9s;
   /* Bei reduzierter Bewegung ersetzt eine kurze Überblendung die Kamerafahrt. */
   --sw-zoom-reduced-duration: 0.2s;
+
+  /* Modale Dialoge (ADR-014): abgedunkelter Hintergrund und Einblenden. */
+  --sw-backdrop: rgb(5 6 26 / 0.65);
+  --sw-dialog-duration: 0.3s;
 }
 
 @theme {

@@ -1,0 +1,36 @@
+/*
+ * Sonderfälle ohne Utility (ADR-014): Hintergrund des Top-Layers (`::backdrop`), Einblenden beim
+ * Öffnen (`@starting-style`) und sichere Bereiche des Bottom-Sheets auf dem Smartphone.
+ */
+.modal-dialog {
+  transition:
+    opacity var(--sw-dialog-duration) var(--sw-ease),
+    translate var(--sw-dialog-duration) var(--sw-ease-pop);
+}
+
+.modal-dialog::backdrop {
+  background: var(--sw-backdrop);
+  transition: opacity var(--sw-dialog-duration) var(--sw-ease);
+}
+
+@starting-style {
+  .modal-dialog[open] {
+    opacity: 0;
+    translate: 0 1rem;
+  }
+
+  .modal-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/* Reduzierte Bewegung: nur eine kurze Überblendung, kein Hereingleiten. */
+:host-context([data-motion='reduced']) .modal-dialog {
+  transition: opacity var(--sw-zoom-reduced-duration) linear;
+}
+
+@media (width < 48rem) {
+  .modal-dialog {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}

@@ -7,7 +7,7 @@ import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 import type { PheromoneDistribution } from '../../ui/pheromone-panel/pheromone-panel.component.model';
 import type { HudView } from './hud.model';
-import { toHudView, toLogView } from './hud.utils';
+import { toHudView, toLogView, toReturnSummaryView } from './hud.utils';
 
 /** Zugang des HUD zum Spielkern: Viewmodel und Befehle. */
 @Injectable()
@@ -30,6 +30,9 @@ export class HudFacade {
   /** Eigenes Signal, damit das Log nicht mit jedem Tick neu abgebildet wird. */
   log = computed(() => toLogView(this.#store.log()));
 
+  /** Rückkehr-Zusammenfassung ab 5 min Abwesenheit, bis sie quittiert ist; sonst `null`. */
+  returnSummary = computed(() => toReturnSummaryView(this.#store.lastCatchUp()));
+
   buy(unit: UnitType): void {
     this.#store.dispatch({ type: 'buy', unit });
   }
@@ -44,5 +47,9 @@ export class HudFacade {
 
   strengthenGland(): void {
     this.#store.dispatch({ type: 'strengthenGland' });
+  }
+
+  acknowledgeReturnSummary(): void {
+    this.#store.acknowledgeCatchUp();
   }
 }

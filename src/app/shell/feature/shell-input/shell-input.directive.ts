@@ -17,6 +17,9 @@ import {
 const EDITABLE_SELECTOR =
   'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
 
+/** Offener Dialog (ADR-014); solange er offen ist, wechseln Tasten den Modus nicht. */
+const OPEN_DIALOG_SELECTOR = 'dialog[open]';
+
 const TOUCH_EVENTS = ['touchstart', 'touchmove', 'touchend', 'touchcancel'] as const;
 
 /** Spielfläche (`touch-action: none` in `shell.page.css`): Nur dort beginnt ein Pinch. */
@@ -189,7 +192,11 @@ export class ShellInputDirective {
   }
 
   #onKeydown(event: KeyboardEvent): void {
-    if (event.target instanceof Element && event.target.closest(EDITABLE_SELECTOR)) {
+    // Ein offener modaler Dialog gehört der Tastatur allein: Esc schließt ihn, W/G tun nichts.
+    if (
+      this.#document.querySelector(OPEN_DIALOG_SELECTOR) ||
+      (event.target instanceof Element && event.target.closest(EDITABLE_SELECTOR))
+    ) {
       return;
     }
     const mode = shortcutMode(event);

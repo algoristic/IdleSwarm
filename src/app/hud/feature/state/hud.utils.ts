@@ -23,6 +23,8 @@ import {
 } from '@app/balance/domain/formulas';
 import type { Modifiers, ValueEffect } from '@app/balance/domain/models/effect.model';
 import type { LogEntry } from '@app/engine/data-access/game-store/game-store-service.model';
+import { isReturnSummaryDue } from '@app/engine/domain/catch-up-logic';
+import type { CatchUpSummary } from '@app/engine/domain/models/catch-up.model';
 import type { GameEvent } from '@app/engine/domain/models/game-event.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { stateModifiers } from '@app/engine/domain/modifiers-logic';
@@ -43,6 +45,12 @@ import { canSetPheromones, canStrengthenGland } from '@app/swarm/domain/pheromon
 import { canBuy } from '@app/swarm/domain/units-logic';
 
 import type { UnitView } from '../../ui/buy-button/buy-button.component.model';
+import type {
+  ReturnSummaryFindView,
+  ReturnSummarySiteView,
+  ReturnSummaryUnitView,
+  ReturnSummaryView,
+} from '../../ui/dialog-return-summary/dialog-return-summary.component.model';
 import type { LogEntryView, LogItemKind } from '../../ui/event-log/event-log.component.model';
 import type { SiteView } from '../../ui/feeding-site/feeding-site.component.model';
 import type { BadgeBonusView, FindsView } from '../../ui/finds-panel/finds-panel.component.model';
@@ -274,4 +282,48 @@ function toNotices({ notice, lastSaveError }: HudSource): HudNotice[] {
     notices.push('save-failed');
   }
   return notices;
+}
+
+/**
+ * Rückkehr-Zusammenfassung (US-07.03) aus dem letzten Nachholen; `null`, solange keines vorliegt
+ * oder die Abwesenheit unter `RETURN_SUMMARY_MIN_MS` liegt.
+ */
+export function toReturnSummaryView(summary: CatchUpSummary | null): ReturnSummaryView | null {
+  if (summary === null || !isReturnSummaryDue(summary)) {
+    return null;
+  }
+  const seconds = (ms: number): Num => Num.from(ms).div(MS_PER_SECOND);
+  const hatched: ReturnSummaryUnitView[] = BUY_ORDER.filter((unit) =>
+    roundDownForDisplay(summary.hatched[unit]).gt(0),
+  ).map((unit) => ({ unit, count: summary.hatched[unit] }));
+  const lost: ReturnSummaryUnitView[] = BUY_ORDER.filter((unit) => summary.lost[unit].gt(0)).map(
+    (unit) => ({ unit, count: summary.lost[unit] }),
+  );
+  return {
+    caughtUpSeconds: seconds(summary.caughtUpMs),
+    capped: summary.capped,
+    discardedSeconds: seconds(summary.discardedMs),
+    foodGained: summary.food.gained,
+    dna: summary.dna,
+    hatched,
+    lost,
+    departures: summary.departures,
+    arrivals: countInOrder(summary.arrivals).map(([siteType, count]): ReturnSummarySiteView => ({
+      siteType,
+      count,
+    })),
+    findCount: summary.finds.length,
+    finds: countInOrder(summary.finds.map((find) => find.entry)).map(
+      ([entry, count]): ReturnSummaryFindView => ({ entry, count }),
+    ),
+  };
+}
+
+/** Zählt gleiche Werte; die Reihenfolge ist die ihres ersten Auftretens. */
+function countInOrder<T>(values: readonly T[]): [T, number][] {
+  const counts = new Map<T, number>();
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts];
 }

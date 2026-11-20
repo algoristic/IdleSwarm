@@ -1,15 +1,25 @@
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
+import type { CatchUpSummary } from '@app/engine/domain/models/catch-up.model';
 import type { GameEvent } from '@app/engine/domain/models/game-event.model';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { stateModifiers } from '@app/engine/domain/modifiers-logic';
-import type { Finds } from '@app/finds/domain/models/finds.model';
+import type { FoundEvent } from '@app/finds/domain/models/finds-event.model';
+import type { Finds, FindEntryId } from '@app/finds/domain/models/finds.model';
 import { SaveError } from '@app/persistence/domain/serialize-logic';
 import { Num } from '@app/shared/util/num/num';
+import { MS_PER_HOUR, MS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import type { Pheromones } from '@app/swarm/domain/models/pheromones.model';
 
 import type { HudSource } from './hud.model';
-import { logItemKind, toFindsView, toHudView, toLogView, toPheromoneView } from './hud.utils';
+import {
+  logItemKind,
+  toFindsView,
+  toHudView,
+  toLogView,
+  toPheromoneView,
+  toReturnSummaryView,
+} from './hud.utils';
 
 describe('toHudView', () => {
   const base = createInitialState({ seed: 'hud', now: 0 });
@@ -344,5 +354,69 @@ describe('logItemKind', () => {
     // Für die Art zählt nur der Typ des Ereignisses.
     expect(logItemKind({ type: 'found', playedMs: 0 } as unknown as GameEvent)).toBe('found');
     expect(logItemKind({ type: 'siteDepleted', playedMs: 0, siteType: 'vent' })).toBe('default');
+  });
+});
+
+describe('toReturnSummaryView', () => {
+  const units = (queens: number, drones: number, soldiers: number) => ({
+    queens: Num.from(queens),
+    drones: Num.from(drones),
+    soldiers: Num.from(soldiers),
+  });
+  const found = (entry: FindEntryId) => ({ type: 'found', entry }) as unknown as FoundEvent;
+  const summary = (change: Partial<CatchUpSummary> = {}): CatchUpSummary => ({
+    source: 'load',
+    requestedMs: 2 * MS_PER_HOUR,
+    caughtUpMs: 2 * MS_PER_HOUR,
+    discardedMs: 0,
+    capped: false,
+    food: { gained: Num.from(500), spentOnBrood: Num.from(200), net: Num.from(300) },
+    dna: Num.from(4),
+    hatched: units(0, 12.5, 0.4),
+    lost: units(0, 0, 0.2),
+    arrivals: ['vent', 'algal-mat', 'vent'],
+    departures: 3,
+    finds: [found('foreign-dna'), found('nutrient-bubble'), found('foreign-dna')],
+    ...change,
+  });
+
+  it('liefert null ohne Nachholen und unter 5 min Abwesenheit', () => {
+    expect(toReturnSummaryView(null)).toBeNull();
+    expect(toReturnSummaryView(summary({ requestedMs: 5 * MS_PER_MINUTE - 1 }))).toBeNull();
+    expect(toReturnSummaryView(summary({ requestedMs: 5 * MS_PER_MINUTE }))).not.toBeNull();
+  });
+
+  it('rechnet die Dauer in Sekunden und zeigt den Zufluss an Nahrung', () => {
+    const view = toReturnSummaryView(
+      summary({ capped: true, caughtUpMs: 24 * MS_PER_HOUR, discardedMs: 6 * MS_PER_HOUR }),
+    );
+    expect(view?.caughtUpSeconds.toNumber()).toBe(86_400);
+    expect(view?.discardedSeconds.toNumber()).toBe(21_600);
+    expect(view?.capped).toBe(true);
+    expect(view?.foodGained.toNumber()).toBe(500);
+    expect(view?.dna.toNumber()).toBe(4);
+  });
+
+  it('nennt nur Einheiten, die sichtbar geschlüpft bzw. überhaupt verloren sind', () => {
+    const view = toReturnSummaryView(summary());
+    // 0,4 Soldaten erschienen abgerundet als „+0“; ein Bruchteil Verlust aufgerundet als „−1“.
+    expect(view?.hatched.map(({ unit, count }) => [unit, count.toNumber()])).toEqual([
+      ['drones', 12.5],
+    ]);
+    expect(view?.lost.map(({ unit }) => unit)).toEqual(['soldiers']);
+  });
+
+  it('fasst gleiche Futterstellen und Funde in der Reihenfolge des ersten Auftretens zusammen', () => {
+    const view = toReturnSummaryView(summary());
+    expect(view?.departures).toBe(3);
+    expect(view?.arrivals).toEqual([
+      { siteType: 'vent', count: 2 },
+      { siteType: 'algal-mat', count: 1 },
+    ]);
+    expect(view?.findCount).toBe(3);
+    expect(view?.finds).toEqual([
+      { entry: 'foreign-dna', count: 2 },
+      { entry: 'nutrient-bubble', count: 1 },
+    ]);
   });
 });

@@ -1,6 +1,6 @@
 # Architektur-Entscheidungen (ADRs)
 
-Die Entscheidungen stammen aus dem [technischen Konzept](../technisches-konzept.md#12-architektur-entscheidungen-adrs). Stand der Umsetzung: 19.11.2026.
+Die Entscheidungen stammen aus dem [technischen Konzept](../technisches-konzept.md#12-architektur-entscheidungen-adrs). Stand der Umsetzung: 20.11.2026.
 
 | Nr | Entscheidung | Status | Umsetzung |
 |---|---|---|---|
@@ -17,3 +17,4 @@ Die Entscheidungen stammen aus dem [technischen Konzept](../technisches-konzept.
 | [ADR-011](011-i18n-localize.md) | Texte über `@angular/localize`; Übersetzung später | Angenommen | umgesetzt (AP 1.1.10); Übersetzung offen |
 | [ADR-012](012-signal-forms.md) | Formulare mit Signal Forms (`@angular/forms/signals`) | Angenommen | umgesetzt (AP 1.1.10) |
 | [ADR-013](013-webfont-nunito.md) | Webfont Nunito (variabel, latin + latin-ext) selbst gehostet | Angenommen | umgesetzt (AP 1.4.3); Vorab-Cache mit der PWA in AP 1.5.6 |
+| [ADR-014](014-dialog-nativ.md) | Modale Dialoge mit dem nativen `<dialog>` (`showModal()`), keine neue Abhängigkeit | Angenommen | `ModalDialogComponent` und Rückkehr-Zusammenfassung umgesetzt (AP 1.5.1); Einstellungen und Bestätigung beim Zurücksetzen folgen |

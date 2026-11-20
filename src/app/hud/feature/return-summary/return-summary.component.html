@@ -1,0 +1,15 @@
+@let summary = facade.returnSummary();
+
+@if (summary) {
+  <app-modal-dialog
+    testId="hud.return.dialog"
+    [open]="true"
+    [heading]="heading"
+    (closed)="facade.acknowledgeReturnSummary()"
+  >
+    <app-dialog-return-summary
+      [summary]="summary"
+      (clickedContinue)="facade.acknowledgeReturnSummary()"
+    />
+  </app-modal-dialog>
+}

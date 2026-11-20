@@ -244,7 +244,7 @@ Neue Formulare verwenden **Signal Forms** (`@angular/forms/signals`). Keine Reac
 - Dialoginhalte liegen in `dialog-<name>/` (nie `<name>-dialog`).
 - Dialoge werden typisiert geöffnet, Daten- und Ergebnistypen stehen in der `*.model.ts` des Dialogs.
 - Dialoge öffnet die Facade oder eine Seite im `feature`-Layer, nie eine `ui`-Komponente.
-- Welche Dialog- und Overlay-Technik (CDK oder eigene Lösung für Bottom-Sheets) verwendet wird, entscheidet AP 1.4.5 mit einer ADR.
+- Modale Dialoge verwenden das native `<dialog>` mit `showModal()` über `ModalDialogComponent` (`shared/ui/modal-dialog`), kein CDK ([ADR-014](docs/adr/014-dialog-nativ.md)); die Schubladen der Szene bleiben eine eigene, nicht modale Lösung.
 
 ### ui-Schicht
 

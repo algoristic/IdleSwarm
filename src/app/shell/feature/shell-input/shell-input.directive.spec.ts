@@ -140,6 +140,22 @@ describe('ShellInputDirective', () => {
       expect(host().shortcuts).toEqual([]);
     });
 
+    it('löst bei offenem Dialog nichts aus, auch nicht Esc', () => {
+      const dialog = document.createElement('dialog');
+      dialog.setAttribute('open', '');
+      document.body.append(dialog);
+      try {
+        key(dialog, { key: 'Escape' });
+        key(document, { key: 'w' });
+        expect(host().shortcuts).toEqual([]);
+        dialog.removeAttribute('open');
+        key(document, { key: 'g' });
+        expect(host().shortcuts).toEqual(['gen']);
+      } finally {
+        dialog.remove();
+      }
+    });
+
     it('löst mit Strg, Alt oder Meta und beim Halten nichts aus', () => {
       key(document, { key: 'w', ctrlKey: true });
       key(document, { key: 'g', altKey: true });
