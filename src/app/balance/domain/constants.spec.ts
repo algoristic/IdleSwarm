@@ -55,6 +55,7 @@ describe('DEFAULT_BALANCE', () => {
       balancedMaxLossShare: 0.25,
       defaultAutoThreshold: 0,
       maxAutoThreshold: 0.9,
+      maxCatchUpHours: 24,
       algalMatSizeFactor: 0.5,
       algalMatDefenseFactor: 0,
       algalMatFindChance: 0.15,

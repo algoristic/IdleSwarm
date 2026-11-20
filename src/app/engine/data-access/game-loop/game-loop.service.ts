@@ -1,25 +1,13 @@
 import { DestroyRef, DOCUMENT, inject, Injectable } from '@angular/core';
 
-import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import { TICK_MS } from '@app/balance/domain/constants';
 import { ANIMATION_FRAME, CLOCK } from '@app/shared/data-access/platform/platform.tokens';
-import { MS_PER_HOUR, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 
 import { syncClock } from '../../domain/step-logic';
-import { nextSplitMs } from '../../domain/step-split-logic';
 import { GameStore } from '../game-store/game-store.service';
 
 /** Bis zu so vielen Ticks (60 s) je Aufwachen läuft der Takt Tick für Tick. */
 export const MAX_TICKS_PER_WAKE = 600;
-
-/**
- * Größerer Rückstand (Tab im Hintergrund, eingefrorene Seite) wird in groben Schritten nachgeholt,
- * höchstens so lange (TK §4, Start 24 h); den Rest verwirft der Takt und gleicht die Uhr ab. Die
- * Obergrenze für den Offline-Fortschritt legt AP 1.5.1 fest.
- */
-export const MAX_CATCH_UP_MS = 24 * MS_PER_HOUR;
-
-/** Grober Schritt beim Nachholen, wie der Standardschritt des Headless-Runners. */
-export const CATCH_UP_STEP_MS = MS_PER_SECOND;
 
 /** Wird je Frame aufgerufen; `alpha` (0 bis 1) ist der Anteil am aktuellen Tick. */
 export type RenderCallback = (alpha: number) => void;
@@ -109,22 +97,17 @@ export class GameLoop {
   }
 
   /**
-   * Holt einen großen Rückstand in Schritten wie der Headless-Runner nach (`CATCH_UP_STEP_MS`,
-   * geteilt an `nextSplitMs`), damit Ankunft, Abbau-Schwellen und Auto-Weiterziehen auf die
-   * Millisekunde fallen. Über `MAX_CATCH_UP_MS` hinaus verfällt die Zeit.
+   * Holt einen großen Rückstand wie den Offline-Fortschritt nach (`GameStore.catchUp`, grobe
+   * Schritte, höchstens `T_max`). Über `T_max` hinaus verfällt die Zeit; dann wird die Uhr
+   * abgeglichen und der Akkumulator geleert.
    */
   #catchUp(backlogMs: number): void {
-    const capped = backlogMs > MAX_CATCH_UP_MS;
-    const totalMs = capped ? MAX_CATCH_UP_MS : backlogMs;
-    this.#accumulator = capped ? 0 : this.#accumulator - backlogMs;
-    for (let doneMs = 0; doneMs < totalMs;) {
-      const splitMs = nextSplitMs(this.#store.state(), 0, DEFAULT_BALANCE);
-      const dtMs = Math.min(CATCH_UP_STEP_MS, splitMs, totalMs - doneMs);
-      this.#store.tick(dtMs);
-      doneMs += dtMs;
-    }
+    const { capped } = this.#store.catchUp(backlogMs, 'background');
     if (capped) {
+      this.#accumulator = 0;
       this.#store.replace(syncClock(this.#store.state(), this.#clock.now()));
+    } else {
+      this.#accumulator -= backlogMs;
     }
   }
 

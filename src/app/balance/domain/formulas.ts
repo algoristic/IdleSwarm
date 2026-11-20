@@ -11,7 +11,12 @@ import type {
   UniqueAdaptationId,
 } from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
-import { MS_PER_MINUTE, MS_PER_SECOND, SECONDS_PER_MINUTE } from '@app/shared/util/time/time-units';
+import {
+  MS_PER_HOUR,
+  MS_PER_MINUTE,
+  MS_PER_SECOND,
+  SECONDS_PER_MINUTE,
+} from '@app/shared/util/time/time-units';
 import type { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import type { CandidateStatus, Position } from '@app/site/domain/models/map.model';
 import type { Pheromones } from '@app/swarm/domain/models/pheromones.model';
@@ -932,6 +937,11 @@ export function candidateStatus(
 /** Reisedauer `d · t_r` in Millisekunden (Game-Design §4.5, §4.11). */
 export function travelDurationMs(distance: number, params: BalanceParams): number {
   return distance * params.travelSecondsPerDistance * MS_PER_SECOND;
+}
+
+/** Obergrenze des Nachholens `T_max` in Millisekunden, nie negativ (US-07.01, TK §4). */
+export function maxCatchUpMs(params: BalanceParams): number {
+  return Math.max(0, params.maxCatchUpHours * MS_PER_HOUR);
 }
 
 /** Schwelle des Auto-Weiterziehens, begrenzt auf `[0; θ_max]` (Game-Design §4.12). */

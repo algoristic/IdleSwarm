@@ -120,8 +120,16 @@ export class PersistenceService {
     }
   }
 
+  /**
+   * Setzt den geladenen Stand ein und holt die Zeit seit dem letzten Speichern nach (US-07.01,
+   * höchstens `T_max`); die Ereignisse landen im frisch geleerten Log, die Zusammenfassung in
+   * `GameStore.lastCatchUp`. Danach wird die Uhr abgeglichen, auch wenn sie zurückgestellt war.
+   */
   #adopt(state: GameState): void {
-    this.#store.load(syncClock(state, this.#clock.now()));
+    const now = this.#clock.now();
+    this.#store.load(state);
+    this.#store.catchUp(now - state.time.lastSaved, 'load');
+    this.#store.replace(syncClock(this.#store.state(), now));
     this.#lastSavedAtState.set(state.time.lastSaved);
   }
 

@@ -1,18 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 
-import { TICK_MS } from '@app/balance/domain/constants';
+import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import { maxCatchUpMs } from '@app/balance/domain/formulas';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_HOUR } from '@app/shared/util/time/time-units';
 
 import { GameStore } from '../game-store/game-store.service';
-import {
-  CATCH_UP_STEP_MS,
-  GameLoop,
-  MAX_CATCH_UP_MS,
-  MAX_TICKS_PER_WAKE,
-} from './game-loop.service';
+import { GameLoop, MAX_TICKS_PER_WAKE } from './game-loop.service';
 
 const NOW = 1_700_000_000_000;
+const MAX_CATCH_UP_MS = maxCatchUpMs(DEFAULT_BALANCE);
 
 describe('GameLoop', () => {
   let loop: GameLoop;
@@ -101,12 +98,20 @@ describe('GameLoop', () => {
       loop.start();
       const startNow = store.state().time.now;
       const tick = vi.spyOn(store, 'tick');
+      const catchUp = vi.spyOn(store, 'catchUp');
       setHidden(true);
       // Gedrosselter oder eingefrorener Timer: eine Stunde ohne Aufwachen.
       wake(MS_PER_HOUR + 50);
       expect(played()).toBe(MS_PER_HOUR);
       expect(store.state().time.now).toBe(startNow + MS_PER_HOUR);
-      expect(tick.mock.calls.length).toBeLessThanOrEqual(MS_PER_HOUR / CATCH_UP_STEP_MS + 10);
+      expect(tick).not.toHaveBeenCalled();
+      expect(catchUp).toHaveBeenCalledExactlyOnceWith(MS_PER_HOUR, 'background');
+      expect(store.lastCatchUp()).toMatchObject({
+        source: 'background',
+        requestedMs: MS_PER_HOUR,
+        caughtUpMs: MS_PER_HOUR,
+        capped: false,
+      });
       setHidden(false);
       wake(50);
       expect(played()).toBe(MS_PER_HOUR + 100);
@@ -145,6 +150,7 @@ describe('GameLoop', () => {
       wake(MAX_CATCH_UP_MS + MS_PER_HOUR + 50);
       expect(played()).toBe(MAX_CATCH_UP_MS);
       expect(store.state().time.now).toBe(Date.now());
+      expect(store.lastCatchUp()).toMatchObject({ capped: true, discardedMs: MS_PER_HOUR });
       wake(99);
       expect(played()).toBe(MAX_CATCH_UP_MS);
       wake(1);

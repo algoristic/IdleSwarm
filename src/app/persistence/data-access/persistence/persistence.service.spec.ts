@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 
 import { TICK_MS } from '@app/balance/domain/constants';
-import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
+import { GameStore, LOG_MAX_ENTRIES } from '@app/engine/data-access/game-store/game-store.service';
+import { catchUp } from '@app/engine/domain/catch-up-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -18,7 +19,8 @@ import { KEY_VALUE_STORE } from './persistence-service.tokens';
 import { AUTOSAVE_INTERVAL_MS, PersistenceService } from './persistence.service';
 
 const NOW = 1_700_000_000_000;
-const SAVED_AT = NOW - 3_600_000;
+const OFFLINE_MS = 3_600_000;
+const SAVED_AT = NOW - OFFLINE_MS;
 
 class MemoryStore implements KeyValueStore {
   readonly items = new Map<string, string>();
@@ -97,17 +99,67 @@ describe('PersistenceService', () => {
   });
 
   describe('restore', () => {
-    it('übernimmt bei loaded den Stand und gleicht die Uhr ab', () => {
+    it('übernimmt bei loaded den Stand, holt die Zeit seit dem Speichern nach und gleicht die Uhr ab', () => {
       writeSave();
 
       expect(persistence.restore()).toBe('loaded');
 
-      const { time, seed, res } = store.state();
+      const { time, seed } = store.state();
       expect(seed).toBe('gespeichert');
-      expect(res.food.eq('1.5e30')).toBe(true);
-      expect(time).toEqual({ now: NOW, lastSaved: SAVED_AT, played: 5000 });
+      expect(time).toEqual({ now: NOW, lastSaved: SAVED_AT, played: 5000 + OFFLINE_MS });
       expect(persistence.notice()).toBeNull();
       expect(persistence.lastSavedAt()).toBe(SAVED_AT);
+    });
+
+    it('holt offline dasselbe nach wie catchUp und meldet Ereignisse und Zusammenfassung', () => {
+      writeSave();
+      const loaded = loadGame(memory);
+      expect(loaded.status).toBe('loaded');
+      const saved = loaded.status === 'loaded' ? loaded.state : savedState();
+      const expected = catchUp(saved, OFFLINE_MS, 'load');
+
+      persistence.restore();
+
+      expect(store.state()).toEqual({
+        ...expected.state,
+        time: { ...expected.state.time, now: NOW },
+      });
+      expect(store.log().map((entry) => entry.event)).toEqual(
+        expected.events.slice(-LOG_MAX_ENTRIES),
+      );
+      expect(store.lastCatchUp()).toEqual(expected.summary);
+      expect(store.lastCatchUp()?.source).toBe('load');
+      expect(store.lastCatchUp()?.caughtUpMs).toBe(OFFLINE_MS);
+    });
+
+    it('deckelt den Offline-Fortschritt bei 24 h und verwirft den Rest', () => {
+      writeSave();
+      vi.setSystemTime(SAVED_AT + 30 * OFFLINE_MS);
+
+      persistence.restore();
+
+      expect(store.state().time.played).toBe(5000 + 24 * OFFLINE_MS);
+      expect(store.state().time.now).toBe(SAVED_AT + 30 * OFFLINE_MS);
+      expect(store.lastCatchUp()).toMatchObject({
+        requestedMs: 30 * OFFLINE_MS,
+        caughtUpMs: 24 * OFFLINE_MS,
+        discardedMs: 6 * OFFLINE_MS,
+        capped: true,
+      });
+    });
+
+    it('holt bei zurückgestellter Uhr nichts nach', () => {
+      writeSave();
+      vi.setSystemTime(SAVED_AT - 10_000);
+
+      persistence.restore();
+
+      expect(store.state().time).toEqual({
+        now: SAVED_AT - 10_000,
+        lastSaved: SAVED_AT,
+        played: 5000,
+      });
+      expect(store.lastCatchUp()).toMatchObject({ requestedMs: 0, caughtUpMs: 0, capped: false });
     });
 
     it('übernimmt bei restored-from-backup das Backup und meldet es', () => {
@@ -148,7 +200,8 @@ describe('PersistenceService', () => {
     });
 
     it('leert das Ereignis-Log beim Laden und beim neuen Spiel', () => {
-      writeSave();
+      // Ohne Abwesenheit, damit das Nachholen keine eigenen Ereignisse meldet.
+      saveGame(memory, savedState(), NOW);
       store.replace(depleting(store.state()));
       store.tick(TICK_MS);
       // `siteDepleted`, je nach Seed dazu Funde an den Abbau-Schwellen.
@@ -190,7 +243,7 @@ describe('PersistenceService', () => {
       expect(persistence.lastSavedAt()).toBe(NOW + 500);
     });
 
-    it('ergibt über einen neuen Dienst denselben Zustand', () => {
+    it('ergibt über einen neuen Dienst denselben Zustand, fortgeschrieben um die Abwesenheit', () => {
       store.replace(savedState());
       store.tick(TICK_MS);
       persistence.save();
@@ -200,10 +253,8 @@ describe('PersistenceService', () => {
       vi.setSystemTime(NOW + 1000);
       expect(persistence.restore()).toBe('loaded');
 
-      expect(store.state()).toEqual({
-        ...saved,
-        time: { ...saved.time, now: NOW + 1000 },
-      });
+      const expected = catchUp(saved, 1000, 'load').state;
+      expect(store.state()).toEqual({ ...expected, time: { ...expected.time, now: NOW + 1000 } });
     });
 
     it('behält das Ereignis-Log', () => {
@@ -269,7 +320,11 @@ describe('PersistenceService', () => {
 
       expect(savedText()).toBe(original);
       expect(store.state().seed).toBe('gespeichert');
-      expect(store.state().time).toEqual({ now: NOW, lastSaved: SAVED_AT, played: 5000 });
+      expect(store.state().time).toEqual({
+        now: NOW,
+        lastSaved: SAVED_AT,
+        played: 5000 + OFFLINE_MS,
+      });
       expect(persistence.lastSavedAt()).toBe(SAVED_AT);
       expect(persistence.notice()).toBeNull();
 
@@ -278,7 +333,7 @@ describe('PersistenceService', () => {
       expect(memory.getItem(BACKUP_KEY)).toBe(original);
       const loaded = loadGame(memory);
       expect(loaded.status === 'loaded' && loaded.state.seed).toBe('gespeichert');
-      expect(loaded.status === 'loaded' && loaded.state.time.played).toBe(5000);
+      expect(loaded.status === 'loaded' && loaded.state.time.played).toBe(5000 + OFFLINE_MS);
     });
 
     it('schreibt nichts, solange der Speicher defekt bleibt', () => {
@@ -313,7 +368,7 @@ describe('PersistenceService', () => {
       writeState(7000);
       blockReads(SAVE_KEY);
       expect(persistence.restore()).toBe('restored-from-backup');
-      expect(store.state().time.played).toBe(5000);
+      expect(store.state().time.played).toBe(5000 + OFFLINE_MS);
       const before = snapshot();
 
       expect(persistence.save()).toBe(false);
@@ -324,7 +379,7 @@ describe('PersistenceService', () => {
       expect(persistence.save()).toBe(true);
 
       expect(snapshot()).toEqual(before);
-      expect(store.state().time.played).toBe(7000);
+      expect(store.state().time.played).toBe(7000 + OFFLINE_MS);
       expect(persistence.notice()).toBeNull();
     });
 
@@ -353,7 +408,7 @@ describe('PersistenceService', () => {
       expect(persistence.save()).toBe(true);
 
       expect(snapshot()).toEqual(before);
-      expect(store.state().time.played).toBe(5000);
+      expect(store.state().time.played).toBe(5000 + OFFLINE_MS);
       expect(persistence.notice()).toBe('restored-from-backup');
       expect(persistence.lastSavedAt()).toBe(SAVED_AT);
     });

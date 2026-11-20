@@ -4,6 +4,7 @@ import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
 import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
+import { MS_PER_MINUTE } from '@app/shared/util/time/time-units';
 import { canDepart } from '@app/site/domain/move-logic';
 
 import { Command } from '../../domain/commands-logic';
@@ -158,6 +159,47 @@ describe('GameStore', () => {
 
       expect(store.state()).toBe(other);
       expect(store.log()).toBe(log);
+    });
+  });
+
+  describe('Nachholen', () => {
+    it('holt nach, schreibt Ereignisse ins Log und hält die Zusammenfassung', () => {
+      const fresh = store.state();
+      store.replace({ ...fresh, site: { ...fresh.site, stock: Num.from(0.01) } });
+      const before = store.state();
+
+      const summary = store.catchUp(10 * MS_PER_MINUTE, 'load');
+
+      expect(store.state().time.played).toBe(before.time.played + 10 * MS_PER_MINUTE);
+      expect(store.log().some((entry) => entry.event.type === 'siteDepleted')).toBe(true);
+      expect(store.lastCatchUp()).toBe(summary);
+      expect(summary).toMatchObject({ source: 'load', caughtUpMs: 10 * MS_PER_MINUTE });
+    });
+
+    it('quittiert die Zusammenfassung', () => {
+      store.catchUp(10 * MS_PER_MINUTE, 'load');
+      store.acknowledgeCatchUp();
+      expect(store.lastCatchUp()).toBeNull();
+    });
+
+    it('fasst mit einer offenen Rückkehr-Zusammenfassung zusammen, sonst ersetzt es', () => {
+      store.catchUp(10 * MS_PER_MINUTE, 'load');
+      store.catchUp(2 * MS_PER_MINUTE, 'background');
+      expect(store.lastCatchUp()).toMatchObject({
+        source: 'load',
+        requestedMs: 12 * MS_PER_MINUTE,
+      });
+
+      store.acknowledgeCatchUp();
+      store.catchUp(2 * MS_PER_MINUTE, 'background');
+      store.catchUp(3 * MS_PER_MINUTE, 'background');
+      expect(store.lastCatchUp()).toMatchObject({ requestedMs: 3 * MS_PER_MINUTE });
+    });
+
+    it('verwirft die Zusammenfassung mit load', () => {
+      store.catchUp(10 * MS_PER_MINUTE, 'load');
+      store.load(createInitialState({ seed: 'neu', now: 1 }));
+      expect(store.lastCatchUp()).toBeNull();
     });
   });
 });

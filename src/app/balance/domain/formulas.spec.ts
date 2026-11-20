@@ -45,6 +45,7 @@ import {
   swarmRange,
   totalAttack,
   travelDurationMs,
+  maxCatchUpMs,
   unitPrice,
   weightedIndex,
   carriedUnits,
@@ -718,6 +719,14 @@ describe('travelDurationMs', () => {
     expect(travelDurationMs(3, DEFAULT_BALANCE)).toBe(30_000);
     expect(travelDurationMs(0, DEFAULT_BALANCE)).toBe(0);
     expect(travelDurationMs(2.5, { ...DEFAULT_BALANCE, travelSecondsPerDistance: 4 })).toBe(10_000);
+  });
+});
+
+describe('maxCatchUpMs', () => {
+  it('rechnet T_max von Stunden in Millisekunden (Start 24 h)', () => {
+    expect(maxCatchUpMs(DEFAULT_BALANCE)).toBe(86_400_000);
+    expect(maxCatchUpMs({ ...DEFAULT_BALANCE, maxCatchUpHours: 0.5 })).toBe(1_800_000);
+    expect(maxCatchUpMs({ ...DEFAULT_BALANCE, maxCatchUpHours: -1 })).toBe(0);
   });
 });
 

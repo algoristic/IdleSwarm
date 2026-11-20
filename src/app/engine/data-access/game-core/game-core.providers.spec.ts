@@ -47,9 +47,12 @@ describe('initGame', () => {
     TestBed.runInInjectionContext(initGame);
     const store = TestBed.inject(GameStore);
     expect(store.state().seed).toBe('alt');
+    // Die Sekunde seit dem Speichern holt das Laden nach (US-07.01).
+    expect(store.state().time.played).toBe(1000);
+    expect(store.lastCatchUp()).toMatchObject({ source: 'load', caughtUpMs: 1000 });
 
     vi.advanceTimersByTime(TICK_MS * 3);
-    expect(store.state().time.played).toBe(TICK_MS * 3);
+    expect(store.state().time.played).toBe(1000 + TICK_MS * 3);
 
     vi.advanceTimersByTime(AUTOSAVE_INTERVAL_MS - TICK_MS * 3);
     const saved = loadGame(memory);

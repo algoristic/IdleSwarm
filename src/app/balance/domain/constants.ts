@@ -64,6 +64,11 @@ export interface BalanceParams {
   readonly balancedMaxLossShare: number;
   readonly defaultAutoThreshold: number;
   readonly maxAutoThreshold: number;
+  /**
+   * Obergrenze `T_max` des Nachholens in Stunden: Offline-Fortschritt beim Laden und Rückstand eines
+   * verborgenen Tabs (US-07.01, TK §4); was darüber liegt, verfällt.
+   */
+  readonly maxCatchUpHours: number;
   // Futterstellentypen (Game-Design §2.3, `siteTypes`): flach, damit die Modell-Seite sie als Zahlen
   // bearbeiten kann. Je Typ Größe× `f_G`, Abwehr× `f_B`, Fundchance und Ziehungsgewicht `g`.
   readonly algalMatSizeFactor: number;
@@ -200,6 +205,7 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   balancedMaxLossShare: 0.25,
   defaultAutoThreshold: 0,
   maxAutoThreshold: 0.9,
+  maxCatchUpHours: 24,
   algalMatSizeFactor: 0.5,
   algalMatDefenseFactor: 0,
   algalMatFindChance: 0.15,
