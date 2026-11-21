@@ -29,6 +29,7 @@ const SERIES_LABELS = {
   nextQueen: $localize`:@@uiModel-chartOptions-series-nextQueen:Königin`,
   nextDrone: $localize`:@@uiModel-chartOptions-series-nextDrone:Drohne`,
   nextSoldier: $localize`:@@uiModel-chartOptions-series-nextSoldier:Soldat`,
+  nextGland: $localize`:@@uiModel-chartOptions-series-nextGland:Drüsenpunkt`,
   nextTotal: $localize`:@@uiModel-chartOptions-series-nextTotal:Gesamt`,
   dna: $localize`:@@uiModel-chartOptions-series-dna:DNA-Bestand`,
   dnaFromCombat: $localize`:@@uiModel-chartOptions-series-dnaFromCombat:Einnahmen Kampf`,
@@ -94,7 +95,9 @@ export const CHART_TABS: Readonly<Record<SampleTab, TabDefinition>> = {
       { label: SERIES_LABELS.nextQueen, value: (sample) => sample.nextBuyMs.queens },
       { label: SERIES_LABELS.nextDrone, value: (sample) => sample.nextBuyMs.drones },
       { label: SERIES_LABELS.nextSoldier, value: (sample) => sample.nextBuyMs.soldiers },
-      // Zielband „Zeit zwischen zwei sinnvollen Käufen“ der ersten 30 min an der Gesamtzeit.
+      { label: SERIES_LABELS.nextGland, value: (sample) => sample.nextBuyMs.gland },
+      // Zielband „Zeit zwischen zwei sinnvollen Käufen“ der ersten 30 min an der Gesamtzeit; sie
+      // zählt auch eine bezahlbare Adaption (0), die keine eigene Reihe hat.
       {
         label: SERIES_LABELS.nextTotal,
         value: (sample) => sample.nextBuyMs.total,

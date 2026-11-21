@@ -7,7 +7,8 @@ export interface TimeRange {
 
 /**
  * Wartezeit-Anteil (0–1) im Zeitraum, aus den Abtastpunkten: Ein Punkt gilt bis zum nächsten und
- * zählt als Warten, wenn weder Königin noch Drohne sofort bezahlbar ist. `null` ohne Überdeckung.
+ * zählt als Warten, wenn kein Kauf (Einheit, Drüsenpunkt, Adaption) sofort bezahlbar ist, also
+ * `nextBuyMs.total` nicht 0 ist. `null` ohne Überdeckung.
  */
 export function waitShareInRange(
   samples: readonly SimSample[],

@@ -1,4 +1,5 @@
 import { BalanceParams, DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import { GENOME_NODES } from '@app/genome/domain/data/genome-era1.data';
 import { createActiveBot } from '@app/model/domain/bots/active-bot-logic';
 import { createIdleBot } from '@app/model/domain/bots/idle-bot-logic';
 
@@ -189,12 +190,21 @@ describe('runSimulation', () => {
       expect(nextBuyMs.drones).toBeCloseTo((10.7 / 1.7) * 1000, 6);
       expect(nextBuyMs.soldiers).toBeCloseTo((25 / 1.7) * 1000, 6);
       expect(nextBuyMs.queens).toBeCloseTo((60 / 1.7) * 1000, 6);
+      expect(nextBuyMs.gland).toBeCloseTo((100 / 1.7) * 1000, 6);
+      expect(nextBuyMs.adaptation).toBeNull();
       expect(nextBuyMs.total).toBeCloseTo((10.7 / 1.7) * 1000, 6);
     });
 
     it('meldet 0 für bezahlbare Käufe', () => {
       const { nextBuyMs } = run(scripted({}), { params: SIMPLE }).samples[0];
-      expect(nextBuyMs).toEqual({ queens: 0, drones: 0, soldiers: 0, total: 0 });
+      expect(nextBuyMs).toEqual({
+        queens: 0,
+        drones: 0,
+        soldiers: 0,
+        gland: 0,
+        adaptation: null,
+        total: 0,
+      });
     });
 
     it('meldet null, wenn der Kauf beim aktuellen Zufluss nie erreicht wird', () => {
@@ -203,16 +213,29 @@ describe('runSimulation', () => {
         params: { startFood: 0, baseFoodRate: 0 },
       }).samples[0];
       expect(netFoodPerSecond).toBeCloseTo(-1.375, 10);
-      expect(nextBuyMs).toEqual({ queens: null, drones: null, soldiers: null, total: null });
+      expect(nextBuyMs).toEqual({
+        queens: null,
+        drones: null,
+        soldiers: null,
+        gland: null,
+        adaptation: null,
+        total: null,
+      });
     });
 
-    it('zählt Soldaten nicht zur Gesamtzeit', () => {
-      // Soldat bezahlbar, Drohne und Königin ohne Zufluss nie.
-      const { nextBuyMs } = run(scripted({}), {
+    it('zählt jeden Kauf zur Gesamtzeit', () => {
+      // Soldat bezahlbar, Drohne, Königin und Drüsenpunkt ohne Zufluss nie.
+      const soldier = run(scripted({}), {
         params: { startQueens: 0, startFood: 30, droneCost: 40, baseFoodRate: 0 },
-      }).samples[0];
-      expect(nextBuyMs.soldiers).toBe(0);
-      expect(nextBuyMs.total).toBeNull();
+      }).samples[0].nextBuyMs;
+      expect(soldier.soldiers).toBe(0);
+      expect(soldier.gland).toBeNull();
+      expect(soldier.total).toBe(0);
+      // Ohne Nahrung und Zufluss ist nur die Adaption zu 0 DNA bezahlbar.
+      const adaptation = run(scripted({}), {
+        params: { startQueens: 0, startFood: 0, baseFoodRate: 0, genomeCost: 0 },
+      }).samples[0].nextBuyMs;
+      expect(adaptation).toMatchObject({ drones: null, gland: null, adaptation: 0, total: 0 });
     });
   });
 
@@ -628,7 +651,7 @@ describe('runSimulation', () => {
       );
     });
 
-    it('zählt als Wartezeit, solange weder Königin noch Drohne bezahlbar ist', () => {
+    it('zählt als Wartezeit, solange kein Kauf bezahlbar ist', () => {
       // 5 Nahrung und 1 Nahrung/s Grundertrag: Die Drohne zu 10 ist ab 5 s bezahlbar.
       const { waitShare } = run(scripted({}), {
         params: { startQueens: 0, startFood: 5, baseFoodRate: 1 },
@@ -638,11 +661,48 @@ describe('runSimulation', () => {
       expect(waitShare).toBeCloseTo(0.25, 10);
     });
 
-    it('wertet einen bezahlbaren Soldaten nicht als Ende der Wartezeit', () => {
-      const { waitShare } = run(scripted({}), {
-        params: { startQueens: 0, startFood: 30, droneCost: 40, baseFoodRate: 0 },
-      }).metrics;
-      expect(waitShare).toBe(1);
+    describe('Ende der Wartezeit', () => {
+      /** Ohne Nahrung und Zufluss ist keine Einheit und kein Drüsenpunkt bezahlbar. */
+      const NOTHING: Partial<BalanceParams> = { startQueens: 0, startFood: 0, baseFoodRate: 0 };
+
+      it('wartet ohne bezahlbaren Kauf den ganzen Lauf', () => {
+        const { waitShare, longestWaitMs } = run(scripted({}), { params: NOTHING }).metrics;
+        expect(waitShare).toBe(1);
+        expect(longestWaitMs).toBe(10 * MINUTE_MS);
+      });
+
+      it('wertet einen bezahlbaren Soldaten als Ende der Wartezeit', () => {
+        const { waitShare } = run(scripted({}), {
+          params: { ...NOTHING, startFood: 30, droneCost: 40 },
+        }).metrics;
+        expect(waitShare).toBe(0);
+      });
+
+      it('wertet einen bezahlbaren Drüsenpunkt als Ende der Wartezeit', () => {
+        const { waitShare, longestWaitMs } = run(scripted({}), {
+          params: { ...NOTHING, startFood: 30, droneCost: 40, soldierCost: 40, glandCost: 20 },
+        }).metrics;
+        expect(waitShare).toBe(0);
+        expect(longestWaitMs).toBe(0);
+      });
+
+      it('wertet eine bezahlbare Adaption als Ende der Wartezeit', () => {
+        const { waitShare, longestWaitMs } = run(scripted({}), {
+          params: { ...NOTHING, genomeCost: 0 },
+        }).metrics;
+        expect(waitShare).toBe(0);
+        expect(longestWaitMs).toBe(0);
+      });
+
+      it('wartet wieder, sobald die Adaption entwickelt ist', () => {
+        // Mit genomeCost 0 ist jeder Knoten kostenlos; in Datenreihenfolge entwickelt bleibt keiner.
+        const evolveAll: Command[] = GENOME_NODES.map(({ id }) => ({ type: 'evolve', node: id }));
+        const { waitShare, longestWaitMs } = run(scripted({ 60_000: evolveAll }), {
+          params: { ...NOTHING, genomeCost: 0 },
+        }).metrics;
+        expect(waitShare).toBeCloseTo(9 / 10, 10);
+        expect(longestWaitMs).toBe(9 * MINUTE_MS);
+      });
     });
 
     describe('längste Wartestrecke', () => {

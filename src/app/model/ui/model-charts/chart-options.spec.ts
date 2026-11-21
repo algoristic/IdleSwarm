@@ -50,7 +50,7 @@ describe('buildChartOption', () => {
   it.each([
     ['resources', 5],
     ['rates', 3],
-    ['decisions', 4],
+    ['decisions', 5],
     ['dna', 5],
   ] as const)('zeichnet im Reiter %s jede Größe je Bot', (tab, metrics) => {
     expect(lines({ ...base, tab })).toHaveLength(metrics * 2);

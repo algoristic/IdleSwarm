@@ -1,6 +1,7 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
-import { isAffordable, secondsUntilAffordable } from '@app/balance/domain/formulas';
+import { secondsUntilAffordable } from '@app/balance/domain/formulas';
 import type { CollectionSetId, FindEntryId, FindKind } from '@app/finds/domain/models/finds.model';
+import { availableNodeCount } from '@app/genome/domain/genome-logic';
 import type { GenomeNodeId, UniqueAdaptationId } from '@app/genome/domain/models/genome.model';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
@@ -20,6 +21,7 @@ import { longestSpanMs, noCombatCaptureSpans, siteStaySpans } from './cycle-metr
 import { createInitialState } from './game-state-logic';
 import type { GameEvent } from './models/game-event.model';
 import { GameState } from './models/game-state.model';
+import { isAnyPurchaseAffordable } from './purchase-logic';
 import { step } from './step-logic';
 import { nextSplitMs } from './step-split-logic';
 
@@ -32,13 +34,10 @@ export const BUY_GAP_WINDOW_MS = 30 * MS_PER_MINUTE;
 /** Schützt Worker und Diagramme vor versehentlich riesigen Zeitreihen. */
 const MAX_SAMPLES = 100_000;
 
-/** Soldaten nützen in M1.1 nichts; „gesamt“ und die Wartezeit zählen nur sinnvolle Käufe. */
-const USEFUL_UNITS: readonly UnitType[] = ['queens', 'drones'];
-
 /**
  * Ereignisse, die als Kauf zählen (Kauflücken, erster Kauf, Strecke ohne Kauf, Käufe gesamt):
- * Einheit, Drüsenpunkt und Adaption (entschieden mit M1.3, PO). Die Wartezeit zählt weiter nur
- * Königin und Drohne (`USEFUL_UNITS`).
+ * Einheit, Drüsenpunkt und Adaption (entschieden mit M1.3, PO). Die Wartezeit folgt derselben
+ * Definition (`isAnyPurchaseAffordable`, entschieden mit M1.5, PO).
  */
 export const PURCHASE_EVENT_TYPES = [
   'buy',
@@ -68,7 +67,14 @@ export interface NextBuyTimes {
   readonly queens: number | null;
   readonly drones: number | null;
   readonly soldiers: number | null;
-  /** Kürzeste Zeit über Königin und Drohne; Soldaten zählen nicht (siehe `USEFUL_UNITS`). */
+  /** Nächster Drüsenpunkt (Game-Design §4.15). */
+  readonly gland: number | null;
+  /**
+   * 0, wenn eine Adaption bezahlbar ist, sonst `null`: DNA kommt aus Kämpfen und Funden, nicht aus
+   * einem stetigen Zufluss, eine Restzeit gibt es also nicht.
+   */
+  readonly adaptation: number | null;
+  /** Kürzeste Zeit über alle Käufe; 0 genau dann, wenn nicht gewartet wird. */
   readonly total: number | null;
 }
 
@@ -202,7 +208,7 @@ export interface SimMetrics {
   readonly longestNoBuyMs: number;
   /** Beginn dieser Strecke (Laufbeginn oder ein Kaufzeitpunkt); bei Gleichstand die erste. */
   readonly longestNoBuyFromMs: number;
-  /** Zeitanteil (0–1), in dem weder Königin noch Drohne bezahlbar ist. */
+  /** Zeitanteil (0–1), in dem kein Kauf bezahlbar ist (`isAnyPurchaseAffordable`). */
   readonly waitShare: number;
   /**
    * Längste zusammenhängende Wartestrecke innerhalb von `BUY_GAP_WINDOW_MS`, am Fensterende
@@ -401,20 +407,22 @@ class Recorder {
     return result > 0 ? Number.MAX_VALUE : -Number.MAX_VALUE;
   }
 
-  private nextBuyMs(unit: UnitType, state: GameState, view: BotView): number | null {
-    const seconds = secondsUntilAffordable(
-      view.prices[unit],
-      state.res.food,
-      view.netFoodPerSecond,
-    );
+  private nextBuyMs(price: Num, state: GameState, view: BotView): number | null {
+    const seconds = secondsUntilAffordable(price, state.res.food, view.netFoodPerSecond);
     return seconds === null ? null : this.wire(seconds.mul(MS_PER_SECOND));
   }
 
   sample(state: GameState, view: BotView): void {
     const { res, site, units } = state;
-    const queens = this.nextBuyMs('queens', state, view);
-    const drones = this.nextBuyMs('drones', state, view);
-    const useful = [queens, drones].filter((time) => time !== null);
+    const { prices } = view;
+    const times = {
+      queens: this.nextBuyMs(prices.queens, state, view),
+      drones: this.nextBuyMs(prices.drones, state, view),
+      soldiers: this.nextBuyMs(prices.soldiers, state, view),
+      gland: this.nextBuyMs(view.glandPrice, state, view),
+      adaptation: availableNodeCount(state, this.params) > 0 ? 0 : null,
+    };
+    const known = Object.values(times).filter((time) => time !== null);
     this.samples.push({
       timeMs: view.timeMs,
       food: this.wire(res.food),
@@ -425,12 +433,7 @@ class Recorder {
       foodPerSecond: this.wire(view.foodPerSecond),
       netFoodPerSecond: this.wire(view.netFoodPerSecond),
       eggsPerMinute: this.wire(view.eggsPerMinute),
-      nextBuyMs: {
-        queens,
-        drones,
-        soldiers: this.nextBuyMs('soldiers', state, view),
-        total: useful.length > 0 ? Math.min(...useful) : null,
-      },
+      nextBuyMs: { ...times, total: known.length > 0 ? Math.min(...known) : null },
       dna: this.wire(res.dna),
       dnaFromCombat: this.wire(this.dnaFromCombat),
       dnaFromFinds: this.wire(this.dnaFromFinds),
@@ -689,12 +692,10 @@ export function runSimulationWithState(options: SimOptions): SimRun {
     );
     const dtMs = stopMs - timeMs;
 
-    const prices = pricesFor(state.bought);
-    const { food } = state.res;
     recorder.segment(
       timeMs,
       stopMs,
-      !USEFUL_UNITS.some((unit) => isAffordable(prices[unit], food)),
+      !isAnyPurchaseAffordable(state, params, pricesFor(state.bought)),
     );
 
     const result = step(state, dtMs, params);
