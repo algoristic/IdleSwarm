@@ -24,7 +24,8 @@ import type {
 /**
  * Inhalt des Dialogs „Einstellungen“ (US-09.01, US-07.04, US-07.05): Übersicht mit Anzeige,
  * Speichern, Hinweisen und Info; Export, Import mit Bestätigung und Zurücksetzen in zwei Schritten
- * als eigene Ansichten. Welche Ansicht offen ist, hält der Aufrufer.
+ * als eigene Ansichten. Welche Ansicht offen ist, hält der Aufrufer. Zurück, Bestätigen und
+ * Abbrechen stehen in der Fußleiste (`DialogSettingsActionsComponent`).
  */
 @Component({
   selector: 'app-dialog-settings',
@@ -46,10 +47,8 @@ export class DialogSettingsComponent {
   changedSettings = output<SettingsPatch>();
   selectedPanel = output<SettingsPanel>();
   submittedImport = output<string>();
-  clickedConfirmImport = output<void>();
   clickedCopy = output<void>();
   clickedResetHints = output<void>();
-  clickedConfirmReset = output<void>();
 
   panelHeading = viewChild<ElementRef<HTMLElement>>('panelHeading');
 

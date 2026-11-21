@@ -73,12 +73,13 @@
     <span class="sr-only" i18n="@@uiHud-buyButton-count"
       >Anzahl: {{ _unit.count | formatDown }}</span
     >
+    <!-- Schmale Knöpfe (Smartphone, Querformat): Umbruch nur nach „+1 ·“, der Preis bleibt ganz. -->
     <span
-      class="text-xs font-extrabold whitespace-nowrap text-primary tabular-nums group-disabled:text-fg-muted"
+      class="text-xs font-extrabold whitespace-nowrap text-primary tabular-nums group-disabled:text-fg-muted max-md:whitespace-normal short:whitespace-normal"
       aria-hidden="true"
       [attr.data-testid]="'hud.units.' + _unit.id + '.price'"
       i18n="@@uiHud-buyButton-priceShort"
-      >+1 · {{ _unit.price | formatNum }} N</span
+      >+1 · <span class="whitespace-nowrap">{{ _unit.price | formatNum }} N</span></span
     >
     <span class="sr-only" i18n="@@uiHud-buyButton-price"
       >Preis: {{ _unit.price | formatNum }} Nahrung</span

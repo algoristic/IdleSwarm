@@ -1,4 +1,13 @@
-import { afterRenderEffect, Component, computed, effect, inject, viewChild } from '@angular/core';
+import {
+  afterNextRender,
+  afterRenderEffect,
+  Component,
+  computed,
+  effect,
+  inject,
+  Injector,
+  viewChild,
+} from '@angular/core';
 
 import { GenomeLayerComponent } from '@app/genome/feature/genome-layer/genome-layer.component';
 import { GenomeOverlayComponent } from '@app/genome/feature/genome-overlay/genome-overlay.component';
@@ -52,6 +61,7 @@ export class ShellPage {
   facade = inject(ShellFacade);
   hudFacade = inject(HudFacade);
   settingsFacade = inject(SettingsFacade);
+  readonly #injector = inject(Injector);
 
   sceneHud = viewChild.required(SceneHudComponent);
   sonarOverlay = viewChild.required(SonarOverlayComponent);
@@ -108,6 +118,14 @@ export class ShellPage {
   /** Der Knopf „Verstanden“ verschwindet mit dem Hinweis; der Fokus geht auf den Titel des Modus. */
   onHintReleasedFocus(): void {
     this.#focusTitle(this.facade.mode());
+  }
+
+  /**
+   * Der Rückkehr-Dialog verschwindet nach dem Quittieren aus dem DOM; der Fokus geht auf den Titel
+   * des Modus. Erst nach dem Rendern, solange der modale Dialog offen ist, ist die Seite inert.
+   */
+  onReturnAcknowledged(): void {
+    afterNextRender(() => this.#focusTitle(this.facade.mode()), { injector: this.#injector });
   }
 
   #focusTitle(mode: ShellMode): void {

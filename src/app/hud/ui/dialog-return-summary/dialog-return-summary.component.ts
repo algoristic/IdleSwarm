@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 
 import { FIND_ENTRY_LABELS } from '@app/finds/ui/finds-labels/finds-labels';
 import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
@@ -13,7 +13,8 @@ import type { ReturnSummaryView } from './dialog-return-summary.component.model'
 /**
  * Inhalt des Dialogs „Willkommen zurück“ (US-07.03): nachgeholte Dauer (bei Deckelung mit dem
  * verfallenen Rest), Nahrung und DNA, geschlüpfte und verlorene Einheiten, Weiterzüge mit den
- * erreichten Futterstellen und Funde. „Weiter“ quittiert.
+ * erreichten Futterstellen und Funde. „Weiter“ steht in der Fußleiste
+ * (`DialogReturnSummaryActionsComponent`).
  */
 @Component({
   selector: 'app-dialog-return-summary',
@@ -23,8 +24,6 @@ import type { ReturnSummaryView } from './dialog-return-summary.component.model'
 })
 export class DialogReturnSummaryComponent {
   summary = input.required<ReturnSummaryView>();
-
-  clickedContinue = output<void>();
 
   hatched = computed(() =>
     this.summary().hatched.map((row) => ({ ...row, name: this.#unitNames[row.unit] })),
@@ -44,8 +43,4 @@ export class DialogReturnSummaryComponent {
     drones: $localize`:@@uiHud-dialogReturnSummary-unit-drones:Drohnen`,
     soldiers: $localize`:@@uiHud-dialogReturnSummary-unit-soldiers:Soldaten`,
   };
-
-  onContinue(): void {
-    this.clickedContinue.emit();
-  }
 }

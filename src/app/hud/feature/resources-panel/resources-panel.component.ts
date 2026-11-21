@@ -14,6 +14,7 @@ import { HudFacade } from '../state/hud.facade';
   selector: 'app-resources-panel',
   imports: [FormatDownPipe, FormatNumPipe, FormatRatePipe],
   templateUrl: './resources-panel.component.html',
+  styleUrl: './resources-panel.component.css',
   host: { class: 'block' },
 })
 export class ResourcesPanelComponent {

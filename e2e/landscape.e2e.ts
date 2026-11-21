@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { MS_PER_HOUR } from '@app/shared/util/time/time-units';
+
 import { advancedGame, seedSave } from './support/game-states';
 
 // Smartphone im Querformat: schmaler als 768 px und niedriger als 480 px (Variante `short:`).
@@ -32,4 +34,20 @@ test('Querformat: Szene, Umgebung und Genom bleiben bedienbar', async ({ page, i
 
   await page.getByTestId('shell.back').click();
   await expect(page).toHaveURL(/\/$/);
+});
+
+test('Querformat: Hinweis und Rückkehr-Dialog ohne Scrollen bedienbar', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'Querformat gibt es nur auf dem Smartphone');
+  await page.goto('./');
+  await expect(page.getByTestId('onboarding.hint.dismiss')).toBeInViewport({ ratio: 1 });
+
+  const away = advancedGame(Date.now(), 30 * MS_PER_HOUR);
+  const other = await page.context().newPage();
+  await seedSave(other, away.save);
+  await other.goto('./');
+  // Die Aktionen stehen in der festen Fußleiste des Dialogs, auch wenn der Inhalt scrollt.
+  await expect(other.getByTestId('hud.return.continue')).toBeInViewport({ ratio: 1 });
 });

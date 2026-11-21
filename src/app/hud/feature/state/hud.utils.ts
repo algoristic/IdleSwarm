@@ -351,6 +351,7 @@ export function toReturnSummaryView(summary: CatchUpSummary | null): ReturnSumma
     capped: summary.capped,
     discardedSeconds: seconds(summary.discardedMs),
     foodGained: summary.food.gained,
+    foodSpentOnBrood: summary.food.spentOnBrood.gt(0) ? summary.food.spentOnBrood : null,
     dna: summary.dna,
     hatched,
     lost,

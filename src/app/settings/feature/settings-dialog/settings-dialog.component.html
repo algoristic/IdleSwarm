@@ -12,9 +12,17 @@
       (changedSettings)="facade.update($event)"
       (selectedPanel)="facade.showPanel($event)"
       (submittedImport)="facade.requestImport($event)"
-      (clickedConfirmImport)="facade.confirmImport()"
       (clickedCopy)="facade.copyExport()"
       (clickedResetHints)="facade.resetHints()"
+    />
+  }
+  <!-- Die Übersicht hat keine Fußleiste; ohne Element bleibt der Slot leer und verschwindet. -->
+  @if (facade.open() && facade.dialog().panel !== 'main') {
+    <app-dialog-settings-actions
+      dialogActions
+      [panel]="facade.dialog().panel"
+      (selectedPanel)="facade.showPanel($event)"
+      (clickedConfirmImport)="facade.confirmImport()"
       (clickedConfirmReset)="facade.confirmReset()"
     />
   }

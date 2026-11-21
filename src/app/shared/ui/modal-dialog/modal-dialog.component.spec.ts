@@ -13,6 +13,7 @@ import { ModalDialogComponent } from './modal-dialog.component';
       (closed)="closes = closes + 1"
     >
       <p>Inhalt</p>
+      <button type="button" dialogActions>Weiter</button>
     </app-modal-dialog>
   `,
 })
@@ -85,5 +86,14 @@ describe('ModalDialogComponent', () => {
     dialog().removeAttribute('open');
     dialog().dispatchEvent(new Event('close'));
     expect(fixture.componentInstance.closes).toBe(1);
+  });
+
+  it('stellt Aktionen in die feste Fußleiste, den übrigen Inhalt in den Scrollbereich', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const body = element.querySelector('[data-testid="test.dialog.body"]');
+    const actions = element.querySelector('[data-testid="test.dialog.actions"]');
+    expect(body?.textContent).toContain('Inhalt');
+    expect(body?.querySelector('button')).toBeNull();
+    expect(actions?.querySelector('button')?.textContent).toBe('Weiter');
   });
 });

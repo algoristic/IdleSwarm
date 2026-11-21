@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { ModalDialogComponent } from '@app/shared/ui/modal-dialog/modal-dialog.component';
 
 import { DialogSettingsComponent } from '../../ui/dialog-settings/dialog-settings.component';
+import { DialogSettingsActionsComponent } from '../../ui/dialog-settings-actions/dialog-settings-actions.component';
 import { SettingsFacade } from '../state/settings.facade';
 
 /**
@@ -11,7 +12,7 @@ import { SettingsFacade } from '../state/settings.facade';
  */
 @Component({
   selector: 'app-settings-dialog',
-  imports: [DialogSettingsComponent, ModalDialogComponent],
+  imports: [DialogSettingsActionsComponent, DialogSettingsComponent, ModalDialogComponent],
   templateUrl: './settings-dialog.component.html',
   host: { class: 'contents' },
 })

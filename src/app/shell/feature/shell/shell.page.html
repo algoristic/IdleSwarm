@@ -150,10 +150,13 @@
     <!--
       Hinweis des Onboardings (US-09.04), nicht modal: ab 768 px unter der Zoom-Leiste in der Spalte,
       auf dem Smartphone mittig zwischen Titel und Aktionsleiste bzw. Sheet; tritt dort zurück,
-      solange eine Schublade oder das Sheet offen ist. Querformat: in der Spalte wie ab 768 px. Dialoge liegen im Top-Layer darüber.
+      solange eine Schublade oder das Sheet offen ist. Querformat: kompakt rechts neben der Spalte, in
+      der Szene unter dem Titel (waagerecht), in der Umgebung schmal am unteren Rand
+      (`shell.page.css`); tritt bei offener Schublade ebenfalls zurück. Dialoge liegen im Top-Layer
+      darüber. `@container`: Die Karte wählt ihr Layout nach der eigenen Breite.
     -->
     <app-onboarding-hint
-      class="w-full max-md:fixed max-md:inset-x-4 max-md:top-1/2 max-md:w-auto max-md:-translate-y-1/2 max-md:data-covered:hidden short:static short:w-full short:translate-y-0 short:data-covered:block"
+      class="shell__hint @container w-full max-md:fixed max-md:inset-x-4 max-md:top-1/2 max-md:w-auto max-md:-translate-y-1/2 max-md:data-covered:hidden short:fixed short:top-22 short:right-auto short:w-88 short:translate-y-0 short:data-covered:hidden"
       [mode]="mode"
       [attr.data-covered]="hintCovered() ? '' : null"
       (releasedFocus)="onHintReleasedFocus()"
@@ -162,5 +165,5 @@
 </main>
 
 <!-- Außerhalb von `<main>`: Das Rad im Dialog erreicht die Shell-Eingabe nicht (Top-Layer, ADR-014). -->
-<app-return-summary />
+<app-return-summary (acknowledgedSummary)="onReturnAcknowledged()" />
 <app-settings-dialog />

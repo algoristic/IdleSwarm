@@ -69,6 +69,18 @@
     bottom: calc(0.5rem + env(safe-area-inset-bottom));
     left: calc(0.5rem + env(safe-area-inset-left));
   }
+
+  /* Hinweiskarte rechts neben der Spalte (`w-56` plus 0,5 rem Rand und 0,5 rem Abstand). */
+  .shell__hint {
+    left: calc(15rem + env(safe-area-inset-left));
+  }
+
+  /* Karte: schmal am unteren Rand, damit sie die Spalte der Umgebung rechts nicht überdeckt. */
+  .shell[data-mode='map'] .shell__hint {
+    top: auto;
+    bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    width: 16rem;
+  }
 }
 
 /* Reduzierte Bewegung: keine Kamerafahrt, nur kurze Überblendung der Ebenen. */

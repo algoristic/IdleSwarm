@@ -27,10 +27,21 @@
   }
 
   <dl class="grid grid-cols-kv gap-x-4 gap-y-1">
-    <dt class="text-fg-muted" i18n="@@uiHud-dialogReturnSummary-food">Nahrung</dt>
+    <dt class="text-fg-muted" i18n="@@uiHud-dialogReturnSummary-foodGained">Nahrung gesammelt</dt>
     <dd class="text-right font-extrabold text-primary tabular-nums" data-testid="hud.return.food">
       +{{ _summary.foodGained | formatDown }}
     </dd>
+    @if (_summary.foodSpentOnBrood; as spent) {
+      <dt class="text-fg-muted" i18n="@@uiHud-dialogReturnSummary-foodSpentOnBrood">
+        davon für Brut verbraucht
+      </dt>
+      <dd
+        class="text-right font-extrabold text-fg-muted tabular-nums"
+        data-testid="hud.return.food-spent"
+      >
+        −{{ spent | formatUp }}
+      </dd>
+    }
     <dt class="text-fg-muted" i18n="@@uiHud-dialogReturnSummary-dna">DNA</dt>
     <dd class="text-right font-extrabold text-violet tabular-nums" data-testid="hud.return.dna">
       +{{ _summary.dna | formatDown }}
@@ -97,14 +108,4 @@
       </ul>
     </section>
   }
-
-  <button
-    type="button"
-    class="mt-2 min-h-11 w-full cursor-pointer touch-manipulation rounded-full bg-primary px-4 py-3 font-black text-on-accent shadow-button-primary hover:bg-primary-hover active:translate-y-0.5 active:shadow-button-primary-pressed motion-reduced:active:translate-y-0"
-    data-testid="hud.return.continue"
-    i18n="@@uiHud-dialogReturnSummary-continue"
-    (click)="onContinue()"
-  >
-    Weiter
-  </button>
 </div>

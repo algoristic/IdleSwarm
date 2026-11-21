@@ -23,6 +23,8 @@ Ein modaler Dialog braucht: Fokus beim Öffnen hinein und beim Schließen zurüc
 
 **Umgesetzt** in AP 1.5.2/1.5.3: Dialog „Einstellungen“ (`settings/feature/settings-dialog`, Inhalt `settings/ui/dialog-settings`). Er bleibt im DOM und schließt über `open`, damit `close()` den Fokus an den Zahnrad-Knopf zurückgibt; die Bestätigungen für Import und Zurücksetzen sind Ansichten im selben Dialog statt eines zweiten Dialogs.
 
+**Umgesetzt** nach der Browser-Prüfung von M1.5: Titelzeile und Aktionen stehen fest, nur der Inhalt dazwischen scrollt (`<dialog>` mit `open:flex`, Scrollbereich `<testId>.body`). Aktionen kommen über den Projektions-Slot `[dialogActions]` in die Fußleiste `<testId>.actions` (ohne Aktionen fällt sie weg): „Weiter“ der Rückkehr-Zusammenfassung (`hud/ui/dialog-return-summary-actions`), Zurück, Bestätigen und Abbrechen der Einstellungs-Ansichten (`settings/ui/dialog-settings-actions`, die Übersicht hat keine). So bleiben sie auch im Querformat (844 × 390, 740 × 360) ohne Scrollen erreichbar. Nach dem Quittieren der Rückkehr-Zusammenfassung setzt die Shell den Fokus auf den Titel des Modus (`acknowledgedSummary`), weil der Dialog beim Laden ohne vorher fokussiertes Element öffnet.
+
 **Offen:** Kein Ausblenden beim Schließen (die Rückkehr-Zusammenfassung entfernt ihren Inhalt sofort).
 
 ## Konsequenzen

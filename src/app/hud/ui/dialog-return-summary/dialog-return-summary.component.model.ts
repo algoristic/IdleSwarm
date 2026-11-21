@@ -29,6 +29,8 @@ export interface ReturnSummaryView {
   readonly discardedSeconds: Num;
   /** Zufluss an Nahrung (Sammeln, Funde, Autophagie), ohne die Brutkosten abzuziehen. */
   readonly foodGained: Num;
+  /** Davon für die Brut verbraucht; `null`, wenn nichts verbraucht wurde. */
+  readonly foodSpentOnBrood: Num | null;
   readonly dna: Num;
   /** Nur Typen, deren abgerundete Anzeige größer als 0 ist, in der Reihenfolge der Aktionsleiste. */
   readonly hatched: readonly ReturnSummaryUnitView[];

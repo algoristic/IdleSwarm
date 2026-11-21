@@ -181,15 +181,6 @@
           Der Spielstand lässt sich gerade nicht exportieren.
         </p>
       }
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-4 py-2 text-sm font-extrabold shadow-button transition duration-200 ease-pop hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduced:transition-none motion-reduced:active:translate-y-0"
-        data-testid="settings.back"
-        i18n="@@uiSettings-dialogSettings-back"
-        (click)="onSelectPanel('main')"
-      >
-        Zurück
-      </button>
     </section>
   }
 
@@ -220,15 +211,6 @@
         [text]="_dialog.importText"
         (submittedSave)="submittedImport.emit($event)"
       />
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-4 py-2 text-sm font-extrabold shadow-button transition duration-200 ease-pop hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduced:transition-none motion-reduced:active:translate-y-0"
-        data-testid="settings.back"
-        i18n="@@uiSettings-dialogSettings-back"
-        (click)="onSelectPanel('main')"
-      >
-        Zurück
-      </button>
     </section>
   }
 
@@ -246,24 +228,6 @@
         Der importierte Spielstand überschreibt den aktuellen. Das lässt sich nicht rückgängig
         machen.
       </p>
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-danger px-4 py-2 font-black text-on-accent shadow-button active:translate-y-0.5 active:shadow-button-pressed motion-reduced:active:translate-y-0"
-        data-testid="settings.import.confirm"
-        i18n="@@uiSettings-dialogSettings-importConfirm"
-        (click)="clickedConfirmImport.emit()"
-      >
-        Überschreiben
-      </button>
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-4 py-2 text-sm font-extrabold shadow-button transition duration-200 ease-pop hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduced:transition-none motion-reduced:active:translate-y-0"
-        data-testid="settings.import.cancel"
-        i18n="@@uiSettings-dialogSettings-cancel"
-        (click)="onSelectPanel('import')"
-      >
-        Abbrechen
-      </button>
     </section>
   }
 
@@ -281,33 +245,6 @@
         Du beginnst ein neues Spiel; der gesamte Fortschritt geht verloren. Die Einstellungen
         bleiben. Willst du den Spielstand behalten, exportiere ihn vorher.
       </p>
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-primary px-4 py-2 font-black text-on-accent shadow-button-primary hover:bg-primary-hover active:translate-y-0.5 active:shadow-button-primary-pressed motion-reduced:active:translate-y-0"
-        data-testid="settings.reset.export"
-        i18n="@@uiSettings-dialogSettings-resetExport"
-        (click)="onSelectPanel('export')"
-      >
-        Vorher exportieren
-      </button>
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-4 py-2 text-sm font-extrabold text-danger shadow-button transition duration-200 ease-pop hover:bg-danger hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduced:transition-none motion-reduced:active:translate-y-0"
-        data-testid="settings.reset.confirm-1"
-        i18n="@@uiSettings-dialogSettings-resetConfirm1"
-        (click)="onSelectPanel('reset-confirm')"
-      >
-        Weiter zum Zurücksetzen
-      </button>
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-4 py-2 text-sm font-extrabold shadow-button transition duration-200 ease-pop hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduced:transition-none motion-reduced:active:translate-y-0"
-        data-testid="settings.reset.cancel"
-        i18n="@@uiSettings-dialogSettings-cancel"
-        (click)="onSelectPanel('main')"
-      >
-        Abbrechen
-      </button>
     </section>
   }
 
@@ -325,24 +262,6 @@
         Das ist der letzte Schritt. Der aktuelle Spielstand wird gelöscht und lässt sich ohne Export
         nicht wiederherstellen.
       </p>
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-danger px-4 py-2 font-black text-on-accent shadow-button active:translate-y-0.5 active:shadow-button-pressed motion-reduced:active:translate-y-0"
-        data-testid="settings.reset.confirm-2"
-        i18n="@@uiSettings-dialogSettings-resetConfirm2"
-        (click)="clickedConfirmReset.emit()"
-      >
-        Endgültig zurücksetzen
-      </button>
-      <button
-        type="button"
-        class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-surface-raised px-4 py-2 text-sm font-extrabold shadow-button transition duration-200 ease-pop hover:bg-accent hover:text-on-accent active:translate-y-0.5 active:shadow-button-pressed motion-reduced:transition-none motion-reduced:active:translate-y-0"
-        data-testid="settings.reset.cancel"
-        i18n="@@uiSettings-dialogSettings-cancel"
-        (click)="onSelectPanel('main')"
-      >
-        Abbrechen
-      </button>
     </section>
   }
 }

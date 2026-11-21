@@ -9,16 +9,21 @@
 <section class="grid gap-1.5" aria-labelledby="resources-title">
   <h2 id="resources-title" class="sr-only" i18n="@@featureHud-resourcesPanel-title">Ressourcen</h2>
   <dl
-    class="grid gap-1.5 max-md:flex max-md:items-start max-md:justify-between max-md:gap-3 short:grid short:grid-cols-2 short:gap-x-3 short:gap-y-1"
+    class="grid gap-1.5 max-md:flex max-md:items-start max-md:justify-between max-md:gap-1.5 short:grid short:grid-cols-2 short:gap-x-3 short:gap-y-1"
   >
+    <!--
+      Der Punkt vor der Rate steht nur, wenn sie in derselben Zeile wie „Nahrung“ steht: Er liegt in
+      der Lücke davor; bricht die Rate um, liegt er links außerhalb und `overflow-hidden` schneidet
+      ihn ab (`resources-panel.component.css`).
+    -->
     <div
-      class="flex flex-wrap items-center gap-x-2.5 max-md:gap-x-1.5 short:col-span-2 short:gap-x-1.5"
+      class="flex min-w-min flex-wrap items-center gap-x-2.5 overflow-hidden max-md:gap-x-1.5 short:col-span-2 short:gap-x-1.5"
     >
       <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-food">
         Nahrung
       </dt>
       <dd
-        class="flex min-w-28 items-center gap-2.5 text-2xl font-black tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
+        class="flex min-w-28 items-center gap-2.5 text-2xl font-black tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1 max-md:text-lg max-md:leading-tight max-md:whitespace-nowrap short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
         data-testid="hud.resources.food"
       >
         <span
@@ -28,10 +33,10 @@
         >{{ hud.food | formatDown }}
       </dd>
       <dd
-        class="order-last -ml-1.5 text-xs text-fg-muted tabular-nums max-md:-ml-1 short:-ml-1"
-        i18n="@@featureHud-resourcesPanel-foodRatePerSecond"
+        class="resources-panel__rate relative order-last text-xs whitespace-nowrap text-fg-muted tabular-nums"
+        i18n="@@featureHud-resourcesPanel-foodRate"
       >
-        · +<span data-testid="hud.resources.food-rate">{{ hud.foodRate | formatRate }}</span
+        +<span data-testid="hud.resources.food-rate">{{ hud.foodRate | formatRate }}</span
         >/s
       </dd>
     </div>
@@ -39,7 +44,7 @@
       <div class="flex flex-wrap items-center gap-x-2.5 max-md:gap-x-1.5 short:gap-x-1.5">
         <dt class="order-last text-xs text-fg-muted" i18n="@@featureHud-resourcesPanel-dna">DNA</dt>
         <dd
-          class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
+          class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1 max-md:text-lg max-md:leading-tight max-md:whitespace-nowrap short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
           data-testid="hud.resources.dna"
         >
           <span
@@ -56,7 +61,7 @@
           Pheromone
         </dt>
         <dd
-          class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
+          class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1 max-md:text-lg max-md:leading-tight max-md:whitespace-nowrap short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
           data-testid="hud.resources.pheromones"
         >
           <span
@@ -72,7 +77,7 @@
         Eier/min
       </dt>
       <dd
-        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1.5 max-md:text-lg max-md:leading-tight short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
+        class="flex min-w-28 items-center gap-2.5 font-extrabold tabular-nums max-md:min-w-0 max-md:basis-full max-md:gap-1 max-md:text-lg max-md:leading-tight max-md:whitespace-nowrap short:min-w-0 short:basis-full short:gap-1.5 short:text-lg short:leading-tight"
         data-testid="hud.resources.eggs"
       >
         <span

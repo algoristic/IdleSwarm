@@ -419,7 +419,15 @@ describe('toReturnSummaryView', () => {
     expect(view?.discardedSeconds.toNumber()).toBe(21_600);
     expect(view?.capped).toBe(true);
     expect(view?.foodGained.toNumber()).toBe(500);
+    expect(view?.foodSpentOnBrood?.toNumber()).toBe(200);
     expect(view?.dna.toNumber()).toBe(4);
+  });
+
+  it('lässt die Brutkosten weg, wenn nichts verbraucht wurde', () => {
+    const view = toReturnSummaryView(
+      summary({ food: { gained: Num.from(500), spentOnBrood: Num.from(0), net: Num.from(500) } }),
+    );
+    expect(view?.foodSpentOnBrood).toBeNull();
   });
 
   it('nennt nur Einheiten, die sichtbar geschlüpft bzw. überhaupt verloren sind', () => {

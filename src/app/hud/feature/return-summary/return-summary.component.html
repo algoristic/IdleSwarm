@@ -5,11 +5,9 @@
     testId="hud.return.dialog"
     [open]="true"
     [heading]="heading"
-    (closed)="facade.acknowledgeReturnSummary()"
+    (closed)="onAcknowledge()"
   >
-    <app-dialog-return-summary
-      [summary]="summary"
-      (clickedContinue)="facade.acknowledgeReturnSummary()"
-    />
+    <app-dialog-return-summary [summary]="summary" />
+    <app-dialog-return-summary-actions dialogActions (clickedContinue)="onAcknowledge()" />
   </app-modal-dialog>
 }
