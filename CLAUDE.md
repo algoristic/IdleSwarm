@@ -45,6 +45,7 @@
 | [`settings`](.claude/rules/settings.md) | `src/app/settings/**` | Einstellungen: Zahlenformat, Animationen, Autosave-Intervall (Optionen, Standard, `updateSettings`); Dialog „Einstellungen“ mit Export, Import und Zurücksetzen |
 | [`onboarding`](.claude/rules/onboarding.md) | `src/app/onboarding/**` | Onboarding: Freischaltungen (`updateUnlocks`), Hinweise und Hinweiskarte |
 | [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
+| [`e2e`](.claude/rules/e2e.md) | `e2e/**`, `playwright.config.ts` | Playwright-Smoke: Projekte, Webserver, Spielstände für Tests, Fälle, CI-Schritt |
 
 **Regeln, die überall gelten:**
 
@@ -405,7 +406,7 @@ Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan (TK §10
 - **Spielstände:** ein Test je Migration mit eingefrorenen Beispiel-Spielständen.
 - **Balancing:** Kennzahlen fester Bot-Läufe als Snapshots mit Toleranz (ab AP 1.5.5).
 - **UI:** Komponententests nur für Komponenten und Seiten mit eigener Logik, die brechen kann (z. B. Formular-Parsing). Rein darstellende Komponenten deckt der E2E-Smoke ab. Erwartete Werte nicht aus dem Code unter Test ableiten.
-- **E2E:** Playwright-Smoke für Desktop und Smartphone ab AP 1.5.7.
+- **E2E:** Playwright-Smoke für Desktop und Smartphone (`e2e/*.e2e.ts`, Regeldatei `e2e`) gegen den Produktions-Build; nur wesentliche Abläufe, nur auf Test-IDs und Rollen warten, keine festen Wartezeiten. Spielstände entstehen mit den echten Domänenfunktionen (`e2e/support/game-states.ts`).
 - Plattformzugriffe in Tests über die Tokens aus §7 ersetzen, Zeit über Fake-Timer bzw. Parameter.
 
 ## 11. Änderungen prüfen
@@ -420,5 +421,6 @@ Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan (TK §10
 | Lint (und Fix) | `npm run lint` (`npm run lint -- --fix`) |
 | Format | `npm run format:check`, `npx prettier --write <dateien>` |
 | Build (prüft Typen und Budgets) | `npm run build` |
+| E2E (baut, dann Playwright; einmalig `npx playwright install chromium`) | `npm run e2e` |
 
-Vor dem Abschluss eines AP sind Lint, Format, Tests und Build grün (CI-Gate).
+Vor dem Abschluss eines AP sind Lint, Format, Tests, Build und E2E grün (CI-Gate).

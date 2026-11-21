@@ -23,9 +23,7 @@ IdleSwarm ist ein Einzelspieler-Spiel ohne Multiplayer. Logik, Speicherung und O
 
 **Umgesetzt** in AP 1.5.6: PWA mit `@angular/service-worker` ([ADR-015](015-pwa-service-worker.md)); Manifest und Service Worker arbeiten mit Pfaden relativ zum Base-Href `/IdleSwarm/`.
 
-**Geplant:**
-
-- E2E-Tests und das zugehörige CI-Gate: Umsetzung ab AP 1.5.7
+**Umgesetzt** in AP 1.5.7: E2E-Smoke mit Playwright (devDependency) gegen den Pages-Build unter `/IdleSwarm/`; ohne grünen E2E-Lauf kein Deployment (TK §10).
 
 ## Konsequenzen
 

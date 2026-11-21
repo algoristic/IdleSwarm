@@ -9,5 +9,7 @@ dist/
 coverage/
 .angular/
 out-tsc/
+test-results/
+playwright-report/
 node_modules/
 package-lock.json
