@@ -190,4 +190,106 @@ describe('apply', () => {
       expect(apply(state, { type: 'evolve', node: 'cilia-1' })).toBe(state);
     });
   });
+  describe('updateSettings (US-09.01)', () => {
+    it('ändert eine oder mehrere Einstellungen', () => {
+      const one = apply(state, {
+        type: 'updateSettings',
+        settings: { numberFormat: 'scientific' },
+      });
+      expect(one.settings).toEqual({
+        numberFormat: 'scientific',
+        motion: 'system',
+        autosaveIntervalMs: 30_000,
+      });
+      const two = apply(one, {
+        type: 'updateSettings',
+        settings: { motion: 'reduced', autosaveIntervalMs: 300_000 },
+      });
+      expect(two.settings).toEqual({
+        numberFormat: 'scientific',
+        motion: 'reduced',
+        autosaveIntervalMs: 300_000,
+      });
+      expect(two.onboarding).toBe(state.onboarding);
+    });
+
+    it('bleibt ohne Änderung oder mit einem Wert außerhalb der Listen ohne Wirkung', () => {
+      expect(apply(state, { type: 'updateSettings', settings: {} })).toBe(state);
+      expect(apply(state, { type: 'updateSettings', settings: { motion: 'system' } })).toBe(state);
+      expect(
+        apply(state, {
+          type: 'updateSettings',
+          settings: { motion: 'full', autosaveIntervalMs: 15_000 },
+        }),
+      ).toBe(state);
+      // @ts-expect-error: `roman` ist kein Zahlenformat.
+      const cmd: Command = { type: 'updateSettings', settings: { numberFormat: 'roman' } };
+      expect(applyCommand(state, cmd)).toEqual({ state, events: [] });
+    });
+  });
+
+  describe('Hinweise (US-09.04)', () => {
+    it('markiert Hinweise als gesehen, in Listenreihenfolge', () => {
+      const first = apply(state, { type: 'markHintSeen', hint: 'auto-move' });
+      const second = apply(first, { type: 'markHintSeen', hint: 'collect' });
+      expect(second.onboarding.seenHints).toEqual(['collect', 'auto-move']);
+      expect(apply(second, { type: 'markHintSeen', hint: 'collect' })).toBe(second);
+    });
+
+    it('setzt alle Hinweise zurück und behält die Freischaltungen', () => {
+      const seen = Object.freeze({
+        ...state,
+        onboarding: Object.freeze({
+          unlocked: Object.freeze(['pheromones'] as const),
+          seenHints: Object.freeze(['collect', 'pheromones'] as const),
+        }),
+      });
+      const reset = apply(seen, { type: 'resetHints' });
+      expect(reset.onboarding).toEqual({ unlocked: ['pheromones'], seenHints: [] });
+      expect(apply(reset, { type: 'resetHints' })).toBe(reset);
+    });
+  });
+
+  describe('Freischaltungen nach Kommandos (Game-Design §4.18)', () => {
+    it('schaltet nach einem wirksamen Kommando frei, was der neue Zustand erreicht', () => {
+      const rich = Object.freeze({
+        ...state,
+        res: Object.freeze({ ...state.res, food: Num.from(99) }),
+      });
+      // Ein wirksames Kommando ohne Bezug zur Drüse genügt, wenn der Zustand die Schwelle erreicht.
+      const atPrice = Object.freeze({
+        ...rich,
+        res: Object.freeze({ ...rich.res, food: Num.from(100) }),
+      });
+      expect(atPrice.onboarding.unlocked).toEqual([]);
+      const next = apply(atPrice, { type: 'setTransportPriority', priority: 'drones-first' });
+      expect(next.onboarding.unlocked).toEqual(['pheromones']);
+      const bought = apply(rich, { type: 'buy', unit: 'drones' });
+      expect(bought.onboarding.unlocked).toEqual([]);
+    });
+
+    it('lässt ein wirkungsloses Kommando auch bei offener Freischaltung ohne Wirkung', () => {
+      const atPrice = Object.freeze({
+        ...state,
+        res: Object.freeze({ ...state.res, food: Num.from(100) }),
+      });
+      expect(apply(atPrice, { type: 'noop' })).toBe(atPrice);
+      expect(apply(atPrice, { type: 'markHintSeen', hint: 'collect' }).onboarding).toEqual({
+        unlocked: ['pheromones'],
+        seenHints: ['collect'],
+      });
+    });
+
+    it('nimmt eine Freischaltung nie zurück', () => {
+      const rich = Object.freeze({
+        ...state,
+        res: Object.freeze({ ...state.res, food: Num.from(120) }),
+      });
+      const unlocked = apply(rich, { type: 'setTransportPriority', priority: 'drones-first' });
+      expect(unlocked.onboarding.unlocked).toEqual(['pheromones']);
+      const spent = apply(unlocked, { type: 'buy', unit: 'queens' });
+      expect(spent.res.food.lt(100)).toBe(true);
+      expect(spent.onboarding.unlocked).toEqual(['pheromones']);
+    });
+  });
 });

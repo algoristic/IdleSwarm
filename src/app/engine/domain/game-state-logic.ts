@@ -2,6 +2,8 @@ import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { clampAutoThreshold, swarmRange } from '@app/balance/domain/formulas';
 import { initialFinds } from '@app/finds/domain/finds-logic';
+import { START_ONBOARDING, updateUnlocks } from '@app/onboarding/domain/onboarding-logic';
+import { DEFAULT_SETTINGS } from '@app/settings/domain/models/settings.model';
 import { Num } from '@app/shared/util/num/num';
 import { seedToRngState } from '@app/shared/util/rng/rng';
 import { START_SITE_TYPE } from '@app/site/domain/data/sites-era1.data';
@@ -26,7 +28,7 @@ export interface InitialStateOptions {
 /**
  * Erzeugt den Startzustand nach Game-Design §2.1. Die Startkandidaten zieht der Generator aus dem
  * RNG; der zurückgegebene `rngState` ist entsprechend fortgeschrieben. Der Fund-RNG entsteht
- * getrennt davon aus dem Seed.
+ * getrennt davon aus dem Seed. Einstellungen und Onboarding beginnen beim Standard.
  */
 export function createInitialState(
   { seed, now, rngState = seedToRngState(seed) }: InitialStateOptions,
@@ -39,7 +41,7 @@ export function createInitialState(
     { origin, moves: 0, range: swarmRange(params, NEUTRAL_MODIFIERS), rngState },
     params,
   );
-  return {
+  const state: GameState = {
     version: STATE_VERSION,
     seed,
     rngState: generated.rngState,
@@ -66,5 +68,9 @@ export function createInitialState(
     genome: { owned: [] },
     // Eigener Strom aus dem Seed, auch wenn `rngState` übergeben wird (Game-Design §4.16, §5.1).
     finds: initialFinds(seed),
+    settings: DEFAULT_SETTINGS,
+    onboarding: START_ONBOARDING,
   };
+  // Mit den Startwerten ist nichts freigeschaltet; überschriebene `params` (Modell-Seite) können es.
+  return updateUnlocks(state, params);
 }

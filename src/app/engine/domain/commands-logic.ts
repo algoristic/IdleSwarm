@@ -1,6 +1,9 @@
 import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { evolve } from '@app/genome/domain/genome-logic';
 import type { GenomeNodeId } from '@app/genome/domain/models/genome.model';
+import type { HintId } from '@app/onboarding/domain/models/onboarding.model';
+import { markHintSeen, resetHints, updateUnlocks } from '@app/onboarding/domain/onboarding-logic';
+import { SettingsPatch, updateSettings } from '@app/settings/domain/settings-logic';
 import { setAutoMove } from '@app/site/domain/auto-move-logic';
 import type { StrategyId } from '@app/site/domain/models/auto-move.model';
 import { depart } from '@app/site/domain/move-logic';
@@ -87,6 +90,26 @@ export interface EvolveCommand {
   readonly node: GenomeNodeId;
 }
 
+/**
+ * Ändert eine oder mehrere Einstellungen (US-09.01); fehlende Felder bleiben. Ist ein Feld nicht
+ * aus seiner Liste, bleibt das Kommando ohne Wirkung.
+ */
+export interface UpdateSettingsCommand {
+  readonly type: 'updateSettings';
+  readonly settings: SettingsPatch;
+}
+
+/** Markiert einen Hinweis als gesehen (US-09.04); schon gesehen: ohne Wirkung. */
+export interface MarkHintSeenCommand {
+  readonly type: 'markHintSeen';
+  readonly hint: HintId;
+}
+
+/** Zeigt alle Hinweise wieder (Einstellungen); Freischaltungen bleiben. */
+export interface ResetHintsCommand {
+  readonly type: 'resetHints';
+}
+
 /** Alle Kommandos; neue Varianten hier ergänzen und in {@link applyCommand} behandeln. */
 export type Command =
   | NoopCommand
@@ -98,7 +121,10 @@ export type Command =
   | SetAutoMoveCommand
   | SetPheromonesCommand
   | StrengthenGlandCommand
-  | EvolveCommand;
+  | EvolveCommand
+  | UpdateSettingsCommand
+  | MarkHintSeenCommand
+  | ResetHintsCommand;
 
 const NO_EVENTS: readonly GameEvent[] = Object.freeze([]);
 
@@ -111,15 +137,33 @@ function assertNever(type: never): never {
   throw new TypeError(`Unbekanntes Kommando: ${String(type)}`);
 }
 
+function withSettings(state: GameState, settings: GameState['settings']): GameState {
+  return settings === state.settings ? state : { ...state, settings };
+}
+
+function withOnboarding(state: GameState, onboarding: GameState['onboarding']): GameState {
+  return onboarding === state.onboarding ? state : { ...state, onboarding };
+}
+
 /**
  * Wendet ein Kommando an, ohne den Eingabezustand zu verändern, und liefert die Ereignisse dazu
- * (z. B. `departed`). Bleibt es ohne Wirkung, kommt derselbe Zustand ohne Ereignisse zurück.
+ * (z. B. `departed`). Bleibt es ohne Wirkung, kommt derselbe Zustand ohne Ereignisse zurück. Nach
+ * einem wirksamen Kommando schaltet es frei, was der neue Zustand erreicht hat (Game-Design §4.18).
  */
 export function applyCommand(
   state: GameState,
   cmd: Command,
   params: BalanceParams = DEFAULT_BALANCE,
 ): StepResult {
+  const result = applyCommandOnly(state, cmd, params);
+  if (result.state === state) {
+    return result;
+  }
+  const unlocked = updateUnlocks(result.state, params);
+  return unlocked === result.state ? result : { ...result, state: unlocked };
+}
+
+function applyCommandOnly(state: GameState, cmd: Command, params: BalanceParams): StepResult {
   const { type } = cmd;
   switch (type) {
     case 'noop':
@@ -148,6 +192,12 @@ export function applyCommand(
       return withoutEvents(strengthenGland(state, params));
     case 'evolve':
       return evolve(state, cmd.node, params);
+    case 'updateSettings':
+      return withoutEvents(withSettings(state, updateSettings(state.settings, cmd.settings)));
+    case 'markHintSeen':
+      return withoutEvents(withOnboarding(state, markHintSeen(state.onboarding, cmd.hint)));
+    case 'resetHints':
+      return withoutEvents(withOnboarding(state, resetHints(state.onboarding)));
     default:
       return assertNever(type);
   }

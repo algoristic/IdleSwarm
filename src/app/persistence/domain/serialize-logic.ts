@@ -16,6 +16,17 @@ import {
   GenomeNodeId,
   isGenomeNodeId,
 } from '@app/genome/domain/models/genome.model';
+import {
+  HINT_IDS,
+  Onboarding,
+  ONBOARDING_UNLOCK_IDS,
+} from '@app/onboarding/domain/models/onboarding.model';
+import {
+  isAutosaveIntervalMs,
+  isMotionSetting,
+  isNumberFormat,
+  Settings,
+} from '@app/settings/domain/models/settings.model';
 import { Num } from '@app/shared/util/num/num';
 import { isSiteTypeId, SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import { AutoMove, isStrategyId } from '@app/site/domain/models/auto-move.model';
@@ -302,6 +313,47 @@ function readFinds(value: unknown): Finds {
   };
 }
 
+/** Nur Werte aus den Listen der Einstellungen (Game-Design §5.2). */
+function readSettings(value: unknown): Settings {
+  const settings = readRecord(value, 'settings');
+  const { numberFormat, motion, autosaveIntervalMs } = settings;
+  if (!isNumberFormat(numberFormat)) {
+    throw invalid('settings.numberFormat');
+  }
+  if (!isMotionSetting(motion)) {
+    throw invalid('settings.motion');
+  }
+  if (!isAutosaveIntervalMs(autosaveIntervalMs)) {
+    throw invalid('settings.autosaveIntervalMs');
+  }
+  return { numberFormat, motion, autosaveIntervalMs };
+}
+
+/** Nur bekannte IDs, keine doppelt; gespeichert in der Reihenfolge der Liste `ids`. */
+function readIds<T extends string>(value: unknown, path: string, ids: readonly T[]): T[] {
+  const items = readArray(value, path);
+  const seen = new Set<unknown>();
+  items.forEach((id, i) => {
+    if (!(ids as readonly unknown[]).includes(id) || seen.has(id)) {
+      throw invalid(`${path}.${i}`);
+    }
+    seen.add(id);
+  });
+  return ids.filter((id) => seen.has(id));
+}
+
+/**
+ * Ohne Balance-Werte: Ob eine Freischaltung zum Fortschritt passt, prüft das Laden nicht; der
+ * nächste Schritt schaltet Fehlendes frei (Game-Design §5.2). Die Reihenfolge wird normalisiert.
+ */
+function readOnboarding(value: unknown): Onboarding {
+  const onboarding = readRecord(value, 'onboarding');
+  return {
+    unlocked: readIds(onboarding['unlocked'], 'onboarding.unlocked', ONBOARDING_UNLOCK_IDS),
+    seenHints: readIds(onboarding['seenHints'], 'onboarding.seenHints', HINT_IDS),
+  };
+}
+
 /** Prüft einen rohen Stand der aktuellen Version und übernimmt nur die bekannten Felder. */
 function toGameState(value: unknown): GameState {
   const raw = readRecord(value, 'Spielstand');
@@ -341,6 +393,8 @@ function toGameState(value: unknown): GameState {
     pheromones: readPheromones(raw['pheromones']),
     genome: readGenome(raw['genome']),
     finds: readFinds(raw['finds']),
+    settings: readSettings(raw['settings']),
+    onboarding: readOnboarding(raw['onboarding']),
   };
 }
 
@@ -377,4 +431,24 @@ export function encodeSave(state: GameState): string {
 /** Liest, migriert und prüft einen Speichertext; Fehler sind immer {@link SaveError}. */
 export function decodeSave(text: string): GameState {
   return toGameState(migrate(parseSave(text)));
+}
+
+export type ImportResult =
+  | { readonly ok: true; readonly state: GameState }
+  | { readonly ok: false; readonly error: SaveError };
+
+/**
+ * Liest einen exportierten Speichertext (Export ist {@link encodeSave}). Leerraum, den Kopieren und
+ * Einfügen oft hinzufügen (Zeilenumbrüche, Leerzeichen), wird entfernt; danach wie
+ * {@link decodeSave}, also mit Migration und Prüfung. Fehler kommen als Code zurück, nicht als Wurf.
+ */
+export function importSave(text: string): ImportResult {
+  try {
+    return { ok: true, state: decodeSave(text.replace(/\s+/g, '')) };
+  } catch (error) {
+    if (error instanceof SaveError) {
+      return { ok: false, error };
+    }
+    throw error;
+  }
 }

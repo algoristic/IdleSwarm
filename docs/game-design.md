@@ -112,6 +112,7 @@ Jeder Einheitentyp hat eigene Nahrungskosten. Eier/min ist nur eine Rate, keine 
 | `θ_0` | `defaultAutoThreshold` | 0 | Standard-Schwelle des Auto-Weiterziehens (0 % = leer) |
 | `θ_max` | `maxAutoThreshold` | 0,9 | höchste einstellbare Schwelle |
 | `T_max` | `maxCatchUpHours` | 24 | Obergrenze des Nachholens in Stunden (Offline-Fortschritt, verborgener Tab, AP 1.5.1); was darüber liegt, verfällt |
+| `v_U` | `mapUnlockStockShare` | 0,25 | Anteil der Größe, bis zu dem der Vorrat der aktuellen Futterstelle sinken muss, damit die Umgebung erscheint ([Onboarding, 4.18](#418-onboarding)) |
 | – | `siteTypes` | siehe unten | Faktoren, Fundchance und Ziehungsgewicht je Futterstellentyp |
 
 Weitere Symbole: `Q`, `D`, `S` sind die Anzahl Königinnen, Drohnen und Soldaten, `N` die Nahrung, `V` der Vorrat der Futterstelle, `G` ihre Größe, `B` die Abwehr eines Ziels, `P` die aktuelle Position, `R` die aktuelle Reichweite, `z` der Zugzähler und `dt` die Schrittdauer in Sekunden. Die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust` und `M_ausbeute` sind bis M1.2 gleich 1; ab M1.3 füllt sie das [Effekt-System](#413-effekt-system).
@@ -301,7 +302,7 @@ Ein Kauf ergibt genau +1 Einheit. **Platz begrenzt weder Kauf noch Brut**, er wi
 
 ### 4.3 Simulationsschritt
 
-Je Schritt der Dauer `dt` laufen nacheinander (0) Reise, (1) Grundertrag und Sammeln, (2) Brut und (3) Auto-Weiterziehen. Der Logik-Takt beträgt 10 Hz, also `dt = 0,1` ([Technisches Konzept §4](technisches-konzept.md#4-simulation)).
+Je Schritt der Dauer `dt` laufen nacheinander (0) Reise, (1) Grundertrag und Sammeln, (2) Brut, (3) Auto-Weiterziehen und (4) Freischaltungen des Onboardings ([4.18](#418-onboarding), seit M1.5). Der Logik-Takt beträgt 10 Hz, also `dt = 0,1` ([Technisches Konzept §4](technisches-konzept.md#4-simulation)).
 
 **(0) Reise:** Nur während einer Reise; die Restdauer sinkt um `dt`, bei 0 kommt der Schwarm an ([4.11](#411-weiterziehen-und-reise)). Endet die Reise im Schritt, wird er an der Ankunft geteilt:
 
@@ -338,6 +339,8 @@ N  -= h · c̄
 - Die Brut läuft auch während einer Reise.
 
 **(3) Auto-Weiterziehen:** Prüft am Ende des Schritts den Auslöser ([4.12](#412-strategien-und-auto-weiterziehen)).
+
+**(4) Onboarding:** Schaltet am Ende des Schritts frei, was der Zustand erreicht hat ([4.18](#418-onboarding)); ändert keine Spielwerte.
 
 **Beispiel 1** mit `Q = 1`, `D = 10`, `S = 0`, `N = 5`, `V = 1.000`, `dt = 0,1`, ohne Reise:
 
@@ -1018,9 +1021,36 @@ x = Σ gesammelte Sammelobjekte + Σ min(Fragmentzähler, benötigt)
 
 Das passt zum Mockup („3 / 24“ mit zwei Schwefelperlen und einem Urzeitkristall). Noch nicht gefundene Felder erscheinen als „?“. Je Set zeigt die Schublade x / 3, je einzigartiger Adaption x / benötigt.
 
+### 4.18 Onboarding
+
+> **Entschieden mit M1.5 (PO), umgesetzt** mit AP 1.5.2–1.5.4 (Domäne `onboarding`). Grundlage für US-09.04.
+
+Teile der Oberfläche erscheinen erst, wenn sie relevant werden. Eine Freischaltung ist monoton: Einmal freigeschaltet, bleibt ein Teil sichtbar, auch wenn die Bedingung später nicht mehr gilt. Geprüft wird am Ende jedes Simulationsschritts ([4.3](#43-simulationsschritt), nach dem Auto-Weiterziehen) und nach jedem wirksamen Kommando; ein wirkungsloses Kommando bleibt ohne Wirkung.
+
+| ID | Teil | Bedingung |
+|---|---|---|
+| – | Start (immer sichtbar): Nahrung, Eier/min, Königin und Drohne, Titel/Vorrat, Log | – |
+| `pheromones` | Schublade „Pheromone“ und Pheromonwert | `k > 0` oder `N ≥ Preis_P` (nächster Drüsenpunkt, [4.15](#415-pheromone)) |
+| `map` | Zoom-Leiste „Umgebung“, Soldat-Knopf, Angriff, Schublade „Drohnen opfern“ | `V ≤ v_U · G` der aktuellen Futterstelle, oder `z > 0`, oder der Schwarm ist unterwegs |
+| `finds` | Schublade „Funde“ | Fundzähler `finds.total > 0` |
+| `genome` | Zoom-Leiste „Genom“ und DNA-Wert | DNA `> 0` oder mindestens ein Knoten entwickelt |
+
+**Hinweise:** Jeder Hinweis erscheint einmal, ist wegklickbar und lässt sich in den Einstellungen zurücksetzen (Freischaltungen bleiben dabei). Ein Hinweis ist verfügbar, sobald sein Teil freigeschaltet ist.
+
+| ID | gehört zu | Inhalt |
+|---|---|---|
+| `collect` | Start | Drohnen sammeln Nahrung |
+| `pheromones` | `pheromones` | Pheromone verteilen, Drüse stärken |
+| `map` | `map` | Umgebung und Weiterziehen |
+| `finds` | `finds` | Funde und Sammlung |
+| `genome` | `genome` | DNA und Genom |
+| `auto-move` | `map` | Auto-Weiterziehen; wann er innerhalb der Umgebung erscheint (erstes Öffnen), entscheidet die Oberfläche |
+
+**Einstellungen** (US-09.01, mit dem Spielstand gespeichert): Zahlenformat `short` (Kurzformen, Standard), `scientific`, `engineering` ([TK §9](technisches-konzept.md#9-zahlenformatierung)); Animationen `system` (Standard, folgt `prefers-reduced-motion`), `full`, `reduced`; Autosave-Intervall 10 s, 30 s (Standard), 60 s, 5 min. Die IDs sind stabil.
+
 ## 5. Spielstand Version 3
 
-Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler ergänzt, Version 3 ergänzt Karte, Reise und Einstellungen. Die Feldnamen sind so umgesetzt (Version 3 mit AP 1.2.1–1.2.7). Aktuell ist Version 4 ([5.1](#51-spielstand-version-4)); sie übernimmt alle Felder dieser Tabelle unverändert.
+Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler ergänzt, Version 3 ergänzt Karte, Reise und Einstellungen. Die Feldnamen sind so umgesetzt (Version 3 mit AP 1.2.1–1.2.7). Aktuell ist Version 5 ([5.2](#52-spielstand-version-5)); Version 4 ([5.1](#51-spielstand-version-4)) und Version 5 übernehmen alle Felder dieser Tabelle unverändert.
 
 | Feld | Inhalt | seit |
 |---|---|---|
@@ -1060,6 +1090,19 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 **Migration von Version 3** (PO-Entscheidung): wie bei den Migrationen 1→2 und 2→3. Seed, RNG-Zustand und Zeiten bleiben erhalten, alles andere wird auf die Startwerte aus [Abschnitt 2.1](#21-startzustand) gesetzt. Die Startkandidaten entstehen deterministisch aus dem übernommenen RNG-Zustand, der migrierte Spielstand enthält den danach fortgeschriebenen RNG-Zustand. `finds.rngState` entsteht wie beim neuen Spiel aus dem Seed. Wie in `v2-to-v3.ts` verwendet die Migration feste Startwerte statt `DEFAULT_BALANCE` (`V4_START`; für die Kandidaten die Generatorwerte `V3_GENERATOR_PARAMS` aus `v2-to-v3.ts`).
 
 - **Stand der Version 2 oder älter** (entschieden mit M1.3, folgt aus der PO-Entscheidung „Migration setzt zurück“): Er durchläuft die Kette und wird zweimal zurückgesetzt, erst 2→3, dann 3→4. Seine Kandidaten entstehen deshalb aus dem RNG-Zustand nach der Migration 2→3, nicht aus dem ursprünglich gespeicherten.
+
+### 5.2 Spielstand Version 5
+
+> **Entschieden mit M1.5 (PO), umgesetzt** mit AP 1.5.2–1.5.4 (`STATE_VERSION = 5`). Version 5 ergänzt Einstellungen und Onboarding-Fortschritt; alle Felder von Version 4 bleiben unverändert. Das Ereignis-Log gehört weiterhin nicht zum Spielstand.
+
+| Feld | Inhalt | seit |
+|---|---|---|
+| `settings` | `numberFormat` (`short`, `scientific`, `engineering`), `motion` (`system`, `full`, `reduced`), `autosaveIntervalMs` (10 000, 30 000, 60 000 oder 300 000) ([4.18](#418-onboarding)) | 5 |
+| `onboarding` | `unlocked`: IDs der freigeschalteten Teile, `seenHints`: IDs der gesehenen Hinweise; beide ohne Doppelte in der Reihenfolge der ID-Listen ([4.18](#418-onboarding)) | 5 |
+
+- **Ladeprüfung** (ohne Balance-Werte): Jede Einstellung muss aus ihrer Liste stammen. `unlocked` und `seenHints` enthalten nur bekannte IDs, keine doppelt; das Laden ordnet sie in die Reihenfolge der Listen. Ob die Freischaltungen zum Fortschritt passen, prüft das Laden nicht: Fehlende schaltet der nächste Schritt frei, zu viele bleiben (monoton).
+
+**Migration von Version 4** (PO-Entscheidung): Sie behält den gesamten Fortschritt, setzt die Einstellungen auf den Standard und schaltet frei, was der Stand schon erreicht hat (Regeln aus [4.18](#418-onboarding), mit festen Werten `c_P = 100`, `w_P = 2`, `v_U = 0,25` statt `DEFAULT_BALANCE`, `V5_UNLOCK_PARAMS` in `v4-to-v5.ts`). Die Hinweise der freigeschalteten Teile gelten als gesehen, der Start-Hinweis `collect` auch, sobald der Stand Fortschritt hat (eine gekaufte Einheit oder ein freigeschalteter Teil). Stände der Versionen 1 bis 3 laufen durch ihre zurücksetzenden Migrationen und dann 4→5; sie beginnen also ohne Freischaltungen und mit allen Hinweisen.
 
 ## 6. Messwerte v1
 

@@ -10,7 +10,7 @@ describe('createInitialState', () => {
   const state = createInitialState({ seed: 'idleswarm', now: NOW });
 
   it('setzt Version, Seed und Ära', () => {
-    expect(STATE_VERSION).toBe(4);
+    expect(STATE_VERSION).toBe(5);
     expect(state.version).toBe(STATE_VERSION);
     expect(state.seed).toBe('idleswarm');
     expect(state.era).toBe('ursuppe');
@@ -98,7 +98,7 @@ describe('createInitialState', () => {
     expect(custom.pheromones).toEqual({ drones: 2, soldiers: 5, glands: 0 });
   });
 
-  it('enthält nur die Felder von Version 4', () => {
+  it('enthält nur die Felder von Version 5', () => {
     expect(Object.keys(state).sort()).toEqual(
       [
         'auto',
@@ -107,11 +107,13 @@ describe('createInitialState', () => {
         'finds',
         'genome',
         'map',
+        'onboarding',
         'pheromones',
         'priority',
         'res',
         'rngState',
         'seed',
+        'settings',
         'site',
         'time',
         'travel',
@@ -134,6 +136,12 @@ describe('createInitialState', () => {
     expect(Object.keys(state.pheromones).sort()).toEqual(['drones', 'glands', 'soldiers']);
     expect(Object.keys(state.genome)).toEqual(['owned']);
     expect(Object.keys(state.finds).sort()).toEqual(['buffs', 'collected', 'rngState', 'total']);
+    expect(Object.keys(state.settings).sort()).toEqual([
+      'autosaveIntervalMs',
+      'motion',
+      'numberFormat',
+    ]);
+    expect(Object.keys(state.onboarding).sort()).toEqual(['seenHints', 'unlocked']);
   });
 
   it('teilt keine veränderlichen Teilobjekte zwischen zwei Zuständen', () => {
@@ -150,11 +158,31 @@ describe('createInitialState', () => {
     expect(other.pheromones).not.toBe(state.pheromones);
     expect(other.genome).not.toBe(state.genome);
     expect(other.finds).not.toBe(state.finds);
+    // Einstellungen und Onboarding sind eingefrorene Standardwerte, geteilt ist also unbedenklich.
+    expect(Object.isFrozen(state.settings)).toBe(true);
+    expect(Object.isFrozen(state.onboarding.unlocked)).toBe(true);
+  });
+
+  it('beginnt mit Standard-Einstellungen und ohne Freischaltungen', () => {
+    expect(state.settings).toEqual({
+      numberFormat: 'short',
+      motion: 'system',
+      autosaveIntervalMs: 30_000,
+    });
+    expect(state.onboarding).toEqual({ unlocked: [], seenHints: [] });
+  });
+
+  it('schaltet mit überschriebenen Startwerten frei, was schon erreicht ist', () => {
+    const rich = createInitialState(
+      { seed: 'idleswarm', now: NOW },
+      { ...DEFAULT_BALANCE, startFood: 100 },
+    );
+    expect(rich.onboarding.unlocked).toEqual(['pheromones']);
   });
 
   it('serialisiert Mengen über Num.toJSON', () => {
     expect(JSON.parse(JSON.stringify(state))).toEqual({
-      version: 4,
+      version: 5,
       seed: 'idleswarm',
       rngState: 491280603,
       time: { now: NOW, lastSaved: NOW, played: 0 },
@@ -175,6 +203,8 @@ describe('createInitialState', () => {
       pheromones: { drones: 3, soldiers: 1, glands: 0 },
       genome: { owned: [] },
       finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
+      settings: { numberFormat: 'short', motion: 'system', autosaveIntervalMs: 30000 },
+      onboarding: { unlocked: [], seenHints: [] },
     });
     expect(JSON.parse(JSON.stringify(state.map.candidates[0]))).toEqual({
       type: 'algal-mat',

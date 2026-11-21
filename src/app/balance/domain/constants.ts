@@ -69,6 +69,11 @@ export interface BalanceParams {
    * verborgenen Tabs (US-07.01, TK §4); was darüber liegt, verfällt.
    */
   readonly maxCatchUpHours: number;
+  /**
+   * Anteil der Größe der aktuellen Futterstelle, bis zu dem ihr Vorrat sinken muss, damit Umgebung,
+   * Soldaten, Angriff und „Drohnen opfern“ erscheinen (Onboarding, US-09.04, Game-Design §4.18).
+   */
+  readonly mapUnlockStockShare: number;
   // Futterstellentypen (Game-Design §2.3, `siteTypes`): flach, damit die Modell-Seite sie als Zahlen
   // bearbeiten kann. Je Typ Größe× `f_G`, Abwehr× `f_B`, Fundchance und Ziehungsgewicht `g`.
   readonly algalMatSizeFactor: number;
@@ -206,6 +211,7 @@ export const DEFAULT_BALANCE: BalanceParams = Object.freeze({
   defaultAutoThreshold: 0,
   maxAutoThreshold: 0.9,
   maxCatchUpHours: 24,
+  mapUnlockStockShare: 0.25,
   algalMatSizeFactor: 0.5,
   algalMatDefenseFactor: 0,
   algalMatFindChance: 0.15,

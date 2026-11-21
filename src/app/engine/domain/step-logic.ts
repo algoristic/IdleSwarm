@@ -6,6 +6,7 @@ import {
   nextHarvestThreshold,
   pruneBuffs,
 } from '@app/finds/domain/finds-logic';
+import { updateUnlocks } from '@app/onboarding/domain/onboarding-logic';
 import { applyAutoMove } from '@app/site/domain/auto-move-logic';
 import { collectStep, collectToStock } from '@app/site/domain/collect-logic';
 import { arrive } from '@app/site/domain/move-logic';
@@ -42,8 +43,8 @@ function advanceTo(
  * Schreibt die Simulation um `dtMs` Millisekunden fort, ohne die Eingabe zu verändern.
  *
  * Reihenfolge nach Game-Design §4.3: (0) Reise, (1) Grundertrag und Sammeln, (2) Brut,
- * (3) Auto-Weiterziehen. Der Schritt wird geteilt an der Ankunft, an jeder Abbau-Schwelle und an
- * jedem Ablauf eines Buffs (§4.16). Im Reiseteil ruht das Sammeln und die Brut läuft; danach läuft
+ * (3) Auto-Weiterziehen, (4) Freischaltungen des Onboardings (§4.18). Der Schritt wird geteilt an
+ * der Ankunft, an jeder Abbau-Schwelle und an jedem Ablauf eines Buffs (§4.16). Im Reiseteil ruht das Sammeln und die Brut läuft; danach läuft
  * der Rest wie ein Schritt ohne Reise. So liegen Ankunft, Funde und Buff-Abläufe unabhängig von
  * `dtMs` exakt.
  *
@@ -143,7 +144,11 @@ export function step(
   }
   const auto = applyAutoMove(current, params, stateModifiers(current, params));
   events.push(...auto.events);
-  return { state: auto.state, events: events.length > 0 ? events : NO_EVENTS };
+  // Onboarding (Game-Design §4.18): einmal am Ende des Schritts, wie das Auto-Weiterziehen.
+  return {
+    state: updateUnlocks(auto.state, params),
+    events: events.length > 0 ? events : NO_EVENTS,
+  };
 }
 
 /**

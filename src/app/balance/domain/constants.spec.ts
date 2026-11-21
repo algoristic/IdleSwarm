@@ -56,6 +56,7 @@ describe('DEFAULT_BALANCE', () => {
       defaultAutoThreshold: 0,
       maxAutoThreshold: 0.9,
       maxCatchUpHours: 24,
+      mapUnlockStockShare: 0.25,
       algalMatSizeFactor: 0.5,
       algalMatDefenseFactor: 0,
       algalMatFindChance: 0.15,

@@ -552,3 +552,42 @@ describe('step mit Funden (Game-Design §4.16)', () => {
     expect(state.finds).toBe(half.finds);
   });
 });
+
+describe('step mit Onboarding (Game-Design §4.18)', () => {
+  const createState = (): GameState =>
+    deepFreeze(createInitialState({ seed: 'onboarding', now: NOW }));
+
+  it('behält das Onboarding-Objekt, solange nichts freigeschaltet wird', () => {
+    const input = createState();
+    const { state } = step(input, TICK_MS);
+    expect(state.onboarding).toBe(input.onboarding);
+  });
+
+  it('schaltet die Umgebung frei, sobald der Vorrat auf 25 % der Größe sinkt', () => {
+    const input = createState();
+    const near = deepFreeze({
+      ...input,
+      units: { ...input.units, drones: Num.from(100) },
+      site: { ...input.site, stock: Num.from(5010) },
+    });
+    expect(step(near, TICK_MS).state.onboarding.unlocked).toEqual([]);
+    const { state } = step(near, 1000);
+    expect(state.site.stock.lte(5000)).toBe(true);
+    expect(state.onboarding).toEqual({ unlocked: ['map'], seenHints: [] });
+  });
+
+  it('nutzt den Anteil aus params', () => {
+    const params = { ...DEFAULT_BALANCE, mapUnlockStockShare: 1 };
+    expect(step(createState(), TICK_MS, params).state.onboarding.unlocked).toEqual(['map']);
+  });
+
+  it('schaltet das Genom mit der ersten DNA frei und behält Freischaltungen', () => {
+    const input = createState();
+    const withDna = deepFreeze({ ...input, res: { ...input.res, dna: Num.from(0.5) } });
+    const unlocked = step(withDna, TICK_MS).state;
+    expect(unlocked.onboarding.unlocked).toEqual(['genome']);
+    const spent = { ...unlocked, res: { ...unlocked.res, dna: Num.ZERO } };
+    const later = step(spent, TICK_MS).state;
+    expect(later.onboarding).toBe(unlocked.onboarding);
+  });
+});

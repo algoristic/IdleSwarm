@@ -3,9 +3,10 @@ import { compressToBase64, decompressFromBase64 } from 'lz-string';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState, STATE_VERSION } from '@app/engine/domain/models/game-state.model';
 import { step } from '@app/engine/domain/step-logic';
+import { DEFAULT_SETTINGS, NumberFormat } from '@app/settings/domain/models/settings.model';
 import { Num } from '@app/shared/util/num/num';
 
-import { decodeSave, encodeSave, SaveError } from './serialize-logic';
+import { decodeSave, encodeSave, importSave, SaveError } from './serialize-logic';
 
 /**
  * Eingefrorener Spielstand der Version 1 (technisches Konzept §10). Nicht anpassen: Er muss auch
@@ -42,6 +43,21 @@ const FROZEN_V3_SAVE =
   'nyepqECP42mTahwXIawYmOXAZlu5UWGYkByFMDgzgJ+AzHlf4IlQmFxZhHE0DbSZ6icHCEBw/YiFmeZFlgM4YjgWB4W8' +
   'IA==';
 
+/**
+ * Eingefrorener Spielstand der Version 4 nach 15 min an der ersten Futterstelle (AP 1.5.2): ein
+ * Drüsenpunkt, ein Fund, noch keine DNA und kein Zug. Nicht anpassen: Vorlage für künftige Migrationen.
+ */
+const FROZEN_V4_SAVE =
+  'N4IgbgpgTgzglgewHYgFwBYA0IYQgEzRDnwBsIYB3AQygFsRsokBzAZQBdqOI0BmAAwBGIQPQA2AJwAOPtg5w6vVKCQJKa' +
+  'IQHYBu3ZL27spajA5tqkQqm2GBBw9gAOJgJ4E0DvQF9s0akQArrCBTk68TBRooABmCAjWIEIAdOgATHwArBBpjCD4SAGoI' +
+  'AIQAiC+IIFIcBww0SAAjoF4SPXFaWV5+FDIUcXiqdlCeTAIpPhw0O0lXZXwPA0cruFEkEgco3AAXsogneijHAgAxgDWRIN' +
+  'CEHwV2ABGCIEsABabKk0tEG1E1+XYPT6MzSqQgI2wYwmU1gRFK5UqdGoTgaTgQC0QKA+AA80AJsK5cZUTtQkJN8Nx+gBtU' +
+  'DLVbFdabZxo2oYho41AAWhBWkygmkWmkkjS9i0aSF+LQ6GSaUyaXQ0jl0hE8rSQky8x2e0G4i0fCyQj4uq0InEEEOAIgMW' +
+  '+uCImWSwzuNJWe2opBYro5iMZIFR6OQbLQHL4ySFeukAky4ky0l5aTFEtQAntwq0xoExskklECq0Gt2RBB9hjkj4aqkcr4' +
+  'Zu6lutezhFQAukwnotUNSQLS9gy8r6Wf7sbiEwJvN4myA6AhIO1h/IoJYIKQ0EhAqRSNhqIFjg1vtR7uRrDFXbgIRw5zwW' +
+  'ATivdXSSTh55C8oBQXuNrDOfVBEJ/lkRryYkHehDOC80AIBOSD9KAgIQe0WA4K+0LtEI2AsP++BIZULDfGByigOoEHWJSD' +
+  'aVDEcCku0oDMOwXCtqWMoytI0jiOI8gIFwi42NgJzjOQJw8NYoBOIEdBwHemiVPcgQxDE7RESOQA';
+
 const NOW = 1_700_000_000_000;
 
 function sampleState(): GameState {
@@ -72,6 +88,11 @@ function sampleState(): GameState {
       total: 7,
       collected: { 'sulfur-pearl': 2, pumice: 1 },
       buffs: [{ id: 'plankton-bloom', expiresAtMs: 605_000 }],
+    },
+    settings: { numberFormat: 'engineering', motion: 'reduced', autosaveIntervalMs: 60_000 },
+    onboarding: {
+      unlocked: ['pheromones', 'map', 'finds', 'genome'],
+      seenHints: ['collect', 'map'],
     },
   };
 }
@@ -163,9 +184,18 @@ describe('encodeSave und decodeSave', () => {
       collected: { 'sulfur-pearl': 2, pumice: 1 },
       buffs: [{ id: 'plankton-bloom', expiresAtMs: 605000 }],
     });
+    expect(json.settings).toEqual({
+      numberFormat: 'engineering',
+      motion: 'reduced',
+      autosaveIntervalMs: 60000,
+    });
+    expect(json.onboarding).toEqual({
+      unlocked: ['pheromones', 'map', 'finds', 'genome'],
+      seenHints: ['collect', 'map'],
+    });
   });
 
-  it('speichert und lädt den Startzustand von Version 4', () => {
+  it('speichert und lädt den Startzustand von Version 5', () => {
     const state = createInitialState({ seed: 'idleswarm', now: NOW });
     expectSameState(decodeSave(encodeSave(state)), state);
   });
@@ -196,6 +226,8 @@ describe('encodeSave und decodeSave', () => {
     Object.freeze(state.pheromones);
     Object.freeze(state.genome);
     Object.freeze(state.finds);
+    Object.freeze(state.settings);
+    Object.freeze(state.onboarding);
     encodeSave(state);
     expect(JSON.stringify(state)).toBe(before);
   });
@@ -212,6 +244,10 @@ describe('encodeSave und decodeSave', () => {
     ['Vorrat über der Größe', { site: { type: 'vent', size: Num.ONE, stock: Num.from(2) } }],
     ['unbekannte Priorität', { priority: 'queens-first' as GameState['priority'] }],
     ['gebrochene Pheromonpunkte', { pheromones: { drones: 1.5, soldiers: 1, glands: 0 } }],
+    [
+      'unbekanntes Zahlenformat',
+      { settings: { ...DEFAULT_SETTINGS, numberFormat: 'roman' as NumberFormat } },
+    ],
     [
       'NaN in der Restdauer',
       { travel: { target: sampleState().map.candidates[0], remainingMs: NaN } },
@@ -232,7 +268,7 @@ describe('eingefrorener Spielstand der Version 1', () => {
     expect(state.era).toBe('ursuppe');
   });
 
-  it('bekommt die Startwerte von Version 4', () => {
+  it('bekommt die Startwerte von Version 5', () => {
     const state = decodeSave(FROZEN_V1_SAVE);
     expect(JSON.parse(JSON.stringify(state))).toMatchObject({
       res: { food: '1.5e1', dna: '0e0' },
@@ -246,6 +282,8 @@ describe('eingefrorener Spielstand der Version 1', () => {
       pheromones: { drones: 3, soldiers: 1, glands: 0 },
       genome: { owned: [] },
       finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
+      settings: { numberFormat: 'short', motion: 'system', autosaveIntervalMs: 30000 },
+      onboarding: { unlocked: [], seenHints: [] },
     });
     expect(state.map.candidates).toHaveLength(6);
   });
@@ -261,7 +299,7 @@ describe('eingefrorener Spielstand der Version 2', () => {
     const state = decodeSave(FROZEN_V2_SAVE);
     expect(state.version).toBe(STATE_VERSION);
     expect(JSON.parse(JSON.stringify(state))).toEqual({
-      version: 4,
+      version: 5,
       seed: 'idleswarm',
       rngState: 3898647441,
       time: { now: 1700000005000, lastSaved: 1700000000000, played: 5000 },
@@ -282,6 +320,8 @@ describe('eingefrorener Spielstand der Version 2', () => {
       pheromones: { drones: 3, soldiers: 1, glands: 0 },
       genome: { owned: [] },
       finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
+      settings: { numberFormat: 'short', motion: 'system', autosaveIntervalMs: 30000 },
+      onboarding: { unlocked: [], seenHints: [] },
     });
   });
 
@@ -303,7 +343,7 @@ describe('eingefrorener Spielstand der Version 3', () => {
     const state = decodeSave(FROZEN_V3_SAVE);
     expect(state.version).toBe(STATE_VERSION);
     expect(JSON.parse(JSON.stringify(state))).toEqual({
-      version: 4,
+      version: 5,
       seed: 'idleswarm',
       // 3898647441, fortgeschrieben um die 30 Ziehungen der Startkandidaten (Migration 3 → 4).
       rngState: 3011046983,
@@ -325,6 +365,8 @@ describe('eingefrorener Spielstand der Version 3', () => {
       pheromones: { drones: 3, soldiers: 1, glands: 0 },
       genome: { owned: [] },
       finds: { rngState: 3125258866, total: 0, collected: {}, buffs: [] },
+      settings: { numberFormat: 'short', motion: 'system', autosaveIntervalMs: 30000 },
+      onboarding: { unlocked: [], seenHints: [] },
     });
     expect(state.map.candidates).toHaveLength(6);
   });
@@ -338,6 +380,87 @@ describe('eingefrorener Spielstand der Version 3', () => {
   it('lässt sich wieder speichern und laden', () => {
     const state = decodeSave(FROZEN_V3_SAVE);
     expectSameState(decodeSave(encodeSave(state)), state);
+  });
+});
+
+describe('eingefrorener Spielstand der Version 4', () => {
+  it('wird migriert: der Fortschritt bleibt, Einstellungen und Onboarding kommen dazu', () => {
+    const state = decodeSave(FROZEN_V4_SAVE);
+    expect(state.version).toBe(STATE_VERSION);
+    expect(JSON.parse(JSON.stringify(state))).toEqual({
+      version: 5,
+      seed: 'idleswarm',
+      rngState: 3011046983,
+      time: { now: 1700000900000, lastSaved: 1700000900000, played: 900000 },
+      era: 'ursuppe',
+      res: { food: '1.4235e2', dna: '0e0' },
+      units: { queens: '2e0', drones: '6.45e1', soldiers: '0e0' },
+      site: { type: 'vent', size: '2e4', stock: '6.1e3' },
+      bought: { queens: '1e0', drones: '2.4e1', soldiers: '0e0' },
+      map: {
+        position: { x: 0, y: 0 },
+        candidates: expect.any(Array),
+        route: [{ type: 'vent', position: { x: 0, y: 0 } }],
+        moves: 0,
+      },
+      travel: null,
+      auto: { enabled: false, strategy: 'balanced', threshold: 0 },
+      priority: 'balanced',
+      pheromones: { drones: 4, soldiers: 1, glands: 1 },
+      genome: { owned: [] },
+      finds: { rngState: 3125258866, total: 1, collected: { pumice: 1 }, buffs: [] },
+      settings: { numberFormat: 'short', motion: 'system', autosaveIntervalMs: 30000 },
+      // Drüse gekauft und ein Fund; Vorrat 30,5 % > 25 %, keine DNA: Umgebung und Genom noch nicht.
+      onboarding: {
+        unlocked: ['pheromones', 'finds'],
+        seenHints: ['collect', 'pheromones', 'finds'],
+      },
+    });
+    expect(state.map.candidates).toHaveLength(2);
+  });
+
+  it('lässt sich weiterspielen und schaltet dabei weiter frei', () => {
+    const loaded = decodeSave(FROZEN_V4_SAVE);
+    const { state } = step(loaded, 1000);
+    expect(state.time.played).toBe(901_000);
+    expect(state.onboarding.unlocked).toEqual(['pheromones', 'finds']);
+    const low = step({ ...loaded, site: { ...loaded.site, stock: Num.from(5000) } }, 1000).state;
+    expect(low.onboarding.unlocked).toEqual(['pheromones', 'map', 'finds']);
+    expect(low.onboarding.seenHints).toEqual(['collect', 'pheromones', 'finds']);
+  });
+
+  it('lässt sich wieder speichern und laden', () => {
+    const state = decodeSave(FROZEN_V4_SAVE);
+    expectSameState(decodeSave(encodeSave(state)), state);
+  });
+});
+
+describe('importSave', () => {
+  it('liest einen exportierten Text, auch mit Zeilenumbrüchen und Leerzeichen', () => {
+    const text = encodeSave(sampleState());
+    const pasted = `  ${text.slice(0, 20)}\n${text.slice(20, 50)} \r\n\t${text.slice(50)}\n`;
+    const result = importSave(pasted);
+    expect(result.ok).toBe(true);
+    expectSameState(
+      result.ok ? result.state : createInitialState({ seed: '', now: 0 }),
+      sampleState(),
+    );
+  });
+
+  it('migriert ältere Stände', () => {
+    const result = importSave(FROZEN_V4_SAVE);
+    expect(result.ok && result.state.version).toBe(STATE_VERSION);
+  });
+
+  it.each([
+    ['', 'corrupt'],
+    ['kein Spielstand', 'corrupt'],
+    [encodeRaw(withField('version', STATE_VERSION + 1)), 'future-version'],
+    [encodeRaw(withField('settings.motion', 'off')), 'invalid'],
+  ])('meldet Fehler als Code: %s', (text, code) => {
+    const result = importSave(text);
+    expect(result.ok).toBe(false);
+    expect(result.ok ? null : result.error.code).toBe(code);
   });
 });
 
@@ -520,6 +643,24 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     ['finds.collected', { pumice: 1.5 }],
     ['finds.collected', { pumice: '1' }],
     ['finds.collected', { constructor: 1 }],
+    ['settings', undefined],
+    ['settings', null],
+    ['settings.numberFormat', undefined],
+    ['settings.numberFormat', 'Short'],
+    ['settings.motion', 'off'],
+    ['settings.motion', true],
+    ['settings.autosaveIntervalMs', 15000],
+    ['settings.autosaveIntervalMs', '30000'],
+    ['onboarding', undefined],
+    ['onboarding', []],
+    ['onboarding.unlocked', undefined],
+    ['onboarding.unlocked', {}],
+    ['onboarding.unlocked', ['sonar']],
+    ['onboarding.unlocked', ['map', 'map']],
+    ['onboarding.seenHints', undefined],
+    ['onboarding.seenHints', ['collect', 'collect']],
+    ['onboarding.seenHints', ['welcome']],
+    ['onboarding.seenHints', [1]],
     ['finds.buffs', undefined],
     ['finds.buffs', {}],
     ['finds.buffs', [null]],
@@ -595,6 +736,24 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     expect(decodeSave(encodeRaw(withField('finds.total', 0))).finds.total).toBe(0);
   });
 
+  it('akzeptiert Onboarding-Listen in beliebiger Reihenfolge und ordnet sie', () => {
+    const unlocked = ['genome', 'pheromones'];
+    const seenHints = ['auto-move', 'collect'];
+    const state = decodeSave(encodeRaw(withField('onboarding', { unlocked, seenHints })));
+    expect(state.onboarding).toEqual({
+      unlocked: ['pheromones', 'genome'],
+      seenHints: ['collect', 'auto-move'],
+    });
+    // Ob Freischaltungen zum Fortschritt passen, prüft das Laden nicht (ohne Balance-Werte).
+    const empty = decodeSave(encodeRaw(withField('onboarding', { unlocked: [], seenHints: [] })));
+    expect(empty.onboarding).toEqual({ unlocked: [], seenHints: [] });
+  });
+
+  it.each([10_000, 30_000, 60_000, 300_000])('akzeptiert das Autosave-Intervall %d ms', (ms) => {
+    const raw = withField('settings.autosaveIntervalMs', ms);
+    expect(decodeSave(encodeRaw(raw)).settings.autosaveIntervalMs).toBe(ms);
+  });
+
   it('lässt keine Fundzähler über __proto__ einschleusen', () => {
     const json = JSON.stringify(rawSample()).replace(
       '"collected":{',
@@ -628,6 +787,8 @@ describe('decodeSave mit beschädigten Eingaben', () => {
     const finds = raw['finds'] as Record<string, unknown>;
     finds['extra'] = 1;
     (finds['buffs'] as Record<string, unknown>[])[0]['extra'] = 1;
+    (raw['settings'] as Record<string, unknown>)['extra'] = 1;
+    (raw['onboarding'] as Record<string, unknown>)['extra'] = 1;
     expectSameState(decodeSave(encodeRaw(raw)), sampleState());
   });
 

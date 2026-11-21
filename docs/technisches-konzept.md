@@ -140,11 +140,13 @@ src/app/
     data-access/sim/            # SimService, sim.worker.ts, Protokoll
     domain/bots/, models/, params-logic.ts, model-params-logic.ts, reduce-result-logic.ts, stall-logic.ts,
     domain/progress-logic.ts, pacing-targets-logic.ts, upgrade-logic.ts, dna-flow-logic.ts …
-  # geplant
-  settings/
+  settings/                     # Einstellungen im Spielstand (seit M1.5)
+    domain/models/settings.model.ts, settings-logic.ts
+  onboarding/                   # Freischaltungen und Hinweise (seit M1.5)
+    domain/models/onboarding.model.ts, onboarding-logic.ts
 ```
 
-Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `applyCommand`/`apply` und `step` daraus zusammen. Eine `domain`-Schicht in einer Oberflächen-Domäne (`hud/domain`, `sonar/domain`) enthält nur reine Eingabeprüfung ohne Spielregeln, damit Formular-Schemas in `ui` sie nutzen können; `sonar/domain` und `genome/domain` enthalten außerdem die reine Geometrie ihrer SVG-Ansicht. `genome` und `finds` sind Fachdomänen mit eigenem Teil des Zustands (`genome`, `finds`). `finds/domain` nutzt `genome/domain` zur Laufzeit, umgekehrt nur über Typen, damit kein Laufzeitzyklus entsteht.
+Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln; `engine/domain` setzt `GameState`, `applyCommand`/`apply` und `step` daraus zusammen. Eine `domain`-Schicht in einer Oberflächen-Domäne (`hud/domain`, `sonar/domain`) enthält nur reine Eingabeprüfung ohne Spielregeln, damit Formular-Schemas in `ui` sie nutzen können; `sonar/domain` und `genome/domain` enthalten außerdem die reine Geometrie ihrer SVG-Ansicht. `genome` und `finds` sind Fachdomänen mit eigenem Teil des Zustands (`genome`, `finds`), seit M1.5 ebenso `settings` und `onboarding`. `finds/domain` nutzt `genome/domain` zur Laufzeit, umgekehrt nur über Typen, damit kein Laufzeitzyklus entsteht.
 
 Seit M1.4 gibt es die Oberflächen-Domänen `shell` und `scene`, beide ohne eigenen Teil des Zustands. `shell/domain` enthält die reine Modus-, Kamera- und Eingabelogik, `scene/domain` das Bewegungsmodell der Szene als reine Funktionen der Zeit mit eigenem visuellem RNG. Die Shell-Route stellt die Facades von Shell, Szene, HUD, Sonar und Genom bereit; jede Ebene und jedes Overlay injiziert die Facade seiner Domäne, die `ShellPage` selbst nur `ShellFacade` und `HudFacade` (DNA und Zahl verfügbarer Adaptionen für die Zoom-Leiste). Die einzelnen Routen `/umgebung` und `/genom` und das Prototyp-HUD auf `/` sind in der Shell aufgegangen; nur `/modell` liegt außerhalb.
 
@@ -209,7 +211,23 @@ finds: {
 };
 ```
 
-Die Reichweite steht nicht im Zustand, sie wird abgeleitet; ebenso `P_ges`, Effekte und Modifikatoren, einzigartige Adaptionen und Badges (sie folgen aus `collected`). `badges`, `stats` und `settings` sind weiter Entwurf und kommen mit den jeweiligen Mechaniken über Migrationen.
+Save-Version 5 (seit M1.5, AP 1.5.2–1.5.4) ergänzt `settings` und `onboarding` ([Game-Design §5.2](game-design.md#52-spielstand-version-5)); `settings` ist damit umgesetzt:
+
+```ts
+settings: {
+  numberFormat: 'short' | 'scientific' | 'engineering';   // NUMBER_FORMATS (settings/domain)
+  motion: 'system' | 'full' | 'reduced';                   // MOTION_SETTINGS
+  autosaveIntervalMs: number;                              // AUTOSAVE_INTERVALS_MS: 10 s, 30 s, 60 s, 5 min
+};
+onboarding: {
+  unlocked: OnboardingUnlockId[];   // 'pheromones' | 'map' | 'finds' | 'genome', monoton
+  seenHints: HintId[];              // 'collect' | 'pheromones' | 'map' | 'finds' | 'genome' | 'auto-move'
+};
+```
+
+Die Freischaltungen setzt `updateUnlocks` (`onboarding/domain`) am Ende jedes `step` und nach jedem wirksamen Kommando; ohne Änderung bleibt die Referenz des Zustands gleich. Hinweise und Einstellungen ändern nur Kommandos (`updateSettings`, `markHintSeen`, `resetHints`).
+
+Die Reichweite steht nicht im Zustand, sie wird abgeleitet; ebenso `P_ges`, Effekte und Modifikatoren, einzigartige Adaptionen und Badges (sie folgen aus `collected`). `badges` und `stats` sind weiter Entwurf und kommen mit den jeweiligen Mechaniken über Migrationen.
 
 IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil**. Spielstände speichern nur IDs, keine Texte oder Werte.
 
@@ -345,9 +363,9 @@ export const GENOME_ERA1: GenomeNode[] = [
 | Speicherort | `localStorage`, Schlüssel `idleswarm.save`; zusätzlich ein Backup-Slot des vorletzten Stands und der Slot `idleswarm.save.unreadable`: Ein unlesbarer Primär-Stand wird beim nächsten Speichern dorthin verschoben statt überschrieben |
 | Format | JSON → komprimiert (`lz-string`) → Base64; `Num` als String serialisiert |
 | Autosave | alle 30 s (einstellbar), bei `visibilitychange` (hidden) und `pagehide` |
-| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/migrations-logic.ts` (aktuell Version 4, mit den Migrationen 1→2, 2→3 und 3→4; alle setzen den Spielstand bis auf Seed, RNG-Zustand und Zeiten auf die Startwerte, 3→4 leitet dazu den Fund-RNG aus dem Seed ab) |
+| Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/migrations-logic.ts` (aktuell Version 5, mit den Migrationen 1→2, 2→3, 3→4 und 4→5; 1→2 bis 3→4 setzen den Spielstand bis auf Seed, RNG-Zustand und Zeiten auf die Startwerte, 3→4 leitet dazu den Fund-RNG aus dem Seed ab; 4→5 erhält den gesamten Stand und ergänzt Standard-Einstellungen und das schon erreichte Onboarding) |
 | Robustheit | Validierung beim Laden. Bei einem Fehler wird der Backup-Slot geladen und der Spieler informiert |
-| Export/Import | derselbe String zum Kopieren; Import validiert und migriert |
+| Export/Import | derselbe String zum Kopieren (`encodeSave`); Import validiert und migriert (`importSave` in `persistence/domain/serialize-logic.ts`: entfernt Leerraum, dann `decodeSave`, Fehler als `SaveError`-Code) |
 | Später | Cloud-Sync optional (Querschnittsthema), ohne Änderung am Format |
 
 ## 8. Rendering & Umsetzung von K2

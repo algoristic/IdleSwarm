@@ -1,5 +1,7 @@
 import type { Finds } from '@app/finds/domain/models/finds.model';
 import type { Genome } from '@app/genome/domain/models/genome.model';
+import type { Onboarding } from '@app/onboarding/domain/models/onboarding.model';
+import type { Settings } from '@app/settings/domain/models/settings.model';
 import type { Num } from '@app/shared/util/num/num';
 import type { AutoMove } from '@app/site/domain/models/auto-move.model';
 import type { SiteMap } from '@app/site/domain/models/map.model';
@@ -10,7 +12,7 @@ import type { TransportPriority } from '@app/swarm/domain/models/transport-prior
 import type { Units } from '@app/swarm/domain/models/units.model';
 
 /** Aktuelle Version des Zustandsformats. */
-export const STATE_VERSION = 4;
+export const STATE_VERSION = 5;
 
 export type Era = 'ursuppe';
 
@@ -53,4 +55,8 @@ export interface GameState {
   readonly genome: Genome;
   /** Fund-RNG, Fundzähler, Sammlung und Buffs (Game-Design §4.16). */
   readonly finds: Finds;
+  /** Spielereinstellungen: Zahlenformat, Animationen, Autosave-Intervall (US-09.01). */
+  readonly settings: Settings;
+  /** Freigeschaltete Teile der Oberfläche und gesehene Hinweise (US-09.04, Game-Design §4.18). */
+  readonly onboarding: Onboarding;
 }
