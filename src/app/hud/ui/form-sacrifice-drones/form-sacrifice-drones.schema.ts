@@ -1,12 +1,18 @@
 import { disabled, schema, validate } from '@angular/forms/signals';
 
-import { formatNum } from '@app/shared/util/format/format';
+import { DEFAULT_NOTATION, formatNum, Notation } from '@app/shared/util/format/format';
 
 import { parseWholeCount } from '../../domain/sacrifice-count-logic';
 import type { SacrificeDronesValue } from './form-sacrifice-drones.component.model';
 
-/** Regeln des Opfern-Formulars: ganze Zahl von 1 bis zu den vorhandenen ganzen Drohnen. */
-export function sacrificeDronesSchema(maxCount: () => number) {
+/**
+ * Regeln des Opfern-Formulars: ganze Zahl von 1 bis zu den vorhandenen ganzen Drohnen; die Meldung
+ * schreibt die Obergrenze im eingestellten Zahlenformat.
+ */
+export function sacrificeDronesSchema(
+  maxCount: () => number,
+  notation: () => Notation = () => DEFAULT_NOTATION,
+) {
   return schema<SacrificeDronesValue>((path) => {
     disabled(path.count, () => maxCount() < 1);
     validate(path.count, ({ value }) => {
@@ -21,7 +27,7 @@ export function sacrificeDronesSchema(maxCount: () => number) {
       return count > max
         ? {
             kind: 'tooMany',
-            message: $localize`:@@uiHud-formSacrificeDrones-error-tooMany:Höchstens ${formatNum(max)}:max: Drohnen vorhanden.`,
+            message: $localize`:@@uiHud-formSacrificeDrones-error-tooMany:Höchstens ${formatNum(max, { notation: notation() })}:max: Drohnen vorhanden.`,
           }
         : null;
     });

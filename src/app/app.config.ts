@@ -2,6 +2,7 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideRouter } from '@angular/router';
 
 import { provideGameCore } from '@app/engine/data-access/game-core/game-core.providers';
+import { provideAppliedSettings } from '@app/settings/feature/state/settings.providers';
 import { provideMotionPreferenceService } from '@app/shared/data-access/motion-preference/motion-preference-service.providers';
 
 import { routes } from './app.routes';
@@ -12,5 +13,6 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideGameCore(),
     provideMotionPreferenceService(),
+    provideAppliedSettings(),
   ],
 };

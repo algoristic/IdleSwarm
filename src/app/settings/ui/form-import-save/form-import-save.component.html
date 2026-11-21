@@ -1,0 +1,34 @@
+@let _form = importForm;
+@let showErrors = _form.text().invalid() && (_form.text().touched() || _form.text().dirty());
+
+<form class="grid gap-2" [formRoot]="_form">
+  <label class="text-sm" for="settings-import-text" i18n="@@uiSettings-formImportSave-label">
+    Exportierten Spielstand einfügen
+  </label>
+  <textarea
+    id="settings-import-text"
+    rows="5"
+    autocomplete="off"
+    spellcheck="false"
+    data-testid="settings.import.text"
+    class="min-h-28 w-full resize-y rounded-2xl border border-border-control bg-well px-3.5 py-2 font-mono text-xs break-all aria-invalid:border-warning"
+    [formField]="_form.text"
+    [attr.aria-invalid]="showErrors"
+    [attr.aria-describedby]="showErrors ? 'settings-import-errors' : null"
+  ></textarea>
+  @if (showErrors) {
+    <div id="settings-import-errors">
+      @for (error of _form.text().errors(); track error.kind) {
+        <p class="text-xs font-extrabold text-warning">{{ error.message }}</p>
+      }
+    </div>
+  }
+  <button
+    type="submit"
+    data-testid="settings.import.submit"
+    class="min-h-11 cursor-pointer touch-manipulation rounded-full bg-primary px-4 py-2 font-black text-on-accent shadow-button-primary hover:bg-primary-hover active:translate-y-0.5 active:shadow-button-primary-pressed motion-reduced:active:translate-y-0"
+    i18n="@@uiSettings-formImportSave-submit"
+  >
+    Importieren
+  </button>
+</form>

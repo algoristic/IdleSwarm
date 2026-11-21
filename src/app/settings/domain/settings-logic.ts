@@ -1,4 +1,5 @@
 import {
+  AutosaveIntervalMs,
   isAutosaveIntervalMs,
   isMotionSetting,
   isNumberFormat,
@@ -36,4 +37,13 @@ export function updateSettings(settings: Settings, patch: SettingsPatch): Settin
     next.motion === settings.motion &&
     next.autosaveIntervalMs === settings.autosaveIntervalMs;
   return unchanged ? settings : next;
+}
+
+/**
+ * Liest ein Autosave-Intervall aus einem Formularwert (Radioknöpfe liefern Text); nur Werte aus
+ * `AUTOSAVE_INTERVALS_MS`, sonst `null`.
+ */
+export function parseAutosaveIntervalMs(text: string): AutosaveIntervalMs | null {
+  const value = /^\d+$/.test(text) ? Number(text) : Number.NaN;
+  return isAutosaveIntervalMs(value) ? value : null;
 }

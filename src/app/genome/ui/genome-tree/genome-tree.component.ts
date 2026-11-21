@@ -1,8 +1,9 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 
 import { FIND_ENTRY_LABELS } from '@app/finds/ui/finds-labels/finds-labels';
 import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
-import { formatNum } from '@app/shared/util/format/format';
+import { NUMBER_NOTATION } from '@app/shared/ui/pipes/number-notation/number-notation.token';
+import { formatNum, Notation } from '@app/shared/util/format/format';
 
 import {
   hitRadius,
@@ -95,6 +96,8 @@ const TAG_TEXT_FILLS: Readonly<Record<GenomeNodeStatus, string>> = {
   host: { class: 'block' },
 })
 export class GenomeTreeComponent {
+  readonly #notation = inject(NUMBER_NOTATION);
+
   tree = input.required<GenomeTreeView>();
   /** Gerenderte Pixel je `viewBox`-Einheit; die Ebene misst sie, ohne Messung gilt 1. */
   scale = input(1);
@@ -112,6 +115,7 @@ export class GenomeTreeComponent {
 
   nodes = computed<readonly TreeNodeItem[]>(() => {
     const scale = this.scale();
+    const notation = this.#notation();
     const textScale = treeTextScale(scale, GENOME_TREE_MIN_SIZE / TREE_SIZE);
     return this.tree().nodes.map((node) => {
       const name = genomeEntryLabel(node.id);
@@ -121,7 +125,7 @@ export class GenomeTreeComponent {
         decoration,
         hitRadius: hitRadius(decoration.focusRadius, node.nearest, scale),
         name,
-        ariaLabel: this.#ariaLabel(node, name),
+        ariaLabel: this.#ariaLabel(node, name, notation),
       };
     });
   });
@@ -145,7 +149,7 @@ export class GenomeTreeComponent {
     this.selectedEntry.emit(id);
   }
 
-  #ariaLabel(node: TreeNodeView, name: string): string {
+  #ariaLabel(node: TreeNodeView, name: string, notation: Notation): string {
     const status = GENOME_STATUS_LABELS[node.status];
     switch (node.kind) {
       case 'root':
@@ -164,7 +168,7 @@ export class GenomeTreeComponent {
         if (node.cost === null) {
           return $localize`:@@uiGenome-genomeTree-node:${name}:name:, ${branch}:branch:: ${status}:status:`;
         }
-        return $localize`:@@uiGenome-genomeTree-nodeCost:${name}:name:, ${branch}:branch:: ${status}:status:, ${formatNum(node.cost)}:cost: DNA`;
+        return $localize`:@@uiGenome-genomeTree-nodeCost:${name}:name:, ${branch}:branch:: ${status}:status:, ${formatNum(node.cost, { notation })}:cost: DNA`;
       }
     }
   }

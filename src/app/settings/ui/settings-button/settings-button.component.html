@@ -1,0 +1,24 @@
+<!-- Optik wie die Symbole der Zoom-Leiste: rund, 44 px, eingelassener Schatten. -->
+<button
+  type="button"
+  class="grid size-11 cursor-pointer touch-manipulation place-items-center rounded-full bg-surface-raised text-fg-muted inset-shadow-shade transition duration-200 ease-pop hover:scale-106 hover:text-fg motion-reduced:transition-none motion-reduced:hover:scale-100"
+  aria-haspopup="dialog"
+  data-testid="settings.open"
+  [attr.aria-label]="label"
+  (click)="onClick()"
+>
+  <svg class="size-6" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <g fill="currentColor">
+      <rect x="10" y="1" width="4" height="5" rx="1.2" />
+      <rect x="10" y="1" width="4" height="5" rx="1.2" transform="rotate(45 12 12)" />
+      <rect x="10" y="1" width="4" height="5" rx="1.2" transform="rotate(90 12 12)" />
+      <rect x="10" y="1" width="4" height="5" rx="1.2" transform="rotate(135 12 12)" />
+      <rect x="10" y="1" width="4" height="5" rx="1.2" transform="rotate(180 12 12)" />
+      <rect x="10" y="1" width="4" height="5" rx="1.2" transform="rotate(225 12 12)" />
+      <rect x="10" y="1" width="4" height="5" rx="1.2" transform="rotate(270 12 12)" />
+      <rect x="10" y="1" width="4" height="5" rx="1.2" transform="rotate(315 12 12)" />
+      <circle cx="12" cy="12" r="7.5" />
+    </g>
+    <circle cx="12" cy="12" r="3" fill="var(--sw-surface-raised)" />
+  </svg>
+</button>

@@ -3,6 +3,7 @@ import { computed, inject, Injectable } from '@angular/core';
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
+import { NUMBER_NOTATION } from '@app/shared/ui/pipes/number-notation/number-notation.token';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
 import type { PheromoneDistribution } from '../../ui/pheromone-panel/pheromone-panel.component.model';
@@ -14,6 +15,7 @@ import { toHudView, toLogView, toReturnSummaryView } from './hud.utils';
 export class HudFacade {
   readonly #store = inject(GameStore);
   readonly #persistence = inject(PersistenceService);
+  readonly #notation = inject(NUMBER_NOTATION);
 
   hud = computed<HudView>(() =>
     toHudView(
@@ -22,6 +24,7 @@ export class HudFacade {
         notice: this.#persistence.notice(),
         lastSaveError: this.#persistence.lastSaveError(),
         lastSavedAt: this.#persistence.lastSavedAt(),
+        notation: this.#notation(),
       },
       DEFAULT_BALANCE,
     ),

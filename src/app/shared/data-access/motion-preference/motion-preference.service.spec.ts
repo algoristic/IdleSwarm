@@ -1,12 +1,17 @@
-import { ApplicationRef } from '@angular/core';
+import { ApplicationRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { MediaQuery, PREFERS_REDUCED_MOTION } from './motion-preference-service.tokens';
+import {
+  MediaQuery,
+  MOTION_OVERRIDE,
+  PREFERS_REDUCED_MOTION,
+} from './motion-preference-service.tokens';
 import { MOTION_ATTRIBUTE, MotionPreferenceService } from './motion-preference.service';
 
 describe('MotionPreferenceService', () => {
   let systemReduced: boolean;
   let listeners: Set<() => void>;
+  const override = signal<boolean | null>(null);
 
   const media: MediaQuery = {
     matches: () => systemReduced,
@@ -23,7 +28,11 @@ describe('MotionPreferenceService', () => {
 
   function create(): MotionPreferenceService {
     TestBed.configureTestingModule({
-      providers: [MotionPreferenceService, { provide: PREFERS_REDUCED_MOTION, useValue: media }],
+      providers: [
+        MotionPreferenceService,
+        { provide: PREFERS_REDUCED_MOTION, useValue: media },
+        { provide: MOTION_OVERRIDE, useValue: override.asReadonly() },
+      ],
     });
     return TestBed.inject(MotionPreferenceService);
   }
@@ -33,6 +42,7 @@ describe('MotionPreferenceService', () => {
   beforeEach(() => {
     systemReduced = false;
     listeners = new Set();
+    override.set(null);
   });
 
   afterEach(() => {
@@ -50,20 +60,20 @@ describe('MotionPreferenceService', () => {
 
   it('lässt die Einstellung im Spiel die Systemeinstellung überstimmen', () => {
     const motion = create();
-    motion.setOverride(true);
+    override.set(true);
     expect(motion.reducedMotion()).toBe(true);
     setSystem(true);
-    motion.setOverride(false);
+    override.set(false);
     expect(motion.reducedMotion()).toBe(false);
-    motion.setOverride(null);
+    override.set(null);
     expect(motion.reducedMotion()).toBe(true);
   });
 
   it('setzt das Attribut an <html>', () => {
-    const motion = create();
+    create();
     TestBed.inject(ApplicationRef).tick();
     expect(attribute()).toBe('full');
-    motion.setOverride(true);
+    override.set(true);
     TestBed.inject(ApplicationRef).tick();
     expect(attribute()).toBe('reduced');
   });
@@ -73,5 +83,11 @@ describe('MotionPreferenceService', () => {
     expect(listeners.size).toBe(1);
     TestBed.resetTestingModule();
     expect(listeners.size).toBe(0);
+  });
+});
+
+describe('MOTION_OVERRIDE', () => {
+  it('folgt ohne Bereitstellung dem System', () => {
+    expect(TestBed.inject(MOTION_OVERRIDE)()).toBeNull();
   });
 });

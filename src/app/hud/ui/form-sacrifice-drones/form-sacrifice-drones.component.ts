@@ -1,9 +1,10 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { form, FormField, FormRoot } from '@angular/forms/signals';
 
 import { FormatDownPipe } from '@app/shared/ui/pipes/format-down/format-down.pipe';
 import { FormatNumPipe } from '@app/shared/ui/pipes/format-num/format-num.pipe';
 import { FormatRatePipe } from '@app/shared/ui/pipes/format-rate/format-rate.pipe';
+import { NUMBER_NOTATION } from '@app/shared/ui/pipes/number-notation/number-notation.token';
 import type { Num } from '@app/shared/util/num/num';
 
 import { parseWholeCount } from '../../domain/sacrifice-count-logic';
@@ -18,6 +19,8 @@ import { sacrificeDronesSchema } from './form-sacrifice-drones.schema';
   host: { class: 'block' },
 })
 export class FormSacrificeDronesComponent {
+  readonly #notation = inject(NUMBER_NOTATION);
+
   sacrifice = input.required<SacrificeView>();
 
   submittedCount = output<number>();
@@ -25,7 +28,10 @@ export class FormSacrificeDronesComponent {
   sacrificeModel = signal<SacrificeDronesValue>({ count: '' });
   sacrificeForm = form(
     this.sacrificeModel,
-    sacrificeDronesSchema(() => this.sacrifice().maxCount),
+    sacrificeDronesSchema(
+      () => this.sacrifice().maxCount,
+      () => this.#notation(),
+    ),
     {
       submission: {
         action: async () => {

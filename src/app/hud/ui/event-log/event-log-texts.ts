@@ -7,7 +7,13 @@ import {
 } from '@app/genome/ui/genome-labels/genome-labels';
 import { formatDown, formatUp, roundUpForDisplay } from '@app/shared/util/format/display-format';
 import { formatElapsed, formatShare } from '@app/shared/util/format/elapsed-format';
-import { formatNum, formatRate } from '@app/shared/util/format/format';
+import {
+  DEFAULT_NOTATION,
+  FormatOptions,
+  formatNum,
+  formatRate,
+  Notation,
+} from '@app/shared/util/format/format';
 import { Num } from '@app/shared/util/num/num';
 import type { ArrivedEvent, DepartedEvent } from '@app/site/domain/models/site-event.model';
 import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels';
@@ -16,28 +22,30 @@ const SEPARATOR = ' · ';
 
 /**
  * Text eines Log-Eintrags (US-04.05, US-04.09, US-05.03, US-06.01). DNA abgerundet wie die Mengen; Zurückgelassene und
- * Verluste aufgerundet wie die Vorschau der Umgebung, damit ein Bruchteil nicht verschwindet.
+ * Verluste aufgerundet wie die Vorschau der Umgebung, damit ein Bruchteil nicht verschwindet. Zahlen
+ * im eingestellten Zahlenformat (`notation`).
  */
-export function eventLogText(event: GameEvent): string {
+export function eventLogText(event: GameEvent, notation: Notation = DEFAULT_NOTATION): string {
+  const options: FormatOptions = { notation };
   switch (event.type) {
     case 'departed':
-      return departedText(event);
+      return departedText(event, options);
     case 'arrived':
-      return arrivedText(event);
+      return arrivedText(event, options);
     case 'siteDepleted': {
       const site = SITE_TYPE_LABELS[event.siteType];
       return $localize`:@@uiHud-eventLog-siteDepleted:Futterstelle leer: ${site}:site:`;
     }
     case 'evolved': {
       const node = GENOME_NODE_LABELS[event.node];
-      const cost = formatDown(event.cost);
+      const cost = formatDown(event.cost, options);
       return [
         $localize`:@@uiHud-eventLog-evolved:Adaption entwickelt: ${node}:node:`,
         $localize`:@@uiHud-eventLog-evolved-cost:−${cost}:cost: DNA`,
       ].join(SEPARATOR);
     }
     case 'found':
-      return foundText(event);
+      return foundText(event, options);
   }
 }
 
@@ -46,7 +54,7 @@ export function eventLogText(event: GameEvent): string {
  * Futterstelle und Auslöser. DNA und Nahrung abgerundet wie die Mengen, der Buff-Ablauf als
  * Spielzeit wie die Zeiten des Logs.
  */
-function foundText(event: FoundEvent): string {
+function foundText(event: FoundEvent, options: FormatOptions): string {
   const entry = FIND_ENTRY_LABELS[event.entry];
   const parts = [
     event.replaced === null
@@ -54,7 +62,7 @@ function foundText(event: FoundEvent): string {
       : $localize`:@@uiHud-eventLog-found-replaced:Fund: ${entry}:entry: statt ${FIND_ENTRY_LABELS[event.replaced]}:replaced:`,
   ];
   if (event.amount !== null) {
-    const amount = formatDown(event.amount);
+    const amount = formatDown(event.amount, options);
     parts.push(
       event.kind === 'dna'
         ? $localize`:@@uiHud-eventLog-found-dna:+${amount}:amount: DNA`
@@ -66,8 +74,8 @@ function foundText(event: FoundEvent): string {
     parts.push($localize`:@@uiHud-eventLog-found-buff:wirkt bis ${until}:until:`);
   }
   if (event.fragment !== null) {
-    const found = formatNum(event.fragment.found);
-    const required = formatNum(event.fragment.required);
+    const found = formatNum(event.fragment.found, options);
+    const required = formatNum(event.fragment.required, options);
     parts.push($localize`:@@uiHud-eventLog-found-fragment:${found}:found: / ${required}:required:`);
   }
   if (event.unlocked !== null) {
@@ -89,24 +97,24 @@ function foundText(event: FoundEvent): string {
   return parts.join(SEPARATOR);
 }
 
-function departedText(event: DepartedEvent): string {
+function departedText(event: DepartedEvent, options: FormatOptions): string {
   const site = SITE_TYPE_LABELS[event.siteType];
-  const distance = formatRate(event.distance);
+  const distance = formatRate(event.distance, options);
   const parts = [
     $localize`:@@uiHud-eventLog-departed:Aufbruch zu ${site}:site: (Distanz ${distance}:distance:)`,
   ];
-  const drones = roundUpForDisplay(event.leftBehind.drones);
+  const drones = roundUpForDisplay(event.leftBehind.drones, options.notation);
   if (drones.gt(Num.ZERO)) {
-    const count = formatUp(drones);
+    const count = formatUp(drones, options);
     parts.push(
       drones.eq(Num.ONE)
         ? $localize`:@@uiHud-eventLog-departed-leftDrone:${count}:count: Drohne zurückgelassen`
         : $localize`:@@uiHud-eventLog-departed-leftDrones:${count}:count: Drohnen zurückgelassen`,
     );
   }
-  const soldiers = roundUpForDisplay(event.leftBehind.soldiers);
+  const soldiers = roundUpForDisplay(event.leftBehind.soldiers, options.notation);
   if (soldiers.gt(Num.ZERO)) {
-    const count = formatUp(soldiers);
+    const count = formatUp(soldiers, options);
     parts.push(
       soldiers.eq(Num.ONE)
         ? $localize`:@@uiHud-eventLog-departed-leftSoldier:${count}:count: Soldat zurückgelassen`
@@ -115,7 +123,7 @@ function departedText(event: DepartedEvent): string {
   }
   if (event.forfeitedStock.gt(Num.ZERO)) {
     // Aufgerundet wie der Vorrat der Futterstelle, damit ein Rest nicht als 0 erscheint.
-    const stock = formatUp(event.forfeitedStock);
+    const stock = formatUp(event.forfeitedStock, options);
     parts.push(
       $localize`:@@uiHud-eventLog-departed-forfeitedStock:Restvorrat ${stock}:stock: verfallen`,
     );
@@ -126,22 +134,22 @@ function departedText(event: DepartedEvent): string {
   return parts.join(SEPARATOR);
 }
 
-function arrivedText(event: ArrivedEvent): string {
+function arrivedText(event: ArrivedEvent, options: FormatOptions): string {
   const site = SITE_TYPE_LABELS[event.siteType];
   const parts = [$localize`:@@uiHud-eventLog-arrived:Ankunft: ${site}:site: eingenommen`];
-  const losses = roundUpForDisplay(event.losses);
+  const losses = roundUpForDisplay(event.losses, options.notation);
   if (losses.isZero()) {
     parts.push($localize`:@@uiHud-eventLog-arrived-noLosses:ohne Verluste`);
   } else {
     // Aufgerundet: Ein Bruchteil eines Soldaten erscheint als „−1“, nie als „−0“.
-    const count = formatUp(losses);
+    const count = formatUp(losses, options);
     parts.push(
       losses.eq(Num.ONE)
         ? $localize`:@@uiHud-eventLog-arrived-loss:−${count}:count: Soldat`
         : $localize`:@@uiHud-eventLog-arrived-losses:−${count}:count: Soldaten`,
     );
   }
-  const dna = formatDown(event.dna);
+  const dna = formatDown(event.dna, options);
   parts.push($localize`:@@uiHud-eventLog-arrived-dna:+${dna}:dna: DNA`);
   return parts.join(SEPARATOR);
 }

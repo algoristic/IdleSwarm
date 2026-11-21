@@ -83,8 +83,8 @@ Code wird zuerst nach Domäne, dann nach Schicht gruppiert: `src/app/<domain>/<l
 src/app/
   shared/
     util/num/, format/, rng/    # Num, Formatierung (Zahlen, Dauer, Datum), seeded RNG
-    ui/pipes/                   # formatNum, formatRate, formatDown, formatDuration …
-    data-access/platform/       # CLOCK, ANIMATION_FRAME, VIEWPORT
+    ui/pipes/                   # formatNum, formatRate, formatDown, formatDuration …; NUMBER_NOTATION (Zahlenformat)
+    data-access/platform/       # CLOCK, ANIMATION_FRAME, VIEWPORT, CLIPBOARD
     data-access/motion-preference/   # MotionPreferenceService: reduzierte Bewegung aus einer Quelle (data-motion)
   balance/
     domain/constants.ts, formulas.ts, targets.ts   # Konstanten, Formeln, Pacing-Zielbänder
@@ -142,6 +142,8 @@ src/app/
     domain/progress-logic.ts, pacing-targets-logic.ts, upgrade-logic.ts, dna-flow-logic.ts …
   settings/                     # Einstellungen im Spielstand (seit M1.5)
     domain/models/settings.model.ts, settings-logic.ts
+    feature/settings-dialog/, state/settings.facade.ts, settings.providers.ts, settings.tokens.ts, settings.utils.ts
+    ui/settings-button/, dialog-settings/, form-settings/, form-import-save/, settings-labels/
   onboarding/                   # Freischaltungen und Hinweise (seit M1.5)
     domain/models/onboarding.model.ts, onboarding-logic.ts
 ```
@@ -362,10 +364,11 @@ export const GENOME_ERA1: GenomeNode[] = [
 |---|---|
 | Speicherort | `localStorage`, Schlüssel `idleswarm.save`; zusätzlich ein Backup-Slot des vorletzten Stands und der Slot `idleswarm.save.unreadable`: Ein unlesbarer Primär-Stand wird beim nächsten Speichern dorthin verschoben statt überschrieben |
 | Format | JSON → komprimiert (`lz-string`) → Base64; `Num` als String serialisiert |
-| Autosave | alle 30 s (einstellbar), bei `visibilitychange` (hidden) und `pagehide` |
+| Autosave | im Intervall aus `settings.autosaveIntervalMs` (10 s, 30 s Standard, 60 s, 5 min; Einstellungen), bei `visibilitychange` (hidden) und `pagehide`; ändert sich das Intervall, startet der Timer neu (AP 1.5.3) |
 | Versionierung | Feld `version`; beim Laden läuft die Migrationskette aus der Registry `MIGRATIONS` in `migrations/migrations-logic.ts` (aktuell Version 5, mit den Migrationen 1→2, 2→3, 3→4 und 4→5; 1→2 bis 3→4 setzen den Spielstand bis auf Seed, RNG-Zustand und Zeiten auf die Startwerte, 3→4 leitet dazu den Fund-RNG aus dem Seed ab; 4→5 erhält den gesamten Stand und ergänzt Standard-Einstellungen und das schon erreichte Onboarding) |
 | Robustheit | Validierung beim Laden. Bei einem Fehler wird der Backup-Slot geladen und der Spieler informiert |
-| Export/Import | derselbe String zum Kopieren (`encodeSave`); Import validiert und migriert (`importSave` in `persistence/domain/serialize-logic.ts`: entfernt Leerraum, dann `decodeSave`, Fehler als `SaveError`-Code) |
+| Export/Import | derselbe String zum Kopieren (`encodeSave`); Import validiert und migriert (`importSave` in `persistence/domain/serialize-logic.ts`: entfernt Leerraum, dann `decodeSave`, Fehler als `SaveError`-Code). Umgesetzt in AP 1.5.2 (`PersistenceService.exportSave`/`importSave`, Dialog „Einstellungen“): Ein importierter Stand ersetzt das Spiel ohne Offline-Nachholen (alte Export-Texte bringen keine Zeit), die Uhr wird abgeglichen, danach wird sofort gespeichert; der bisherige Stand rückt dabei wie bei jedem Speichern in den Backup-Slot |
+| Zurücksetzen | `PersistenceService.resetGame()` (AP 1.5.2, US-07.05): neues Spiel mit neuem Seed, Einstellungen bleiben, Onboarding beginnt neu, sofort gespeichert; in der Oberfläche doppelt bestätigt, mit Angebot, vorher zu exportieren |
 | Später | Cloud-Sync optional (Querschnittsthema), ohne Änderung am Format |
 
 ## 8. Rendering & Umsetzung von K2
@@ -444,10 +447,10 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 
 **Umsetzungsstand (AP 1.4.6):**
 
-- **Reduzierte Bewegung aus einer Quelle:** Der `MotionPreferenceService` (`shared/data-access/motion-preference`) verbindet `prefers-reduced-motion` (Token `PREFERS_REDUCED_MOTION`, folgt Änderungen zur Laufzeit) mit einem Override und spiegelt das Ergebnis als `data-motion="reduced"` bzw. `"full"` an `<html>`. Utilities nutzen die Variante `motion-reduced:` (vor dem App-Start ersatzweise die Media-Query), Komponenten-CSS `:host-context([data-motion='reduced'])`, Canvas und Logik lesen `reducedMotion` über ihre Facade. Das Attribut sitzt an `<html>`, damit auch `/modell` und spätere Dialoge außerhalb der Shell reagieren. Die Einstellung kommt mit AP 1.5.3 und setzt den Override über `setOverride(boolean | null)`.
+- **Reduzierte Bewegung aus einer Quelle:** Der `MotionPreferenceService` (`shared/data-access/motion-preference`) verbindet `prefers-reduced-motion` (Token `PREFERS_REDUCED_MOTION`, folgt Änderungen zur Laufzeit) mit einem Override und spiegelt das Ergebnis als `data-motion="reduced"` bzw. `"full"` an `<html>`. Utilities nutzen die Variante `motion-reduced:` (vor dem App-Start ersatzweise die Media-Query), Komponenten-CSS `:host-context([data-motion='reduced'])`, Canvas und Logik lesen `reducedMotion` über ihre Facade. Das Attribut sitzt an `<html>`, damit auch `/modell` und spätere Dialoge außerhalb der Shell reagieren. Die Einstellung „Animationen“ (AP 1.5.3) ist die Quelle des Overrides: Token `MOTION_OVERRIDE` (`Signal<boolean | null>`, Root-Default `null`), das `provideAppliedSettings()` im Bootstrap als `computed` aus dem Spielstand bereitstellt (`system` → `null`, folgt dem System; `full` → `false`; `reduced` → `true`). `reducedMotion` ist ein `computed` darüber; einziger Effekt bleibt das Spiegeln von `data-motion`. So gilt die Einstellung app-weit, auch auf `/modell` und nach Laden, Import und Zurücksetzen.
 - **Wirkung:** Moduswechsel sind eine kurze Überblendung ohne Kamerafahrt. Sonar-Sweep, Routenfluss, Membran-Drehung, Puls verfügbarer Knoten und das Badge der Zoom-Leiste stehen still; Ereigniszahlen und Log-Einträge blenden nur ein und aus. Die Szene halbiert Plankton und Ertragsteilchen, lässt keine Blasen aufsteigen und hält die Lichtkegel an. Die Agenten bewegen sich weiter, weil sie Spielzustand zeigen und keine großen Flächen bewegen.
 - **Fokusführung:** Nach jedem Moduswechsel außer dem ersten Laden setzt die Shell den Fokus auf den Titel des neuen Modus (`tabindex="-1"`, benannte Region, ohne Scrollen); eine zusätzliche Live-Ansage gibt es nicht, damit der Screenreader den Modus nicht doppelt nennt. Schubladen nehmen beim Öffnen den Fokus und geben ihn beim Schließen an ihren Reiter zurück. Den sichtbaren Fokus setzt `:focus-visible` global in `src/styles.css`.
-- **Dialoge (AP 1.5.1, [ADR-014](adr/014-dialog-nativ.md)):** Modale Dialoge sind das native `<dialog>` mit `showModal()` (`ModalDialogComponent` in `shared/ui/modal-dialog`): Fokusfalle, Esc, `inert` der übrigen Seite und Top-Layer kommen vom Browser, benannt über den Titel (`aria-labelledby`). Esc meldet nur `closed`, offen bleibt der Dialog, bis der Aufrufer `open` zurücknimmt. Auf dem Smartphone ein Bottom-Sheet in voller Breite mit sicherem Bereich unten; bei reduzierter Bewegung nur Überblenden. Solange ein Dialog offen ist, lösen die Tasten der Shell (W, G, Esc) nichts aus. Erster Dialog ist die Rückkehr-Zusammenfassung (US-07.03) ab 5 min Abwesenheit, in allen Modi.
+- **Dialoge (AP 1.5.1, [ADR-014](adr/014-dialog-nativ.md)):** Modale Dialoge sind das native `<dialog>` mit `showModal()` (`ModalDialogComponent` in `shared/ui/modal-dialog`): Fokusfalle, Esc, `inert` der übrigen Seite und Top-Layer kommen vom Browser, benannt über den Titel (`aria-labelledby`). Esc meldet nur `closed`, offen bleibt der Dialog, bis der Aufrufer `open` zurücknimmt. Auf dem Smartphone ein Bottom-Sheet in voller Breite mit sicherem Bereich unten; bei reduzierter Bewegung nur Überblenden. Solange ein Dialog offen ist, lösen die Tasten der Shell (W, G, Esc) nichts aus. Erster Dialog ist die Rückkehr-Zusammenfassung (US-07.03) ab 5 min Abwesenheit, in allen Modi. Seit AP 1.5.2/1.5.3 der Dialog „Einstellungen“ hinter dem Zahnrad-Knopf (`aria-label` „Einstellungen“, 44 px) im Kopf der linken Spalte, in allen Modi; Radiogruppen sind native Radios (Pfeiltasten, Screenreader) in Kacheln mit sichtbarem Fokus, ein Wechsel der Ansicht (Export, Import, Zurücksetzen) setzt den Fokus auf deren Titel.
 - **Pause:** Dauer-Animationen von Sonar (Sweep, Routenfluss) und Genom (Membran, Puls) pausieren, solange ihre Ebene inert ist (`:host-context([inert])`); der Render-Takt der Szene pausiert bei verborgener Seite, der Logik-Takt holt den Rückstand danach nach (§4, US-09.03).
 
 ### 8.6 Grafikstil (K2-K)
@@ -469,7 +472,9 @@ Das UI-Leitbild ist [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
   - ab 1 Mio.: Kurzformen `Mio.`, `Mrd.`, `Bio.`, `Brd.`, `Trio.`, `Trd.` (< 1e24)
   - danach wissenschaftliche Notation (`1,23e45`)
   - Kurzformen und wissenschaftliche Notation: zwei Nachkommastellen, kaufmännisches Runden mit Übertrag
-- Einstellbar: Kurzformen / wissenschaftlich / technisch.
+- Einstellbar (AP 1.5.3): Kurzformen (Standard, wie oben) / wissenschaftlich (`1,23e6`, ab 1 Mio.) / technisch (Exponent Vielfaches von 3, ein bis drei Vorkommastellen und zwei Nachkommastellen: `12,35e9`, ab 1 Mio.). Unter 1 Mio. schreiben alle gleich; Rundung wie oben, gerichtete Anzeigerundung (`formatDown`/`formatUp`) auf die Stellen der jeweiligen Notation.
+- Umsetzung: `Notation` und `NOTATIONS` in `shared/util/format/format.ts` (dieselben IDs wie `settings.numberFormat`). Die Pipes `formatNum`, `formatRate`, `formatDown`, `formatUp` lesen die Notation aus dem Token `NUMBER_NOTATION` (`Signal<Notation>`, Root-Default Kurzformen; die Shell stellt das Zahlenformat aus dem Spielstand bereit, die Modell-Seite bleibt beim Standard). Sie sind unrein, damit ein Wechsel sofort greift, und merken sich Wert und Notation (`NotationMemo`): Bei unverändertem Wert kostet ein Aufruf zwei Vergleiche. Ein optionales Argument erzwingt eine Notation (Beispiele in den Einstellungen).
+- In TypeScript formatierte Texte folgen ebenfalls der Einstellung: Komponenten lesen `NUMBER_NOTATION` und reichen die Notation als Parameter an die reinen Funktionen (Log-Texte `eventLogText(event, notation)`, Beschriftungen und `aria-label`s der Sonar-Karte, `aria-label`s im Genom-Baum, Fehlermeldung des Opfer-Formulars); die `HudFacade` gibt sie an `toHudView` (`HudSource.notation`), damit Preise auf die Stellen des Formats gerundet werden. Die Ereigniszahlen der Szene sind DOM über dem Canvas und laufen über die Pipe. Die Modell-Seite bleibt beim Standard. Die Zählwerte der Umgebung (`shown` für ICU und Balken) runden weiter auf Kurzform-Stellen; unter 1 Mio. ist das identisch, darüber nur eine Abweichung in der letzten gezeigten Stelle des Balkens.
 
 ## 10. Qualitätssicherung
 
@@ -492,7 +497,7 @@ Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan ([Projek
 
 - GitHub Actions baut bei Push auf `main` und veröffentlicht auf GitHub Pages (`base-href` = Repository-Name).
 - `@angular/pwa`: Service Worker cacht das App-Shell; das Spiel startet offline. Updates werden beim nächsten Start aktiv, mit Hinweis „Neue Version verfügbar“.
-- Versionsnummer und Build-Datum stehen in den Einstellungen.
+- Versionsnummer und Build-Datum stehen in den Einstellungen (AP 1.5.3): die Version aus `package.json` (JSON-Import, nur das Feld `version` landet im Bundle), der Build-Zeitpunkt über `ng build --define IDLESWARM_BUILD_TIME=<Unix-ms>` in der CI (Token `BUILD_INFO` in `settings/feature/state/settings.tokens.ts`); ohne Define (Dev-Server, lokaler Build, Tests) zeigt die Info „Entwicklung“.
 
 ## 12. Architektur-Entscheidungen (ADRs)
 

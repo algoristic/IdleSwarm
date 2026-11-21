@@ -42,7 +42,7 @@
 | [`finds`](.claude/rules/finds.md) | `src/app/finds/**` | Funde: Fundtabelle, eigener Fund-RNG, Ziehung, Buffs, Fragmente, Sammlung und Badges |
 | [`shell`](.claude/rules/shell.md) | `src/app/shell/**` | K2-Shell: Ebenen, Kamera, Modus = Route, Zoom-Leiste, Mausrad, Tasten, Pinch, Fokusführung |
 | [`scene`](.claude/rules/scene.md) | `src/app/scene/**` | Szene: Canvas der Welt-Ebene, Sprite-Budget, Bewegungsmodell, Renderer, Ereigniszahlen |
-| [`settings`](.claude/rules/settings.md) | `src/app/settings/**` | Einstellungen: Zahlenformat, Animationen, Autosave-Intervall (Optionen, Standard, `updateSettings`) |
+| [`settings`](.claude/rules/settings.md) | `src/app/settings/**` | Einstellungen: Zahlenformat, Animationen, Autosave-Intervall (Optionen, Standard, `updateSettings`); Dialog „Einstellungen“ mit Export, Import und Zurücksetzen |
 | [`onboarding`](.claude/rules/onboarding.md) | `src/app/onboarding/**` | Onboarding: Freischaltungen (`updateUnlocks`) und Hinweise |
 | [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
 
@@ -97,7 +97,7 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 
 | Domäne | Inhalt |
 | --- | --- |
-| `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine und Pipes; `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`, `VIEWPORT`), `MotionPreferenceService` (reduzierte Bewegung) |
+| `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine und Pipes (Zahlenformat über `NUMBER_NOTATION`); `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`, `VIEWPORT`, `CLIPBOARD`), `MotionPreferenceService` (reduzierte Bewegung) |
 | `balance` | `domain`: Konstanten, Formeln, Effekt-System, Zielbänder (`targets`) |
 | `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
 | `swarm` | Einheiten, Brut, Transport, Drohnen opfern, Pheromone |
@@ -110,7 +110,7 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 | `model` | Modell-Seite: Bots, Parameter, Laufauswertung (`domain`), Sim-Worker und `SimService` (`data-access`), Parameterformular, Diagramme, Kennzahlen (`ui`), Seite und `ModelFacade` (`feature`) |
 | `shell` | K2-Shell: Modus ↔ Pfad, Kamera, `--ms`, Mausrad-, Tasten- und Pinch-Logik (`domain`); Zoom-Leiste (`ui`); `ShellPage` als Elternroute von `/`, `/umgebung`, `/genom`, `ShellInputDirective` und `ShellFacade` (`feature`) |
 | `scene` | Szene der Welt-Ebene: Sprite-Budget, Bewegungsmodell, Plankton und Teilchen (`domain`); Canvas-Renderer, Sprites, Palette (`ui`); `SceneWorldComponent` und `SceneFacade` (`feature`) |
-| `settings` | Einstellungen im Spielstand: Zahlenformat, Animationen, Autosave-Intervall; Optionen, Standard und `updateSettings` (`domain`) |
+| `settings` | Einstellungen im Spielstand: Zahlenformat, Animationen, Autosave-Intervall; Optionen, Standard und `updateSettings` (`domain`); Zahnrad, Dialog „Einstellungen“, Formulare und Texte (`ui`); `SettingsFacade`, Dialog, `BUILD_INFO`, Anwenden der Animationen (`feature`) |
 | `onboarding` | Freischaltungen der Oberfläche und Hinweise: IDs, Regeln `updateUnlocks`, `pendingHints`, `markHintSeen`, `resetHints` (`domain`) |
 
 Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `Units` in `swarm/domain/models`, `Site` in `site/domain/models`) und ihre Regeln. `engine/domain` setzt daraus `GameState`, `apply` und `step` zusammen. Zusätzliche Standorte ab AS3 bleiben damit eine Sache von `site` und `engine`.

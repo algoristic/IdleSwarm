@@ -1,0 +1,94 @@
+<!--
+  Radiogruppen als Segmentknöpfe: Das native Radio bleibt (sr-only) für Pfeiltasten und
+  Screenreader, die Kachel zeigt Auswahl und Fokus. Jede Kachel ist mindestens 44 px hoch.
+-->
+<form class="grid gap-6" [formRoot]="settingsForm" (change)="onChange()">
+  <section class="grid gap-4" aria-labelledby="settings-display-title">
+    <h3
+      id="settings-display-title"
+      class="text-xs font-black tracking-widest text-primary uppercase"
+      i18n="@@uiSettings-formSettings-display"
+    >
+      Anzeige
+    </h3>
+    <fieldset class="grid gap-2">
+      <legend class="mb-2 font-extrabold" i18n="@@uiSettings-formSettings-numberFormat">
+        Zahlenformat
+      </legend>
+      <div class="grid grid-cols-3 gap-2 max-md:grid-cols-1">
+        @for (format of numberFormats; track format) {
+          <label
+            class="grid min-h-11 cursor-pointer touch-manipulation content-center rounded-2xl bg-surface-raised px-3 py-2 shadow-button transition duration-200 ease-pop has-checked:bg-primary has-checked:text-on-accent has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent motion-reduced:transition-none max-md:grid-cols-2 max-md:items-center"
+          >
+            <input
+              type="radio"
+              class="sr-only"
+              [formField]="settingsForm.numberFormat"
+              [value]="format"
+              [attr.data-testid]="'settings.number-format.' + format"
+            />
+            <span class="text-sm font-extrabold">{{ numberFormatLabels[format] }}</span>
+            <span class="text-xs tabular-nums opacity-80 max-md:text-right">
+              {{ example | formatNum: format }}
+            </span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <fieldset class="grid gap-2">
+      <legend class="mb-2 font-extrabold" i18n="@@uiSettings-formSettings-motion">
+        Animationen
+      </legend>
+      <div class="grid grid-cols-3 gap-2">
+        @for (motion of motionSettings; track motion) {
+          <label
+            class="grid min-h-11 cursor-pointer touch-manipulation place-items-center rounded-2xl bg-surface-raised px-3 py-2 text-center text-sm font-extrabold shadow-button transition duration-200 ease-pop has-checked:bg-primary has-checked:text-on-accent has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent motion-reduced:transition-none"
+          >
+            <input
+              type="radio"
+              class="sr-only"
+              [formField]="settingsForm.motion"
+              [value]="motion"
+              [attr.data-testid]="'settings.motion.' + motion"
+            />
+            {{ motionLabels[motion] }}
+          </label>
+        }
+      </div>
+    </fieldset>
+  </section>
+
+  <section class="grid gap-4" aria-labelledby="settings-save-title">
+    <h3
+      id="settings-save-title"
+      class="text-xs font-black tracking-widest text-primary uppercase"
+      i18n="@@uiSettings-formSettings-save"
+    >
+      Speichern
+    </h3>
+    <fieldset class="grid gap-2">
+      <legend class="mb-2 font-extrabold" i18n="@@uiSettings-formSettings-autosave">
+        Automatisch speichern alle
+      </legend>
+      <div class="grid grid-cols-4 gap-2">
+        @for (interval of autosaveIntervals; track interval.value) {
+          <label
+            class="grid min-h-11 cursor-pointer touch-manipulation place-items-center rounded-2xl bg-surface-raised px-2 py-2 text-sm font-extrabold whitespace-nowrap tabular-nums shadow-button transition duration-200 ease-pop has-checked:bg-primary has-checked:text-on-accent has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent motion-reduced:transition-none"
+          >
+            <input
+              type="radio"
+              class="sr-only"
+              [formField]="settingsForm.autosaveIntervalMs"
+              [value]="interval.value"
+              [attr.data-testid]="'settings.autosave.' + interval.value"
+            />
+            {{ interval.label }}
+          </label>
+        }
+      </div>
+    </fieldset>
+    <!-- Export, Import und Zurücksetzen setzt der Dialog hier ein. -->
+    <ng-content />
+  </section>
+</form>

@@ -1,10 +1,17 @@
 import { Num, NumLike } from '../num/num';
 
-/** Darstellung großer Zahlen; die technische Notation folgt in AP 1.5.3. */
-export type Notation = 'short' | 'scientific';
+/**
+ * Darstellung großer Zahlen ab 1 Mio. (TK §9): Kurzformen (`1,23 Mio.`, ab 1e24 wissenschaftlich),
+ * wissenschaftlich (`1,23e6`) oder technisch (`12,35e9`, Exponent ein Vielfaches von 3). Darunter
+ * schreiben alle gleich (`1.284`). Die Namen sind dieselben wie die Einstellung `numberFormat`.
+ */
+export const NOTATIONS = ['short', 'scientific', 'engineering'] as const;
+export type Notation = (typeof NOTATIONS)[number];
+
+export const DEFAULT_NOTATION: Notation = 'short';
 
 export interface FormatOptions {
-  /** Standard: `'short'`. */
+  /** Standard: {@link DEFAULT_NOTATION}. */
   notation?: Notation;
 }
 
@@ -67,18 +74,50 @@ function renderScientific(value: Digits): string {
   return `${withFraction(padded[0], padded.slice(1))}e${exponent}`;
 }
 
+/** Ein bis drei Vorkommastellen je drei Zehnerpotenzen; `suffix` erhält den Exponenten der Gruppe. */
+function renderGrouped(value: Digits, suffix: (groupExponent: number) => string): string {
+  const integerLength = (value.exponent % 3) + 1;
+  const fractionEnd = integerLength + COMPACT_FRACTION_DIGITS;
+  const padded = value.digits.padEnd(fractionEnd, '0');
+  const fraction = padded.slice(integerLength, fractionEnd);
+  return (
+    withFraction(padded.slice(0, integerLength), fraction) +
+    suffix(value.exponent - integerLength + 1)
+  );
+}
+
+function roundGrouped(value: Digits): Digits {
+  // Der Übertrag kann die Gruppe wechseln (`999,996 Mio.` → `1,00 Mrd.`).
+  return roundDigits(value, (value.exponent % 3) + 1 + COMPACT_FRACTION_DIGITS);
+}
+
 function renderShort(value: Digits): string {
-  const rounded = roundDigits(value, (value.exponent % 3) + 1 + COMPACT_FRACTION_DIGITS);
-  // Der Übertrag kann die Einheit wechseln oder die Kurzformen ganz verlassen.
+  const rounded = roundGrouped(value);
+  // Der Übertrag kann die Kurzformen ganz verlassen.
   if (rounded.exponent >= SCIENTIFIC_FROM_EXPONENT) {
     return renderScientific(rounded);
   }
-  const integerLength = (rounded.exponent % 3) + 1;
-  const fractionEnd = integerLength + COMPACT_FRACTION_DIGITS;
-  const padded = rounded.digits.padEnd(fractionEnd, '0');
-  const unit = SHORT_UNITS[(rounded.exponent - integerLength + 1 - SHORT_FROM_EXPONENT) / 3];
-  const fraction = padded.slice(integerLength, fractionEnd);
-  return `${withFraction(padded.slice(0, integerLength), fraction)} ${unit}`;
+  return renderGrouped(
+    rounded,
+    (groupExponent) => ` ${SHORT_UNITS[(groupExponent - SHORT_FROM_EXPONENT) / 3]}`,
+  );
+}
+
+function renderEngineering(value: Digits): string {
+  return renderGrouped(roundGrouped(value), (groupExponent) => `e${groupExponent}`);
+}
+
+function renderLarge(value: Digits, notation: Notation): string {
+  switch (notation) {
+    case 'short':
+      return value.exponent < SCIENTIFIC_FROM_EXPONENT
+        ? renderShort(value)
+        : renderScientific(value);
+    case 'scientific':
+      return renderScientific(value);
+    case 'engineering':
+      return renderEngineering(value);
+  }
 }
 
 function format(input: NumLike, fractionDigits: number, options: FormatOptions): string {
@@ -94,12 +133,13 @@ function format(input: NumLike, fractionDigits: number, options: FormatOptions):
   if (parts.exponent < SHORT_FROM_EXPONENT) {
     return sign + renderPlain(parts, fractionDigits);
   }
-  const useShort =
-    (options.notation ?? 'short') === 'short' && parts.exponent < SCIENTIFIC_FROM_EXPONENT;
-  return sign + (useShort ? renderShort(parts) : renderScientific(parts));
+  return sign + renderLarge(parts, options.notation ?? DEFAULT_NOTATION);
 }
 
-/** Formatiert eine Menge: `1.284`, `1,23 Mio.`, `1,23e45`. */
+/**
+ * Formatiert eine Menge: `1.284`, `1,23 Mio.`, `1,23e45`; wissenschaftlich `1,23e6`, technisch
+ * `12,35e9`.
+ */
 export function formatNum(value: NumLike, options: FormatOptions = {}): string {
   return format(value, 0, options);
 }

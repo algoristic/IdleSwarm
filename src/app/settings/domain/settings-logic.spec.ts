@@ -1,5 +1,5 @@
 import { AUTOSAVE_INTERVALS_MS, DEFAULT_SETTINGS, Settings } from './models/settings.model';
-import { isValidSettingsPatch, updateSettings } from './settings-logic';
+import { isValidSettingsPatch, parseAutosaveIntervalMs, updateSettings } from './settings-logic';
 
 describe('Einstellungen (US-09.01)', () => {
   it('bietet 10 s, 30 s, 60 s und 5 min als Autosave-Intervall, Standard 30 s', () => {
@@ -37,5 +37,14 @@ describe('Einstellungen (US-09.01)', () => {
     const unchecked = patch as Partial<Settings>;
     expect(isValidSettingsPatch(unchecked)).toBe(false);
     expect(updateSettings(DEFAULT_SETTINGS, unchecked)).toBe(DEFAULT_SETTINGS);
+  });
+
+  it('liest Autosave-Intervalle aus Formularwerten', () => {
+    expect(parseAutosaveIntervalMs('10000')).toBe(10_000);
+    expect(parseAutosaveIntervalMs('300000')).toBe(300_000);
+    expect(parseAutosaveIntervalMs('20000')).toBeNull();
+    expect(parseAutosaveIntervalMs('')).toBeNull();
+    expect(parseAutosaveIntervalMs('1e4')).toBeNull();
+    expect(parseAutosaveIntervalMs(' 10000')).toBeNull();
   });
 });

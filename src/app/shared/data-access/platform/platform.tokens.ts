@@ -51,3 +51,22 @@ export const VIEWPORT = new InjectionToken<Viewport>('VIEWPORT', {
     },
   }),
 });
+
+/** Zwischenablage; als Token, damit Tests Erfolg und Fehlschlag ersetzen können. */
+export interface Clipboard {
+  /** Schreibt Text; scheitert ohne Zwischenablage oder ohne Berechtigung (Promise abgelehnt). */
+  writeText(text: string): Promise<void>;
+}
+
+export const CLIPBOARD = new InjectionToken<Clipboard>('CLIPBOARD', {
+  providedIn: 'root',
+  factory: () => ({
+    writeText: async (text) => {
+      // Ohne sicheren Kontext (http) gibt es `navigator.clipboard` nicht.
+      if (typeof navigator === 'undefined' || navigator.clipboard === undefined) {
+        throw new Error('Keine Zwischenablage');
+      }
+      await navigator.clipboard.writeText(text);
+    },
+  }),
+});

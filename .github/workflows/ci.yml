@@ -40,8 +40,9 @@ jobs:
       - name: Unit-Tests mit Abdeckung
         run: npm run test:coverage
 
+      # Build-Zeitpunkt (Unix-Zeit in ms) für die Einstellungen (TK §11).
       - name: Build
-        run: npm run build -- --base-href /IdleSwarm/
+        run: npm run build -- --base-href /IdleSwarm/ --define "IDLESWARM_BUILD_TIME=$(date +%s%3N)"
 
       # GitHub Pages liefert für unbekannte Pfade 404.html aus; so greift das Angular-Routing.
       - name: SPA-Fallback anlegen

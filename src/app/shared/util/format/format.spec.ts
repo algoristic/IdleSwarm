@@ -183,4 +183,28 @@ describe('Notation', () => {
     expect(formatRate(999999.96, { notation: 'scientific' })).toBe('1,00e6');
     expect(formatRate(1.5e6, { notation: 'scientific' })).toBe('1,50e6');
   });
+
+  it.each<[number | string, string]>([
+    [0, '0'],
+    [999999, '999.999'],
+    [999999.6, '1,00e6'],
+    [1e6, '1,00e6'],
+    [1.23e6, '1,23e6'],
+    [12.3e6, '12,30e6'],
+    [123.4e6, '123,40e6'],
+    [1.2345e10, '12,35e9'],
+    [-1.5e9, '-1,50e9'],
+    [999.996e6, '1,00e9'],
+    ['999.996e21', '1,00e24'],
+    ['1.23e45', '1,23e45'],
+    ['12.34e45', '12,34e45'],
+    ['123.456e999999', '123,46e999999'],
+  ])('zeigt %s technisch ab 1e6 (Exponent Vielfaches von 3)', (value, expected) => {
+    expect(formatNum(value, { notation: 'engineering' })).toBe(expected);
+  });
+
+  it('schreibt Raten technisch unter 1e6 normal', () => {
+    expect(formatRate(3.25, { notation: 'engineering' })).toBe('3,3');
+    expect(formatRate(4.5e7, { notation: 'engineering' })).toBe('45,00e6');
+  });
 });

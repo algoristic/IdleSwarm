@@ -1,6 +1,7 @@
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import type { RestoreNotice } from '@app/persistence/data-access/persistence/persistence-service.model';
 import type { SaveError } from '@app/persistence/domain/serialize-logic';
+import type { Notation } from '@app/shared/util/format/format';
 import type { Num } from '@app/shared/util/num/num';
 
 import type { UnitView } from '../../ui/buy-button/buy-button.component.model';
@@ -15,6 +16,8 @@ export interface HudSource {
   readonly notice: RestoreNotice | null;
   readonly lastSaveError: SaveError | null;
   readonly lastSavedAt: number | null;
+  /** Zahlenformat der Anzeige; die Preise werden auf dessen Stellen gerundet. Standard: Kurzformen. */
+  readonly notation?: Notation;
 }
 
 /** Schubladen am rechten Rand der Szene (Mockup `.tabs`); lokaler UI-Zustand, nie im Spielstand. */

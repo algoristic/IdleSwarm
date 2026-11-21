@@ -1,6 +1,7 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
 import { FormatElapsedPipe } from '@app/shared/ui/pipes/format-elapsed/format-elapsed.pipe';
+import { NUMBER_NOTATION } from '@app/shared/ui/pipes/number-notation/number-notation.token';
 
 import { eventLogText } from './event-log-texts';
 import type { LogEntryView, LogItem, LogItemKind } from './event-log.component.model';
@@ -29,20 +30,23 @@ const TEXT_CLASSES: Readonly<Record<LogItemKind, string>> = {
   host: { class: 'block' },
 })
 export class EventLogComponent {
+  readonly #notation = inject(NUMBER_NOTATION);
+
   /** Neueste zuerst. */
   entries = input.required<readonly LogEntryView[]>();
 
   /** Älteste der sichtbaren zuerst, damit neue Einträge unten hinzukommen. */
-  items = computed<readonly LogItem[]>(() =>
-    this.entries()
+  items = computed<readonly LogItem[]>(() => {
+    const notation = this.#notation();
+    return this.entries()
       .slice(0, LOG_VISIBLE_ENTRIES)
       .reverse()
       .map(({ id, event, kind }) => ({
         id,
         playedMs: event.playedMs,
-        text: eventLogText(event),
+        text: eventLogText(event, notation),
         kind,
         textClass: TEXT_CLASSES[kind],
-      })),
-  );
+      }));
+  });
 }

@@ -1,17 +1,29 @@
-import { DestroyRef, DOCUMENT, inject, Injectable, signal } from '@angular/core';
+import {
+  computed,
+  DestroyRef,
+  DOCUMENT,
+  effect,
+  EffectRef,
+  inject,
+  Injectable,
+  Injector,
+  signal,
+  untracked,
+} from '@angular/core';
 
 import { createNewGame, GameStore } from '@app/engine/data-access/game-store/game-store.service';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { syncClock } from '@app/engine/domain/step-logic';
+import { DEFAULT_SETTINGS } from '@app/settings/domain/models/settings.model';
 import { CLOCK } from '@app/shared/data-access/platform/platform.tokens';
 
-import { SaveError } from '../../domain/serialize-logic';
+import { encodeSave, importSave as readImport, SaveError } from '../../domain/serialize-logic';
 import { loadGame, LoadResult, saveGame } from '../../domain/slots-logic';
-import type { RestoreNotice } from './persistence-service.model';
+import type { ExportResult, ImportOutcome, RestoreNotice } from './persistence-service.model';
 import { KEY_VALUE_STORE } from './persistence-service.tokens';
 
-/** Abstand des Autosaves; einstellbar wird er in AP 1.5.3. */
-export const AUTOSAVE_INTERVAL_MS = 30_000;
+/** Standard-Abstand des Autosaves; wirksam ist `settings.autosaveIntervalMs` im Spielstand. */
+export const AUTOSAVE_INTERVAL_MS = DEFAULT_SETTINGS.autosaveIntervalMs;
 
 /** Lädt den Spielstand beim Start und speichert ihn automatisch. */
 @Injectable()
@@ -20,12 +32,18 @@ export class PersistenceService {
   readonly #keyValueStore = inject(KEY_VALUE_STORE);
   readonly #document = inject(DOCUMENT);
   readonly #clock = inject(CLOCK);
+  readonly #injector = inject(Injector);
 
   readonly #noticeState = signal<RestoreNotice | null>(null);
   readonly #lastSaveErrorState = signal<SaveError | null>(null);
   readonly #lastSavedAtState = signal<number | null>(null);
 
+  /** Eingestelltes Intervall; ändert sich nur mit den Einstellungen, nicht mit jedem Tick. */
+  readonly #autosaveIntervalMs = computed(() => this.#store.state().settings.autosaveIntervalMs);
+
   #timer: ReturnType<typeof setInterval> | null = null;
+  #timerIntervalMs: number | null = null;
+  #intervalWatch: EffectRef | null = null;
   #lastWritten: GameState | null = null;
   /** Der Speicher war beim Laden nicht lesbar; ein echter Stand kann dort noch liegen. */
   #loadIncomplete = false;
@@ -94,6 +112,59 @@ export class PersistenceService {
   }
 
   /**
+   * Speichert und liefert den aktuellen Stand als Export-Text (US-07.04); derselbe Text wie im
+   * Speicher. Scheitert nur bei einem Zustand, den das Laden ablehnen würde.
+   */
+  exportSave(): ExportResult {
+    this.save();
+    try {
+      return { ok: true, text: encodeSave(this.#store.state()) };
+    } catch (error) {
+      if (error instanceof SaveError) {
+        return { ok: false, error: error.code };
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Übernimmt einen Export-Text (US-07.04): prüfen und migrieren, dann wie ein neues Spiel einsetzen
+   * und sofort speichern. Die Zeit seit dem Export wird nicht nachgeholt, sonst ließe sich mit alten
+   * Texten Fortschritt gewinnen; die Uhr wird nur abgeglichen. Ein fehlerhafter Text ändert nichts.
+   */
+  importSave(text: string): ImportOutcome {
+    const result = readImport(text);
+    if (!result.ok) {
+      return result.error.code;
+    }
+    this.#replaceGame(result.state);
+    return 'imported';
+  }
+
+  /**
+   * Beginnt ein neues Spiel mit neuem Seed (US-07.05) und speichert sofort. Die Einstellungen bleiben,
+   * das Onboarding beginnt von vorn.
+   */
+  resetGame(): void {
+    const { settings } = this.#store.state();
+    this.#replaceGame({ ...createNewGame(this.#clock.now()), settings });
+  }
+
+  /**
+   * Setzt bewusst ein anderes Spiel ein. Ein beim Start gescheitertes Laden wird nicht mehr
+   * nachgeholt (der Spieler ersetzt den Stand ausdrücklich). Das Speichern verdrängt wie jedes
+   * Speichern den bisherigen Primär-Stand ins Backup.
+   */
+  #replaceGame(state: GameState): void {
+    this.#loadIncomplete = false;
+    this.#lastWritten = null;
+    this.#noticeState.set(null);
+    this.#store.load(state);
+    this.#store.replace(syncClock(this.#store.state(), this.#clock.now()));
+    this.save();
+  }
+
+  /**
    * Holt ein beim Start gescheitertes Laden nach, bevor geschrieben wird. Sonst verdrängte das
    * provisorische Spiel den echten Stand aus dem Primär-Slot und später aus dem Backup.
    */
@@ -133,11 +204,25 @@ export class PersistenceService {
     this.#lastSavedAtState.set(state.time.lastSaved);
   }
 
+  /**
+   * Speichert im eingestellten Intervall, beim Verbergen und bei `pagehide`. Ändert sich das
+   * Intervall (Einstellung, Import, Laden), startet der Timer mit dem neuen Wert neu.
+   */
   startAutosave(): void {
     if (this.#timer !== null) {
       return;
     }
-    this.#timer = setInterval(() => this.save(), AUTOSAVE_INTERVAL_MS);
+    this.#startTimer(untracked(this.#autosaveIntervalMs));
+    // Seiteneffekt nach außen (Timer); der erste Lauf startet nichts neu.
+    this.#intervalWatch = effect(
+      () => {
+        const intervalMs = this.#autosaveIntervalMs();
+        if (this.#timer !== null && intervalMs !== this.#timerIntervalMs) {
+          this.#startTimer(intervalMs);
+        }
+      },
+      { injector: this.#injector },
+    );
     this.#document.addEventListener('visibilitychange', this.#onVisibilityChange);
     this.#document.defaultView?.addEventListener('pagehide', this.#onPageHide);
   }
@@ -148,8 +233,19 @@ export class PersistenceService {
     }
     clearInterval(this.#timer);
     this.#timer = null;
+    this.#timerIntervalMs = null;
+    this.#intervalWatch?.destroy();
+    this.#intervalWatch = null;
     this.#document.removeEventListener('visibilitychange', this.#onVisibilityChange);
     this.#document.defaultView?.removeEventListener('pagehide', this.#onPageHide);
+  }
+
+  #startTimer(intervalMs: number): void {
+    if (this.#timer !== null) {
+      clearInterval(this.#timer);
+    }
+    this.#timer = setInterval(() => this.save(), intervalMs);
+    this.#timerIntervalMs = intervalMs;
   }
 }
 

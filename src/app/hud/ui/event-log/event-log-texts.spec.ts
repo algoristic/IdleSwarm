@@ -79,6 +79,19 @@ describe('eventLogText', () => {
     expect(eventLogText(arrived(0.3))).toBe('Ankunft: Walsturz eingenommen · −1 Soldat · +13 DNA');
   });
 
+  it('schreibt Zahlen im eingestellten Zahlenformat', () => {
+    const event = arrived(2.5e6, 1.2345e10);
+    expect(eventLogText(event)).toBe(
+      'Ankunft: Walsturz eingenommen · −2,50 Mio. Soldaten · +12,34 Mrd. DNA',
+    );
+    expect(eventLogText(event, 'scientific')).toBe(
+      'Ankunft: Walsturz eingenommen · −2,50e6 Soldaten · +1,23e10 DNA',
+    );
+    expect(eventLogText(event, 'engineering')).toBe(
+      'Ankunft: Walsturz eingenommen · −2,50e6 Soldaten · +12,34e9 DNA',
+    );
+  });
+
   it('meldet die leere Futterstelle', () => {
     expect(eventLogText({ type: 'siteDepleted', playedMs: 0, siteType: 'vent' })).toBe(
       'Futterstelle leer: Hydrothermaler Schlot',

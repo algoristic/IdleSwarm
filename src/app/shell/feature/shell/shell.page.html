@@ -91,13 +91,20 @@
     class="pointer-events-none fixed top-4 bottom-4 left-4 z-10 flex w-64 flex-col items-start gap-4 overflow-y-auto max-md:inset-x-0 max-md:top-0 max-md:bottom-auto max-md:w-auto max-md:items-stretch max-md:gap-0 max-md:overflow-visible"
   >
     <div class="pointer-events-auto grid w-full gap-2 max-md:gap-0">
+      <!-- Smartphone: eine Zeile aus Ressourcen und Zahnrad; sonst das Zahnrad rechts neben dem Logo. -->
       <div
-        class="shell__header rounded-3xl bg-surface px-4.5 pt-3.5 pb-4 shadow-panel max-md:min-h-14 max-md:rounded-t-none max-md:px-4 max-md:py-2"
+        class="shell__header rounded-3xl bg-surface px-4.5 pt-3.5 pb-4 shadow-panel max-md:flex max-md:min-h-14 max-md:items-center max-md:gap-2 max-md:rounded-t-none max-md:px-4 max-md:py-2"
       >
-        <!-- Sichtbar „IDLESWARM“ wie im Mockup `.logo`, vorgelesen „IdleSwarm“; ohne Leerraum im Text. -->
-        <!-- prettier-ignore -->
-        <h1 class="mb-1.5 text-base font-black tracking-widest uppercase max-md:sr-only" i18n="@@featureShell-shell-title">Idle<span class="text-primary">Swarm</span></h1>
-        <app-resources-panel />
+        <div class="-mt-1.5 mb-1 flex items-center justify-between gap-2 max-md:contents">
+          <!-- Sichtbar „IDLESWARM“ wie im Mockup `.logo`, vorgelesen „IdleSwarm“; ohne Leerraum im Text. -->
+          <!-- prettier-ignore -->
+          <h1 class="text-base font-black tracking-widest uppercase max-md:sr-only" i18n="@@featureShell-shell-title">Idle<span class="text-primary">Swarm</span></h1>
+          <app-settings-button
+            class="-mr-1.5 shrink-0 max-md:order-last max-md:mr-0"
+            (clickedOpen)="settingsFacade.openDialog()"
+          />
+        </div>
+        <app-resources-panel class="max-md:min-w-0 max-md:flex-1" />
       </div>
       <app-save-status class="max-md:px-4" />
     </div>
@@ -135,3 +142,4 @@
 
 <!-- Außerhalb von `<main>`: Das Rad im Dialog erreicht die Shell-Eingabe nicht (Top-Layer, ADR-014). -->
 <app-return-summary />
+<app-settings-dialog />

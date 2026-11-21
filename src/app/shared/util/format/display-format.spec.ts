@@ -28,6 +28,18 @@ describe('display-format', () => {
     expect(formatUp(Num.from('1.231e30'))).toBe('1,24e30');
   });
 
+  it('rundet gerichtet auf die Stellen der gewählten Notation', () => {
+    const value = Num.from('1.23999e10');
+    expect(formatDown(value, { notation: 'short' })).toBe('12,39 Mrd.');
+    expect(formatDown(value, { notation: 'scientific' })).toBe('1,23e10');
+    expect(formatUp(value, { notation: 'scientific' })).toBe('1,24e10');
+    expect(formatDown(value, { notation: 'engineering' })).toBe('12,39e9');
+    expect(formatUp(Num.from('9.99999e8'), { notation: 'engineering' })).toBe('1,00e9');
+    // Kurzformen zeigen ab 1e24 nur drei Stellen, technisch weiter bis zu fünf.
+    expect(formatDown(Num.from('1.239999e26'), { notation: 'short' })).toBe('1,23e26');
+    expect(formatDown(Num.from('1.239999e26'), { notation: 'engineering' })).toBe('123,99e24');
+  });
+
   it.each([
     [0, '0 s'],
     [45, '45 s'],

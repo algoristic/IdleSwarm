@@ -38,6 +38,7 @@ import {
   roundUpForDisplay,
   splitPercents,
 } from '@app/shared/util/format/display-format';
+import { DEFAULT_NOTATION, Notation } from '@app/shared/util/format/format';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_SECOND } from '@app/shared/util/time/time-units';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
@@ -70,7 +71,7 @@ export const BUY_ORDER: readonly UnitType[] = ['drones', 'soldiers', 'queens'];
 export const PHEROMONE_ORDER: readonly PheromoneUnit[] = ['drones', 'soldiers'];
 
 export function toHudView(source: HudSource, params: BalanceParams): HudView {
-  const { state } = source;
+  const { state, notation = DEFAULT_NOTATION } = source;
   const { units, site, pheromones } = state;
   const modifiers = stateModifiers(state, params);
   return {
@@ -83,9 +84,9 @@ export function toHudView(source: HudSource, params: BalanceParams): HudView {
     attack: totalAttack(units, params, modifiers),
     site: toSiteView(state, params, modifiers),
     space: toSpaceView(state, params, modifiers),
-    units: BUY_ORDER.map((unit) => toUnitView(state, unit, params, modifiers)),
+    units: BUY_ORDER.map((unit) => toUnitView(state, unit, params, modifiers, notation)),
     sacrifice: toSacrificeView(state, params, modifiers),
-    pheromones: toPheromoneView(state, params, modifiers),
+    pheromones: toPheromoneView(state, params, modifiers, notation),
     finds: toFindsView(state, params),
     availableAdaptations: availableNodeCount(state, params),
     lastSavedAt:
@@ -101,22 +102,28 @@ function toUnitView(
   unit: UnitType,
   params: BalanceParams,
   modifiers: Modifiers,
+  notation: Notation,
 ): UnitView {
   const affordable = canBuy(state, unit, params);
   return {
     id: unit,
     count: state.units[unit],
-    price: displayPrice(unitPrice(unit, state.bought, params), affordable, state.res.food),
+    price: displayPrice(
+      unitPrice(unit, state.bought, params),
+      affordable,
+      state.res.food,
+      notation,
+    ),
     affordable,
     queenEffect: unit === 'queens' ? nextQueenEffect(state.pheromones, params, modifiers) : null,
   };
 }
 
 /** Aufgerundeter Preis; bei einem kaufbaren Knopf nie über der abgerundet angezeigten Nahrung. */
-function displayPrice(price: Num, affordable: boolean, food: Num): Num {
-  const rounded = roundUpForDisplay(price);
+function displayPrice(price: Num, affordable: boolean, food: Num, notation: Notation): Num {
+  const rounded = roundUpForDisplay(price, notation);
   // Aufgerundet verlangte ein kaufbarer Knopf bei 10,8 Nahrung und Preis 10,7 sichtbar 11 von 10.
-  return affordable ? rounded.min(roundDownForDisplay(food)) : rounded;
+  return affordable ? rounded.min(roundDownForDisplay(food, notation)) : rounded;
 }
 
 /**
@@ -127,6 +134,7 @@ export function toPheromoneView(
   state: GameState,
   params: BalanceParams,
   modifiers: Modifiers,
+  notation: Notation = DEFAULT_NOTATION,
 ): PheromoneView {
   const { pheromones } = state;
   const [dronePercent = 0, soldierPercent = 0] = splitPercents([
@@ -142,7 +150,7 @@ export function toPheromoneView(
     dronePercent,
     soldierPercent,
     gland: {
-      price: displayPrice(glandPrice(pheromones, params), affordable, state.res.food),
+      price: displayPrice(glandPrice(pheromones, params), affordable, state.res.food, notation),
       affordable,
       eggsPerPoint: eggsPerPheromonePoint(state.units, params, modifiers),
     },

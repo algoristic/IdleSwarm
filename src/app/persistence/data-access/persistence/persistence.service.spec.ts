@@ -6,7 +6,9 @@ import { catchUp } from '@app/engine/domain/catch-up-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
+import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 
+import { decodeSave, encodeSave } from '../../domain/serialize-logic';
 import {
   BACKUP_KEY,
   KeyValueStore,
@@ -495,8 +497,10 @@ describe('PersistenceService', () => {
     });
 
     it('legt bei doppeltem Start nur einen Timer an', () => {
+      // jsdom plant `requestAnimationFrame` (Effekt-Planung von Angular) ebenfalls über `setInterval`.
+      const timers = vi.getTimerCount();
       persistence.startAutosave();
-      expect(vi.getTimerCount()).toBe(1);
+      expect(vi.getTimerCount()).toBe(timers);
     });
 
     it('speichert nach dem Stoppen nicht mehr', () => {
@@ -514,6 +518,106 @@ describe('PersistenceService', () => {
       window.dispatchEvent(new Event('pagehide'));
       expect(savedText()).toBeNull();
       expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('startet den Timer mit dem eingestellten Intervall neu', () => {
+      vi.advanceTimersByTime(20 * MS_PER_SECOND);
+      store.dispatch({
+        type: 'updateSettings',
+        settings: { autosaveIntervalMs: 10 * MS_PER_SECOND },
+      });
+      TestBed.tick();
+
+      vi.advanceTimersByTime(10 * MS_PER_SECOND - 1);
+      expect(savedText()).toBeNull();
+      vi.advanceTimersByTime(1);
+      expect(savedText()).not.toBeNull();
+      expect(vi.getTimerCount()).toBe(1);
+    });
+
+    it('nimmt beim Start das Intervall aus dem Spielstand', () => {
+      persistence.stopAutosave();
+      store.dispatch({
+        type: 'updateSettings',
+        settings: { autosaveIntervalMs: 5 * MS_PER_MINUTE },
+      });
+      persistence.startAutosave();
+      TestBed.tick();
+
+      vi.advanceTimersByTime(AUTOSAVE_INTERVAL_MS);
+      expect(savedText()).toBeNull();
+      vi.advanceTimersByTime(5 * MS_PER_MINUTE - AUTOSAVE_INTERVAL_MS);
+      expect(savedText()).not.toBeNull();
+    });
+  });
+
+  describe('Export, Import und Zurücksetzen', () => {
+    beforeEach(() => {
+      writeSave();
+      persistence.restore();
+    });
+
+    it('exportiert den gespeicherten Stand', () => {
+      const result = persistence.exportSave();
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.text).toBe(savedText());
+        expect(decodeSave(result.text)).toEqual(store.state());
+      }
+    });
+
+    it('übernimmt einen Import ohne Nachholen, gleicht die Uhr ab und speichert sofort', () => {
+      const imported = createInitialState({ seed: 'importiert', now: NOW - 10 * OFFLINE_MS });
+      const text = encodeSave(imported);
+
+      expect(persistence.importSave(`  ${text.slice(0, 10)}\n${text.slice(10)} `)).toBe('imported');
+
+      const state = store.state();
+      expect(state.seed).toBe('importiert');
+      expect(state.time).toEqual({ now: NOW, lastSaved: NOW, played: 0 });
+      expect(store.lastCatchUp()).toBeNull();
+      expect(decodeSave(savedText() ?? '')).toEqual(state);
+      expect(decodeSave(memory.getItem(BACKUP_KEY) ?? '').seed).toBe('gespeichert');
+    });
+
+    it('lehnt fehlerhafte Texte mit Code ab und ändert nichts', () => {
+      const before = store.state();
+      const saved = savedText();
+
+      expect(persistence.importSave('kein Spielstand!')).toBe('corrupt');
+      expect(persistence.importSave('')).toBe('corrupt');
+
+      expect(store.state()).toBe(before);
+      expect(savedText()).toBe(saved);
+    });
+
+    it('beginnt beim Zurücksetzen neu, behält die Einstellungen und speichert sofort', () => {
+      store.dispatch({ type: 'updateSettings', settings: { numberFormat: 'engineering' } });
+      store.dispatch({ type: 'markHintSeen', hint: 'collect' });
+
+      persistence.resetGame();
+
+      const state = store.state();
+      expect(state.seed).not.toBe('gespeichert');
+      expect(state.res.food.eq(createInitialState({ seed: 'x', now: NOW }).res.food)).toBe(true);
+      expect(state.settings.numberFormat).toBe('engineering');
+      expect(state.onboarding.seenHints).toEqual([]);
+      expect(state.time).toEqual({ now: NOW, lastSaved: NOW, played: 0 });
+      expect(decodeSave(savedText() ?? '')).toEqual(state);
+    });
+
+    it('nimmt nach einem unvollständigen Laden den Import statt des echten Stands', () => {
+      memory.failReads.add(SAVE_KEY);
+      persistence.restore();
+      memory.failReads.clear();
+
+      expect(
+        persistence.importSave(encodeSave(createInitialState({ seed: 'neu', now: NOW }))),
+      ).toBe('imported');
+
+      expect(store.state().seed).toBe('neu');
+      expect(decodeSave(savedText() ?? '').seed).toBe('neu');
     });
   });
 

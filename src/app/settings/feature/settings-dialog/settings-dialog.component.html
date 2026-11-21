@@ -1,0 +1,21 @@
+<!-- Immer im DOM: `close()` gibt den Fokus an den Zahnrad-Knopf zurück; der Inhalt entsteht je Öffnen neu. -->
+<app-modal-dialog
+  testId="settings.dialog"
+  [open]="facade.open()"
+  [heading]="heading"
+  (closed)="facade.closeDialog()"
+>
+  @if (facade.open()) {
+    <app-dialog-settings
+      [view]="facade.view()"
+      [dialog]="facade.dialog()"
+      (changedSettings)="facade.update($event)"
+      (selectedPanel)="facade.showPanel($event)"
+      (submittedImport)="facade.requestImport($event)"
+      (clickedConfirmImport)="facade.confirmImport()"
+      (clickedCopy)="facade.copyExport()"
+      (clickedResetHints)="facade.resetHints()"
+      (clickedConfirmReset)="facade.confirmReset()"
+    />
+  }
+</app-modal-dialog>

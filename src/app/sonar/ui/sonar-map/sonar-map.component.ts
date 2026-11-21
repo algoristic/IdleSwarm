@@ -1,7 +1,8 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 
+import { NUMBER_NOTATION } from '@app/shared/ui/pipes/number-notation/number-notation.token';
 import { formatDown } from '@app/shared/util/format/display-format';
-import { formatNum, formatRate } from '@app/shared/util/format/format';
+import { FormatOptions, formatNum, formatRate } from '@app/shared/util/format/format';
 import { SITE_TYPE_LABELS } from '@app/site/ui/site-type-labels/site-type-labels';
 
 import type { TargetView } from '../models/target.model';
@@ -28,6 +29,8 @@ interface MapNodeItem {
   host: { class: 'block' },
 })
 export class SonarMapComponent {
+  readonly #notation = inject(NUMBER_NOTATION);
+
   map = input.required<SonarMapView>();
   /** Gerenderte Pixel je `viewBox`-Einheit; die Ebene misst sie, ohne Messung gilt 1. */
   scale = input(1);
@@ -43,19 +46,26 @@ export class SonarMapComponent {
     ),
   );
 
-  #dnaLabels = computed(() =>
-    this.map().nodes.map(({ target }) =>
-      target.details?.rewardsDna
-        ? $localize`:@@uiSonar-sonarMap-dna:+${formatDown(target.details.dna)}:dna: DNA`
-        : null,
-    ),
-  );
+  /** Zahlenformat der Beschriftungen; wie die Pipes aus `NUMBER_NOTATION`. */
+  #format = computed(() => ({ notation: this.#notation() }));
 
-  ringLabels = computed(() => this.map().rings.map((ring) => formatNum(ring.distance)));
+  #dnaLabels = computed(() => {
+    const format = this.#format();
+    return this.map().nodes.map(({ target }) =>
+      target.details?.rewardsDna
+        ? $localize`:@@uiSonar-sonarMap-dna:+${formatDown(target.details.dna, format)}:dna: DNA`
+        : null,
+    );
+  });
+
+  ringLabels = computed(() => {
+    const format = this.#format();
+    return this.map().rings.map((ring) => formatNum(ring.distance, format));
+  });
 
   rangeLabel = computed(
     () =>
-      $localize`:@@uiSonar-sonarMap-range:${formatNum(this.map().range.value)}:range: · Reichweite`,
+      $localize`:@@uiSonar-sonarMap-range:${formatNum(this.map().range.value, this.#format())}:range: · Reichweite`,
   );
 
   hereLabel = computed(() => {
@@ -77,6 +87,7 @@ export class SonarMapComponent {
   );
 
   nodes = computed<readonly MapNodeItem[]>(() => {
+    const format = this.#format();
     const names = this.#names();
     const dna = this.#dnaLabels();
     const layouts = this.layout().nodes;
@@ -85,7 +96,7 @@ export class SonarMapComponent {
       layout: layouts[i],
       name: names[i],
       dna: dna[i],
-      ariaLabel: this.#ariaLabel(node.target),
+      ariaLabel: this.#ariaLabel(node.target, format),
     }));
   });
 
@@ -102,12 +113,12 @@ export class SonarMapComponent {
     this.selectedTarget.emit(index);
   }
 
-  #ariaLabel(target: TargetView): string {
+  #ariaLabel(target: TargetView, format: FormatOptions): string {
     const verdict = VERDICT_LABELS[target.verdict];
     const base =
       target.details === null
         ? $localize`:@@uiSonar-sonarMap-targetUnexplored:Unerforschtes Ziel: ${verdict}:verdict:`
-        : $localize`:@@uiSonar-sonarMap-target:${SITE_TYPE_LABELS[target.details.type]}:type:, Distanz ${formatRate(target.details.distance)}:distance:: ${verdict}:verdict:`;
+        : $localize`:@@uiSonar-sonarMap-target:${SITE_TYPE_LABELS[target.details.type]}:type:, Distanz ${formatRate(target.details.distance, format)}:distance:: ${verdict}:verdict:`;
     return target.strategyChoice ? `${base}. ${this.strategyMark}` : base;
   }
 }

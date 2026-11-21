@@ -21,7 +21,9 @@ Ein modaler Dialog braucht: Fokus beim Öffnen hinein und beim Schließen zurüc
 
 **Umgesetzt** in [AP 1.5.1](../projektplan.md#m15--idle-balancing--release-10): `ModalDialogComponent` mit Spec (Öffnen/Schließen nach `open`, Esc und Schließen-Knopf melden `closed`), Tokens in `src/styles.css`, Rückkehr-Zusammenfassung (`hud/feature/return-summary`, Inhalt `hud/ui/dialog-return-summary`) in allen Modi der Shell. Die `ShellInputDirective` ignoriert Tasten, solange ein `dialog[open]` existiert (Esc schließt dann nur den Dialog); der Dialog steht außerhalb von `<main>`, damit das Mausrad im Dialog die Shell nicht erreicht.
 
-**Offen:** Kein Ausblenden beim Schließen (der Aufrufer entfernt den Inhalt sofort). Einstellungen und die Bestätigung beim Zurücksetzen folgen mit AP 1.5.2/1.5.3.
+**Umgesetzt** in AP 1.5.2/1.5.3: Dialog „Einstellungen“ (`settings/feature/settings-dialog`, Inhalt `settings/ui/dialog-settings`). Er bleibt im DOM und schließt über `open`, damit `close()` den Fokus an den Zahnrad-Knopf zurückgibt; die Bestätigungen für Import und Zurücksetzen sind Ansichten im selben Dialog statt eines zweiten Dialogs.
+
+**Offen:** Kein Ausblenden beim Schließen (die Rückkehr-Zusammenfassung entfernt ihren Inhalt sofort).
 
 ## Konsequenzen
 

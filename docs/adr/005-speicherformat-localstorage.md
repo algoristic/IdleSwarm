@@ -43,10 +43,9 @@ Ohne Backend liegen Spielstände vollständig im Browser ([ADR-008](008-kein-bac
 
 **Umgesetzt** in [`persistence/data-access/persistence/persistence.service.ts`](../../src/app/persistence/data-access/persistence/persistence.service.ts): Laden beim Start, Autosave, Hinweise an die Oberfläche und das erneute Laden nach einem gescheiterten Speicherzugriff. Ein unveränderter Zustand wird nicht erneut geschrieben, damit ein zweites Ereignis beim Verlassen das Backup nicht verdrängt.
 
-**Geplant:**
-
-- Export und Import in der Oberfläche: Umsetzung in AP 1.5.2 (die reinen Funktionen `encodeSave`/`importSave` stehen bereit)
-- Einstellbares Autosave-Intervall: Umsetzung in AP 1.5.3 (der Wert `settings.autosaveIntervalMs` steht seit Version 5 im Spielstand; `PersistenceService` nutzt noch fest `AUTOSAVE_INTERVAL_MS`)
+- **Autosave-Intervall** (AP 1.5.3): aus `settings.autosaveIntervalMs` im Spielstand (10 s, 30 s, 60 s, 5 min); ändert es sich (Einstellung, Import, Zurücksetzen), startet der Timer mit dem neuen Wert neu. `AUTOSAVE_INTERVAL_MS` ist nur noch der Standard (30 s).
+- **Export, Import, Zurücksetzen** (AP 1.5.2, US-07.04, US-07.05): `exportSave()` speichert und liefert den Stand als `encodeSave`-Text; `importSave(text)` prüft mit `importSave` aus `serialize-logic.ts` und liefert `'imported'` oder den `SaveErrorCode`. Ein übernommener Stand ersetzt das Spiel ohne Offline-Nachholen (sonst ließe sich mit alten Export-Texten Zeit gewinnen), die Uhr wird nur abgeglichen. `resetGame()` beginnt ein neues Spiel mit neuem Seed und behält die Einstellungen; das Onboarding beginnt von vorn. Import und Zurücksetzen speichern sofort; wie jedes Speichern verdrängt das den bisherigen Primär-Stand ins Backup, der vorige Stand liegt dort also nur bis zum nächsten Speichern. Ein beim Start gescheitertes Laden wird danach nicht mehr nachgeholt, weil der Spieler den Stand ausdrücklich ersetzt.
+- **Oberfläche:** Dialog „Einstellungen“ (`settings/feature`, `settings/ui`) mit Export (Textfeld und Kopieren), Import mit Bestätigung und Fehlermeldung je Code, Zurücksetzen in zwei Schritten mit Angebot, vorher zu exportieren.
 
 ## Konsequenzen
 

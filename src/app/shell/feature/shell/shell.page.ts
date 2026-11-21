@@ -8,6 +8,9 @@ import { SaveStatusComponent } from '@app/hud/feature/save-status/save-status.co
 import { SceneHudComponent } from '@app/hud/feature/scene-hud/scene-hud.component';
 import { HudFacade } from '@app/hud/feature/state/hud.facade';
 import { SceneWorldComponent } from '@app/scene/feature/scene-world/scene-world.component';
+import { SettingsDialogComponent } from '@app/settings/feature/settings-dialog/settings-dialog.component';
+import { SettingsFacade } from '@app/settings/feature/state/settings.facade';
+import { SettingsButtonComponent } from '@app/settings/ui/settings-button/settings-button.component';
 import { SonarLayerComponent } from '@app/sonar/feature/sonar-layer/sonar-layer.component';
 import { SonarOverlayComponent } from '@app/sonar/feature/sonar-overlay/sonar-overlay.component';
 
@@ -19,8 +22,8 @@ import { ShellFacade } from '../state/shell.facade';
 /**
  * K2-Shell (US-08.01): drei Ebenen (Sonar z = 1, Welt z = 2, Genom z = 3) mit Kamerafahrt je
  * Modus, darüber die vollflächigen Overlays der Modi, Logo mit Ressourcen und Speicherstatus,
- * Zoom-Leiste und „zurück zum Schwarm“, dazu der Dialog „Willkommen zurück“. Setzt die Ebenen und Overlays von Szene, HUD, Sonar und
- * Genom zusammen.
+ * Zoom-Leiste, „zurück zum Schwarm“ und Zahnrad, dazu die Dialoge „Willkommen zurück“ und
+ * „Einstellungen“. Setzt die Ebenen und Overlays von Szene, HUD, Sonar und Genom zusammen.
  */
 @Component({
   selector: 'app-shell-page',
@@ -32,6 +35,8 @@ import { ShellFacade } from '../state/shell.facade';
     SaveStatusComponent,
     SceneHudComponent,
     SceneWorldComponent,
+    SettingsButtonComponent,
+    SettingsDialogComponent,
     ShellInputDirective,
     SonarLayerComponent,
     SonarOverlayComponent,
@@ -44,6 +49,7 @@ import { ShellFacade } from '../state/shell.facade';
 export class ShellPage {
   facade = inject(ShellFacade);
   hudFacade = inject(HudFacade);
+  settingsFacade = inject(SettingsFacade);
 
   sceneHud = viewChild.required(SceneHudComponent);
   sonarOverlay = viewChild.required(SonarOverlayComponent);

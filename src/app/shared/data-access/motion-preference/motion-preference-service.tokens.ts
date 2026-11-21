@@ -1,4 +1,4 @@
-import { InjectionToken } from '@angular/core';
+import { InjectionToken, Signal, signal } from '@angular/core';
 
 /** Eine Media-Query des Browsers; als Token, damit Tests Treffer und Wechsel ersetzen können. */
 export interface MediaQuery {
@@ -24,4 +24,14 @@ export const PREFERS_REDUCED_MOTION = new InjectionToken<MediaQuery>('PREFERS_RE
       },
     };
   },
+});
+
+/**
+ * Einstellung „Animationen“ im Spiel: `true`/`false` erzwingt reduzierte bzw. volle Bewegung, `null`
+ * folgt dem System. Root-Default `null`; der Bootstrap stellt sie aus dem Spielstand bereit
+ * (`provideAppliedSettings` in `settings/feature`).
+ */
+export const MOTION_OVERRIDE = new InjectionToken<Signal<boolean | null>>('MOTION_OVERRIDE', {
+  providedIn: 'root',
+  factory: () => signal<boolean | null>(null).asReadonly(),
 });

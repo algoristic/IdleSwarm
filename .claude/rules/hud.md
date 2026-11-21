@@ -29,7 +29,8 @@ paths:
 
 ## Besonderheiten
 
-- Das Viewmodel enthält Rohwerte (`Num`); gerundet und formatiert wird im Template über die Pipes aus `shared/ui/pipes` (`formatDown` für Mengen, `formatUp` für Restvorrat, `formatNum` für den bereits gerundeten Preis).
+- Das Viewmodel enthält Rohwerte (`Num`); gerundet und formatiert wird im Template über die Pipes aus `shared/ui/pipes` (`formatDown` für Mengen, `formatUp` für Restvorrat, `formatNum` für den bereits gerundeten Preis). Die Pipes folgen dem eingestellten Zahlenformat (`NUMBER_NOTATION`, AP 1.5.3); `EventLogComponent` und `FormSacrificeDronesComponent` lesen `NUMBER_NOTATION` und reichen sie an `eventLogText(event, notation)` bzw. `sacrificeDronesSchema(maxCount, notation)` durch; `HudFacade` gibt sie als `HudSource.notation` an `toHudView`, damit `displayPrice` auf die Stellen des Formats rundet.
+- Die Kopfzeile der Shell trägt seit AP 1.5.3 das Zahnrad der Einstellungen; auf dem Smartphone teilen sich Ressourcen (`flex-1`, `min-w-0`) und Zahnrad (44 px) die Zeile.
 - Der angezeigte Preis eines kaufbaren Knopfs ist nie höher als die angezeigte Nahrung (`toHudView`, Game-Design §4).
 - Platz: `SpaceView.overfull` (belegt > verfügbar, `isSpaceOverfull`) zeigt `hud.space.overfull` „Zu wenig Platz …“ statt der Warnung ab 90 % (`hud.space.warning`).
 - Die Live-Regionen (`role="status"`) stehen immer im DOM und enthalten keine tickenden Werte.
