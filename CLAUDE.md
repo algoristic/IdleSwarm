@@ -43,7 +43,7 @@
 | [`shell`](.claude/rules/shell.md) | `src/app/shell/**` | K2-Shell: Ebenen, Kamera, Modus = Route, Zoom-Leiste, Mausrad, Tasten, Pinch, Fokusführung |
 | [`scene`](.claude/rules/scene.md) | `src/app/scene/**` | Szene: Canvas der Welt-Ebene, Sprite-Budget, Bewegungsmodell, Renderer, Ereigniszahlen |
 | [`settings`](.claude/rules/settings.md) | `src/app/settings/**` | Einstellungen: Zahlenformat, Animationen, Autosave-Intervall (Optionen, Standard, `updateSettings`); Dialog „Einstellungen“ mit Export, Import und Zurücksetzen |
-| [`onboarding`](.claude/rules/onboarding.md) | `src/app/onboarding/**` | Onboarding: Freischaltungen (`updateUnlocks`) und Hinweise |
+| [`onboarding`](.claude/rules/onboarding.md) | `src/app/onboarding/**` | Onboarding: Freischaltungen (`updateUnlocks`), Hinweise und Hinweiskarte |
 | [`shared`](.claude/rules/shared.md) | `src/app/shared/**`, `src/styles.css` | `Num`, Formatierung, RNG, Pipes, Plattform-Tokens, Design-Tokens |
 
 **Regeln, die überall gelten:**
@@ -111,7 +111,7 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 | `shell` | K2-Shell: Modus ↔ Pfad, Kamera, `--ms`, Mausrad-, Tasten- und Pinch-Logik (`domain`); Zoom-Leiste (`ui`); `ShellPage` als Elternroute von `/`, `/umgebung`, `/genom`, `ShellInputDirective` und `ShellFacade` (`feature`) |
 | `scene` | Szene der Welt-Ebene: Sprite-Budget, Bewegungsmodell, Plankton und Teilchen (`domain`); Canvas-Renderer, Sprites, Palette (`ui`); `SceneWorldComponent` und `SceneFacade` (`feature`) |
 | `settings` | Einstellungen im Spielstand: Zahlenformat, Animationen, Autosave-Intervall; Optionen, Standard und `updateSettings` (`domain`); Zahnrad, Dialog „Einstellungen“, Formulare und Texte (`ui`); `SettingsFacade`, Dialog, `BUILD_INFO`, Anwenden der Animationen (`feature`) |
-| `onboarding` | Freischaltungen der Oberfläche und Hinweise: IDs, Regeln `updateUnlocks`, `pendingHints`, `markHintSeen`, `resetHints` (`domain`) |
+| `onboarding` | Freischaltungen der Oberfläche und Hinweise: IDs, Regeln `updateUnlocks`, `pendingHints`, `markHintSeen`, `resetHints` (`domain`); Hinweiskarte und Texte (`ui`); `OnboardingFacade`, Zuordnung Hinweis → Modus und `OnboardingHintComponent` (`feature`) |
 
 Jede Fachdomäne definiert ihren Teil des Zustands (z. B. `Units` in `swarm/domain/models`, `Site` in `site/domain/models`) und ihre Regeln. `engine/domain` setzt daraus `GameState`, `apply` und `step` zusammen. Zusätzliche Standorte ab AS3 bleiben damit eine Sache von `site` und `engine`.
 

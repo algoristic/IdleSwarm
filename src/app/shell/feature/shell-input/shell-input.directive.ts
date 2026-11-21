@@ -1,8 +1,8 @@
-import { DestroyRef, Directive, DOCUMENT, ElementRef, inject, output } from '@angular/core';
+import { DestroyRef, Directive, DOCUMENT, ElementRef, inject, input, output } from '@angular/core';
 
 import { CLOCK } from '@app/shared/data-access/platform/platform.tokens';
 
-import type { ShellMode, ZoomDirection } from '../../domain/models/shell-mode.model';
+import { SHELL_MODES, ShellMode, ZoomDirection } from '../../domain/models/shell-mode.model';
 import { shortcutMode, wheelDeltaPixels, wheelZoom } from '../../domain/shell-input-logic';
 import {
   PINCH_CLICK_GUARD_MS,
@@ -40,6 +40,9 @@ export class ShellInputDirective {
   readonly #document = inject(DOCUMENT);
   readonly #clock = inject(CLOCK);
   readonly #destroyRef = inject(DestroyRef);
+
+  /** Erreichbare Modi (Onboarding); Tasten gesperrter Modi lösen nichts aus. */
+  modes = input<readonly ShellMode[]>(SHELL_MODES);
 
   zoomedWheel = output<ZoomDirection>();
   pressedShortcut = output<ShellMode>();
@@ -199,7 +202,7 @@ export class ShellInputDirective {
     ) {
       return;
     }
-    const mode = shortcutMode(event);
+    const mode = shortcutMode(event, this.modes());
     if (mode) {
       this.pressedShortcut.emit(mode);
     }

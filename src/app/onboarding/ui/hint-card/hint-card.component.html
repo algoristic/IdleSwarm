@@ -1,0 +1,30 @@
+@let _hint = hint();
+@let _texts = texts();
+
+<!-- Panel-Optik nach Mockup K2-K; nimmt als einziges Element der Live-Region Zeiger-Ereignisse an. -->
+<div [attr.data-testid]="'onboarding.hint.' + _hint">
+  <section
+    class="hint-card pointer-events-auto rounded-3xl bg-surface px-4.5 pt-3.5 pb-4 shadow-panel"
+    data-testid="onboarding.hint.card"
+    [attr.aria-labelledby]="'onboarding-hint-' + _hint"
+  >
+    <p class="text-xs font-extrabold tracking-widest text-fg-muted uppercase">{{ kicker }}</p>
+    <h2
+      class="mt-0.5 text-base font-black text-primary"
+      data-testid="onboarding.hint.title"
+      [id]="'onboarding-hint-' + _hint"
+    >
+      {{ _texts.title }}
+    </h2>
+    <p class="mt-1.5 text-sm leading-snug" data-testid="onboarding.hint.text">{{ _texts.text }}</p>
+    <button
+      type="button"
+      class="mt-3 min-h-11 cursor-pointer touch-manipulation rounded-full bg-primary px-4.5 py-2 text-sm font-black text-on-accent shadow-button-primary hover:bg-primary-hover active:translate-y-0.5 active:shadow-button-primary-pressed motion-reduced:active:translate-y-0"
+      data-testid="onboarding.hint.dismiss"
+      i18n="@@uiOnboarding-hintCard-dismiss"
+      (click)="onDismiss()"
+    >
+      Verstanden
+    </button>
+  </section>
+</div>

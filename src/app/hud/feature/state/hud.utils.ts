@@ -31,6 +31,11 @@ import { stateModifiers } from '@app/engine/domain/modifiers-logic';
 import { badgeEffect, findsDrawer } from '@app/finds/domain/collection-logic';
 import { isBuffActive } from '@app/finds/domain/finds-logic';
 import { availableNodeCount } from '@app/genome/domain/genome-logic';
+import type {
+  Onboarding,
+  OnboardingUnlockId,
+} from '@app/onboarding/domain/models/onboarding.model';
+import { isUnlocked } from '@app/onboarding/domain/onboarding-logic';
 import { isValidTimestamp } from '@app/shared/util/format/date-format';
 import {
   barPercent,
@@ -62,10 +67,25 @@ import type {
   PheromoneUnit,
   PheromoneView,
 } from '../../ui/pheromone-panel/pheromone-panel.component.model';
-import type { HudNotice, HudSource, HudView, SpaceView } from './hud.model';
+import { HUD_DRAWERS } from './hud.model';
+import type { HudDrawer, HudNotice, HudSource, HudUnlocks, HudView, SpaceView } from './hud.model';
 
 /** Reihenfolge der Aktionsleiste, vom ersten Kauf zur teuersten Einheit. */
 export const BUY_ORDER: readonly UnitType[] = ['drones', 'soldiers', 'queens'];
+
+/** Freischaltung je Einheit der Aktionsleiste (Game-Design §4.18); `null` = von Anfang an. */
+export const UNIT_UNLOCKS: Readonly<Record<UnitType, OnboardingUnlockId | null>> = {
+  queens: null,
+  drones: null,
+  soldiers: 'map',
+};
+
+/** Freischaltung je Schublade (Game-Design §4.18): „Drohnen opfern“ kommt mit der Umgebung. */
+export const DRAWER_UNLOCKS: Readonly<Record<HudDrawer, OnboardingUnlockId>> = {
+  pheromones: 'pheromones',
+  finds: 'finds',
+  sacrifice: 'map',
+};
 
 /** Zeilen des Pheromon-Panels wie im Mockup: Drohnen, dann Soldaten. */
 export const PHEROMONE_ORDER: readonly PheromoneUnit[] = ['drones', 'soldiers'];
@@ -74,6 +94,8 @@ export function toHudView(source: HudSource, params: BalanceParams): HudView {
   const { state, notation = DEFAULT_NOTATION } = source;
   const { units, site, pheromones } = state;
   const modifiers = stateModifiers(state, params);
+  const unlocks = toHudUnlocks(state.onboarding);
+  const open = (unlock: OnboardingUnlockId | null): boolean => unlock === null || unlocks[unlock];
   return {
     food: state.res.food,
     dna: state.res.dna,
@@ -84,7 +106,11 @@ export function toHudView(source: HudSource, params: BalanceParams): HudView {
     attack: totalAttack(units, params, modifiers),
     site: toSiteView(state, params, modifiers),
     space: toSpaceView(state, params, modifiers),
-    units: BUY_ORDER.map((unit) => toUnitView(state, unit, params, modifiers, notation)),
+    unlocks,
+    units: BUY_ORDER.filter((unit) => open(UNIT_UNLOCKS[unit])).map((unit) =>
+      toUnitView(state, unit, params, modifiers, notation),
+    ),
+    drawers: HUD_DRAWERS.filter((drawer) => open(DRAWER_UNLOCKS[drawer])),
     sacrifice: toSacrificeView(state, params, modifiers),
     pheromones: toPheromoneView(state, params, modifiers, notation),
     finds: toFindsView(state, params),
@@ -94,6 +120,16 @@ export function toHudView(source: HudSource, params: BalanceParams): HudView {
         ? source.lastSavedAt
         : null,
     notices: toNotices(source),
+  };
+}
+
+/** Freischaltungen des Onboardings als Lookup für Viewmodel und Templates. */
+export function toHudUnlocks(onboarding: Onboarding): HudUnlocks {
+  return {
+    pheromones: isUnlocked(onboarding, 'pheromones'),
+    map: isUnlocked(onboarding, 'map'),
+    finds: isUnlocked(onboarding, 'finds'),
+    genome: isUnlocked(onboarding, 'genome'),
   };
 }
 

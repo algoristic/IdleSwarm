@@ -79,7 +79,7 @@
       >
     }
   </p>
-  @if (_site.empty && !_site.travel) {
+  @if (_site.empty && !_site.travel && moveLink()) {
     <a
       routerLink="/umgebung"
       class="mt-2 inline-flex min-h-11 touch-manipulation items-center rounded-full bg-primary px-4 py-2 text-sm font-black text-on-accent shadow-button-primary hover:bg-primary-hover active:translate-y-0.5 active:shadow-button-primary-pressed motion-reduced:active:translate-y-0"

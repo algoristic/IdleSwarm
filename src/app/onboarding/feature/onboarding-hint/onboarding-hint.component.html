@@ -1,0 +1,5 @@
+<div role="status">
+  @if (hint(); as hint) {
+    <app-hint-card [hint]="hint" (clickedDismiss)="onDismiss($event)" />
+  }
+</div>

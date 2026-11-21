@@ -6,6 +6,7 @@ import { TICK_MS } from '@app/balance/domain/constants';
 import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
+import { HINT_IDS, ONBOARDING_UNLOCK_IDS } from '@app/onboarding/domain/models/onboarding.model';
 import { KEY_VALUE_STORE } from '@app/persistence/data-access/persistence/persistence-service.tokens';
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
 import { KeyValueStore, SAVE_KEY, saveGame } from '@app/persistence/domain/slots-logic';
@@ -42,8 +43,12 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
   const liveRegion = () => query('hud.status.notices') as HTMLElement;
   const spaceBar = () => element().querySelector(`[role="progressbar"][aria-label="Platz"]`);
 
+  /** Alles freigeschaltet, damit Soldat, Schubladen und alle Werte zu sehen sind (US-09.04). */
   function state(): GameState {
-    return createInitialState({ seed: 'hud', now: SAVED_AT });
+    return {
+      ...createInitialState({ seed: 'hud', now: SAVED_AT }),
+      onboarding: { unlocked: [...ONBOARDING_UNLOCK_IDS], seenHints: [...HINT_IDS] },
+    };
   }
 
   function setUnits(units: Partial<Record<keyof Units, number>>): void {
@@ -83,6 +88,7 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       ],
     });
     store = TestBed.inject(GameStore);
+    store.load(state());
     persistence = TestBed.inject(PersistenceService);
     fixture = TestBed.createComponent(HudHostComponent);
   });
@@ -452,5 +458,33 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       expect(query('hud.log.empty')).toBeNull();
       expect(query('hud.site.move-link')).not.toBeNull();
     });
+  });
+
+  it('blendet gesperrte Teile aus und zeigt sie nach der Freischaltung (US-09.04)', () => {
+    const fresh = createInitialState({ seed: 'hud', now: SAVED_AT });
+    store.load(fresh);
+    fixture.detectChanges();
+    expect(query('hud.units.drones.buy')).not.toBeNull();
+    expect(query('hud.units.queens.buy')).not.toBeNull();
+    expect(query('hud.units.soldiers.buy')).toBeNull();
+    expect(query('hud.resources.food')).not.toBeNull();
+    expect(query('hud.resources.eggs')).not.toBeNull();
+    expect(query('hud.resources.dna')).toBeNull();
+    expect(query('hud.resources.pheromones')).toBeNull();
+    expect(query('hud.resources.attack')).toBeNull();
+    for (const drawer of ['pheromones', 'finds', 'sacrifice']) {
+      expect(query(`hud.drawers.${drawer}.tab`)).toBeNull();
+      expect(query(`hud.drawers.${drawer}.panel`)).toBeNull();
+    }
+
+    store.replace({ ...fresh, onboarding: { unlocked: ['pheromones', 'map'], seenHints: [] } });
+    fixture.detectChanges();
+    expect(query('hud.units.soldiers.buy')).not.toBeNull();
+    expect(query('hud.resources.pheromones')).not.toBeNull();
+    expect(query('hud.resources.attack')).not.toBeNull();
+    expect(query('hud.resources.dna')).toBeNull();
+    expect(query('hud.drawers.pheromones.tab')).not.toBeNull();
+    expect(query('hud.drawers.sacrifice.tab')).not.toBeNull();
+    expect(query('hud.drawers.finds.tab')).toBeNull();
   });
 });

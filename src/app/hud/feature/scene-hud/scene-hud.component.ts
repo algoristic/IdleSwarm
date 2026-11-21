@@ -1,6 +1,7 @@
 import {
   afterNextRender,
   Component,
+  computed,
   DOCUMENT,
   ElementRef,
   inject,
@@ -21,12 +22,13 @@ import { FormSacrificeDronesComponent } from '../../ui/form-sacrifice-drones/for
 import { HudMeterComponent } from '../../ui/hud-meter/hud-meter.component';
 import { PheromonePanelComponent } from '../../ui/pheromone-panel/pheromone-panel.component';
 import { HudFacade } from '../state/hud.facade';
-import { HUD_DRAWERS, HudDrawer } from '../state/hud.model';
+import type { HudDrawer } from '../state/hud.model';
 
 /**
  * Overlay der Szene (Mockup K2-K, nur im Modus `scene`): Titel mit Futterstelle bzw. Reise oben,
  * Aktionsleiste mit Kaufknöpfen und Platz unten, Schubladen Pheromone, Funde und Drohnen opfern am
- * rechten Rand, Log unten links, Ära unten rechts.
+ * rechten Rand, Log unten links, Ära unten rechts. Gesperrte Teile (Soldat, Schubladen) fehlen, bis
+ * sie freigeschaltet sind (US-09.04).
  */
 @Component({
   selector: 'app-scene-hud',
@@ -52,10 +54,8 @@ export class SceneHudComponent {
   /** Ist die Szene der aktive Modus? Beim Wechsel schließt die offene Schublade (Mockup `setMode`). */
   active = input(false);
 
-  drawers = HUD_DRAWERS;
-
   title = viewChild.required<string, ElementRef<HTMLElement>>('title', { read: ElementRef });
-  /** Schubladen und Reiter in der Reihenfolge von `drawers`. */
+  /** Schubladen und Reiter in der Reihenfolge der freigeschalteten Schubladen (`hud.drawers`). */
   drawerPanels = viewChildren<ElementRef<HTMLElement>>('drawerPanel');
   drawerTabs = viewChildren<ElementRef<HTMLElement>>('drawerTab');
 
@@ -64,6 +64,11 @@ export class SceneHudComponent {
     source: this.active,
     computation: () => null,
   });
+
+  /** Spalten der Aktionsleiste auf dem Smartphone: eine je freigeschalteter Einheit. */
+  barColumns = computed(() =>
+    this.facade.hud().units.length === 3 ? 'max-md:grid-cols-3' : 'max-md:grid-cols-2',
+  );
 
   titleLabel = $localize`:@@featureHud-sceneHud-titleRegion:Schwarm`;
   spaceLabel = $localize`:@@featureHud-sceneHud-space-title:Platz`;
@@ -118,6 +123,6 @@ export class SceneHudComponent {
     elements: readonly ElementRef<HTMLElement>[],
     drawer: HudDrawer,
   ): HTMLElement | undefined {
-    return elements[this.drawers.indexOf(drawer)]?.nativeElement;
+    return elements[this.facade.hud().drawers.indexOf(drawer)]?.nativeElement;
   }
 }

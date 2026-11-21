@@ -30,6 +30,7 @@ Das Genom der Ära I (Game-Design §4.14, AP 1.3.2) und die Genom-Ansicht unter 
 
 ## Besonderheiten
 
+- Onboarding (AP 1.5.4, US-09.04): `/genom`, Taste G, Rad/Pinch dorthin, der Genom-Eintrag der Zoom-Leiste mit DNA und Zähler sowie der DNA-Wert der Ressourcen erscheinen erst mit der Freischaltung `genome` (Guard und Modi in der Regeldatei `shell`); Ebene und Overlay selbst blenden nichts aus.
 - Kosten und Effektwerte stehen nicht in den Spieldaten, sondern in `BalanceParams` je ID (`<id>Effect`, `<id>Fragments`; Zuordnung `GENOME_NODE_PARAMS`, `UNIQUE_ADAPTATION_PARAMS` in `balance/domain/formulas.ts`). Kosten nach Stufe über `genomeNodeCost`.
 - `owned` hält die entwickelten Knoten in der Reihenfolge der Spieldaten (`evolve` und `withNode` sortieren über `withOwned` ein), ohne `root`. Die Ladeprüfung verlangt nur bekannte IDs ohne Doppel und zu jedem den Vorgänger.
 - Einzigartige Adaptionen kosten keine DNA und werden nicht gespeichert: Sie wirken, sobald `finds.collected` alle Fragmente zählt (`isUniqueAdaptationUnlocked`). Der Anker legt nur die Lage im Baum fest. Ohne Freischaltung zeigen Baum und Detailpanel den Fortschritt „x / benötigt“ und keinen Kaufknopf.

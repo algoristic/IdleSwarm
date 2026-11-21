@@ -29,6 +29,8 @@ import type { SiteView } from './feeding-site.component.model';
 })
 export class FeedingSiteComponent {
   site = input.required<SiteView>();
+  /** Link „Weiterziehen“ bei leerem Vorrat; erst mit freigeschalteter Umgebung (US-09.04). */
+  moveLink = input(true);
 
   typeLabels = SITE_TYPE_LABELS;
 

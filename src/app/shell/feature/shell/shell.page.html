@@ -9,6 +9,7 @@
   data-testid="shell.root"
   [attr.data-mode]="mode"
   [style.--ms]="layout.stageSize"
+  [modes]="facade.modes()"
   (zoomedWheel)="facade.zoom($event)"
   (pressedShortcut)="onShortcut($event)"
   (zoomedPinch)="facade.zoom($event)"
@@ -116,6 +117,7 @@
       <app-zoom-bar
         class="pointer-events-auto shrink-0"
         [mode]="mode"
+        [modes]="facade.modes()"
         [dna]="hud.dna"
         [availableAdaptations]="hud.availableAdaptations"
         (selectedMode)="facade.setMode($event)"
@@ -137,6 +139,18 @@
         </button>
       </div>
     </div>
+
+    <!--
+      Hinweis des Onboardings (US-09.04), nicht modal: ab 768 px unter der Zoom-Leiste in der Spalte,
+      auf dem Smartphone mittig zwischen Titel und Aktionsleiste bzw. Sheet; tritt dort zurück,
+      solange eine Schublade oder das Sheet offen ist. Dialoge liegen im Top-Layer darüber.
+    -->
+    <app-onboarding-hint
+      class="w-full max-md:fixed max-md:inset-x-4 max-md:top-1/2 max-md:w-auto max-md:-translate-y-1/2 max-md:data-covered:hidden"
+      [mode]="mode"
+      [attr.data-covered]="hintCovered() ? '' : null"
+      (releasedFocus)="onHintReleasedFocus()"
+    />
   </div>
 </main>
 

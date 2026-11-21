@@ -15,7 +15,7 @@
       aria-hidden="true"
     ></span>
     <ul class="grid gap-5.5 max-md:flex max-md:gap-2">
-      @for (entry of modes; track entry) {
+      @for (entry of modes(); track entry) {
         <li>
           <button
             type="button"
@@ -110,17 +110,30 @@
       }
     </ul>
   </div>
-  <!-- Mockup `.zoom .hint`; ohne Maus (`pointer: coarse`) und auf dem Smartphone ausgeblendet. -->
-  <p
-    class="mt-4 border-t-3 border-well pt-2 text-xs leading-relaxed text-fg-muted pointer-coarse:hidden max-md:hidden"
-    data-testid="shell.zoom.hint"
-  >
-    <span class="block" i18n="@@uiShell-zoomBar-hintWheel">Mausrad: zoomen</span>
-    <span class="block" i18n="@@uiShell-zoomBar-hintKeys"
-      ><kbd class="rounded-sm bg-well px-1.25 font-extrabold">W</kbd> Umgebung ·
-      <kbd class="rounded-sm bg-well px-1.25 font-extrabold">G</kbd> Genom ·
-      <kbd class="rounded-sm bg-well px-1.25 font-extrabold">Esc</kbd
-      ><span class="sr-only"> Schwarm</span></span
+  <!--
+    Mockup `.zoom .hint`; ohne Maus (`pointer: coarse`), auf dem Smartphone und mit nur einem Modus
+    ausgeblendet.
+  -->
+  @if (modes().length > 1) {
+    <p
+      class="mt-4 border-t-3 border-well pt-2 text-xs leading-relaxed text-fg-muted pointer-coarse:hidden max-md:hidden"
+      data-testid="shell.zoom.hint"
     >
-  </p>
+      <span class="block" i18n="@@uiShell-zoomBar-hintWheel">Mausrad: zoomen</span>
+      <span class="block">
+        @for (entry of keyHints(); track entry; let first = $first) {
+          @if (!first) {
+            ·
+          }
+          @if (entry === 'scene') {
+            <kbd class="rounded-sm bg-well px-1.25 font-extrabold">Esc</kbd
+            ><span class="sr-only" i18n="@@uiShell-zoomBar-hintKeyScene"> Schwarm</span>
+          } @else {
+            <kbd class="rounded-sm bg-well px-1.25 font-extrabold">{{ shortcuts[entry] }}</kbd>
+            {{ keyLabels[entry] }}
+          }
+        }
+      </span>
+    </p>
+  }
 </nav>

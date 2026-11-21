@@ -6,6 +6,7 @@ import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { stateModifiers } from '@app/engine/domain/modifiers-logic';
 import type { FoundEvent } from '@app/finds/domain/models/finds-event.model';
 import type { Finds, FindEntryId } from '@app/finds/domain/models/finds.model';
+import { HINT_IDS, ONBOARDING_UNLOCK_IDS } from '@app/onboarding/domain/models/onboarding.model';
 import { SaveError } from '@app/persistence/domain/serialize-logic';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_HOUR, MS_PER_MINUTE } from '@app/shared/util/time/time-units';
@@ -22,7 +23,11 @@ import {
 } from './hud.utils';
 
 describe('toHudView', () => {
-  const base = createInitialState({ seed: 'hud', now: 0 });
+  const fresh = createInitialState({ seed: 'hud', now: 0 });
+  const base: GameState = {
+    ...fresh,
+    onboarding: { unlocked: [...ONBOARDING_UNLOCK_IDS], seenHints: [...HINT_IDS] },
+  };
 
   function view(change: (state: GameState) => GameState = (state) => state, rest = {}) {
     const source: HudSource = {
@@ -46,6 +51,25 @@ describe('toHudView', () => {
 
   it('ordnet die Kaufknöpfe vom ersten Kauf zur teuersten Einheit', () => {
     expect(view().units.map((u) => u.id)).toEqual(['drones', 'soldiers', 'queens']);
+  });
+
+  it('zeigt im neuen Spiel nur Drohne und Königin, keine Schublade (US-09.04)', () => {
+    const hud = view(() => fresh);
+    expect(hud.units.map((u) => u.id)).toEqual(['drones', 'queens']);
+    expect(hud.drawers).toEqual([]);
+    expect(hud.unlocks).toEqual({ pheromones: false, map: false, finds: false, genome: false });
+  });
+
+  it('schaltet Soldat und Schubladen mit ihren Teilen frei', () => {
+    const unlocked = (ids: GameState['onboarding']['unlocked']) =>
+      view(() => ({ ...fresh, onboarding: { unlocked: ids, seenHints: [] } }));
+    expect(unlocked(['pheromones']).drawers).toEqual(['pheromones']);
+    expect(unlocked(['finds']).drawers).toEqual(['finds']);
+    const map = unlocked(['map']);
+    expect(map.drawers).toEqual(['sacrifice']);
+    expect(map.units.map((u) => u.id)).toEqual(['drones', 'soldiers', 'queens']);
+    expect(unlocked(['genome']).unlocks.genome).toBe(true);
+    expect(view().drawers).toEqual(['pheromones', 'finds', 'sacrifice']);
   });
 
   it('rundet den Preis auf', () => {

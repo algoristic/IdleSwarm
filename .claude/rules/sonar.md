@@ -31,6 +31,7 @@ Die Route `/umgebung` ist der Kartenmodus der K2-Shell (AP 1.4.1, Regeldatei `sh
 
 ## Besonderheiten
 
+- Onboarding (AP 1.5.4, US-09.04): `/umgebung` ist erst mit der Freischaltung `map` erreichbar (`shellModeGuard`, Regeldatei `shell`); vorher leitet die Route auf die Szene um. Beim ersten Öffnen danach erscheint der Hinweis `auto-move` (Hinweiskarte der Shell, Regeldatei `onboarding`); das Overlay selbst blendet nichts aus. Sein `sheetOpen` liest die Shell, damit die Hinweiskarte auf dem Smartphone bei offenem Sheet zurücktritt.
 - Die Auswahl im Detailpanel ist lokaler UI-Zustand der Facade (`linkedSignal` auf `map.moves`): Nach jeder Ankunft fällt sie zurück. Ohne Auswahl (oder mit ungültigem Index) zeigt das Panel das Ziel der Strategie.
 - Jedes Ziel ist für das Detailpanel auswählbar, auch außer Reichweite und unerforscht. „Nicht wählbar“ (US-04.03) heißt: Der Knopf „Aufbrechen“ ist gesperrt, der Grund kommt aus `departureBlocker`. Der Kern meldet für unerforschte Ziele `out-of-range`; `toSonarView` macht daraus `unexplored` (`TargetBlocker`) mit eigenem Text. Unerforschte Ziele haben `details: null` und zeigen nur „?“.
 - Urteil (`TargetVerdict`): unerforscht und außer Reichweite vor einnehmbar/zu stark. Angriff und Verluste rechnen mit `S'` nach Transport mit der aktuellen Priorität (`assessTargets`); ein Prioritätswechsel ändert Urteil, Verluste und Strategieziel sofort.

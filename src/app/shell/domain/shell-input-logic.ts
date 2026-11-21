@@ -58,11 +58,14 @@ export function wheelZoom(deltaPx: number, nowMs: number, lockedUntilMs: number)
 }
 
 /**
- * Modus zu einer Taste (W, G, Esc; Groß- und Kleinschreibung egal). `null` für andere Tasten,
- * gehaltene Tasten, mit Strg, Alt oder Meta (Browser- und Systemkürzel), während einer
+ * Modus zu einer Taste (W, G, Esc; Groß- und Kleinschreibung egal) unter den erreichbaren Modi.
+ * `null` für andere Tasten, für gesperrte Modi (Onboarding), gehaltene Tasten, mit Strg, Alt oder Meta (Browser- und Systemkürzel), während einer
  * IME-Eingabe und wenn ein anderer Handler die Taste schon verarbeitet hat.
  */
-export function shortcutMode(press: ShortcutKeyPress): ShellMode | null {
+export function shortcutMode(
+  press: ShortcutKeyPress,
+  modes: readonly ShellMode[] = SHELL_MODES,
+): ShellMode | null {
   if (
     press.ctrlKey ||
     press.altKey ||
@@ -74,5 +77,5 @@ export function shortcutMode(press: ShortcutKeyPress): ShellMode | null {
     return null;
   }
   const key = press.key.toLowerCase();
-  return SHELL_MODES.find((mode) => SHELL_MODE_SHORTCUTS[mode].toLowerCase() === key) ?? null;
+  return modes.find((mode) => SHELL_MODE_SHORTCUTS[mode].toLowerCase() === key) ?? null;
 }

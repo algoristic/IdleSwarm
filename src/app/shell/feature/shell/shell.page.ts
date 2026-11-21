@@ -1,4 +1,4 @@
-import { afterRenderEffect, Component, inject, viewChild } from '@angular/core';
+import { afterRenderEffect, Component, computed, effect, inject, viewChild } from '@angular/core';
 
 import { GenomeLayerComponent } from '@app/genome/feature/genome-layer/genome-layer.component';
 import { GenomeOverlayComponent } from '@app/genome/feature/genome-overlay/genome-overlay.component';
@@ -7,6 +7,7 @@ import { ReturnSummaryComponent } from '@app/hud/feature/return-summary/return-s
 import { SaveStatusComponent } from '@app/hud/feature/save-status/save-status.component';
 import { SceneHudComponent } from '@app/hud/feature/scene-hud/scene-hud.component';
 import { HudFacade } from '@app/hud/feature/state/hud.facade';
+import { OnboardingHintComponent } from '@app/onboarding/feature/onboarding-hint/onboarding-hint.component';
 import { SceneWorldComponent } from '@app/scene/feature/scene-world/scene-world.component';
 import { SettingsDialogComponent } from '@app/settings/feature/settings-dialog/settings-dialog.component';
 import { SettingsFacade } from '@app/settings/feature/state/settings.facade';
@@ -22,14 +23,15 @@ import { ShellFacade } from '../state/shell.facade';
 /**
  * K2-Shell (US-08.01): drei Ebenen (Sonar z = 1, Welt z = 2, Genom z = 3) mit Kamerafahrt je
  * Modus, darüber die vollflächigen Overlays der Modi, Logo mit Ressourcen und Speicherstatus,
- * Zoom-Leiste, „zurück zum Schwarm“ und Zahnrad, dazu die Dialoge „Willkommen zurück“ und
- * „Einstellungen“. Setzt die Ebenen und Overlays von Szene, HUD, Sonar und Genom zusammen.
+ * Zoom-Leiste, Hinweise des Onboardings, „zurück zum Schwarm“ und Zahnrad, dazu die Dialoge
+ * „Willkommen zurück“ und „Einstellungen“. Setzt die Ebenen und Overlays von Szene, HUD, Sonar und Genom zusammen.
  */
 @Component({
   selector: 'app-shell-page',
   imports: [
     GenomeLayerComponent,
     GenomeOverlayComponent,
+    OnboardingHintComponent,
     ResourcesPanelComponent,
     ReturnSummaryComponent,
     SaveStatusComponent,
@@ -55,6 +57,18 @@ export class ShellPage {
   sonarOverlay = viewChild.required(SonarOverlayComponent);
   genomeOverlay = viewChild.required(GenomeOverlayComponent);
 
+  /**
+   * Auf dem Smartphone liegt der Hinweis mittig; eine offene Schublade bzw. das aufgeklappte Sheet
+   * der Umgebung reicht dorthin, dann tritt er zurück.
+   */
+  hintCovered = computed(() => {
+    const mode = this.facade.mode();
+    return (
+      (mode === 'scene' && this.sceneHud().openDrawer() !== null) ||
+      (mode === 'map' && this.sonarOverlay().sheetOpen())
+    );
+  });
+
   worldBackLabel = $localize`:@@featureShell-shell-worldBack:Zurück zum Schwarm`;
 
   /** Zuletzt gerenderter Modus; `null` bis zum ersten Rendern. */
@@ -71,6 +85,12 @@ export class ShellPage {
       }
       this.#renderedMode = mode;
     });
+    // Ein neues Spiel oder ein Import kann den aktuellen Modus wieder sperren: zurück zur Szene.
+    effect(() => {
+      if (!this.facade.isModeUnlocked(this.facade.mode())) {
+        this.facade.setMode('scene');
+      }
+    });
   }
 
   onClickWorld(): void {
@@ -83,6 +103,11 @@ export class ShellPage {
       return;
     }
     this.facade.setMode(mode);
+  }
+
+  /** Der Knopf „Verstanden“ verschwindet mit dem Hinweis; der Fokus geht auf den Titel des Modus. */
+  onHintReleasedFocus(): void {
+    this.#focusTitle(this.facade.mode());
   }
 
   #focusTitle(mode: ShellMode): void {

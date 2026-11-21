@@ -1,0 +1,22 @@
+/* Einblenden wie die Log-Einträge (Mockup `@keyframes fadein`); bei reduzierter Bewegung nur
+   Überblenden. Utilities kennen keine eigenen Keyframes. */
+.hint-card {
+  animation: hint-card-in 0.45s var(--sw-ease-pop);
+}
+
+@keyframes hint-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+@keyframes hint-card-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+:host-context([data-motion='reduced']) .hint-card {
+  animation-name: hint-card-fade;
+}

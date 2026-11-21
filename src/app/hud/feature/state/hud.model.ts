@@ -1,4 +1,5 @@
 import type { GameState } from '@app/engine/domain/models/game-state.model';
+import type { OnboardingUnlockId } from '@app/onboarding/domain/models/onboarding.model';
 import type { RestoreNotice } from '@app/persistence/data-access/persistence/persistence-service.model';
 import type { SaveError } from '@app/persistence/domain/serialize-logic';
 import type { Notation } from '@app/shared/util/format/format';
@@ -23,6 +24,9 @@ export interface HudSource {
 /** Schubladen am rechten Rand der Szene (Mockup `.tabs`); lokaler UI-Zustand, nie im Spielstand. */
 export const HUD_DRAWERS = ['pheromones', 'finds', 'sacrifice'] as const;
 export type HudDrawer = (typeof HUD_DRAWERS)[number];
+
+/** Freigeschaltete Teile (US-09.04); gesperrte blendet das HUD aus. */
+export type HudUnlocks = Readonly<Record<OnboardingUnlockId, boolean>>;
 
 /** Hinweise unter den Ressourcen; `SaveStatusComponent` bildet sie auf Texte ab. */
 export type HudNotice = RestoreNotice | 'save-failed';
@@ -49,8 +53,11 @@ export interface HudView {
   readonly attack: Num;
   readonly site: SiteView;
   readonly space: SpaceView;
-  /** In der Reihenfolge der Aktionsleiste. */
+  readonly unlocks: HudUnlocks;
+  /** Freigeschaltete Einheiten in der Reihenfolge der Aktionsleiste (Soldat erst mit `map`). */
   readonly units: readonly UnitView[];
+  /** Freigeschaltete Schubladen in der Reihenfolge von {@link HUD_DRAWERS}. */
+  readonly drawers: readonly HudDrawer[];
   readonly sacrifice: SacrificeView;
   readonly pheromones: PheromoneView;
   readonly finds: FindsView;

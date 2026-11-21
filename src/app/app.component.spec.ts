@@ -4,9 +4,11 @@ import { RouterTestingHarness } from '@angular/router/testing';
 
 import { GameLoop } from '@app/engine/data-access/game-loop/game-loop.service';
 import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
+import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { SIM_WORKER_FACTORY, SimWorker } from '@app/model/data-access/sim/sim-service.tokens';
 import { DEV_BUILD } from '@app/model/feature/state/model.guards';
 import { ECHARTS_INIT, EchartInstance } from '@app/model/ui/echart/echart.component';
+import { HINT_IDS, ONBOARDING_UNLOCK_IDS } from '@app/onboarding/domain/models/onboarding.model';
 import { KEY_VALUE_STORE } from '@app/persistence/data-access/persistence/persistence-service.tokens';
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
 import { MotionPreferenceService } from '@app/shared/data-access/motion-preference/motion-preference.service';
@@ -56,6 +58,14 @@ describe('AppComponent', () => {
       harness.routeNativeElement?.querySelector('[data-testid="shell.root"]');
     const byTestId = (harness: RouterTestingHarness, testId: string) =>
       harness.routeNativeElement?.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+
+    // Karte und Genom erscheinen erst nach ihrer Freischaltung (US-09.04): hier alles frei.
+    beforeEach(() => {
+      TestBed.inject(GameStore).load({
+        ...createInitialState({ seed: 'app', now: 0 }),
+        onboarding: { unlocked: [...ONBOARDING_UNLOCK_IDS], seenHints: [...HINT_IDS] },
+      });
+    });
 
     it('setzt den Modus aus der Route schon beim ersten Laden', async () => {
       const harness = await RouterTestingHarness.create('/genom');

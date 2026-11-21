@@ -57,6 +57,13 @@ describe('shortcutMode', () => {
     expect(shortcutMode(press('Enter'))).toBeNull();
   });
 
+  it('löst für gesperrte Modi nichts aus (Onboarding)', () => {
+    expect(shortcutMode(press('w'), ['scene'])).toBeNull();
+    expect(shortcutMode(press('g'), ['map', 'scene'])).toBeNull();
+    expect(shortcutMode(press('w'), ['map', 'scene'])).toBe('map');
+    expect(shortcutMode(press('Escape'), ['scene'])).toBe('scene');
+  });
+
   it('löst mit Strg, Alt oder Meta, beim Halten und in IME-Eingaben nichts aus', () => {
     expect(shortcutMode(press('w', { ctrlKey: true }))).toBeNull();
     expect(shortcutMode(press('g', { altKey: true }))).toBeNull();

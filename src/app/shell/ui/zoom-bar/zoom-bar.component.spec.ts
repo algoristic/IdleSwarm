@@ -49,4 +49,21 @@ describe('ZoomBarComponent', () => {
     query('shell.zoom.map')?.click();
     expect(selected).toEqual(['gen', 'map']);
   });
+
+  it('zeigt nur freigeschaltete Modi und die Hinweiszeile erst ab zwei', () => {
+    fixture.componentRef.setInput('modes', ['scene']);
+    render('scene', 0, 0);
+    expect(query('shell.zoom.scene')).not.toBeNull();
+    expect(query('shell.zoom.map')).toBeNull();
+    expect(query('shell.zoom.gen')).toBeNull();
+    expect(query('shell.zoom.hint')).toBeNull();
+
+    fixture.componentRef.setInput('modes', ['map', 'scene']);
+    render('scene', 0, 0);
+    expect(query('shell.zoom.map')).not.toBeNull();
+    expect(query('shell.zoom.gen')).toBeNull();
+    expect(query('shell.zoom.hint')?.textContent?.replace(/\s+/g, ' ')).toContain(
+      'W Umgebung · Esc Schwarm',
+    );
+  });
 });
