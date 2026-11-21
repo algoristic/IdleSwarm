@@ -2,19 +2,20 @@
 
 <!--
   Mockup `.zoom`, `.zs`: runde Symbole auf einer senkrechten Linie, der aktive Eintrag gelb.
-  Smartphone (US-08.07): kompakt nebeneinander auf einer waagerechten Linie, Labels nur vorgelesen.
+  Smartphone (US-08.07) und Querformat: kompakt nebeneinander auf einer waagerechten Linie, Labels
+  nur vorgelesen.
 -->
 <nav
-  class="relative rounded-3xl bg-surface pt-4 pr-5 pb-4 pl-3.5 shadow-panel max-md:rounded-full max-md:p-1"
+  class="relative rounded-3xl bg-surface pt-4 pr-5 pb-4 pl-3.5 shadow-panel max-md:rounded-full max-md:p-1 short:rounded-full short:p-1"
   [attr.aria-label]="title"
 >
   <!-- Die Linie verbindet die Mitten des ersten und letzten Symbols, ohne die Hinweiszeile. -->
   <div class="relative">
     <span
-      class="absolute top-5.5 bottom-5.5 left-5 w-1 rounded-xs bg-well max-md:inset-x-5.5 max-md:top-1/2 max-md:bottom-auto max-md:h-1 max-md:w-auto max-md:-translate-y-1/2"
+      class="absolute top-5.5 bottom-5.5 left-5 w-1 rounded-xs bg-well max-md:inset-x-5.5 max-md:top-1/2 max-md:bottom-auto max-md:h-1 max-md:w-auto max-md:-translate-y-1/2 short:inset-x-5.5 short:top-1/2 short:bottom-auto short:h-1 short:w-auto short:-translate-y-1/2"
       aria-hidden="true"
     ></span>
-    <ul class="grid gap-5.5 max-md:flex max-md:gap-2">
+    <ul class="grid gap-5.5 max-md:flex max-md:gap-2 short:flex short:gap-2">
       @for (entry of modes(); track entry) {
         <li>
           <button
@@ -74,7 +75,7 @@
                 }
               </svg>
             </span>
-            <span class="grid text-sm leading-tight font-extrabold max-md:sr-only">
+            <span class="grid text-sm leading-tight font-extrabold max-md:sr-only short:sr-only">
               <span>{{ labels[entry] }}</span>
               @if (entry === 'gen') {
                 <small
@@ -116,7 +117,7 @@
   -->
   @if (modes().length > 1) {
     <p
-      class="mt-4 border-t-3 border-well pt-2 text-xs leading-relaxed text-fg-muted pointer-coarse:hidden max-md:hidden"
+      class="mt-4 border-t-3 border-well pt-2 text-xs leading-relaxed text-fg-muted pointer-coarse:hidden max-md:hidden short:hidden"
       data-testid="shell.zoom.hint"
     >
       <span class="block" i18n="@@uiShell-zoomBar-hintWheel">Mausrad: zoomen</span>

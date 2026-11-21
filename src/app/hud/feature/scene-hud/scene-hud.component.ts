@@ -65,9 +65,11 @@ export class SceneHudComponent {
     computation: () => null,
   });
 
-  /** Spalten der Aktionsleiste auf dem Smartphone: eine je freigeschalteter Einheit. */
+  /** Spalten der Aktionsleiste auf dem Smartphone und im Querformat: eine je freigeschalteter Einheit. */
   barColumns = computed(() =>
-    this.facade.hud().units.length === 3 ? 'max-md:grid-cols-3' : 'max-md:grid-cols-2',
+    this.facade.hud().units.length === 3
+      ? 'max-md:grid-cols-3 short:grid-cols-3'
+      : 'max-md:grid-cols-2 short:grid-cols-2',
   );
 
   titleLabel = $localize`:@@featureHud-sceneHud-titleRegion:Schwarm`;

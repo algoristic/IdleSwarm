@@ -12,6 +12,8 @@ import {
   MIN_HIT_PX,
   MIN_TEXT_PX,
   placeLabels,
+  RING_LABEL_GAP,
+  ringLabelBaseline,
   SYMBOL_ZOOM_MAX,
   symbolZoom,
   textBox,
@@ -223,6 +225,55 @@ describe('placeLabels', () => {
   it('hält Beschriftungen im viewBox', () => {
     const [placement] = placeLabels([request(400, 790)], [], 16);
     expect(placement?.side).toBe('above');
+  });
+
+  it('nutzt eine eigene Schriftgröße der Anfrage', () => {
+    const [placement] = placeLabels([request(400, 300, { lines: [10], fontSize: 10 })], [], 16);
+    // Grundlinie: Abstand 20 + 4, dazu 0,9 · 10 statt 0,9 · 16.
+    expect(placement?.dy).toBe(33);
+    expect(placement?.lineHeight).toBe(12);
+  });
+
+  it('setzt die eigene Position zuerst und weicht einem Ziel direkt darunter aus', () => {
+    const here = request(MAP_CENTER, MAP_CENTER, {
+      clearance: HERE_RADIUS,
+      lines: [17],
+      priority: -1,
+      required: true,
+      fontSize: 14,
+    });
+    const below = request(MAP_CENTER, MAP_CENTER + 55, { lines: [10] });
+    const [herePlacement, targetPlacement] = placeLabels([here, below], [], 16);
+    // Unten läge die Beschriftung auf dem Ziel; sie steht deshalb oben, das Ziel behält unten.
+    expect(herePlacement?.side).toBe('above');
+    expect(targetPlacement?.side).toBe('below');
+  });
+
+  it('lässt Zielbeschriftungen der Beschriftung der eigenen Position ausweichen', () => {
+    const here = request(MAP_CENTER, MAP_CENTER, {
+      clearance: HERE_RADIUS,
+      lines: [17],
+      priority: -1,
+      required: true,
+      fontSize: 14,
+    });
+    // Ziel links unterhalb, über und unter ihm ist kein Platz; rechts läge seine Beschriftung auf
+    // „(hier)“ unter dem Zentrum, also links.
+    const target = request(MAP_CENTER - 110, MAP_CENTER + 40, { lines: [10] });
+    const obstacles = [
+      { left: 0, top: 0, right: 330, bottom: 418 },
+      { left: 0, top: 462, right: 330, bottom: 800 },
+    ];
+    const [targetPlacement, herePlacement] = placeLabels([target, here], obstacles, 16);
+    expect(herePlacement?.side).toBe('below');
+    expect(targetPlacement?.side).toBe('left');
+  });
+});
+
+describe('ringLabelBaseline', () => {
+  it('setzt die Ringbeschriftung unter den Ring', () => {
+    expect(ringLabelBaseline(100, 20)).toBe(MAP_CENTER + 100 + RING_LABEL_GAP + 18);
+    expect(ringLabelBaseline(MAP_RADIUS, 14)).toBeLessThan(800);
   });
 });
 

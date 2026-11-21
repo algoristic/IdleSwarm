@@ -53,7 +53,7 @@
           class="sonar-map__label fill-fg-muted tabular-nums"
           [attr.font-size]="_layout.smallSize"
           [attr.x]="_map.labelX"
-          [attr.y]="ring.labelY"
+          [attr.y]="_layout.ringLabelYs[i]"
         >
           {{ _ringLabels[i] }}
         </text>
@@ -63,7 +63,7 @@
       class="sonar-map__label fill-accent font-semibold tabular-nums"
       [attr.font-size]="_layout.smallSize"
       [attr.x]="_map.labelX"
-      [attr.y]="_map.range.labelY"
+      [attr.y]="_layout.rangeLabelY"
       data-testid="sonar.map.range-label"
     >
       {{ rangeLabel() }}
@@ -250,9 +250,11 @@
     />
     <text
       class="sonar-map__label fill-fg"
-      text-anchor="middle"
+      data-testid="sonar.map.here-label"
+      [attr.text-anchor]="_layout.hereLabel.anchor"
       [attr.font-size]="_layout.smallSize"
-      [attr.y]="_layout.hereLabelY"
+      [attr.x]="_layout.hereLabel.x"
+      [attr.y]="_layout.hereLabel.y"
     >
       {{ hereLabel() }}
     </text>

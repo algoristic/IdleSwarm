@@ -20,6 +20,7 @@ Smoke-Tests für die wesentlichen Abläufe (AP 1.5.7, TK §10, CLAUDE.md §10) m
 | `e2e/modes.e2e.ts` | Zoom-Leiste Szene → Umgebung → Genom, Browser-Zurück, `shell.back`; Tasten W/G/Esc (nur `desktop`); Schublade Pheromone öffnen/schließen (Smartphone: Bottom-Sheet) |
 | `e2e/move.e2e.ts` | Umgebung: (Smartphone: Sheet aufklappen) Zielliste öffnen, `departTarget` wählen, aufbrechen; `sonar.status.travel` im Titel, danach in der Szene Log-Eintrag und `hud.site.travel` |
 | `e2e/settings.e2e.ts` | Zahlenformat „wissenschaftlich“ (Klick aufs Label, das Radio ist `sr-only`; geprüft am Restvorrat über 1 Mio., `hud.site.stock`), Export-Text vorhanden, kaputter Import → `settings.import.error` (nach `settings.import.confirm`) |
+| `e2e/landscape.e2e.ts` | Querformat 740 × 360 (nur `smartphone`, `test.use` mit eigenem Viewport): Kaufknopf, Reiter und Zahnrad ganz im Viewport; Umgebung ohne Sheet-Knopf, Ziel wählen, „Aufbrechen“ erreichbar und aktiv (nicht geklickt); Genom mit Baum und Detailpanel; `shell.back` |
 | `e2e/return.e2e.ts` | Stand mit `lastSaved` 1 h zurück → Rückkehr-Dialog, „Weiter“ schließt |
 
 ## Besonderheiten

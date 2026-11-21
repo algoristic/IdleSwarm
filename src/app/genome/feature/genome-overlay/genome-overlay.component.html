@@ -6,33 +6,38 @@
 <section
   #title
   tabindex="-1"
-  class="top-4 left-1/2 grid w-max max-w-md -translate-x-1/2 justify-items-center gap-1 px-5 py-3 text-center tabular-nums max-md:top-28 max-md:right-4 max-md:left-4 max-md:w-auto max-md:max-w-none max-md:translate-x-0 max-md:justify-items-stretch max-md:gap-0 max-md:px-3 max-md:py-1.5 max-md:text-left"
+  class="top-4 left-1/2 grid w-max max-w-md -translate-x-1/2 justify-items-center gap-1 px-5 py-3 text-center tabular-nums max-md:top-28 max-md:right-4 max-md:left-4 max-md:w-auto max-md:max-w-none max-md:translate-x-0 max-md:justify-items-stretch max-md:gap-0 max-md:px-3 max-md:py-1.5 max-md:text-left genome-overlay__title short:static short:w-56 short:max-w-none short:shrink-0 short:translate-x-0 short:justify-items-stretch short:gap-0 short:px-3 short:py-1.5 short:text-left"
   aria-labelledby="genome-title"
   [class]="panel"
 >
   <!--
     Smartphone (< 768 px): Zeile 1 Kicker und Titel, Zeile 2 DNA und verfügbare Adaptionen mit dem
     Knopf „Legende“ rechts, darunter aufgeklappt die Legende. Auf größeren Bildschirmen lösen sich
-    die Zeilen auf (`contents`) und alles steht wie bisher untereinander.
+    die Zeilen auf (`contents`) und alles steht wie bisher untereinander. Im Querformat (`short:`)
+    wie auf dem Smartphone, in der schmalen Spalte rechts neben dem Baum.
   -->
-  <div class="contents max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-2">
+  <div
+    class="contents max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-2 short:flex short:flex-wrap short:items-baseline short:gap-x-2"
+  >
     <p
-      class="text-xs font-extrabold tracking-widest text-fg-muted uppercase max-md:tracking-wide"
+      class="text-xs font-extrabold tracking-widest text-fg-muted uppercase max-md:tracking-wide short:tracking-wide"
       i18n="@@featureGenome-genomeOverlay-kicker"
     >
       Zellkern · Genetische Adaption
     </p>
     <h2
       id="genome-title"
-      class="text-2xl leading-tight font-black max-md:text-base"
+      class="text-2xl leading-tight font-black max-md:text-base short:text-base"
       i18n="@@featureGenome-genomeOverlay-title"
     >
       Genom
     </h2>
   </div>
-  <div class="contents max-md:flex max-md:items-center max-md:justify-between max-md:gap-2">
+  <div
+    class="contents max-md:flex max-md:items-center max-md:justify-between max-md:gap-2 short:flex short:items-center short:justify-between short:gap-2"
+  >
     <p
-      class="flex flex-wrap justify-center gap-x-2 text-xs text-fg-muted max-md:min-w-0 max-md:justify-start"
+      class="flex flex-wrap justify-center gap-x-2 text-xs text-fg-muted max-md:min-w-0 max-md:justify-start short:min-w-0 short:justify-start"
     >
       <span data-testid="genome.status.dna" i18n="@@featureGenome-genomeOverlay-dna"
         ><span class="text-sm font-black text-violet">{{ genome.dna | formatDown }}</span> DNA</span
@@ -50,7 +55,7 @@
     </p>
     <button
       type="button"
-      class="group flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2 text-xs font-extrabold text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden"
+      class="group flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full px-2 text-xs font-extrabold text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden short:flex"
       aria-controls="genome-legend"
       data-testid="genome.legend.toggle"
       [attr.aria-expanded]="_legendOpen"
@@ -66,24 +71,25 @@
   </div>
   <app-genome-legend
     id="genome-legend"
-    class="mt-1 max-md:mb-1 max-md:not-data-open:hidden"
+    class="mt-1 max-md:mb-1 max-md:not-data-open:hidden short:mb-1 short:not-data-open:hidden"
     [attr.data-open]="_legendOpen ? '' : null"
   />
 </section>
 
 <!--
   Detailpanel: Desktop rechts Mitte; Tablet schmaler und unter dem Titel; Smartphone als
-  Bottom-Sheet, eingeklappt nur Ast, Name und Primäraktion.
+  Bottom-Sheet, eingeklappt nur Ast, Name und Primäraktion. Querformat (`short:`): im Fluss rechts
+  unter dem Titel (die Shell macht den Host zur Spalte), scrollt im Rest der Höhe, nie eingeklappt.
 -->
 <section
-  class="genome-overlay__sheet top-1/2 right-4 max-h-11/12 w-84 -translate-y-1/2 overflow-y-auto p-5 wrap-anywhere md:max-desktop:top-56 md:max-desktop:bottom-4 md:max-desktop:max-h-none md:max-desktop:w-72 md:max-desktop:translate-y-0 max-md:top-auto max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:max-h-1/2 max-md:w-auto max-md:translate-y-0 max-md:rounded-b-none max-md:px-4 max-md:pt-0"
+  class="genome-overlay__sheet top-1/2 right-4 max-h-11/12 w-84 -translate-y-1/2 overflow-y-auto p-5 wrap-anywhere md:max-desktop:top-56 md:max-desktop:bottom-4 md:max-desktop:max-h-none md:max-desktop:w-72 md:max-desktop:translate-y-0 max-md:top-auto max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:max-h-1/2 max-md:w-auto max-md:translate-y-0 max-md:rounded-b-none max-md:px-4 max-md:pt-0 short:static short:max-h-none short:min-h-0 short:w-56 short:translate-y-0 short:rounded-3xl short:p-4"
   aria-labelledby="genome-detail-title"
   data-testid="genome.side"
   [class]="panel"
 >
   <button
     type="button"
-    class="sticky top-0 z-1 mb-2 grid min-h-11 w-full cursor-pointer justify-items-center gap-1 bg-surface pt-2 pb-1 text-xs font-extrabold text-fg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:hidden"
+    class="sticky top-0 z-1 mb-2 grid min-h-11 w-full cursor-pointer justify-items-center gap-1 bg-surface pt-2 pb-1 text-xs font-extrabold text-fg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:hidden short:hidden"
     aria-controls="genome-sheet"
     data-testid="genome.sheet.toggle"
     [attr.aria-expanded]="_sheetOpen"

@@ -173,6 +173,8 @@ export const LINE_HEIGHT_EM = 1.2;
 const BASELINE_EM = 0.9;
 /** Abstand zwischen Beschriftung und Ziel bzw. zwischen zwei Beschriftungen. */
 const LABEL_GAP = 4;
+/** Abstand der Ringbeschriftung zum Ring. */
+export const RING_LABEL_GAP = 7;
 /** Eckenzahl der Trefferfläche, wenn ein Nachbar sie beschneidet. */
 const HIT_SEGMENTS = 32;
 
@@ -258,8 +260,10 @@ export interface LabelRequest {
   readonly lines: readonly number[];
   /** Kleiner = früher platziert. Bei Gleichstand gilt die Reihenfolge. */
   readonly priority: number;
-  /** Muss sichtbar bleiben (gewähltes Ziel), notfalls mit Überschneidung. */
+  /** Muss sichtbar bleiben (gewähltes Ziel, eigene Position), notfalls mit Überschneidung. */
   readonly required: boolean;
+  /** Eigene Schriftgröße; ohne gilt die gemeinsame von {@link placeLabels}. */
+  readonly fontSize?: number;
 }
 
 export interface LabelPlacement {
@@ -289,7 +293,7 @@ export function placeLabels(
   const order = requests
     .map((request, index) => ({ request, index }))
     .sort((a, b) => a.request.priority - b.request.priority || a.index - b.index);
-  const discs = requests.map(discBox);
+  const discs = requests.map(requestDisc);
   const placed: MapBox[] = [];
   const result: (LabelPlacement | null)[] = requests.map(() => null);
   for (const { request, index } of order) {
@@ -299,7 +303,7 @@ export function placeLabels(
     let chosen: { placement: LabelPlacement; box: MapBox } | null = null;
     for (let lines = request.lines.length; lines >= 1 && chosen === null; lines--) {
       for (const side of LABEL_SIDES) {
-        const candidate = labelCandidate(request, side, lines, fontSize);
+        const candidate = labelCandidate(request, side, lines, request.fontSize ?? fontSize);
         if (fits(candidate.box)) {
           chosen = candidate;
           break;
@@ -307,7 +311,7 @@ export function placeLabels(
       }
     }
     if (chosen === null && request.required) {
-      chosen = labelCandidate(request, 'below', 1, fontSize);
+      chosen = labelCandidate(request, 'below', 1, request.fontSize ?? fontSize);
     }
     if (chosen !== null) {
       placed.push(chosen.box);
@@ -332,6 +336,15 @@ export function textBox(
 }
 
 /**
+ * Grundlinie der Beschriftung eines Rings mit `radius`: unter dem Ring auf der senkrechten Achse.
+ * Unten statt oben (Mockup), weil oben der Titel der Umgebung die Karte überdeckt (Desktop, Tablet);
+ * unten liegt auf keinem Layout ein Panel über der Karte.
+ */
+export function ringLabelBaseline(radius: number, fontSize: number): number {
+  return round(MAP_CENTER + radius + RING_LABEL_GAP + BASELINE_EM * fontSize);
+}
+
+/**
  * Welche Beschriftungen stehen bleiben, wenn sich feste Beschriftungen (z. B. der Ringe) überlagern:
  * in der gegebenen Reihenfolge jede, die keine bereits behaltene berührt.
  */
@@ -344,6 +357,11 @@ export function keepApart(boxes: readonly MapBox[]): readonly boolean[] {
     }
     return free;
   });
+}
+
+/** Ob `box` keines der `blockers` berührt. */
+export function clearOf(box: MapBox, blockers: readonly MapBox[]): boolean {
+  return blockers.every((other) => !overlaps(box, other));
 }
 
 export function circleBox(x: number, y: number, radius: number): MapBox {
@@ -409,7 +427,8 @@ function labelCandidate(
   };
 }
 
-function discBox(request: LabelRequest): MapBox {
+/** Platz, den ein Ziel samt Markierung darüber belegt. */
+export function requestDisc(request: LabelRequest): MapBox {
   const box = circleBox(request.x, request.y, request.clearance);
   return { ...box, top: Math.min(box.top, request.y - request.clearanceTop) };
 }

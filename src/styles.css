@@ -5,6 +5,13 @@
 @custom-variant mode-map (&:where([data-mode='map'] *));
 @custom-variant mode-scene (&:where([data-mode='scene'] *));
 @custom-variant mode-gen (&:where([data-mode='gen'] *));
+/*
+ * Niedriger Viewport (< 480 px hoch, TK §8.4): Smartphone im Querformat, egal ob schmaler oder
+ * breiter als `md`. Steht nach den Breakpoints im CSS und überschreibt deshalb `max-md:` und
+ * `md:max-desktop:` bei gleicher Spezifität (gestapelte Varianten wie `data-open:` brauchen dieselbe
+ * Stapelung). Die JS-Seite nutzt dieselbe Grenze (`STAGE_SHORT_BELOW_HEIGHT` in `shell/domain`).
+ */
+@custom-variant short (@media (height < 30rem));
 /* Aktueller Eintrag in Navigation und Listen (`aria-current`). */
 @custom-variant current (&[aria-current]:not([aria-current='false']));
 /*

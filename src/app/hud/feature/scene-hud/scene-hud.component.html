@@ -10,14 +10,14 @@
 
 <!--
   Oben Mitte: Titel der Szene. Tablet: zwischen linker Spalte und Reitern; Smartphone: kompakt unter
-  Kopf- und Moduszeile der Shell.
+  Kopf- und Moduszeile der Shell; Querformat: kompakt oben zwischen Spalte und Reitern.
 -->
 <app-feeding-site
   #title
   tabindex="-1"
   role="region"
   [attr.aria-label]="titleLabel"
-  class="scene-hud__title absolute top-4 left-1/2 w-sm max-w-full -translate-x-1/2 rounded-3xl bg-surface px-7 pt-3 pb-3.5 text-center shadow-panel mode-scene:pointer-events-auto md:max-desktop:right-20 md:max-desktop:left-72 md:max-desktop:w-auto md:max-desktop:translate-x-0 max-md:inset-x-4 max-md:top-28 max-md:w-auto max-md:translate-x-0 max-md:px-4 max-md:pt-2 max-md:pb-2.5"
+  class="scene-hud__title absolute top-4 left-1/2 w-sm max-w-full -translate-x-1/2 rounded-3xl bg-surface px-7 pt-3 pb-3.5 text-center shadow-panel mode-scene:pointer-events-auto md:max-desktop:right-20 md:max-desktop:left-72 md:max-desktop:w-auto md:max-desktop:translate-x-0 max-md:inset-x-4 max-md:top-28 max-md:w-auto max-md:translate-x-0 max-md:px-4 max-md:pt-2 max-md:pb-2.5 short:top-2 short:right-16 short:left-60 short:w-auto short:translate-x-0 short:px-4 short:pt-2 short:pb-2.5"
   [site]="hud.site"
   [moveLink]="hud.unlocks.map"
 />
@@ -25,18 +25,20 @@
 <!--
   Unten unter 1200 px: Log und Ära (Tablet) bzw. Log und Reiter (Smartphone) als Zeile über der
   Aktionsleiste, damit sich nichts überlappt; auf dem Smartphone darüber das offene Bottom-Sheet.
-  Ab 1200 px ohne eigene Box, die Teile liegen wie im Mockup.
+  Ab 1200 px ohne eigene Box, die Teile liegen wie im Mockup. Querformat (`short:`): Spalte von unten
+  zwischen linker Spalte der Shell und den Reitern, Aktionsleiste wie auf dem Smartphone.
 -->
 <div
-  class="scene-hud__stack absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 px-4 pb-4 desktop:contents max-md:top-0 max-md:items-stretch max-md:justify-end max-md:px-0 max-md:pb-0"
+  class="scene-hud__stack absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 px-4 pb-4 desktop:contents max-md:top-0 max-md:items-stretch max-md:justify-end max-md:px-0 max-md:pb-0 short:top-auto short:flex short:items-stretch short:justify-end short:pr-16 short:pb-2 short:pl-60"
 >
   <!--
     Schublade neben den Reitern (Mockup `.drawer`); geschlossene sind unsichtbar und inert. Smartphone:
-    Bottom-Sheet über Reitern und Aktionsleiste, höchstens halb so hoch wie der Viewport.
+    Bottom-Sheet über Reitern und Aktionsleiste, höchstens halb so hoch wie der Viewport. Querformat:
+    neben den Reitern über die volle Höhe.
   -->
   @if (drawers.length > 0) {
     <div
-      class="fixed top-28 right-20 bottom-28 w-80 md:max-desktop:top-44 md:max-desktop:bottom-56 max-md:contents"
+      class="scene-hud__drawers fixed top-28 right-20 bottom-28 w-80 md:max-desktop:top-44 md:max-desktop:bottom-56 max-md:contents short:top-2 short:right-16 short:bottom-2 short:block short:w-72"
     >
       @for (drawer of drawers; track drawer) {
         <div
@@ -44,7 +46,7 @@
           tabindex="-1"
           role="region"
           [attr.aria-label]="drawerLabels[drawer]"
-          class="scene-hud__drawer invisible absolute inset-x-0 top-0 max-h-full translate-x-7.5 scale-96 overflow-y-auto rounded-3xl bg-surface p-5 opacity-0 shadow-panel transition-all duration-350 ease-pop data-open:visible data-open:translate-x-0 data-open:scale-100 data-open:opacity-100 mode-scene:data-open:pointer-events-auto motion-reduced:translate-x-0 motion-reduced:scale-100 motion-reduced:transition-opacity max-md:top-auto max-md:bottom-0 max-md:mx-2 max-md:max-h-1/2 max-md:min-h-0 max-md:translate-x-0 max-md:translate-y-7.5 max-md:scale-100 max-md:px-4 max-md:pt-3 max-md:data-open:relative max-md:data-open:translate-y-0 motion-reduced:max-md:translate-y-0"
+          class="scene-hud__drawer invisible absolute inset-x-0 top-0 max-h-full translate-x-7.5 scale-96 overflow-y-auto rounded-3xl bg-surface p-5 opacity-0 shadow-panel transition-all duration-350 ease-pop data-open:visible data-open:translate-x-0 data-open:scale-100 data-open:opacity-100 mode-scene:data-open:pointer-events-auto motion-reduced:translate-x-0 motion-reduced:scale-100 motion-reduced:transition-opacity max-md:top-auto max-md:bottom-0 max-md:mx-2 max-md:max-h-1/2 max-md:min-h-0 max-md:translate-x-0 max-md:translate-y-7.5 max-md:scale-100 max-md:px-4 max-md:pt-3 max-md:data-open:relative max-md:data-open:translate-y-0 motion-reduced:max-md:translate-y-0 short:top-0 short:bottom-auto short:mx-0 short:max-h-full short:translate-x-7.5 short:translate-y-0 short:scale-96 short:px-5 short:pt-5 short:data-open:absolute"
           [id]="'hud-drawer-' + drawer"
           [attr.data-open]="open === drawer ? '' : null"
           [attr.inert]="open === drawer ? null : ''"
@@ -52,7 +54,7 @@
         >
           <!-- Griff des Bottom-Sheets (Smartphone), nur Schmuck: Auf- und Zuklappen über die Reiter. -->
           <span
-            class="mx-auto mb-3 hidden h-1.5 w-10 rounded-full bg-well max-md:block"
+            class="mx-auto mb-3 hidden h-1.5 w-10 rounded-full bg-well max-md:block short:hidden"
             aria-hidden="true"
           ></span>
           @switch (drawer) {
@@ -79,17 +81,17 @@
   }
 
   <div
-    class="flex items-end justify-between gap-3 self-stretch desktop:contents md:max-desktop:pl-68 max-md:px-4"
+    class="flex items-end justify-between gap-3 self-stretch desktop:contents md:max-desktop:pl-68 max-md:px-4 short:flex short:px-0"
   >
     <!-- Unten links: Log ohne Panel (Mockup `.log`); unter 1200 px nur die zwei neuesten Einträge. -->
     <app-event-log
-      class="absolute bottom-4 left-4 w-64 max-desktop:static max-desktop:w-auto max-desktop:min-w-0 max-desktop:flex-1"
+      class="absolute bottom-4 left-4 w-64 max-desktop:static max-desktop:w-auto max-desktop:min-w-0 max-desktop:flex-1 short:static short:w-auto short:min-w-0 short:flex-1"
       [entries]="facade.log()"
     />
 
     <!-- Unten rechts: Ära; bis AS2 fest Ära I (Mockup `.era`); auf dem Smartphone ausgeblendet. -->
     <p
-      class="absolute right-4 bottom-4 flex items-center gap-2 rounded-3xl bg-surface px-4 py-2.5 text-xs text-fg-muted shadow-panel max-desktop:static max-md:hidden"
+      class="absolute right-4 bottom-4 flex items-center gap-2 rounded-3xl bg-surface px-4 py-2.5 text-xs text-fg-muted shadow-panel max-desktop:static max-md:hidden short:hidden"
       data-testid="hud.era"
     >
       <span class="flex gap-2" aria-hidden="true">
@@ -105,17 +107,17 @@
     </p>
     <!--
   Rechter Rand: Reiter der Schubladen (Mockup `.tabs`, `.tab`); auf dem Smartphone rund in der Zeile
-  über der Aktionsleiste.
+  über der Aktionsleiste, im Querformat rund am rechten Rand.
 -->
     @if (drawers.length > 0) {
       <div
-        class="fixed top-1/2 right-0 grid -translate-y-1/2 justify-items-end gap-2.5 mode-scene:pointer-events-auto max-md:static max-md:flex max-md:shrink-0 max-md:translate-y-0 max-md:gap-2"
+        class="fixed top-1/2 right-0 grid -translate-y-1/2 justify-items-end gap-2.5 mode-scene:pointer-events-auto max-md:static max-md:flex max-md:shrink-0 max-md:translate-y-0 max-md:gap-2 scene-hud__tabs short:fixed short:right-2 short:grid short:-translate-y-1/2 short:gap-2"
       >
         @for (drawer of drawers; track drawer) {
           <button
             #drawerTab
             type="button"
-            class="grid h-14 w-14 cursor-pointer touch-manipulation place-items-center rounded-l-3xl bg-surface shadow-panel transition-all duration-250 ease-pop hover:w-16.5 aria-expanded:w-16.5 aria-expanded:bg-surface-raised motion-reduced:transition-none max-md:size-11 max-md:rounded-full max-md:hover:w-11 max-md:aria-expanded:w-11 max-md:aria-expanded:bg-primary"
+            class="grid h-14 w-14 cursor-pointer touch-manipulation place-items-center rounded-l-3xl bg-surface shadow-panel transition-all duration-250 ease-pop hover:w-16.5 aria-expanded:w-16.5 aria-expanded:bg-surface-raised motion-reduced:transition-none max-md:size-11 max-md:rounded-full max-md:hover:w-11 max-md:aria-expanded:w-11 max-md:aria-expanded:bg-primary short:size-11 short:rounded-full short:hover:w-11 short:aria-expanded:w-11 short:aria-expanded:bg-primary"
             [attr.aria-expanded]="open === drawer"
             [attr.aria-controls]="'hud-drawer-' + drawer"
             [attr.aria-label]="drawerLabels[drawer]"
@@ -124,7 +126,7 @@
             (click)="onToggleDrawer(drawer)"
           >
             <svg
-              class="size-7 max-md:size-6"
+              class="size-7 max-md:size-6 short:size-6"
               viewBox="0 0 28 28"
               aria-hidden="true"
               focusable="false"
@@ -166,10 +168,11 @@
   <!--
     Unten Mitte: Aktionsleiste mit Kaufknöpfen und Platz (Mockup `.actions`). Tablet: rechtsbündig,
     damit sie die Zoom-Leiste links nicht überdeckt. Smartphone: volle Breite, gleich breite Knöpfe
-    (zwei bis zur Freischaltung des Soldaten, dann drei), Platz als schmale Zeile darüber.
+    (zwei bis zur Freischaltung des Soldaten, dann drei), Platz als schmale Zeile darüber; im
+    Querformat ebenso, rechts der Spalte der Shell.
   -->
   <section
-    class="scene-hud__bar absolute bottom-4 left-1/2 flex -translate-x-1/2 items-stretch gap-2 rounded-3xl bg-surface p-2.5 shadow-panel mode-scene:pointer-events-auto max-desktop:static max-desktop:translate-x-0 md:max-desktop:self-end max-md:grid max-md:self-stretch max-md:rounded-b-none max-md:px-3"
+    class="scene-hud__bar absolute bottom-4 left-1/2 flex -translate-x-1/2 items-stretch gap-2 rounded-3xl bg-surface p-2.5 shadow-panel mode-scene:pointer-events-auto max-desktop:static max-desktop:translate-x-0 md:max-desktop:self-end max-md:grid max-md:self-stretch max-md:rounded-b-none max-md:px-3 short:static short:grid short:translate-x-0 short:self-stretch short:rounded-3xl short:px-3"
     aria-labelledby="units-title"
     [class]="barColumns()"
   >
@@ -178,11 +181,11 @@
       <app-buy-button [unit]="unit" (clickedBuy)="facade.buy($event)" />
     }
     <span
-      class="mx-0.5 my-1 w-0.75 shrink-0 rounded-xs bg-well max-md:hidden"
+      class="mx-0.5 my-1 w-0.75 shrink-0 rounded-xs bg-well max-md:hidden short:hidden"
       aria-hidden="true"
     ></span>
     <div
-      class="flex w-28 flex-col justify-center px-1.5 text-xs text-fg-muted tabular-nums max-md:order-first max-md:col-span-full max-md:w-auto max-md:flex-row max-md:flex-wrap max-md:items-center max-md:gap-x-3"
+      class="flex w-28 flex-col justify-center px-1.5 text-xs text-fg-muted tabular-nums max-md:order-first max-md:col-span-full max-md:w-auto max-md:flex-row max-md:flex-wrap max-md:items-center max-md:gap-x-3 short:order-first short:col-span-full short:w-auto short:flex-row short:flex-wrap short:items-center short:gap-x-3"
     >
       <p>
         {{ spaceLabel }}
@@ -198,7 +201,7 @@
         </span>
       </p>
       <app-hud-meter
-        class="mt-1.5 max-md:mt-0 max-md:flex-1"
+        class="mt-1.5 max-md:mt-0 max-md:flex-1 short:mt-0 short:flex-1"
         tone="site"
         size="sm"
         [percent]="hud.space.barPercent"
@@ -208,7 +211,7 @@
       />
       @if (hud.space.overfull) {
         <p
-          class="mt-1 font-extrabold text-warning max-md:basis-full"
+          class="mt-1 font-extrabold text-warning max-md:basis-full short:basis-full"
           data-testid="hud.space.overfull"
           i18n="@@featureHud-sceneHud-space-overfull"
         >
@@ -216,7 +219,7 @@
         </p>
       } @else if (hud.space.warning) {
         <p
-          class="mt-1 font-extrabold text-warning max-md:basis-full"
+          class="mt-1 font-extrabold text-warning max-md:basis-full short:basis-full"
           data-testid="hud.space.warning"
           i18n="@@featureHud-sceneHud-space-warning"
         >

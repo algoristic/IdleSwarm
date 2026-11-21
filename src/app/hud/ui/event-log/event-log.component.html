@@ -1,9 +1,10 @@
 <!--
   Ohne Panel direkt über der Szene; nicht klickbar (Mockup `.log`). Unter 1200 px (Tablet,
-  Smartphone) nur die zwei neuesten Einträge, auf dem Smartphone kleiner.
+  Smartphone) und im Querformat nur die zwei neuesten Einträge, auf dem Smartphone und im
+  Querformat kleiner.
 -->
 <section
-  class="pointer-events-none text-sm leading-relaxed max-md:text-xs"
+  class="pointer-events-none text-sm leading-relaxed max-md:text-xs short:text-xs"
   aria-labelledby="log-title"
 >
   <h2 id="log-title" class="sr-only" i18n="@@uiHud-eventLog-title">Ereignisse</h2>
@@ -15,7 +16,7 @@
     <ol class="grid gap-0.5 empty:hidden">
       @for (item of items(); track item.id) {
         <li
-          class="event-log__entry text-shadow-hud nth-last-2:opacity-75 nth-last-3:opacity-50 nth-last-4:opacity-30 max-desktop:nth-last-3:hidden max-desktop:nth-last-4:hidden"
+          class="event-log__entry text-shadow-hud nth-last-2:opacity-75 nth-last-3:opacity-50 nth-last-4:opacity-30 max-desktop:nth-last-3:hidden max-desktop:nth-last-4:hidden short:nth-last-3:hidden short:nth-last-4:hidden"
           [attr.data-kind]="item.kind"
           data-testid="hud.log.entry"
         >

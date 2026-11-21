@@ -426,10 +426,11 @@ Die Umsetzung folgt [`docs/mockups/k2-kurzgesagt.html`](mockups/k2-kurzgesagt.ht
 | ≥ 1200 px (`desktop:`) | Layout wie Mockup (Ressourcen links oben, Zoom-Leiste links, Detailpanel rechts, Log mit 4 Einträgen) |
 | 768–1199 px (`md:max-desktop:`) | Detailpanel schmaler und unter dem Titel; das Log zeigt nur die 2 neuesten Einträge |
 | < 768 px (`max-md:`) | Ressourcen als kompakte Kopfzeile oben, darunter eine Moduszeile mit kompakter Zoom-Leiste und „← Schwarm“; Titel je Modus kompakt; Aktionsleiste unten über volle Breite; Detailpanels und Schubladen als **Bottom-Sheets**; Log mit 2 Einträgen, Ära-Anzeige ausgeblendet |
+| Höhe < 480 px (`short:`, Querformat) | unabhängig von der Breite: links eine schmale Spalte (Logo, Ressourcen in zwei Spalten, kompakte Zoom-Leiste, „← Schwarm“, Hinweiskarte; scrollt bei Bedarf); Szene: Titel kompakt oben, Aktionsleiste wie auf dem Smartphone unten, beide rechts der Spalte, runde Reiter am rechten Rand, Schubladen daneben über die volle Höhe; Karte und Genom: Titel und Detailpanel rechts untereinander, nie eingeklappt; Dialoge mittig |
 
-Die Breakpoints sind Tailwinds `md` (768 px) und das eigene Token `--breakpoint-desktop` (75rem = 1200 px) in `src/styles.css`.
+Die Breakpoints sind Tailwinds `md` (768 px) und das eigene Token `--breakpoint-desktop` (75rem = 1200 px) in `src/styles.css`. Die Variante `short:` (`@media (height < 30rem)`) steht dort ebenfalls und überschreibt `max-md:` und `md:max-desktop:`, weil eigene Varianten im CSS nach den Breakpoints stehen; `not-short:` nimmt das Querformat aus (z. B. beim Einklappen der Sheets).
 
-Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz berechnet (`--ms`). Auf dem Smartphone ist das die volle Breite abzüglich Rand, höchstens so hoch wie der Platz zwischen Kopfbereich und Aktionsleiste bzw. eingeklapptem Sheet (`min(w − 32, h − 360)`); die Bühne bleibt in der Viewport-Mitte.
+Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz berechnet (`--ms`). Auf dem Smartphone ist das die volle Breite abzüglich Rand, höchstens so hoch wie der Platz zwischen Kopfbereich und Aktionsleiste bzw. eingeklapptem Sheet (`min(w − 32, h − 360)`); die Bühne bleibt in der Viewport-Mitte. Im Querformat (Höhe < 480 px, hat Vorrang) ist sie `min(h − 32, w − 480)`: so hoch wie möglich und mittig zwischen linker Spalte und den Panels rechts (je 240 px).
 
 **Umsetzungsstand (AP 1.4.5):**
 
@@ -439,7 +440,8 @@ Die Größe von Sonar und Genom wird wie im Mockup aus dem verfügbaren Platz be
 - **Sonar-Karte:** Schrift mindestens 12 px über den gemessenen Kartenmaßstab, Beschriftungen deterministisch ohne Überlappung platziert, unsichtbare Trefferflächen mindestens 44 px, zwischen Nachbarn an der Mittelsenkrechten geteilt (`sonar/domain/sonar-map-logic.ts`).
 - **Genom-Baum:** Auf dem Smartphone ist der Baum mindestens 800 px groß und mit einem Finger verschiebbar (Start auf dem Zellkern), weil 44-px-Trefferflächen ohne Überschneidung und 12-px-Beschriftungen erst ab rund 820 px Platz finden. Die Kostenschilder sind in allen Größen um den Faktor 1,2 gewachsen.
 - **Touch-Ziele:** Bedienelemente mindestens 44 px (`min-h-11`). Ausnahme sind die Strategie-Knöpfe im Kartentitel bei feinem Zeiger ab 768 px (`min-h-8`); bei `pointer: coarse` und auf dem Smartphone haben auch sie 44 px.
-- **Offen:** Das Querformat auf dem Smartphone ist nicht eigens optimiert.
+- **Querformat (AP 1.5.8):** Eigene Variante `short:` statt eines weiteren Breiten-Breakpoints, weil Querformat-Telefone teils schmaler (740 × 360), teils breiter (844 × 390) als 768 px sind. Geprüft per Screenshots bei 844 × 390 und 740 × 360 (dazu 390 × 844, 1024 × 768, 1280 × 720, 1440 × 900 ohne Rückschritt) und im E2E-Fall `e2e/landscape.e2e.ts`. Sichere Bereiche: linke Spalte neben einer Notch links (`env(safe-area-inset-left)`), Reiter, Schubladen, Titel und Panels neben einer Notch rechts, die untere Zeile der Szene über dem Home-Indikator. Der Genom-Baum ist auch im Querformat mindestens 800 px groß und verschiebbar (Innenabstand seitlich unter Spalte und Panels). Die Strategie-Knöpfe im schmalen Kartentitel trennen Silben (`hyphens-auto`, `lang="de"`). Reicht die Höhe für Spalte und Hinweiskarte nicht, scrollt die linke Spalte.
+- **Kartenbeschriftung (AP 1.5.8):** Ringnummern und „x · Reichweite“ stehen unter den Ringen auf der senkrechten Achse statt darüber (Mockup), weil der Titel der Umgebung auf Desktop und Tablet den oberen Kartenrand überdeckt; Ringnummern entfallen, wo sie auf einem Ziel oder der eigenen Position lägen. „(hier)“ wird mit den Zielbeschriftungen platziert (zuerst, bevorzugt unten) und weicht Zielen samt ◆-Markierung aus; die Zielbeschriftungen weichen ihr aus.
 
 ### 8.5 Barrierearmut
 

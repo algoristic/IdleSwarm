@@ -3,10 +3,10 @@
 
 <!--
   Titel der Szene (Mockup `.top.only-scene`): Kicker, Typname, Vorrat bzw. Reise. Smartphone:
-  Kicker und Typname in einer Zeile, kleinere Schrift.
+  Kicker und Typname in einer Zeile, kleinere Schrift; im Querformat ebenso.
 -->
 <section
-  class="max-md:flex max-md:flex-wrap max-md:items-baseline max-md:justify-center max-md:gap-x-2"
+  class="max-md:flex max-md:flex-wrap max-md:items-baseline max-md:justify-center max-md:gap-x-2 short:flex short:flex-wrap short:items-baseline short:justify-center short:gap-x-2"
   aria-labelledby="site-title"
 >
   <p
@@ -15,13 +15,19 @@
   >
     Futterstelle
   </p>
-  <h2 id="site-title" class="text-2xl font-black max-md:text-lg" data-testid="hud.site.type">
+  <h2
+    id="site-title"
+    class="text-2xl font-black max-md:text-lg short:text-lg"
+    data-testid="hud.site.type"
+  >
     {{ typeLabels[_site.type] }}
   </h2>
 
   @if (_site.travel; as travel) {
     <!-- Die Restzeit tickt und steht deshalb außerhalb der Live-Region. -->
-    <p class="mt-2 text-xs text-fg-muted tabular-nums max-md:mt-1 max-md:basis-full">
+    <p
+      class="mt-2 text-xs text-fg-muted tabular-nums max-md:mt-1 max-md:basis-full short:mt-1 short:basis-full"
+    >
       <span data-testid="hud.site.travel" i18n="@@uiHud-feedingSite-travel"
         >Unterwegs nach {{ typeLabels[travel.target] }}, Ankunft in etwa
         {{ travel.secondsLeft | formatDuration }}</span
@@ -34,13 +40,13 @@
   } @else {
     <!-- Aufgerundet, damit ein Rest nie als `0` neben einer scheinbar leeren Futterstelle steht. -->
     <app-hud-meter
-      class="mx-auto mt-2 mb-1.5 w-full max-w-xs max-md:mt-1 max-md:mb-1 max-md:max-w-none max-md:basis-full"
+      class="mx-auto mt-2 mb-1.5 w-full max-w-xs max-md:mt-1 max-md:mb-1 max-md:max-w-none max-md:basis-full short:mt-1 short:mb-1 short:max-w-none short:basis-full"
       tone="site"
       [percent]="_site.stockPercent"
       [label]="stockLabel"
       [valueText]="stockText"
     />
-    <p class="text-xs text-fg-muted tabular-nums max-md:basis-full">
+    <p class="text-xs text-fg-muted tabular-nums max-md:basis-full short:basis-full">
       {{ stockLabel }} <span data-testid="hud.site.stock">{{ stockText }}</span>
       @if (!_site.empty) {
         ·
@@ -65,7 +71,7 @@
 
   <!-- Die Live-Region steht von Anfang an im DOM, damit der Hinweis angesagt wird. -->
   <p
-    class="mt-2 text-sm empty:hidden max-md:mt-1 max-md:basis-full max-md:text-xs"
+    class="mt-2 text-sm empty:hidden max-md:mt-1 max-md:basis-full max-md:text-xs short:mt-1 short:basis-full short:text-xs"
     role="status"
     data-testid="hud.site.status"
   >

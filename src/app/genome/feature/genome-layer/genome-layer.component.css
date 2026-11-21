@@ -12,9 +12,10 @@
  * Der Baum wird mindestens `--genome-tree-min` groß (44-px-Trefferflächen) und lässt sich mit einem
  * Finger verschieben; zwei Finger (Pinch) bleiben dem Moduswechsel der Shell vorbehalten, also kein
  * Browser-Zoom. Der Innenabstand oben und unten lässt den Baum unter Titel und Bottom-Sheet
- * hervorschieben.
+ * hervorschieben. Im Querformat (< 480 px hoch, `short:`) ist `--ms` ebenso klein; dort liegen Spalte
+ * und Panels links und rechts, der Innenabstand also seitlich.
  */
-@media (width < 48rem) {
+@media (width < 48rem), (height < 30rem) {
   .genome-layer__viewport {
     position: absolute;
     inset: 0;
@@ -31,5 +32,12 @@
     /* `margin: auto` statt Zentrieren per Flex/Grid: Ragt der Baum über, beginnt das Scrollen links
        oben, statt die linke Hälfte abzuschneiden. */
     margin: auto;
+  }
+}
+
+@media (height < 30rem) {
+  .genome-layer__viewport {
+    padding: 1rem calc(15rem + env(safe-area-inset-right)) 1rem
+      calc(15rem + env(safe-area-inset-left));
   }
 }

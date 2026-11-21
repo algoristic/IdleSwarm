@@ -7,7 +7,6 @@ export interface MapRingView {
   /** Distanz des Rings, ganzzahlig. */
   readonly distance: number;
   readonly radius: number;
-  readonly labelY: number;
   /** Ringnummer fällt weg, wo die Reichweite beschriftet ist. */
   readonly labeled: boolean;
 }
@@ -51,7 +50,7 @@ export interface SonarMapView {
   readonly rings: readonly MapRingView[];
   readonly spokes: readonly MapSpoke[];
   readonly sweep: string;
-  readonly range: { readonly value: number; readonly radius: number; readonly labelY: number };
+  readonly range: { readonly value: number; readonly radius: number };
   readonly trail: MapTrail;
   readonly nodes: readonly MapNodeView[];
   /** Route zum gewählten Ziel in Reichweite; `null` ohne Auswahl, außer Reichweite oder unterwegs. */

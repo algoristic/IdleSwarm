@@ -8,7 +8,8 @@ describe('stageSize', () => {
 
   it('hält mindestens 360 px, solange der Viewport breit genug ist', () => {
     expect(stageSize({ width: 1000, height: 900 })).toBe(360);
-    expect(stageSize({ width: 1400, height: 300 })).toBe(360);
+    expect(stageSize({ width: 1400, height: 600 })).toBe(516);
+    expect(stageSize({ width: 1000, height: 500 })).toBe(360);
   });
 
   it('nimmt auf Smartphones die volle Breite abzüglich 2 · 16 px', () => {
@@ -20,6 +21,13 @@ describe('stageSize', () => {
 
   it('lässt auf niedrigen Smartphones Platz für Kopf und Aktionsleiste', () => {
     expect(stageSize({ width: 390, height: 600 })).toBe(240);
+    expect(stageSize({ width: 390, height: 500 })).toBe(140);
+  });
+
+  it('nimmt im Querformat (unter 480 px Höhe) die Höhe abzüglich Rand, neben der linken Spalte', () => {
+    expect(stageSize({ width: 844, height: 390 })).toBe(358);
+    expect(stageSize({ width: 740, height: 360 })).toBe(260);
+    expect(stageSize({ width: 1400, height: 300 })).toBe(268);
     expect(stageSize({ width: 390, height: 300 })).toBe(0);
   });
 

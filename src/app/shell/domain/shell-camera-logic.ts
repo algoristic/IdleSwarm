@@ -24,6 +24,16 @@ export const STAGE_COMPACT_BELOW_WIDTH = 768;
  * bzw. eingeklapptes Sheet) zusammen belegt; die Bühne bleibt dazwischen sichtbar.
  */
 export const STAGE_COMPACT_HEIGHT_RESERVE = 360;
+/**
+ * Unter dieser Höhe gilt das Querformat-Layout (entspricht der Variante `short:` in
+ * `src/styles.css`, 30rem, TK §8.4); es hat Vorrang vor dem Smartphone-Layout.
+ */
+export const STAGE_SHORT_BELOW_HEIGHT = 480;
+/**
+ * Breite, die im Querformat links (Spalte `w-56` mit Rand) und, damit die Bühne mittig bleibt,
+ * ebenso rechts frei bleibt.
+ */
+export const STAGE_SHORT_SIDE_RESERVE = 240;
 
 /** Radius des Ausschnitts der Welt im Kartenmodus vor der Skalierung. */
 export const MAP_CLIP_RADIUS = 300;
@@ -35,9 +45,15 @@ export const GENOME_BRIGHTNESS = 0.4;
 /**
  * Kantenlänge von Sonar-Karte und Genom in Pixeln: wie im Mockup `max(360, min(h · 0,86, w − 720))`,
  * aber nie breiter als der Viewport abzüglich Rand. Auf Smartphones (US-08.07) die volle Breite
- * abzüglich Rand, höchstens so hoch, wie zwischen Kopf und Aktionsleiste Platz ist.
+ * abzüglich Rand, höchstens so hoch, wie zwischen Kopf und Aktionsleiste Platz ist. Im Querformat
+ * (niedriger Viewport) die Höhe abzüglich Rand, höchstens so breit, wie neben der linken Spalte
+ * mittig Platz ist.
  */
 export function stageSize({ width, height }: ViewportSize): number {
+  if (height < STAGE_SHORT_BELOW_HEIGHT) {
+    const short = Math.min(height - 2 * STAGE_GUTTER, width - 2 * STAGE_SHORT_SIDE_RESERVE);
+    return Math.max(0, Math.floor(short));
+  }
   if (width < STAGE_COMPACT_BELOW_WIDTH) {
     const compact = Math.min(width - 2 * STAGE_GUTTER, height - STAGE_COMPACT_HEIGHT_RESERVE);
     return Math.max(0, Math.floor(compact));

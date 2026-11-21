@@ -56,9 +56,18 @@
 }
 
 /* Smartphone: Die Kopfzeile reicht bis an den oberen Rand und rückt unter Notch und Statusleiste. */
-@media (width < 48rem) {
+@media (width < 48rem) and (height >= 30rem) {
   .shell__header {
     padding-top: calc(0.5rem + env(safe-area-inset-top));
+  }
+}
+
+/* Querformat (`short:`, < 480 px hoch): Die Spalte rückt neben eine Notch am linken Rand. */
+@media (height < 30rem) {
+  .shell__column {
+    top: calc(0.5rem + env(safe-area-inset-top));
+    bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    left: calc(0.5rem + env(safe-area-inset-left));
   }
 }
 

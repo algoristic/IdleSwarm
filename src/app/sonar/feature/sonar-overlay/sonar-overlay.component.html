@@ -11,7 +11,7 @@
   tabindex="-1"
   role="region"
   [attr.aria-label]="titleLabel"
-  class="top-4 left-1/2 w-max max-w-md -translate-x-1/2 px-5 py-3 max-md:top-28 max-md:right-4 max-md:left-4 max-md:w-auto max-md:max-w-none max-md:translate-x-0 max-md:px-3 max-md:py-1.5"
+  class="top-4 left-1/2 w-max max-w-md -translate-x-1/2 px-5 py-3 max-md:top-28 max-md:right-4 max-md:left-4 max-md:w-auto max-md:max-w-none max-md:translate-x-0 max-md:px-3 max-md:py-1.5 sonar-overlay__title short:static short:w-56 short:max-w-none short:shrink-0 short:translate-x-0 short:px-3 short:py-1.5"
   [class]="panel"
   [range]="sonar.range"
   [site]="sonar.site"
@@ -23,17 +23,19 @@
 
 <!--
   Detailpanel: Desktop rechts Mitte; Tablet schmaler und unter dem Titel; Smartphone als
-  Bottom-Sheet, eingeklappt nur Kicker, Name und „Aufbrechen“.
+  Bottom-Sheet, eingeklappt nur Kicker, Name und „Aufbrechen“. Querformat (`short:`): Titel und
+  Detailpanel im Fluss rechts neben der Karte untereinander (die Shell macht den Host zur Spalte),
+  das Panel scrollt im Rest der Höhe und klappt nie ein (`not-short:`).
 -->
 <div
-  class="sonar-overlay__sheet group/sheet top-1/2 right-4 grid max-h-11/12 w-84 -translate-y-1/2 content-start gap-4 overflow-y-auto p-5 wrap-anywhere md:max-desktop:top-56 md:max-desktop:bottom-4 md:max-desktop:max-h-none md:max-desktop:w-72 md:max-desktop:translate-y-0 max-md:top-auto max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:max-h-1/2 max-md:w-auto max-md:translate-y-0 max-md:gap-3 max-md:rounded-b-none max-md:px-4 max-md:pt-0"
+  class="sonar-overlay__sheet group/sheet top-1/2 right-4 grid max-h-11/12 w-84 -translate-y-1/2 content-start gap-4 overflow-y-auto p-5 wrap-anywhere md:max-desktop:top-56 md:max-desktop:bottom-4 md:max-desktop:max-h-none md:max-desktop:w-72 md:max-desktop:translate-y-0 max-md:top-auto max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:max-h-1/2 max-md:w-auto max-md:translate-y-0 max-md:gap-3 max-md:rounded-b-none max-md:px-4 max-md:pt-0 short:static short:max-h-none short:min-h-0 short:w-56 short:translate-y-0 short:gap-3 short:rounded-3xl short:p-4"
   data-testid="sonar.side"
   [class]="panel"
   [attr.data-collapsed]="_sheetOpen ? null : ''"
 >
   <button
     type="button"
-    class="sticky top-0 z-1 grid min-h-11 w-full cursor-pointer justify-items-center gap-1 bg-surface pt-2 pb-1 text-xs font-extrabold text-fg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:hidden"
+    class="sticky top-0 z-1 grid min-h-11 w-full cursor-pointer justify-items-center gap-1 bg-surface pt-2 pb-1 text-xs font-extrabold text-fg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:hidden short:hidden"
     aria-controls="sonar-sheet"
     data-testid="sonar.sheet.toggle"
     [attr.aria-expanded]="_sheetOpen"
@@ -68,14 +70,16 @@
     }
 
     <app-move-note
-      class="max-md:group-data-collapsed/sheet:hidden"
+      class="max-md:not-short:group-data-collapsed/sheet:hidden"
       [site]="sonar.site"
       [travel]="sonar.travel"
       [settings]="sonar.settings"
     />
 
     <!-- Auf/Zu ist lokaler Zustand des Elements, nicht im Spielstand. -->
-    <details class="group border-t-3 border-well pt-1 max-md:group-data-collapsed/sheet:hidden">
+    <details
+      class="group border-t-3 border-well pt-1 max-md:not-short:group-data-collapsed/sheet:hidden"
+    >
       <summary data-testid="sonar.targets.toggle" [class]="summary">
         <span i18n="@@featureSonar-sonarOverlay-targetsToggle"
           >Ziele ({{ sonar.targets.length | formatNum }})</span
@@ -100,7 +104,9 @@
       </div>
     </details>
 
-    <details class="group border-t-3 border-well pt-1 max-md:group-data-collapsed/sheet:hidden">
+    <details
+      class="group border-t-3 border-well pt-1 max-md:not-short:group-data-collapsed/sheet:hidden"
+    >
       <summary data-testid="sonar.settings.toggle" [class]="summary">
         <span i18n="@@featureSonar-sonarOverlay-settingsToggle">Weiterziehen</span>
         <span

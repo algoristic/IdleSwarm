@@ -1,6 +1,6 @@
 /*
  * Sonderfälle ohne Utility (ADR-014): Hintergrund des Top-Layers (`::backdrop`), Einblenden beim
- * Öffnen (`@starting-style`) und sichere Bereiche des Bottom-Sheets auf dem Smartphone.
+ * Öffnen (`@starting-style`) und sichere Bereiche des Bottom-Sheets auf dem Smartphone (hochkant).
  */
 .modal-dialog {
   transition:
@@ -29,7 +29,8 @@
   transition: opacity var(--sw-zoom-reduced-duration) linear;
 }
 
-@media (width < 48rem) {
+/* Bottom-Sheet über dem Home-Indikator; im Querformat (`short:`) steht der Dialog mittig. */
+@media (width < 48rem) and (height >= 30rem) {
   .modal-dialog {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   }

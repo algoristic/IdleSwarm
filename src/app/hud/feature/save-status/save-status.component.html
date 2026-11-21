@@ -1,9 +1,9 @@
 @let hud = facade.hud();
 
-<div class="grid gap-2 max-md:gap-0">
-  <!-- Auf dem Smartphone nur vorgelesen; die Hinweise bleiben sichtbar. -->
+<div class="grid gap-2 max-md:gap-0 short:gap-2">
+  <!-- Auf dem Smartphone und im Querformat nur vorgelesen; die Hinweise bleiben sichtbar. -->
   <p
-    class="px-4.5 text-xs text-fg-muted text-shadow-hud max-md:sr-only"
+    class="px-4.5 text-xs text-fg-muted text-shadow-hud max-md:sr-only short:sr-only"
     data-testid="hud.status.last-saved"
   >
     <ng-container i18n="@@featureHud-saveStatus-lastSaved">Zuletzt gespeichert</ng-container>:
@@ -19,7 +19,7 @@
       @if (notice === 'update-ready') {
         <!-- Kein Fehler: Hinweis in Akzentfarbe mit Aktion; vorher wird gespeichert (Facade). -->
         <div
-          class="flex flex-wrap items-center gap-3 rounded-3xl bg-surface px-4 py-3 text-sm font-extrabold text-accent shadow-panel max-md:first:mt-2"
+          class="flex flex-wrap items-center gap-3 rounded-3xl bg-surface px-4 py-3 text-sm font-extrabold text-accent shadow-panel max-md:first:mt-2 short:first:mt-0"
           data-testid="hud.status.update"
         >
           <p class="min-w-0 flex-1">{{ noticeTexts[notice] }}</p>
@@ -35,7 +35,7 @@
         </div>
       } @else {
         <p
-          class="rounded-3xl bg-surface px-4 py-3 text-sm font-extrabold text-warning shadow-panel max-md:first:mt-2"
+          class="rounded-3xl bg-surface px-4 py-3 text-sm font-extrabold text-warning shadow-panel max-md:first:mt-2 short:first:mt-0"
         >
           <span aria-hidden="true">⚠</span> {{ noticeTexts[notice] }}
         </p>

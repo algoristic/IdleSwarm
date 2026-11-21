@@ -124,7 +124,6 @@ function toMapView(
       return {
         distance,
         radius: distance * scale.unit,
-        labelY: MAP_CENTER - distance * scale.unit - LABEL_GAP,
         labeled: Math.abs(distance - range) >= 0.5,
       };
     }),
@@ -133,7 +132,6 @@ function toMapView(
     range: {
       value: range,
       radius: range * scale.unit,
-      labelY: MAP_CENTER - range * scale.unit - LABEL_GAP,
     },
     trail: trail(
       route.map((point) => point.position),
