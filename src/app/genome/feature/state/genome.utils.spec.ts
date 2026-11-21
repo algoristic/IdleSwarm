@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -8,7 +8,7 @@ import type { GenomeNodeId } from '../../domain/models/genome.model';
 import type { GenomeEntryId } from '../../ui/models/genome-entry.model';
 import { toGenomeView } from './genome.utils';
 
-const params = DEFAULT_BALANCE;
+const params = BALANCE_V1;
 
 describe('toGenomeView', () => {
   const base = createInitialState({ seed: 'genom', now: 0 });

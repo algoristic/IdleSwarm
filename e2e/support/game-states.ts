@@ -10,6 +10,7 @@ import { createActiveBot } from '@app/model/domain/bots/active-bot-logic';
 import { HINT_IDS, ONBOARDING_UNLOCK_IDS } from '@app/onboarding/domain/models/onboarding.model';
 import { encodeSave } from '@app/persistence/domain/serialize-logic';
 import { SAVE_KEY } from '@app/persistence/domain/slots-logic';
+import { Num } from '@app/shared/util/num/num';
 import { MS_PER_HOUR } from '@app/shared/util/time/time-units';
 import { canDepart } from '@app/site/domain/move-logic';
 
@@ -29,13 +30,16 @@ export interface AdvancedGame {
 /**
  * Fortgeschrittener Stand aus den echten Domänenfunktionen: Der aktive Bot der Modell-Seite spielt
  * {@link PLAYED_MS}; danach ist das Auto-Weiterziehen aus, eine laufende Reise beendet, alles
- * freigeschaltet und jeder Hinweis gesehen. `lastSaved` liegt `awayMs` vor `nowMs`.
+ * freigeschaltet und jeder Hinweis gesehen. `lastSaved` liegt `awayMs` vor `nowMs`. `food` setzt die
+ * Nahrung, etwa über eine Million für Tests des Zahlenformats; seit den Werten v1.5 (AP 1.5.5)
+ * wachsen die Futterstellen langsamer, und der gespielte Stand erreicht das nicht von selbst.
  */
-export function advancedGame(nowMs: number, awayMs = 0): AdvancedGame {
+export function advancedGame(nowMs: number, awayMs = 0, food?: number): AdvancedGame {
   const params = DEFAULT_BALANCE;
   simulated ??= simulate();
   const state: GameState = {
     ...simulated,
+    res: food === undefined ? simulated.res : { ...simulated.res, food: Num.from(food) },
     onboarding: { unlocked: [...ONBOARDING_UNLOCK_IDS], seenHints: [...HINT_IDS] },
     time: { ...simulated.time, now: nowMs, lastSaved: nowMs - awayMs },
   };

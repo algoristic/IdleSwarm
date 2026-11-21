@@ -1,7 +1,7 @@
 import { Num } from '@app/shared/util/num/num';
 import type { Units } from '@app/swarm/domain/models/units.model';
 
-import { DEFAULT_BALANCE } from './constants';
+import { BALANCE_V1 } from './balance-v1.testing';
 import {
   combineEffects,
   effectValue,
@@ -89,9 +89,7 @@ describe('combineEffects (Game-Design §4.13, Verrechnung)', () => {
     expect(effectValue(1, { add: -3, mul: 1 })).toBe(0);
     expect(effectValue(5, { add: 0, mul: -1 })).toBe(0);
     const modifiers = combineEffects([mul('combatLoss', -0.5)], null);
-    expect(expectedLosses(Num.from(34), Num.from(26), DEFAULT_BALANCE, modifiers).toNumber()).toBe(
-      0,
-    );
+    expect(expectedLosses(Num.from(34), Num.from(26), BALANCE_V1, modifiers).toNumber()).toBe(0);
   });
 });
 
@@ -127,11 +125,11 @@ describe('isValidEffect (Game-Design §4.13, Datenregel)', () => {
 
 describe('Effekte in den Formeln (Game-Design §4.13)', () => {
   it('rechnen neutral wie ohne Effekte', () => {
-    expect(swarmRange(DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(5);
-    expect(attackPerSoldier(DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(1);
-    expect(spacePerQueen(DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(10);
-    expect(sacrificeYieldShare(DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(0.5);
-    expect(recycledFood(Num.from(10), DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(Num.ZERO);
+    expect(swarmRange(BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(5);
+    expect(attackPerSoldier(BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(1);
+    expect(spacePerQueen(BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(10);
+    expect(sacrificeYieldShare(BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(0.5);
+    expect(recycledFood(Num.from(10), BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(Num.ZERO);
   });
 
   it('Beispiel 9: Sammeln am Schlot und an der Algenmatte', () => {
@@ -146,10 +144,10 @@ describe('Effekte in den Formeln (Game-Design §4.13)', () => {
     const stock = Num.from(1000);
     const vent = combineEffects(effects, 'vent');
     expect(modifierFactor(vent.collectRate)).toBeCloseTo(3.9375, 12);
-    expect(foodPerSecond(drones, stock, DEFAULT_BALANCE, vent).toNumber()).toBeCloseTo(80.25, 10);
+    expect(foodPerSecond(drones, stock, BALANCE_V1, vent).toNumber()).toBeCloseTo(80.25, 10);
     const algalMat = combineEffects(effects, 'algal-mat');
     expect(modifierFactor(algalMat.collectRate)).toBeCloseTo(3.375, 12);
-    expect(foodPerSecond(drones, stock, DEFAULT_BALANCE, algalMat).toNumber()).toBeCloseTo(69, 10);
+    expect(foodPerSecond(drones, stock, BALANCE_V1, algalMat).toNumber()).toBeCloseTo(69, 10);
   });
 
   it('Beispiel 10: Kampf mit Säurevakuole, Nesselzellen und Autophagie', () => {
@@ -162,32 +160,32 @@ describe('Effekte in den Formeln (Game-Design §4.13)', () => {
       null,
     );
     const soldiers = Num.from(34);
-    expect(soldierAttack(soldiers, DEFAULT_BALANCE, modifiers).toNumber()).toBeCloseTo(40.8, 10);
-    const losses = expectedLosses(soldiers, Num.from(26), DEFAULT_BALANCE, modifiers);
+    expect(soldierAttack(soldiers, BALANCE_V1, modifiers).toNumber()).toBeCloseTo(40.8, 10);
+    const losses = expectedLosses(soldiers, Num.from(26), BALANCE_V1, modifiers);
     expect(losses.toNumber()).toBeCloseTo(5.18, 2);
     expect(losses.div(soldiers).toNumber()).toBeCloseTo(0.152, 3);
-    expect(recycledFood(losses, DEFAULT_BALANCE, modifiers).toNumber()).toBeCloseTo(64.7, 1);
-    const attack = soldierAttack(soldiers, DEFAULT_BALANCE, modifiers);
+    expect(recycledFood(losses, BALANCE_V1, modifiers).toNumber()).toBeCloseTo(64.7, 1);
+    const attack = soldierAttack(soldiers, BALANCE_V1, modifiers);
     expect(isCapturable(attack, Num.from(52))).toBe(false);
   });
 
   it('begrenzt die Verluste mit M_verlust ≤ 1 auf λ · S', () => {
     const modifiers = combineEffects([mul('combatLoss', 0.75)], null);
-    const losses = expectedLosses(Num.from(10), Num.from(1000), DEFAULT_BALANCE, modifiers);
+    const losses = expectedLosses(Num.from(10), Num.from(1000), BALANCE_V1, modifiers);
     expect(losses.toNumber()).toBeCloseTo(10 * 0.5 * 0.75, 12);
   });
 
   it('Platz je Königin mit Brutwaben und Knospung', () => {
     const modifiers = combineEffects([add('spacePerQueen', 2), mul('spacePerQueen', 1.25)], null);
-    expect(spacePerQueen(DEFAULT_BALANCE, modifiers)).toBe(15);
-    expect(spaceAvailable(units(2, 0, 0), DEFAULT_BALANCE, modifiers).toNumber()).toBe(30);
+    expect(spacePerQueen(BALANCE_V1, modifiers)).toBe(15);
+    expect(spaceAvailable(units(2, 0, 0), BALANCE_V1, modifiers).toNumber()).toBe(30);
   });
 
   it('Ausbeute beim Opfern mit Autophagie', () => {
     const modifiers = combineEffects([add('sacrificeYield', 0.4)], null);
-    expect(sacrificeYieldShare(DEFAULT_BALANCE, modifiers)).toBeCloseTo(0.7, 12);
+    expect(sacrificeYieldShare(BALANCE_V1, modifiers)).toBeCloseTo(0.7, 12);
     const bought = units(0, 0, 0);
-    expect(dronesPerQueen(bought, DEFAULT_BALANCE, modifiers)?.toNumber()).toBeCloseTo(8.57, 2);
+    expect(dronesPerQueen(bought, BALANCE_V1, modifiers)?.toNumber()).toBeCloseTo(8.57, 2);
   });
 
   it('hält den Umwandlungsverlust beim Opfern mindestens bei v_min', () => {
@@ -195,21 +193,21 @@ describe('Effekte in den Formeln (Game-Design §4.13)', () => {
       [add('sacrificeYield', 5), mul('sacrificeYield', 3), mul('sacrificeYield', 2)],
       null,
     );
-    expect(sacrificeYieldShare(DEFAULT_BALANCE, modifiers)).toBeCloseTo(0.9, 12);
-    expect(sacrificeLossShare(DEFAULT_BALANCE, modifiers)).toBeCloseTo(0.1, 12);
+    expect(sacrificeYieldShare(BALANCE_V1, modifiers)).toBeCloseTo(0.9, 12);
+    expect(sacrificeLossShare(BALANCE_V1, modifiers)).toBeCloseTo(0.1, 12);
   });
 
   it('Reichweite mit Chemotaxis', () => {
-    expect(swarmRange(DEFAULT_BALANCE, combineEffects([add('range', 1)], null))).toBe(6);
+    expect(swarmRange(BALANCE_V1, combineEffects([add('range', 1)], null))).toBe(6);
   });
 
   it('begrenzt die Fundchance auf 1', () => {
     const modifiers = combineEffects([mul('findChance', 2)], null);
-    expect(siteFindChance('vent', DEFAULT_BALANCE, modifiers)).toBeCloseTo(
-      DEFAULT_BALANCE.ventFindChance * 2,
+    expect(siteFindChance('vent', BALANCE_V1, modifiers)).toBeCloseTo(
+      BALANCE_V1.ventFindChance * 2,
       12,
     );
     const huge = combineEffects([add('findChance', 100)], null);
-    expect(siteFindChance('whale-fall', DEFAULT_BALANCE, huge)).toBe(1);
+    expect(siteFindChance('whale-fall', BALANCE_V1, huge)).toBe(1);
   });
 });

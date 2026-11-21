@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { modifierFactor, NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { findEntryWeight, siteFindChance, weightedIndex } from '@app/balance/domain/formulas';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
@@ -22,7 +22,7 @@ import {
 import type { FoundEvent } from './models/finds-event.model';
 import type { FindEntryId, Finds } from './models/finds.model';
 
-const params = DEFAULT_BALANCE;
+const params = BALANCE_V1;
 
 /** Die drei Zufallszahlen einer Ziehung ab `rngState`. */
 function triple(rngState: number): [number, number, number] {
@@ -79,7 +79,7 @@ describe('initialFinds', () => {
 });
 
 describe('drawFind (Game-Design §4.16)', () => {
-  const initial = createInitialState({ seed: 'funde', now: 0 });
+  const initial = createInitialState({ seed: 'funde', now: 0 }, BALANCE_V1);
 
   /** Zustand an einem Typ mit gegebenem Fund-RNG, Fundzähler und Sammlung. */
   function at(type: SiteTypeId, rngState: number, finds: Partial<Finds> = {}): GameState {
@@ -307,14 +307,14 @@ describe('Buffs', () => {
   };
 
   it('wirken nur, solange `expiresAtMs > time.played`', () => {
-    expect(buffEffects(finds, 4_999, DEFAULT_BALANCE)).toEqual([
+    expect(buffEffects(finds, 4_999, BALANCE_V1)).toEqual([
       { target: 'collectRate', op: 'mul', value: 1.5 },
       { target: 'broodRate', op: 'mul', value: 1.5 },
     ]);
-    expect(buffEffects(finds, 5_000, DEFAULT_BALANCE)).toEqual([
+    expect(buffEffects(finds, 5_000, BALANCE_V1)).toEqual([
       { target: 'broodRate', op: 'mul', value: 1.5 },
     ]);
-    expect(buffEffects(finds, 9_000, DEFAULT_BALANCE)).toEqual([]);
+    expect(buffEffects(finds, 9_000, BALANCE_V1)).toEqual([]);
   });
 
   it('nennt den nächsten Ablauf eines laufenden Buffs', () => {
@@ -324,7 +324,7 @@ describe('Buffs', () => {
   });
 
   it('entfernt abgelaufene Einträge und lässt sonst den Zustand', () => {
-    const base = createInitialState({ seed: 'buffs', now: 0 });
+    const base = createInitialState({ seed: 'buffs', now: 0 }, BALANCE_V1);
     const state: GameState = { ...base, finds, time: { ...base.time, played: 5_000 } };
     expect(pruneBuffs(state).finds.buffs).toEqual([{ id: 'warm-current', expiresAtMs: 9_000 }]);
     const early = { ...state, time: { ...state.time, played: 1_000 } };
@@ -333,24 +333,24 @@ describe('Buffs', () => {
 });
 
 describe('nextHarvestThreshold', () => {
-  const base = createInitialState({ seed: 'schwellen', now: 0 });
+  const base = createInitialState({ seed: 'schwellen', now: 0 }, BALANCE_V1);
 
   it('nennt Schwelle, Vorrat und Zeit bei konstanter Abbaurate', () => {
     // Startzustand: G = 20.000, nur Grundertrag 1,5 Nahrung/s.
-    const next = nextHarvestThreshold(base, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const next = nextHarvestThreshold(base, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(next?.threshold).toBe(1);
     expect(next?.stock.eq(15_000)).toBe(true);
     expect(next?.msLeft).toBeCloseTo((5_000 / 1.5) * 1000, 6);
     const half = { ...base, site: { ...base.site, stock: Num.from(10_000) } };
-    expect(nextHarvestThreshold(half, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)?.threshold).toBe(3);
+    expect(nextHarvestThreshold(half, BALANCE_V1, NEUTRAL_MODIFIERS)?.threshold).toBe(3);
   });
 
   it('gibt es nicht während einer Reise, ohne Vorrat oder ohne Schwellen', () => {
     const empty = { ...base, site: { ...base.site, stock: Num.ZERO } };
-    expect(nextHarvestThreshold(empty, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBeNull();
-    const none = { ...DEFAULT_BALANCE, findHarvestDraws: 0 };
+    expect(nextHarvestThreshold(empty, BALANCE_V1, NEUTRAL_MODIFIERS)).toBeNull();
+    const none = { ...BALANCE_V1, findHarvestDraws: 0 };
     expect(nextHarvestThreshold(base, none, NEUTRAL_MODIFIERS)).toBeNull();
     const traveling = { ...base, travel: { target: base.map.candidates[0], remainingMs: 1 } };
-    expect(nextHarvestThreshold(traveling, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBeNull();
+    expect(nextHarvestThreshold(traveling, BALANCE_V1, NEUTRAL_MODIFIERS)).toBeNull();
   });
 });

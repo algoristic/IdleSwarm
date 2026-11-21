@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import type { SimEvent, SiteMetric } from '@app/engine/domain/runner-logic';
 
 import { genomeCostTotal, longestUnlockGap, progressMetrics, unlocksOf } from './progress-logic';
@@ -131,6 +131,6 @@ describe('progressMetrics', () => {
 
 describe('genomeCostTotal', () => {
   it('summiert alle Knoten (Game-Design §6.4: 3.498 DNA)', () => {
-    expect(genomeCostTotal(DEFAULT_BALANCE)).toBe(3498);
+    expect(genomeCostTotal(BALANCE_V1)).toBe(3498);
   });
 });

@@ -1,10 +1,12 @@
-import { BalanceParams, DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
+import { BalanceParams, TICK_MS } from '@app/balance/domain/constants';
 import { GENOME_NODES } from '@app/genome/domain/data/genome-era1.data';
 import { createActiveBot } from '@app/model/domain/bots/active-bot-logic';
 import { createIdleBot } from '@app/model/domain/bots/idle-bot-logic';
 
 import type { Bot } from './bot-logic';
 import type { Command } from './commands-logic';
+import { isCoverageRun } from './coverage-run.testing';
 import { stallSpans } from './cycle-metrics-logic';
 import { createInitialState } from './game-state-logic';
 import {
@@ -46,21 +48,6 @@ const SIMPLE: Partial<BalanceParams> = {
   siteSize: 1e9,
 };
 
-/**
- * Liest, ob dieser Lauf Coverage erhebt. `ng test --coverage` gibt das nur in der Worker-Konfiguration
- * von Vitest weiter; ändert sich deren Form, schlägt die Datei fehl, statt Tests still zu überspringen.
- */
-function isCoverageRun(): boolean {
-  const { __vitest_worker__: worker } = globalThis as unknown as {
-    __vitest_worker__?: { config?: { coverage?: { enabled?: unknown } } };
-  };
-  const enabled = worker?.config?.coverage?.enabled;
-  if (typeof enabled !== 'boolean') {
-    throw new Error('Vitest-Konfiguration ohne coverage.enabled');
-  }
-  return enabled;
-}
-
 function scripted(script: Readonly<Record<number, readonly Command[]>>): Bot {
   const times = Object.keys(script)
     .map(Number)
@@ -79,6 +66,7 @@ function run(bot: Bot, overrides: Partial<SimOptions> = {}): SimResult {
     durationMs: 10 * MINUTE_MS,
     sampleEveryMs: MINUTE_MS,
     ...overrides,
+    params: { ...BALANCE_V1, ...overrides.params },
   });
 }
 
@@ -139,7 +127,7 @@ describe('runSimulation', () => {
   describe('Parameter', () => {
     it('legt Overrides über die Standardwerte', () => {
       const { params, samples } = run(scripted({}), { params: { siteSize: 123, startFood: 7 } });
-      expect(params).toEqual({ ...DEFAULT_BALANCE, siteSize: 123, startFood: 7 });
+      expect(params).toEqual({ ...BALANCE_V1, siteSize: 123, startFood: 7 });
       expect(samples[0].stock).toBe(123);
       expect(samples[0].food).toBe(7);
     });
@@ -147,7 +135,7 @@ describe('runSimulation', () => {
     it('lässt die Standardwerte unverändert und wirkt auf den Verlauf', () => {
       const base = run(createActiveBot());
       const faster = run(createActiveBot(), { params: { droneCollectRate: 1 } });
-      expect(DEFAULT_BALANCE.droneCollectRate).toBe(0.2);
+      expect(BALANCE_V1.droneCollectRate).toBe(0.2);
       expect(faster.samples.at(-1)?.foodPerSecond).toBeGreaterThan(
         base.samples.at(-1)?.foodPerSecond ?? Infinity,
       );
@@ -279,12 +267,12 @@ describe('runSimulation', () => {
     // Ziel aus dem Startzustand: Ohne Soldaten ist nur die sichere Algenmatte einnehmbar.
     const { candidates } = createInitialState(
       { seed: 'runner', now: 0 },
-      { ...DEFAULT_BALANCE, ...MOVING },
+      { ...BALANCE_V1, ...MOVING },
     ).map;
     const target = candidates.findIndex((candidate) => candidate.defense.isZero());
     const { position, size } = candidates[target];
     const travelMs =
-      Math.hypot(position.x, position.y) * DEFAULT_BALANCE.travelSecondsPerDistance * 1000;
+      Math.hypot(position.x, position.y) * BALANCE_V1.travelSecondsPerDistance * 1000;
     const secondSiteMs = size.toNumber() * 1000;
 
     const typeAndSite = (event: SimEvent) => ({
@@ -362,7 +350,7 @@ describe('runSimulation', () => {
         params: { ...MOVING, ventFindChance: 1 },
         durationMs: MINUTE_MS,
       });
-      const cost = DEFAULT_BALANCE.genomeCost;
+      const cost = BALANCE_V1.genomeCost;
       expect(events.find((event) => event.type === 'evolved')).toMatchObject({ cost });
       expect(samples[0]).toMatchObject({ dna: 0, dnaSpent: 0, dnaFromFinds: 0, dnaFromCombat: 0 });
       const last = samples[samples.length - 1];
@@ -544,7 +532,7 @@ describe('runSimulation', () => {
       startFood: 1e6,
       siteDefenseBase: 5,
     };
-    const params = { ...DEFAULT_BALANCE, ...COMBAT };
+    const params = { ...BALANCE_V1, ...COMBAT };
     const { candidates } = createInitialState({ seed: 'runner', now: 0 }, params).map;
     const target = candidates.findIndex(
       (candidate) =>

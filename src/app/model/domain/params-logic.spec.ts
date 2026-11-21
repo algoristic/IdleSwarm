@@ -1,4 +1,5 @@
-import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
+import { BalanceParams } from '@app/balance/domain/constants';
 
 import {
   changedParams,
@@ -104,13 +105,13 @@ describe('paramLimit', () => {
   });
 
   it('wird von allen Standardwerten erfüllt', () => {
-    expect(paramFields(DEFAULT_BALANCE, {}).filter((field) => field.value === null)).toEqual([]);
+    expect(paramFields(BALANCE_V1, {}).filter((field) => field.value === null)).toEqual([]);
   });
 });
 
 describe('paramConflicts', () => {
   const defaults = Object.fromEntries(
-    paramFields(DEFAULT_BALANCE, {}).map((field) => [field.key, field.text]),
+    paramFields(BALANCE_V1, {}).map((field) => [field.key, field.text]),
   ) as ParamDrafts;
   const allWeights = (text: string): ParamDrafts => ({
     ...defaults,
@@ -211,7 +212,7 @@ function wholeTableWeights(text: string): ParamDrafts {
 
 describe('findWeightConflicts', () => {
   const defaults = Object.fromEntries(
-    paramFields(DEFAULT_BALANCE, {}).map((field) => [field.key, field.text]),
+    paramFields(BALANCE_V1, {}).map((field) => [field.key, field.text]),
   ) as ParamDrafts;
   const ventZero = {
     ...defaults,
@@ -257,37 +258,37 @@ describe('findWeightConflicts', () => {
 
 describe('paramFields', () => {
   it('erzeugt je Konstante ein Feld, auch für neue', () => {
-    const extended = { ...DEFAULT_BALANCE, brandNew: 3 } as BalanceParams;
+    const extended = { ...BALANCE_V1, brandNew: 3 } as BalanceParams;
     const keys = paramFields(extended, {}).map((field) => field.key as string);
-    expect(keys).toEqual([...Object.keys(DEFAULT_BALANCE), 'brandNew']);
+    expect(keys).toEqual([...Object.keys(BALANCE_V1), 'brandNew']);
   });
 
   it('zeigt Standardwerte deutsch und unverändert', () => {
-    const field = paramFields(DEFAULT_BALANCE, {}).find((f) => f.key === 'droneCostGrowth');
+    const field = paramFields(BALANCE_V1, {}).find((f) => f.key === 'droneCostGrowth');
     expect(field).toMatchObject({ text: '1,07', value: 1.07, changed: false });
     expect(formatParam(0.75)).toBe('0,75');
   });
 
   it('markiert Änderungen, aber nicht gleichwertige Schreibweisen', () => {
-    const fields = paramFields(DEFAULT_BALANCE, { droneCost: '12', queenCost: '60,0' });
+    const fields = paramFields(BALANCE_V1, { droneCost: '12', queenCost: '60,0' });
     expect(fields.find((f) => f.key === 'droneCost')?.changed).toBe(true);
     expect(fields.find((f) => f.key === 'queenCost')?.changed).toBe(false);
   });
 
   it('begrenzt Anteile auf 0 bis 1', () => {
-    const fields = paramFields(DEFAULT_BALANCE, { sacrificeYield: '1,5' });
+    const fields = paramFields(BALANCE_V1, { sacrificeYield: '1,5' });
     expect(fields.find((f) => f.key === 'sacrificeYield')?.value).toBeNull();
   });
 
   it('verlangt ganzzahlige Pheromonpunkte beim Start', () => {
-    const fields = paramFields(DEFAULT_BALANCE, { startPheromoneDrones: '2,5' });
+    const fields = paramFields(BALANCE_V1, { startPheromoneDrones: '2,5' });
     expect(fields.find((f) => f.key === 'startPheromoneDrones')?.value).toBeNull();
   });
 });
 
 describe('JSON-Export', () => {
   it('enthält nur gültige geänderte Werte', () => {
-    const fields = paramFields(DEFAULT_BALANCE, {
+    const fields = paramFields(BALANCE_V1, {
       droneCost: '12,5',
       queenCost: 'x',
       siteSize: '20000',
@@ -298,6 +299,6 @@ describe('JSON-Export', () => {
   });
 
   it('ist ohne Änderungen leer', () => {
-    expect(paramsToJson(changedParams(paramFields(DEFAULT_BALANCE, {})))).toBe('{}');
+    expect(paramsToJson(changedParams(paramFields(BALANCE_V1, {})))).toBe('{}');
   });
 });

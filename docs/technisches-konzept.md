@@ -340,6 +340,14 @@ runSimulation({ seed, bot, durationMs, sampleEveryMs, params?, stepMs?, startTim
 
 Feste Bot-Läufe (Seed, Dauer) laufen in Vitest. Ihre Kennzahlen werden als Snapshot mit Toleranz verglichen. Ändert eine Anpassung das Pacing ungewollt, schlägt der Test fehl. Gewollte Änderungen aktualisieren den Snapshot bewusst.
 
+**Umgesetzt (AP 1.5.5, US-10.09):** `model/domain/balancing/`.
+
+- **Läufe:** Seeds `modell` und `release`, je Bot „Aktiv“ und „Idle“, 24 h, Schritt 1 s, Abtastung 60 s, Standardwerte (`runSnapshot`). Die vier Läufe brauchen in Vitest rund 6 s; Zeitlimit je Lauf 60 s für den Abdeckungslauf.
+- **Kennzahlen** (`snapshotMetrics`, `BalanceSnapshotMetrics`): erster Kauf, längste Wartezeit und Median der Kauflücken der ersten 30 min, abgeschlossene Futterstellen, erste Futterstelle, Median der Futterstellen, Anteil im Zielband (aus `balance/domain/targets.ts`), Weiterzüge, Einnahmen mit Kampf, DNA gesamt, Genom komplett, größter Abstand neuer Optionen in der ersten Stunde, längste Strecke ohne Kauf in der ersten Stunde und über 24 h.
+- **Toleranz** (`allowedDeviation`): ±5 % relativ, mindestens ein absoluter Abstand je Kennzahl (Zeiten 2 s, Zählwerte 1, Anteil 0,02, DNA 1). `null` (nie eingetreten) muss genau `null` bleiben.
+- **Erwartete Werte** stehen als explizite Daten in `balance-snapshot.data.ts`, keine `toMatchSnapshot`-Automatik: Niemand überschreibt sie stillschweigend mit `-u`. Eine gewollte Änderung an Werten, Formeln, Bots oder Mess-Definitionen trägt die neuen Werte dort von Hand ein und begründet sie in [Game-Design §6](game-design.md#6-messwerte-v1); Stand ist die Messung M1.5 ([§6.6](game-design.md#66-messung-m15-werte-v15)).
+- Specs, die Rechenbeispiele des Game-Designs nachrechnen, nutzen die festen Werte v1 (`BALANCE_V1` in `balance/domain/balance-v1.testing.ts`) statt `DEFAULT_BALANCE`; so hängen sie nicht vom Balancing ab.
+
 ## 6. Spieldaten
 
 - **Data-driven** als typisierte TS-Dateien in der `domain`-Schicht der jeweiligen Fachdomäne (z. B. `swarm/domain/units.data.ts`). Es gibt keine externe Tabelle (anders als Swarm Simulator mit Google Sheets). Typprüfung und Refactoring bleiben so möglich.

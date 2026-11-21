@@ -1,16 +1,16 @@
 # IdleSwarm · Game-Design-Spezifikation v1
 
-> Stand: 19.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md)
+> Stand: 21.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md)
 
 ## 1. Geltung
 
 Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilensteine **M1.1 · Kernschleife & Modell**, **M1.2 · Weiterziehen & Kampf** und **M1.3 · Progression** fest. Sie ist die fachliche Vorlage für die Umsetzung in `balance/domain`. Für M1.1 bis M1.3 hat sie Vorrang vor dem Entwurf im [Technischen Konzept §5.2](technisches-konzept.md#52-modellgrößen-entwurf-für-spätere-größen).
 
-- **Zahlenwerte sind „v1“:** Sie dürfen nachjustiert werden, bis die Bots die [Pacing-Ziele](projektplan.md#35-pacing-ziele-vorläufig) treffen; das Feintuning folgt in AP 1.5.5. Formeln und Zielbänder bleiben dabei unverändert.
+- **Zahlenwerte sind „v1.5“:** Das Balancing in AP 1.5.5 hat die Werte v1 gegen die [Pacing-Ziele](projektplan.md#35-pacing-ziele-vorläufig) nachjustiert; Formeln, Bots und Zielbänder blieben unverändert. Welche Werte sich geändert haben und warum, steht in [6.6](#66-messung-m15-werte-v15); die Tabellen in [2](#2-startwerte-und-konstanten), [3](#3-kostenkurven) und [4](#4-formeln) nennen die Werte v1.5. Die **Rechenbeispiele** in [4](#4-formeln) (Beispiel 1 bis 11 und die übrigen Rechnungen) sind mit den Werten v1 gerechnet und gelten mit ihnen weiter; sie erklären die Formeln, nicht den Spielstart. Die Specs rechnen sie mit den festen Werten v1 nach (`BALANCE_V1`).
 - **Alle Konstanten sind über Parameter überschreibbar** ([ADR-007](adr/007-modell-seite-echarts-balancing.md)). So testet die Modell-Seite Varianten ohne Codeänderung.
 - **Nicht enthalten:** die Darstellung der Sonar-Karte (AP 1.2.8), die Zyklen-Auswertung der Modell-Seite (AP 1.2.9) und Mechaniken ab M1.4 (siehe [Abschnitt 7](#7-ausblick)). Die Fundchance wird in M1.2 nur erzeugt und angezeigt, gezogen wird erst ab M1.3.
 - **Kein Klick:** Seit [AP 1.1.9](projektplan.md#m11--kernschleife--modell) kennt das Spiel keinen Klick mehr, an seine Stelle tritt der [Grundertrag](#41-grundertrag).
-- **M1.3 (entschieden mit M1.3):** Die Abschnitte [4.13](#413-effekt-system) bis [4.17](#417-sammlung-und-badges), [5.1](#51-spielstand-version-4), [6.3](#63-bots-ab-m13) und [6.4](#64-abschätzung-m13) sowie die M1.3-Zeilen in [2.1](#21-startzustand) und [2.3](#23-konstanten) legen Formeln, Startwerte, Kostenkurven und Spieldaten für AP 1.3.1–1.3.7 fest. Sie sind mit AP 1.3.1–1.3.7 umgesetzt; wo die Umsetzung eine Lücke mit einer Annahme gefüllt hat, steht diese als „entschieden mit M1.3“ im jeweiligen Abschnitt. Die Messung steht in [6.5](#65-messung-m13). Wie überall sind die Zahlen Werte v1 und dürfen bis AP 1.5.5 nachjustiert werden; jede Zahl ist über `params` überschreibbar ([2.3](#23-konstanten), Parameter je ID).
+- **M1.3 (entschieden mit M1.3):** Die Abschnitte [4.13](#413-effekt-system) bis [4.17](#417-sammlung-und-badges), [5.1](#51-spielstand-version-4), [6.3](#63-bots-ab-m13) und [6.4](#64-abschätzung-m13) sowie die M1.3-Zeilen in [2.1](#21-startzustand) und [2.3](#23-konstanten) legen Formeln, Startwerte, Kostenkurven und Spieldaten für AP 1.3.1–1.3.7 fest. Sie sind mit AP 1.3.1–1.3.7 umgesetzt; wo die Umsetzung eine Lücke mit einer Annahme gefüllt hat, steht diese als „entschieden mit M1.3“ im jeweiligen Abschnitt. Die Messung steht in [6.5](#65-messung-m13). Die Zahlen waren Werte v1; seit dem Balancing in AP 1.5.5 gelten die Werte v1.5 ([6.6](#66-messung-m15-werte-v15)). Jede Zahl ist über `params` überschreibbar ([2.3](#23-konstanten), Parameter je ID).
 
 | Thema | Abschnitt | Stories |
 |---|---|---|
@@ -31,7 +31,7 @@ Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilenste
 | Pheromone | [4.15](#415-pheromone) | US-03.01–03.03 |
 | Funde, einzigartige Adaptionen | [4.16](#416-funde) | US-06.01, 06.02 |
 | Sammlung und Badges | [4.17](#417-sammlung-und-badges) | US-06.03, 06.04 |
-| Bots, Abschätzung und Messung | [6.3](#63-bots-ab-m13), [6.4](#64-abschätzung-m13), [6.5](#65-messung-m13) | US-10.07, 10.08 |
+| Bots, Abschätzung und Messung | [6.3](#63-bots-ab-m13), [6.4](#64-abschätzung-m13), [6.5](#65-messung-m13), [6.6](#66-messung-m15-werte-v15) | US-10.07–10.09 |
 
 ## 2. Startwerte und Konstanten
 
@@ -42,9 +42,9 @@ Diese Spezifikation legt Formeln, Startwerte und Kostenkurven für die Meilenste
 | Königinnen | 1 |
 | Drohnen | 0 |
 | Soldaten | 0 |
-| Nahrung | 15 |
+| Nahrung | 130 (v1: 15) |
 | DNA | 0 |
-| Futterstelle | `vent` (Schlot), Größe 20.000, Vorrat voll (20.000) |
+| Futterstelle | `vent` (Schlot), Größe 30.000, Vorrat voll (30.000; v1: 20.000) |
 | Kaufzähler `bought` | 0 je Einheitentyp |
 | Position | Ursprung `(0, 0)` der Ebene |
 | Route | nur die Startfutterstelle |
@@ -63,42 +63,44 @@ Die Startverteilung 3 : 1 der Pheromone ergibt dieselbe Brut wie das feste Verh�
 
 | Einheit | Basiskosten `c` | Preisfaktor `w` | Wirkung | Platz |
 |---|---|---|---|---|
-| Drohne | 10 | 1,07 | sammelt 0,2 Nahrung/s | belegt 1 |
-| Soldat | 25 | 1,08 | Angriff 1 | belegt 2 |
-| Königin | 60 | 1,20 | 6 Eier/min | bietet 10 |
+| Drohne | 9 (v1: 10) | 1,04 (v1: 1,07) | sammelt 0,12 Nahrung/s (v1: 0,2) | belegt 1 |
+| Soldat | 18 (v1: 25) | 1,08 | Angriff 1 | belegt 2 |
+| Königin | 55 (v1: 60) | 1,45 (v1: 1,20) | 2 Eier/min (v1: 6) | bietet 25 (v1: 10) |
+
+Werte v1.5 ([6.6](#66-messung-m15-werte-v15)); in Klammern der Wert v1, wo er sich geändert hat.
 
 Jeder Einheitentyp hat eigene Nahrungskosten. Eier/min ist nur eine Rate, keine Ressource.
 
 ### 2.3 Konstanten
 
-| Symbol | Konstante | Wert v1 | Bedeutung |
+| Symbol | Konstante | Wert v1.5 | Bedeutung |
 |---|---|---|---|
-| `g_0` | `baseFoodRate` | 1,5 | Grundertrag in Nahrung/s; gemessen in AP 1.1.9 ([Abschnitt 6](#6-messwerte-v1)) |
-| `c_d` | `droneCost` | 10 | Basiskosten Drohne |
-| `w_d` | `droneCostGrowth` | 1,07 | Preisfaktor Drohne |
-| `r_d` | `droneCollectRate` | 0,2 | Nahrung/s je Drohne |
+| `g_0` | `baseFoodRate` | 4 (v1: 1,5) | Grundertrag in Nahrung/s; gemessen in AP 1.1.9 ([Abschnitt 6](#6-messwerte-v1)) |
+| `c_d` | `droneCost` | 9 (v1: 10) | Basiskosten Drohne |
+| `w_d` | `droneCostGrowth` | 1,04 (v1: 1,07) | Preisfaktor Drohne |
+| `r_d` | `droneCollectRate` | 0,12 (v1: 0,2) | Nahrung/s je Drohne |
 | `p_d` | `droneSpace` | 1 | Platzbedarf Drohne |
-| `c_s` | `soldierCost` | 25 | Basiskosten Soldat |
+| `c_s` | `soldierCost` | 18 (v1: 25) | Basiskosten Soldat |
 | `w_s` | `soldierCostGrowth` | 1,08 | Preisfaktor Soldat |
 | `a_s` | `soldierAttack` | 1 | Angriff je Soldat |
 | `p_s` | `soldierSpace` | 2 | Platzbedarf Soldat |
-| `c_q` | `queenCost` | 60 | Basiskosten Königin |
-| `w_q` | `queenCostGrowth` | 1,20 | Preisfaktor Königin |
-| `e_q` | `queenEggsPerMin` | 6 | Eier/min je Königin |
-| `p_q` | `queenSpace` | 10 | Platzangebot je Königin |
+| `c_q` | `queenCost` | 55 (v1: 60) | Basiskosten Königin |
+| `w_q` | `queenCostGrowth` | 1,45 (v1: 1,20) | Preisfaktor Königin |
+| `e_q` | `queenEggsPerMin` | 2 (v1: 6) | Eier/min je Königin |
+| `p_q` | `queenSpace` | 25 (v1: 10) | Platzangebot je Königin |
 | `a` | ~~`broodDroneShare`~~ | entfallen (bis M1.2: 3/4) | Drohnenanteil der Brut; seit M1.3 kein Parameter mehr, sondern `a = P_d / P_v` aus der Pheromon-Verteilung ([4.15](#415-pheromone)) |
-| – | `startFood` | 15 | Nahrung beim Start |
+| – | `startFood` | 130 (v1: 15) | Nahrung beim Start |
 | – | `startQueens` | 1 | Königinnen beim Start |
-| `s_0` | `siteSize` | 20.000 | Größe der ersten Futterstelle und Basis der Größe aller weiteren |
+| `s_0` | `siteSize` | 30.000 (v1: 20.000) | Größe der ersten Futterstelle und Basis der Größe aller weiteren |
 | `R_0` | `baseRange` | 5 | Grundreichweite in Distanzeinheiten |
 | `m` | `perceptionMargin` | 1 | Wahrnehmungssaum: so weit über die Reichweite hinaus sind Ziele mit Werten sichtbar |
 | `k` | `candidateCount` | 6 | Kandidaten je Erzeugung |
 | `d_min` | `candidateMinDistance` | 1 | kleinste Distanz eines Kandidaten |
 | `d_max` | `candidateMaxDistance` | 7 | größte Distanz eines Kandidaten |
-| `γ_G` | `siteSizeGrowth` | 1,4 | Wachstum der Größe je Weiterzug |
-| `β_G` | `siteSizeDistanceBonus` | 0,1 | Größenzuschlag je Distanzeinheit über 1 |
-| `b_0` | `siteDefenseBase` | 20 | Basis der Abwehr |
-| `γ_B` | `siteDefenseGrowth` | 1,35 | Wachstum der Abwehr je Weiterzug |
+| `γ_G` | `siteSizeGrowth` | 1,035 (v1: 1,4) | Wachstum der Größe je Weiterzug |
+| `β_G` | `siteSizeDistanceBonus` | 0,03 (v1: 0,1) | Größenzuschlag je Distanzeinheit über 1 |
+| `b_0` | `siteDefenseBase` | 2,2 (v1: 20) | Basis der Abwehr |
+| `γ_B` | `siteDefenseGrowth` | 1,13 (v1: 1,35) | Wachstum der Abwehr je Weiterzug |
 | `β_B` | `siteDefenseDistanceBonus` | 0,15 | Abwehrzuschlag je Distanzeinheit über 1 |
 | `σ` | `siteSpread` | 0,2 | Streuung des Zufallsfaktors `u` um 1 |
 | `d_0` | `dnaBase` | 1 | Basis der DNA-Belohnung |
@@ -117,17 +119,17 @@ Jeder Einheitentyp hat eigene Nahrungskosten. Eier/min ist nur eine Rate, keine 
 
 Weitere Symbole: `Q`, `D`, `S` sind die Anzahl Königinnen, Drohnen und Soldaten, `N` die Nahrung, `V` der Vorrat der Futterstelle, `G` ihre Größe, `B` die Abwehr eines Ziels, `P` die aktuelle Position, `R` die aktuelle Reichweite, `z` der Zugzähler und `dt` die Schrittdauer in Sekunden. Die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust` und `M_ausbeute` sind bis M1.2 gleich 1; ab M1.3 füllt sie das [Effekt-System](#413-effekt-system).
 
-**Konstanten für M1.3** (entschieden mit M1.3, Werte v1). Sie kommen zu `BalanceParams` hinzu und sind wie alle Konstanten über `params` überschreibbar.
+**Konstanten für M1.3** (entschieden mit M1.3, Werte v1; seit AP 1.5.5 Werte v1.5). Sie kommen zu `BalanceParams` hinzu und sind wie alle Konstanten über `params` überschreibbar.
 
-| Symbol | Konstante | Wert v1 | Bedeutung |
+| Symbol | Konstante | Wert v1.5 | Bedeutung |
 |---|---|---|---|
 | `P_d0` | `startPheromoneDrones` | 3 | Pheromonpunkte auf Drohnen beim Start |
 | `P_s0` | `startPheromoneSoldiers` | 1 | Pheromonpunkte auf Soldaten beim Start |
 | `P_0` | – | 4 | `P_d0 + P_s0`: Startpunkte und Bezugsgröße der Brutrate, `f(P_0) = 1` ([4.15](#415-pheromone)); abgeleitet, kein eigener Parameter |
-| `c_P` | `glandCost` | 100 | Basispreis eines Drüsenpunkts in Nahrung |
-| `w_P` | `glandCostGrowth` | 2 | Preisfaktor der Drüse |
-| `c_G` | `genomeCost` | 8 | DNA-Kosten eines Knotens der Stufe 1 ([4.14](#414-genom-ära-i)) |
-| `w_G` | `genomeCostGrowth` | √10 ≈ 3,1623 (exakt `√10`, im Code `Math.sqrt(10)`) | Kostenfaktor je Stufe; Stufen 1–5 kosten 8, 25, 80, 253, 800 DNA |
+| `c_P` | `glandCost` | 150 (v1: 100) | Basispreis eines Drüsenpunkts in Nahrung |
+| `w_P` | `glandCostGrowth` | 1,25 (v1: 2) | Preisfaktor der Drüse |
+| `c_G` | `genomeCost` | 3 (v1: 8) | DNA-Kosten eines Knotens der Stufe 1 ([4.14](#414-genom-ära-i)) |
+| `w_G` | `genomeCostGrowth` | 6 (v1: √10 ≈ 3,1623) | Kostenfaktor je Stufe; Stufen 1–5 kosten 3, 18, 108, 648, 3.888 DNA (v1: 8, 25, 80, 253, 800) |
 | `ρ` | `fallenRecycleYield` | 0,5 | Anteil von `c_s`, der je gefallenem Soldat als Nahrung zurückkommt (Autophagie, [4.13](#413-effekt-system)) |
 | `n_A` | `findHarvestDraws` | 4 | Abbau-Ziehungen je Futterstelle, je eine bei 25 %, 50 %, 75 % und 100 % abgebautem Vorrat ([4.16](#416-funde)) |
 | `σ_F` | `findSpread` | 0,2 | Streuung des Zufallsfaktors `u_F` der Fundmengen um 1 |
@@ -143,7 +145,7 @@ Benannt wird `<idCamel><Rolle>`, wobei `<idCamel>` die stabile ID in camelCase i
 |---|---|---|---|
 | reguläre Adaption ([4.14](#414-genom-ära-i)) | `GENOME_NODE_PARAMS` | `<id>Effect`: Betrag bzw. Faktor des Effekts mit Zahl | `cilia1Effect` (0,2), `flagellumEffect` (1,5), `autophagyEffect` (0,4) |
 | einzigartige Adaption ([4.14](#414-genom-ära-i)) | `UNIQUE_ADAPTATION_PARAMS` | `<id>Effect`, `<id>Fragments` (benötigte Fragmente) | `sulfurShellEffect` (1), `sulfurShellFragments` (5) |
-| Eintrag der Fundtabelle ([4.16](#416-funde)) | `FIND_ENTRY_PARAMS` | `<id>Weight` für jeden Eintrag; dazu für DNA `foreignDnaFactor` (`φ_D`), für Nahrung `nutrientBubbleShare` (`φ_N`), für Buffs `<id>Factor` (`μ_B`) und `<id>Seconds` (`T_B`) | `foreignDnaWeight` (30), `foreignDnaFactor` (1), `nutrientBubbleShare` (0,05), `planktonBloomSeconds` (600), `sulfurPearlWeight` (5), `pumiceWeight` (3) |
+| Eintrag der Fundtabelle ([4.16](#416-funde)) | `FIND_ENTRY_PARAMS` | `<id>Weight` für jeden Eintrag; dazu für DNA `foreignDnaFactor` (`φ_D`), für Nahrung `nutrientBubbleShare` (`φ_N`), für Buffs `<id>Factor` (`μ_B`) und `<id>Seconds` (`T_B`) | `foreignDnaWeight` (30), `foreignDnaFactor` (2, v1: 1), `nutrientBubbleShare` (0,05), `planktonBloomSeconds` (600), `sulfurPearlWeight` (5), `pumiceWeight` (3) |
 | Badge ([4.17](#417-sammlung-und-badges)) | `BADGE_PARAMS` | `<setId>BadgeEffect` | `matRelicsBadgeEffect` (0,05), `whaleRelicsBadgeEffect` (0,95) |
 | Futterstellentyp ([2.3](#23-konstanten)) | `SITE_TYPE_PARAMS` (besteht) | `<id>FindChance` (besteht) | `algalMatFindChance` (0,15) |
 
@@ -151,13 +153,15 @@ Ein Effekt ohne Zahl (`unlock fallenRecycling`) hat keinen Schlüssel. Hat eine 
 
 **Futterstellentypen der Ära I** (`siteTypes`, stabile IDs):
 
-| ID | Name | Größe× `f_G` | Abwehr× `f_B` | Fundchance | Gewicht `g` |
+| ID | Name | Größe× `f_G` (v1) | Abwehr× `f_B` | Fundchance | Gewicht `g` |
 |---|---|---|---|---|---|
-| `algal-mat` | Algenmatte | 0,5 | 0 | 15 % | 1 |
-| `vent` | Schlot | 1 | 1 | 20 % | 1 |
-| `bacterial-mat` | Bakterienrasen | 1,5 | 2,5 | 25 % | 1 |
-| `methane-seep` | Methanquelle | 2,5 | 2 | 30 % | 1 |
-| `whale-fall` | Walsturz | 3 | 3 | 40 % | 1 |
+| `algal-mat` | Algenmatte | 2,9 (0,5) | 0 | 15 % | 1 |
+| `vent` | Schlot | 3,75 (1) | 1 | 20 % | 1 |
+| `bacterial-mat` | Bakterienrasen | 5,6 (1,5) | 2,5 | 25 % | 1 |
+| `methane-seep` | Methanquelle | 9,4 (2,5) | 2 | 30 % | 1 |
+| `whale-fall` | Walsturz | 11,2 (3) | 3 | 40 % | 1 |
+
+Seit den Werten v1.5 sind die Größenfaktoren der Kandidaten rund 3,75-mal so groß wie in v1 (die Algenmatte nur 2,9 / 0,5 = 5,8-mal, bleibt aber kleiner als der Schlot), während `s_0` nur von 20.000 auf 30.000 steigt: Die Startfutterstelle hat die Größe `s_0` ohne Faktor, die Kandidaten sind damit von der Startfutterstelle entkoppelt ([6.6](#66-messung-m15-werte-v15)).
 
 `vent` ist die bestehende ID der ersten Futterstelle. Die Reihenfolge der Tabelle ist die Reihenfolge der gewichteten Ziehung ([4.6](#46-futterstellen-generator)). Das Gewicht ist vorläufig: Alle Typen sind gleich wahrscheinlich.
 
@@ -181,13 +185,13 @@ Preis = c · w^n
 
 | n | Drohne | Soldat | Königin |
 |---|---|---|---|
-| 0 | 10,00 | 25,00 | 60,00 |
-| 1 | 10,70 | 27,00 | 72,00 |
-| 5 | 14,03 | 36,73 | 149,30 |
-| 10 | 19,67 | 53,97 | 371,50 |
-| 20 | 38,70 | 116,52 | 2.300,26 |
+| 0 | 9,00 | 18,00 | 55,00 |
+| 1 | 9,36 | 19,44 | 79,75 |
+| 5 | 10,95 | 26,45 | 352,54 |
+| 10 | 13,32 | 38,86 | 2.259,66 |
+| 20 | 19,72 | 83,90 | 92.837,35 |
 
-Die Tabelle ist auf zwei Stellen gerundet. Gerechnet wird mit dem ungerundeten Preis.
+Die Tabelle ist auf zwei Stellen gerundet und nennt die Werte v1.5. Gerechnet wird mit dem ungerundeten Preis. Mit den Werten v1 (10 · 1,07ⁿ, 25 · 1,08ⁿ, 60 · 1,2ⁿ) waren es bei `n = 20` 38,70, 116,52 und 2.300,26; mit ihnen sind die Rechenbeispiele in [4](#4-formeln) gerechnet.
 
 ## 4. Formeln
 
@@ -426,7 +430,7 @@ für i = 1 … k, je Kandidat genau fünf Ziehungen in dieser Reihenfolge:
 2. Sonst wird der nächstgelegene Kandidat überhaupt ersetzt, und seine Distanz wird auf `R` gesetzt; der Winkel bleibt.
 3. Bei gleicher Distanz entscheidet der kleinere Index.
 
-Der Ersatz wird zur Algenmatte: Typ `algal-mat`, Größe mit derselben Formel, demselben `u_G` und der ggf. neuen Distanz, Abwehr 0. Die Algenmatte bringt keine DNA und wegen `f_G = 0,5` wenig Nahrung. Weil die Reichweite nur steigen kann, bleibt die Garantie bis zur nächsten Erzeugung erhalten.
+Der Ersatz wird zur Algenmatte: Typ `algal-mat`, Größe mit derselben Formel, demselben `u_G` und der ggf. neuen Distanz, Abwehr 0. Die Algenmatte bringt keine DNA und wegen `f_G = 2,9` (v1: 0,5) weniger Nahrung als ein Schlot (3,75). Weil die Reichweite nur steigen kann, bleibt die Garantie bis zur nächsten Erzeugung erhalten.
 
 **Beispiel 3** (Kandidaten beim Spielstart, `z = 0`, `P = (0, 0)`, `R = 5`). Die Ziehungen sind so gewählt, dass die Rechnung übersichtlich bleibt:
 
@@ -666,7 +670,7 @@ Die Effekte werden bei jeder Berechnung aus dem Zustand gesammelt und **nie gesp
 - `unlock` schaltet eine Regel ein. Mehrere Quellen derselben Freischaltung wirken wie eine.
 - **Bedingung** `when: { siteType }`: Der Effekt zählt nur, solange der Schwarm an einer Futterstelle dieses Typs steht und nicht reist. In Ära I gibt es Bedingungen nur für `collectRate`.
 
-**Parameter:** Der Betrag bzw. Faktor jedes Effekts mit Zahl ist ein eigener Schlüssel in `BalanceParams` (`<id>Effect`, `<id>BadgeEffect`, bei Buffs `<id>Factor`; Schema in [2.3](#23-konstanten), Parameter je ID). Spieldaten sind nur Quelle, Ziel, Operation und Bedingung. Die Zahlen in den Tabellen von 4.14, 4.16 und 4.17 sind die Werte v1 dieser Schlüssel.
+**Parameter:** Der Betrag bzw. Faktor jedes Effekts mit Zahl ist ein eigener Schlüssel in `BalanceParams` (`<id>Effect`, `<id>BadgeEffect`, bei Buffs `<id>Factor`; Schema in [2.3](#23-konstanten), Parameter je ID). Spieldaten sind nur Quelle, Ziel, Operation und Bedingung. Die Zahlen in den Tabellen von 4.14, 4.16 und 4.17 sind die Werte v1 dieser Schlüssel; das Balancing in AP 1.5.5 hat sie nicht geändert (Ausnahme: die DNA-Kosten aus `c_G` und `w_G`).
 
 **Verrechnung** (einheitlich für alle Ziele außer `unlock`):
 
@@ -794,33 +798,33 @@ Das Genom der Ära I hat eine Wurzel, drei Äste mit je fünf regulären Knoten 
 - **Kosten** in DNA nach Stufe `s` (1 bis 5), kaufmännisch gerundet:
 
   ```
-  Kosten(s) = round(c_G · w_G^(s−1))      // v1: 8, 25, 80, 253, 800
+  Kosten(s) = round(c_G · w_G^(s−1))      // v1.5: 3, 18, 108, 648, 3.888 (v1: 8, 25, 80, 253, 800)
   ```
 
-  Je Ast kostet das 1.166 DNA, das ganze reguläre Genom 3.498 DNA.
+  Je Ast kostet das 4.665 DNA, das ganze reguläre Genom 13.995 DNA (v1: 1.166 und 3.498).
 
-**Reguläre Knoten** (stabile IDs). Die Spalte „Effekte“ nennt Ziel und Operation (Spieldaten) und den Wert v1 des Schlüssels `<id>Effect` in `BalanceParams` (z. B. `cilia1Effect = 0,2`, `buddingEffect = 1,25`). Die DNA-Kosten folgen aus Stufe, `c_G` und `w_G`:
+**Reguläre Knoten** (stabile IDs). Die Spalte „Effekte“ nennt Ziel und Operation (Spieldaten) und den Wert v1 des Schlüssels `<id>Effect` in `BalanceParams` (z. B. `cilia1Effect = 0,2`, `buddingEffect = 1,25`). Die DNA-Kosten folgen aus Stufe, `c_G` und `w_G` (Spalte „DNA“ mit Werten v1.5):
 
 | ID | Name | Ast | Stufe | Vorgänger | DNA | Effekte |
 |---|---|---|---|---|---|---|
-| `cilia-1` | Cilien-Schlag I | Sammeln | 1 | `root` | 8 | `collectRate` `add +0,2` |
-| `cilia-2` | Cilien-Schlag II | Sammeln | 2 | `cilia-1` | 25 | `collectRate` `add +0,3` |
-| `filter-feeder` | Filtrierer | Sammeln | 3 | `cilia-2` | 80 | `findChance` `add +0,25` |
-| `chemotaxis` | Chemotaxis | Sammeln | 4 | `filter-feeder` | 253 | `range` `add +1` (5 → 6) |
-| `flagellum` | Geißelschlag | Sammeln | 5 | `chemotaxis` | 800 | `collectRate` `mul ×1,5` |
-| `yolk-reserve` | Dotterreserve | Brut | 1 | `root` | 8 | `broodRate` `add +0,2` |
-| `brood-combs` | Brutwaben | Brut | 2 | `yolk-reserve` | 25 | `spacePerQueen` `add +2` (10 → 12) |
-| `second-gland` | Zweite Drüse | Brut | 3 | `brood-combs` | 80 | `pheromonePoints` `add +1` |
-| `nurse-cells` | Ammenzellen | Brut | 4 | `second-gland` | 253 | `broodRate` `add +0,3` |
-| `budding` | Knospung | Brut | 5 | `nurse-cells` | 800 | `spacePerQueen` `mul ×1,25` (12 → 15) |
-| `acid-vacuole` | Säurevakuole | Kampf | 1 | `root` | 8 | `attackPerSoldier` `add +0,2` |
-| `autophagy` | Autophagie | Kampf | 2 | `acid-vacuole` | 25 | `sacrificeYield` `add +0,4`; `unlock fallenRecycling` |
-| `nettle-cells` | Nesselzellen | Kampf | 3 | `autophagy` | 80 | `combatLoss` `mul ×0,75` |
-| `chalk-shell` | Kalkpanzer | Kampf | 4 | `nettle-cells` | 253 | `combatLoss` `mul ×0,6` |
-| `spine-cells` | Stachelzellen | Kampf | 5 | `chalk-shell` | 800 | `attackPerSoldier` `add +0,5` |
+| `cilia-1` | Cilien-Schlag I | Sammeln | 1 | `root` | 3 | `collectRate` `add +0,2` |
+| `cilia-2` | Cilien-Schlag II | Sammeln | 2 | `cilia-1` | 18 | `collectRate` `add +0,3` |
+| `filter-feeder` | Filtrierer | Sammeln | 3 | `cilia-2` | 108 | `findChance` `add +0,25` |
+| `chemotaxis` | Chemotaxis | Sammeln | 4 | `filter-feeder` | 648 | `range` `add +1` (5 → 6) |
+| `flagellum` | Geißelschlag | Sammeln | 5 | `chemotaxis` | 3.888 | `collectRate` `mul ×1,5` |
+| `yolk-reserve` | Dotterreserve | Brut | 1 | `root` | 3 | `broodRate` `add +0,2` |
+| `brood-combs` | Brutwaben | Brut | 2 | `yolk-reserve` | 18 | `spacePerQueen` `add +2` (v1.5: 25 → 27; v1: 10 → 12) |
+| `second-gland` | Zweite Drüse | Brut | 3 | `brood-combs` | 108 | `pheromonePoints` `add +1` |
+| `nurse-cells` | Ammenzellen | Brut | 4 | `second-gland` | 648 | `broodRate` `add +0,3` |
+| `budding` | Knospung | Brut | 5 | `nurse-cells` | 3.888 | `spacePerQueen` `mul ×1,25` (v1.5: 27 → 33,75; v1: 12 → 15) |
+| `acid-vacuole` | Säurevakuole | Kampf | 1 | `root` | 3 | `attackPerSoldier` `add +0,2` |
+| `autophagy` | Autophagie | Kampf | 2 | `acid-vacuole` | 18 | `sacrificeYield` `add +0,4`; `unlock fallenRecycling` |
+| `nettle-cells` | Nesselzellen | Kampf | 3 | `autophagy` | 108 | `combatLoss` `mul ×0,75` |
+| `chalk-shell` | Kalkpanzer | Kampf | 4 | `nettle-cells` | 648 | `combatLoss` `mul ×0,6` |
+| `spine-cells` | Stachelzellen | Kampf | 5 | `chalk-shell` | 3.888 | `attackPerSoldier` `add +0,5` |
 
 - **Abweichung vom Mockup:** „Filtrierer“ wirkte dort auf Klicks, die es nicht mehr gibt. Hier filtert er Partikel aus dem Wasser und erhöht die Fundchance. Neu gegenüber dem Mockup sind Geißelschlag, Ammenzellen, Knospung und Stachelzellen; Autophagie erhöht zusätzlich die Ausbeute beim Opfern, damit `M_ausbeute` eine Quelle hat.
-- Mit allen regulären Knoten gilt: `M_sammeln = 1,5 · 1,5 = 2,25`, `M_brut = 1,5`, `M_fund = 1,25`, `R = 6`, `a_s* = 1,7`, `p_q* = 15`, `M_verlust = 0,45`, `η = 0,7`, `P_bonus = 1`.
+- Mit allen regulären Knoten gilt: `M_sammeln = 1,5 · 1,5 = 2,25`, `M_brut = 1,5`, `M_fund = 1,25`, `R = 6`, `a_s* = 1,7`, `p_q* = 33,75` (v1: 15), `M_verlust = 0,45`, `η = 0,7`, `P_bonus = 1`.
 
 **Einzigartige Adaptionen** (stabile IDs; US-06.02). „Benötigt“ ist der Wert v1 von `<id>Fragments`, der Effekt der von `<id>Effect` (z. B. `sulfurShellFragments = 5`, `sulfurShellEffect = 1`):
 
@@ -905,12 +909,13 @@ Der übrige Brutschritt bleibt wie in [4.3](#43-simulationsschritt): `e = E / 60
 **Kostenkurve der Drüse** (Nahrung, wie im Mockup; ohne Platz):
 
 ```
-Preis_P = c_P · w_P^k                  // v1: 100 · 2^k
+Preis_P = c_P · w_P^k                  // v1.5: 150 · 1,25^k (v1: 100 · 2^k)
 ```
 
 | k | 0 | 1 | 2 | 5 | 10 | 20 |
 |---|---|---|---|---|---|---|
-| Preis | 100 | 200 | 400 | 3.200 | 102.400 | ≈ 1,05 · 10⁸ |
+| Preis v1.5 | 150 | 187,5 | 234,38 | 457,76 | 1.396,98 | 13.010,43 |
+| Preis v1 | 100 | 200 | 400 | 3.200 | 102.400 | ≈ 1,05 · 10⁸ |
 
 Zum Vergleich kostet die 74. Königin (`n = 73`) rund 3,6 · 10⁷ Nahrung ([6.1](#61-messung-m12-historisch)). Ein Drüsenpunkt bringt `Q / P_v`-mal so viele Eier wie eine weitere Königin, aber keinen Platz.
 
@@ -946,7 +951,7 @@ u_F    = 1 − σ_F + 2σ_F · r_3                       // v1 in [0,8; 1,2)
 - **Ziel schon erreicht:** Ist ein gezogenes Fragment schon vollständig (Adaption frei) oder ein Sammelobjekt schon gesammelt, wird der Fund zu `foreign-dna` mit demselben `u_F`. Das Ereignis nennt den ursprünglichen Eintrag. So bleiben späte Funde wertvoll.
 - Jeder Fund erhöht den Fundzähler um 1, auch ein Ersatz.
 
-**Wirkung je Fundart** (`φ_D = foreignDnaFactor`, Wert v1 1; `φ_N = nutrientBubbleShare`, Wert v1 0,05; `μ_B` und `T_B` hat jeder Buff selbst als `<id>Factor` und `<id>Seconds`, Werte v1 1,5 und 600 s):
+**Wirkung je Fundart** (`φ_D = foreignDnaFactor`, Wert v1.5 2, v1 1; `φ_N = nutrientBubbleShare`, Wert v1 0,05; `μ_B` und `T_B` hat jeder Buff selbst als `<id>Factor` und `<id>Seconds`, Werte v1 1,5 und 600 s):
 
 | Art | Wirkung | Skalierung |
 |---|---|---|
@@ -957,13 +962,14 @@ u_F    = 1 − σ_F + 2σ_F · r_3                       // v1 in [0,8; 1,2)
 | Sammelobjekt | Objekt gesammelt; bei vollständigem Set wirkt das Badge ([4.17](#417-sammlung-und-badges)) | – |
 
 - `t` ist die Spielzeit `time.played` des Funds. Ein weiterer Fund desselben Buffs verlängert ihn um `T_B`; je Buff-ID gibt es höchstens einen Eintrag und damit nur einmal den Faktor.
-- Die DNA eines Funds wächst wie die Kampf-DNA mit `γ_B^(δ · z) ≈ 1,27^z`. Die Nahrung wächst mit der Größe der Futterstelle (`γ_G = 1,4` je Weiterzug). Beide verlieren also mit `z` nicht an Wert.
+- Die DNA eines Funds wächst wie die Kampf-DNA mit `γ_B^(δ · z)` (v1.5 `≈ 1,10^z`, v1 `≈ 1,27^z`). Die Nahrung wächst mit der Größe der Futterstelle (`γ_G` je Weiterzug, v1.5 1,035, v1 1,4). Beide verlieren also mit `z` nicht an Wert.
 
-| `z` | 0 | 1 | 5 | 10 | 20 | 27 |
-|---|---|---|---|---|---|---|
-| DNA je Fund (`u_F = 1`) | 10,99 | 13,97 | 36,5 | 121 | 1.338 | ≈ 7.180 |
+| `z` | 0 | 1 | 5 | 10 | 20 | 27 | 50 | 100 |
+|---|---|---|---|---|---|---|---|---|
+| DNA je Fund v1.5 (`u_F = 1`) | 3,76 | 4,14 | 6,13 | 9,99 | 26,56 | – | 499 | ≈ 66.260 |
+| DNA je Fund v1 (`u_F = 1`) | 10,99 | 13,97 | 36,5 | 121 | 1.338 | ≈ 7.180 | – | – |
 
-Rechnung für `z = 5`: `(20 · 1,35⁵)^0,8 = 89,7^0,8 ≈ 36,5`. Nahrung beim Start (Schlot, `G = 20.000`): `0,05 · 20.000 = 1.000`.
+Rechnung v1.5 für `z = 5`: `2 · (2,2 · 1,13⁵)^0,8 = 2 · 4,05^0,8 ≈ 6,13`; mit v1 `(20 · 1,35⁵)^0,8 = 89,7^0,8 ≈ 36,5`. Mit v1.5 wächst die DNA je Fund mit `1,13^0,8 ≈ 1,10` je Weiterzug statt mit `1,27`; weil die Bots mit v1.5 rund dreimal so oft weiterziehen, wird sie ab etwa `z = 50` dennoch groß ([6.6](#66-messung-m15-werte-v15)). Nahrung beim Start (Schlot, `G = 30.000`): `0,05 · 30.000 = 1.500` (v1: 1.000).
 
 **Fundtabelle Ära I** (stabile IDs; Reihenfolge = Ziehungsreihenfolge):
 
@@ -1106,7 +1112,7 @@ Version 2 hat den Spielstand um die aktuelle Futterstelle und die Kaufzähler er
 
 ## 6. Messwerte v1
 
-Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert, und zwar nur für die Bots „Aktiv“ und „Idle“. „Drohnen-lastig“ und „Soldaten-lastig“ sind Analyse-Bots ohne Zielband (entschieden mit M1.2). Die Wartezeit-Kennzahlen sind spielbezogen definiert, auch für die Analyse-Bots; seit M1.5 zählt dafür jeder Kauf ([6.5](#65-messung-m13), „Wartezeit“), vorher nur Königin und Drohne ([6.2](#62-messung-m11-historisch)). Aktuell ist die [Messung M1.3](#65-messung-m13); die Messungen [M1.2](#61-messung-m12-historisch) und [M1.1](#62-messung-m11-historisch) bleiben als historische Stände stehen. Die Abschnittsnummern 6.1 bis 6.4 bleiben unverändert, weil Code und Dokumente auf sie verweisen.
+Bis M1.4 galten die Werte v1; das Balancing in AP 1.5.5 hat sie zu den Werten v1.5 nachjustiert ([6.6](#66-messung-m15-werte-v15)). Die Zielbänder im [Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig) gelten unverändert, und zwar nur für die Bots „Aktiv“ und „Idle“. „Drohnen-lastig“ und „Soldaten-lastig“ sind Analyse-Bots ohne Zielband (entschieden mit M1.2). Die Wartezeit-Kennzahlen sind spielbezogen definiert, auch für die Analyse-Bots; seit M1.5 zählt dafür jeder Kauf ([6.5](#65-messung-m13), „Wartezeit“), vorher nur Königin und Drohne ([6.2](#62-messung-m11-historisch)). Aktuell ist die [Messung M1.5](#66-messung-m15-werte-v15) mit den Werten v1.5; die Messungen [M1.3](#65-messung-m13) (Werte v1), [M1.2](#61-messung-m12-historisch) und [M1.1](#62-messung-m11-historisch) bleiben als historische Stände stehen. Die Abschnittsnummern 6.1 bis 6.5 bleiben unverändert, weil Code und Dokumente auf sie verweisen.
 
 ### 6.1 Messung M1.2 (historisch)
 
@@ -1359,6 +1365,8 @@ Im Mittel kommt damit alle 5–10 min eine neue Option, also im Zielband. Die St
 
 ### 6.5 Messung M1.3
 
+> **Hinweis M1.5:** Gemessen mit den Werten v1. Aktuell ist die [Messung M1.5](#66-messung-m15-werte-v15) mit den Werten v1.5; die Mess-Definitionen unten gelten weiter.
+
 > **Gemessen** mit dem Headless-Runner (Stand AP 1.3.7, mit Effekt-System, Genom, Pheromonen, Funden, Sammlung und den Bots aus [6.3](#63-bots-ab-m13)). Die Werte v1 bleiben unverändert, das Balancing folgt in AP 1.5.5. Die Mess-Definitionen aus [6.1](#61-messung-m12-historisch) und [6.2](#62-messung-m11-historisch) gelten weiter, ergänzt um die unten.
 
 **Messaufbau**
@@ -1431,12 +1439,134 @@ Freischaltungen von Aktiv in der ersten Stunde: Drüsenpunkt 3 min 22 s, Fund un
 - **Upgrade-Tabelle** (Aktiv, Endzustand nach 24 h): Cilien-Schlag I bringt +12,9 % Nahrung/s, Cilien-Schlag II +20,7 %, Geißelschlag +50 %. Der nächste Drüsenpunkt amortisiert sich in 10,7 s, die nächste Königin in 6,4 s.
 - **Rechendauer:** Ein Lauf über 24 h dauert 1,1–1,7 s je Bot.
 
+### 6.6 Messung M1.5 (Werte v1.5)
+
+> **Gemessen** mit dem Headless-Runner (Stand AP 1.5.5, Balancing). Formeln, Bots ([6.3](#63-bots-ab-m13)), Mess-Definitionen ([6.1](#61-messung-m12-historisch), [6.2](#62-messung-m11-historisch), [6.5](#65-messung-m13), Wartezeit nach M1.5) und Zielbänder ([Projektplan §3.5](projektplan.md#35-pacing-ziele-vorläufig)) sind unverändert; geändert sind nur Werte (Auftrag PO, AP 1.5.5). Die Ergebnisse sind als Balancing-Snapshots eingefroren ([TK §5.6](technisches-konzept.md#56-balancing-als-test)).
+
+**Messaufbau**
+
+- Wie [6.5](#65-messung-m13): `runSimulation`, `stepMs` 1000, Dauer 24 h, Abtastung alle 60 s, Standardwerte v1.5. Die Kennzahlen „1 h“ sind aus demselben Lauf über das Fenster [0; 60 min] gerechnet (gleiches Ergebnis wie ein eigener Lauf über 1 h, weil die Bots deterministisch sind).
+- Seeds `modell` (Tabellen) und zur Prüfung der Robustheit `release` (eigene Tabelle). Onboarding und Einstellungen betreffen die Bots nicht.
+- Gefunden wurden die Werte mit einer Suche über rund 20 Werte (Evolutionsstrategie über beide Seeds und die Bots „Aktiv“ und „Idle“, bewertet nach Anteil der Futterstellen im Band, Abstand zu den übrigen Bändern, Genom komplett nach 10–12 h und mindestens drei Einnahmen mit Kampf), danach gerundet und von Hand nachgeprüft.
+
+**Geänderte Werte v1 → v1.5** (alle übrigen Werte aus [2.3](#23-konstanten), insbesondere alle Effekte, Fundchancen und Fundgewichte, sind unverändert)
+
+| Konstante | v1 | v1.5 | Begründung |
+|---|---|---|---|
+| `baseFoodRate` (`g_0`) | 1,5 | 4 | Der Grundertrag trägt mit weniger Brut und schwächeren Drohnen den Start; erster Kauf weiter bei 0 s, längste Wartezeit der ersten 30 min 25 s statt 1 min 51 s. |
+| `startFood` | 15 | 130 | Mit 130 Nahrung startet der Spieler mit mehreren Käufen (Drohnen, erster Drüsenpunkt nach 2,3 min); die Startwartezeit entfällt. |
+| `droneCost` (`c_d`) | 10 | 9 | Hält die erste Drohne am Start bezahlbar und die Brut günstig. |
+| `droneCostGrowth` (`w_d`) | 1,07 | 1,04 | Flachere Kurve: Drohnen bleiben über 24 h kaufbar, die Kauflücken kurz (Median 5 s, längste Strecke ohne Kauf 22 min statt 2 h 33 min). |
+| `droneCollectRate` (`r_d`) | 0,2 | 0,12 | Langsameres Sammeln je Drohne; die frühen Futterstellen dauern damit 10–19 min statt 3 min. |
+| `soldierCost` (`c_s`) | 25 | 18 | Billigere Brut (`c̄` 13,75 → 11,25) und erschwingliche Soldaten für den Kampf. |
+| `queenCost` (`c_q`) | 60 | 55 | Feinabstimmung zu `w_q`. |
+| `queenCostGrowth` (`w_q`) | 1,20 | 1,45 | Königinnen werden schneller teuer; die Brutrate wächst langsamer, die Dauer der Futterstellen bleibt über 24 h nahezu gleich. |
+| `queenEggsPerMin` (`e_q`) | 6 | 2 | Viel weniger Brut: Die Futterstellen leeren sich nicht mehr in 3 min, und beim Aufbruch bleibt weniger zurück (Überfüllung siehe unten). |
+| `queenSpace` (`p_q`) | 10 | 25 | Mehr Platz je Königin: Es kommen mehr Soldaten mit (`S' ≈ C / 5`), Kampfziele werden einnehmbar. |
+| `glandCost` (`c_P`) | 100 | 150 | Mit `w_P = 1,25` sonst zu früh und zu viele Drüsenpunkte. |
+| `glandCostGrowth` (`w_P`) | 2 | 1,25 | Drüsenpunkte bleiben über 24 h eine Option (47 statt 25 Punkte); sie füllen späte Kauflücken. |
+| `genomeCost` (`c_G`) | 8 | 3 | Die erste Adaption ist mit dem ersten Fund (ab 3,76 DNA) bezahlbar. |
+| `genomeCostGrowth` (`w_G`) | √10 ≈ 3,16 | 6 | DNA-Senke (Auftrag PO): Stufen 3, 18, 108, 648, 3.888 DNA, das reguläre Genom kostet 13.995 statt 3.498 DNA und ist bei „Aktiv“ nach 12 h 14 min komplett (Seed `release` 12 h 36 min) statt nach 2 h 53 min. |
+| `siteSize` (`s_0`) | 20.000 | 30.000 | Startfutterstelle; zusammen mit den Größenfaktoren (unten) von den Kandidaten entkoppelt. |
+| `siteSizeGrowth` (`γ_G`) | 1,4 | 1,035 | Hauptursache der späten Überlänge: Die Wirtschaft wächst nur polynomiell (siehe Auffälligkeiten), die Größe mit 1,4 je Weiterzug exponentiell. Mit 1,035 bleiben die Aufenthalte über 24 h bei 7–21 min. |
+| `siteSizeDistanceBonus` (`β_G`) | 0,1 | 0,03 | Weniger Unterschied zwischen nahen und fernen Zielen bei kleinem `γ_G`. |
+| `algalMatSizeFactor` | 0,5 | 2,9 | Gleicht `γ_G` aus; die Algenmatte bleibt kleiner als der Schlot und damit unattraktiver als jedes Kampfziel (Auftrag PO). |
+| `ventSizeFactor` | 1 | 3,75 | Größe der Kandidaten: rund das 3,75-Fache von v1, damit die Startfutterstelle (`s_0` ohne Faktor) nicht mitwächst. |
+| `bacterialMatSizeFactor` | 1,5 | 5,6 | wie Schlot, Verhältnis der Typen beibehalten |
+| `methaneSeepSizeFactor` | 2,5 | 9,4 | wie Schlot |
+| `whaleFallSizeFactor` | 3 | 11,2 | wie Schlot |
+| `siteDefenseBase` (`b_0`) | 20 | 2,2 | Kampf (Auftrag PO): Mit den mitkommenden Soldaten (`S' ≈ C / 5`) erreicht „Ausgewogen“ den Verlustanteil `ℓ_max` erst bei viel kleinerer Abwehr. |
+| `siteDefenseGrowth` (`γ_B`) | 1,35 | 1,13 | Die Abwehr wächst etwa so schnell wie der Platz; Kampfziele bleiben über 24 h einnehmbar. Senkt zugleich das Wachstum der DNA je Fund (`≈ 1,10^z` statt `1,27^z`). |
+| `foreignDnaFactor` (`φ_D`) | 1 | 2 | Gleicht die kleinere Abwehrbasis aus: Der erste Fund bringt 3,76 statt 1,9 DNA und damit die erste Adaption. |
+
+**Pacing-Kennzahlen** (Seed `modell`)
+
+| Kennzahl | Ziel aktiv | Aktiv | Drohnen-lastig | Soldaten-lastig | Ziel idle | Idle |
+|---|---|---|---|---|---|---|
+| Erster Kauf | < 10 s | 0 s | 0 s | 0 s | – | 0 s |
+| Längste Wartezeit, erste 30 min | ≤ 60 s | 25 s (ab 0 s) | 28 s | 3 s | < 5 min | 2 s |
+| Kauflücken, erste 30 min: Anzahl / Median | Median 5–60 s | 83 / 5 s | 79 / 9 s | 68 / 31 s | – | 6 / 5 min |
+| Weiterzüge in 24 h (davon auto) | – | 113 (113) | 128 (128) | 77 (77) | – | 112 (112) |
+| Gewählte Typen | – | 83 × Algenmatte, 12 × Walsturz, 9 × Methanquelle, 5 × Schlot, 4 × Bakterienrasen | 128 × Algenmatte | 39 × Algenmatte, 14 × Walsturz, 9 × Bakterienrasen, 8 × Methanquelle, 7 × Schlot | – | 82 × Algenmatte, 12 × Walsturz, 9 × Methanquelle, 5 × Schlot, 4 × Bakterienrasen |
+| Erste Futterstelle (Schlot) | 3–15 min | **15,66 min** | 14,0 min | **29,4 min** | 10–60 min | 20,6 min |
+| 2. / 3. / 4. Futterstelle | 3–15 min | **17,6 / 18,9 / 16,3 min** | 11,1 / 7,3 / 8,1 min | **29,8 / 33,1 / 26,0 min** | 10–60 min | 18,4 / 19,0 / 16,1 min |
+| Letzte fünf abgeschlossene Futterstellen | 3–15 min | **17,2 / 17,7 / 17,2 / 19,3 / 21,1 min** (109.–113.) | **20,7 / 20,6 / 20,2 / 21,6 / 22,1 min** (124.–128.) | **15,7** / 14,3 / **15,1** / 12,9 / **16,1 min** (73.–77.) | 10–60 min | 21,2 / 18,0 / 18,8 / 18,0 / 19,9 min (108.–112.) |
+| Median der Futterstellen | – | 11,1 min | 9,1 min | 16,3 min | – | 11,1 min |
+| Futterstellen im Zielband | – | **92 von 113** | 103 von 128 | **23 von 77** | – | **73 von 112** |
+| Längste Strecke ohne Kauf, 1 h | < 10 min | 6,87 min | 5,8 min | 5,7 min | < 60 min | 5,00 min |
+| Längste Strecke ohne Kauf, 24 h | < 10 min | **21,82 min** (ab 20 h 24 min) | **22,9 min** | **46,6 min** | < 60 min | 20,00 min |
+
+Fett: außerhalb des Zielbands (bei Drohnen- und Soldaten-lastig nur zum Vergleich gegen „aktiv“).
+
+**Progression** (Seed `modell`)
+
+| Kennzahl | Aktiv | Drohnen-lastig | Soldaten-lastig | Idle |
+|---|---|---|---|---|
+| Erster Drüsenpunkt | 2,3 min | 2,0 min | 8,6 min | 10,0 min |
+| Erster Fund / erste Adaption | 9,0 / 9,0 min | 8,3 / 8,3 min | 16,5 / 16,6 min | 12,4 / 15,0 min |
+| Erster Weiterzug | 15,7 min | 14,0 min | 29,4 min | 20,6 min |
+| Erste Einnahme mit Kampf | 16,0 min | – | 29,9 min | 20,9 min |
+| Einnahmen mit Kampf in 24 h | 30 | 0 | 38 | 30 |
+| Genom-Knoten nach 1 h / am Laufende | 3 / 15 | 2 / 15 | 2 / 15 | 3 / 15 |
+| Genom komplett (Ziel PO: etwa 10–12 h) | 12 h 14 min | 9 h 06 min | 21 h 26 min | 12 h 40 min |
+| DNA aus Kampf / Funden, 24 h | 716 / 2.376.923 | 0 / 7.266.396 | 1.638 / 63.410 | 707 / 1.622.686 |
+| Funde in 24 h (DNA / Nahrung / Buff / Fragment / Sammelobjekt) | 176 (86 / 36 / 38 / 7 / 9) | 139 (71 / 30 / 29 / 2 / 7) | 126 (54 / 27 / 30 / 5 / 10) | 172 (83 / 36 / 37 / 7 / 9) |
+| Einzigartige Adaptionen / Badges, 24 h | 2 / 2 | 1 / 2 | 2 / 2 | 2 / 2 |
+| Drüsenpunkte, 24 h | 47 | 49 | 42 | 46 |
+| Größter Abstand neuer Optionen, erste 60 min (Ziel aktiv 5–15 min) | **25,73 min** (34,3–60 min) | 35,1 min | 30,1 min | 20,0 min (40–60 min), ohne Zielband |
+
+Freischaltungen von Aktiv in der ersten Stunde: Drüsenpunkt 2,3 min, Fund und erste Adaption 9,0 min, Weiterzug 15,7 min, Adaption 16,0 min, Adaption 34,3 min, danach bis 60 min keine.
+
+**Robustheit, Seed `release`** (Aktiv / Idle): erster Kauf 0 s / 0 s; längste Wartezeit 44 s / 2 s; Median der Kauflücken 6 s / 5 min; 111 / 109 Weiterzüge mit 30 / 29 Einnahmen mit Kampf; Futterstellen im Band 92 von 111 / 86 von 109, erste Futterstelle 16,0 / 21,1 min; längste Strecke ohne Kauf über 24 h 22,45 / 20,0 min; größter Abstand neuer Optionen 22,5 min; Genom komplett nach 12 h 36 min / 13 h 05 min; DNA gesamt 703.381 / 703.330. Die Abweichungen sind dieselben wie bei `modell`.
+
+**Vergleich v1 (M1.3, mit der Wartezeit-Definition aus M1.5) → v1.5**, Seed `modell`
+
+| Kennzahl | Ziel | Aktiv v1 | Aktiv v1.5 | Idle v1 | Idle v1.5 |
+|---|---|---|---|---|---|
+| Längste Wartezeit, erste 30 min | ≤ 60 s / < 5 min | **1 min 51 s** | 25 s | 1 min 07 s | 2 s |
+| Median Kauflücken, erste 30 min | 5–60 s / – | 14 s | 5 s | 5 min | 5 min |
+| Futterstellen im Zielband | – | 17 von 37 | 92 von 113 | 16 von 36 | 73 von 112 |
+| Längste Futterstelle | ≤ 15 / ≤ 60 min | **187,7 min** | **21,1 min** | **186,8 min** | 21,2 min |
+| Längste Strecke ohne Kauf, 24 h | < 10 / < 60 min | **153,1 min** | **21,8 min** | **60,0 min** | 20,0 min |
+| Größter Abstand neuer Optionen, 1 h | 5–15 min | **30,9 min** | **25,7 min** | 25,0 min | 20,0 min |
+| Einnahmen mit Kampf, 24 h | (PO: mehrmals) | 0 | 30 | 0 | 30 |
+| Genom komplett | (PO: etwa 10–12 h) | 2 h 53 min | 12 h 14 min | 3 h 00 min | 12 h 40 min |
+| Warnungen der Zielbänder | – | 23 von 42 | 23 von 118 | 21 von 38 | 39 von 114 |
+
+**Zielband-Warnungen über 24 h** (Warnliste der Modell-Seite, US-10.08)
+
+- **Aktiv:** 23 von 118 Messungen außerhalb (v1: 23 von 42). Die 1. bis 4. Futterstelle liegen knapp über 15 min (15,7 bis 18,9 min), ab der 92. Futterstelle (ab rund 17 h) wieder über 15 min (15,0 bis 21,1 min), die längste Strecke ohne Kauf über 10 min (21,8 min) und der größte Abstand neuer Optionen über 15 min (25,7 min). Erster Kauf, Median der Kauflücken und längste Wartezeit liegen im Band.
+- **Idle:** 39 von 114 Messungen außerhalb (v1: 21 von 38). Alle sind Futterstellen unter 10 min (6,6 bis 9,9 min, zwischen der 7. und der 76. Futterstelle); längste Wartezeit (2 s) und längste Strecke ohne Kauf (20 min) liegen im Band.
+
+**Auffälligkeiten**
+
+- **Spätes Pacing:** Mit den Werten v1 wuchs die Größe je Weiterzug um 1,4, die Wirtschaft aber nur polynomiell: Die Brut ist linear in `Q · f(P_v)`, und `Q` und die Drüsenpunkte steigen nur logarithmisch mit der Nahrung, weil ihre Preise exponentiell wachsen. Über einen Aufenthalt sammelt der Schwarm etwa `r_d · M_sammeln · (D' · T + k · T² / 2)` mit der Drohnenbrut `k`; die Dauer wächst daher mit `√(G / k)` und lief bis über 3 h. Mit `γ_G = 1,035` folgt die Größe der Wirtschaft über 24 h fast; die Dauer schwankt zwischen 6 und 21 min und steigt erst in den letzten Stunden über 15 min.
+- **Aktiv und Idle liegen dicht beieinander:** Beide Bots ernähren sich vor allem aus Brut und Grundertrag; Idle ist je Futterstelle nur wenige Prozent langsamer (Median beider 11,1 min). Die Bänder 3–15 min (Aktiv) und 10–60 min (Idle) überlappen nur in 10–15 min. Eine Futterstelle von 8 min ist darum für Aktiv im Band und für Idle darunter; mit Werten allein lassen sich beide Bänder nicht vollständig treffen. Die Werte v1.5 legen den Schwerpunkt auf 10–14 min.
+- **Erste Stunde:** Die ersten Futterstellen dauern bei Aktiv 15,7 bis 18,9 min, weil die Wirtschaft am Start klein ist; kürzere Startfutterstellen ließen spätere Optionen in der ersten Stunde noch weiter auseinanderfallen. Nach der Adaption bei 16 min kommt die nächste neue Option erst bei 34,3 min (zweiter DNA-Fund), danach bis 60 min keine. Der Abstand hängt am Zufall der Funde (Seed `release`: 22,5 min).
+- **Längste Strecke ohne Kauf (Aktiv):** Gegen Ende spart Aktiv auf eine Königin oder einen Drüsenpunkt und kauft bis zu 22 min nichts anderes, weil er nach kürzester Amortisation spart ([6.3](#63-bots-ab-m13)). Kürzer wird die Strecke nur mit flacheren Preiskurven, was die Dauer der Futterstellen wieder verkürzt.
+- **Kampf:** Aktiv und Idle nehmen in 24 h je 30 Ziele mit Kampf ein (Walsturz, Methanquelle, Schlot, Bakterienrasen), die erste nach 16 bzw. 21 min. „Ausgewogen“ wählt das größte Ziel unter `ℓ_max`; weil die Algenmatte kleiner ist als jedes Kampfziel, kämpfen die Bots, sobald die Verluste es erlauben. Die Kampf-DNA bleibt klein (rund 700 DNA), weil die Abwehr niedrig ist.
+- **DNA-Senke:** Das Genom ist bei Aktiv nach 12 h 14 min komplett. Danach wächst die DNA bis AS2 ohne Senke an, bei `modell` auf rund 2,4 Mio., bei `release` auf rund 0,7 Mio. DNA; die DNA je Fund steigt mit der Zahl der Weiterzüge (`z` am Laufende rund 113). Erlaubt bis AS2 (Auftrag PO).
+- **Überfüllung beim Aufbruch (Befund T10):** Mit v1 hatte Aktiv beim letzten Aufbruch rund 930-mal so viele Einheiten wie Platz (Belegung 246.160 Soldaten vor, 264 nach dem Aufbruch). Ursache sind Werte und Regeln zusammen: Brut und Kauf sind nicht durch Platz begrenzt ([4.2](#42-manueller-kauf)), die Brut lief mit `e_q = 6` viel schneller als der Platz (`p_q = 10`) wuchs, und Aktiv bewertet eine Königin nur nach ihrer Brut, nicht nach ihrem Platz ([6.3](#63-bots-ab-m13)). Mit v1.5 (`e_q = 2`, `p_q = 25`) ist die Überfüllung beim Aufbruch rund 30-mal kleiner, aber nicht weg: nach 2 h etwa das 10-Fache, gegen Ende etwa das 20- bis 30-Fache des Platzes (Soldaten vor/nach dem Aufbruch an der 2. Futterstelle 911 / 87, an der 113. 6.482 / 223). Das ist mit den Regeln plausibel: Ohne Aufbruch wächst der Schwarm an Ort und Stelle; was beim Aufbruch nicht mitkommt, war billige Brut. Weniger Überfüllung bräuchte eine Regeländerung (siehe „Offen“).
+- **Rechendauer:** Ein Lauf über 24 h dauert rund 0,9 s (Aktiv) bzw. 0,4 s (Idle); die Balancing-Snapshots (vier Läufe) brauchen in Vitest rund 6 s.
+
+**Offen** (Vorschläge mit Formeländerung, nicht umgesetzt; Entscheidung PO)
+
+- **Futterstellen-Dauer Aktiv/Idle:** Damit Idle (≥ 10 min) und Aktiv (≤ 15 min) zugleich im Band liegen, müsste Aktiv deutlich schneller wachsen als Idle. Mögliche Formeln: Kaufwirkung stärker als Brut (z. B. gekaufte Drohnen sammeln mehr als gebrütete) oder ein Ertrag, der mit aktiven Entscheidungen steigt. Alternativ die Bänder neu bewerten.
+- **Späte Futterstellen:** Eine Größe, die mit der Zahl der Königinnen oder der Brutrate statt mit `γ_G^z` wächst, hielte die Dauer auch über 24 h hinaus konstant.
+- **Überfüllung:** Brut nur bis zum Platz (oder stark gedämpft darüber) oder ein Bot, der Königinnen auch nach Platz bewertet (Bot-Regel, [6.3](#63-bots-ab-m13)).
+- **Neue Optionen in der ersten Stunde:** Eine feste zweite DNA-Quelle in der ersten Stunde (z. B. garantierter zweiter DNA-Fund) oder eine Freischaltung, die nicht vom Fundzufall abhängt.
+- **Längste Strecke ohne Kauf (Aktiv):** hängt an der Sparregel von Aktiv; eine Bot-Regel „kauft die bezahlbare zweitbeste Option, wenn die beste länger als x min entfernt ist“ würde sie verkürzen.
+
 ## 7. Ausblick
 
 - **M1.2, erledigt:** Die Sonar-Karte (AP 1.2.8) stellt Kandidaten, Status, Reichweite, Route und das Ziel der Strategie dar. Die Modell-Seite wertet Zyklen aus (AP 1.2.9: Dauer und Ertrag je Futterstelle, Reisezeit, Soldaten-Bilanz, Stillstands-Warnungen) und hat die Bots „Drohnen-lastig“ und „Soldaten-lastig“. Alle vier Bots ziehen über das Auto-Weiterziehen weiter; die Messwerte stehen in [Abschnitt 6.1](#61-messung-m12-historisch).
 - **M1.3, erledigt:** Das Effekt-System ([4.13](#413-effekt-system)) füllt die Modifikatoren `M_sammeln`, `M_brut`, `M_verlust`, `M_ausbeute` und `M_fund` sowie Reichweite, Angriff je Soldat, Platz je Königin und Pheromonpunkte. Das Genom der Ära I ([4.14](#414-genom-ära-i)) gibt DNA für 15 reguläre Adaptionen aus; vier einzigartige Adaptionen entstehen aus Fragmenten. Pheromone ([4.15](#415-pheromone)) lösen das feste Brutverhältnis ab, die Drüse kostet Nahrung. Funde ([4.16](#416-funde)) werden bei jeder Einnahme und an vier Abbau-Schwellen gezogen und bringen neben dem Kampf die einzige DNA. Dazu kommen Sammlung und Badges ([4.17](#417-sammlung-und-badges)), Spielstand Version 4 ([5.1](#51-spielstand-version-4)) und die Bots für AP 1.3.7 ([6.3](#63-bots-ab-m13)). Umgesetzt in AP 1.3.1 bis 1.3.7; die Modell-Seite zeigt Upgrade-Wirkung, DNA-Fluss, Zielbänder und Warnungen, die Messwerte stehen in [Abschnitt 6.5](#65-messung-m13).
-- **AP 1.5.5:** Feintuning aller Werte v1 gegen die Zielbänder. Offene Punkte aus M1.3:
-  - **DNA-Senke:** Gemessen ist das reguläre Genom bei Aktiv nach 2 h 53 min vollständig, nach 24 h liegen rund 32.600 DNA ungenutzt ([6.4](#64-abschätzung-m13), [6.5](#65-messung-m13)). Bis AS2 fehlt der DNA eine Senke.
-  - **Pacing-Abweichungen aus der Messung M1.3:** frühe Futterstellen unter dem Band (Aktiv 2. und 3., Idle 2. bis 14.), späte über dem Band (Aktiv ab der 20., Idle ab der 30.), größter Abstand neuer Optionen in der ersten Stunde 30 min 56 s statt höchstens 15 min, längste Strecke ohne Kauf über 24 h (Aktiv 2 h 33 min, Idle genau 60 min) und die längste Wartezeit von Aktiv (2 min 14 s).
-  - Kein Kampf bei Aktiv und Idle trotz Kampf-Ast; die Rückkopplung aus [6.4](#64-abschätzung-m13) bleibt aus.
+- **AP 1.5.5, erledigt:** Balancing der Werte v1 zu den Werten v1.5 ([6.6](#66-messung-m15-werte-v15)); die Ergebnisse sind als Balancing-Snapshots eingefroren (US-10.09, [TK §5.6](technisches-konzept.md#56-balancing-als-test)). Behoben bzw. verbessert gegenüber M1.3:
+  - **DNA-Senke:** Das reguläre Genom kostet 13.995 statt 3.498 DNA und ist bei Aktiv nach 12 h 14 min komplett (vorher 2 h 53 min). Danach sammelt sich DNA bis AS2 an (erlaubt).
+  - **Kampf:** Aktiv und Idle nehmen in 24 h je 30 Ziele mit Kampf ein (vorher keines).
+  - **Pacing:** Futterstellen im Band Aktiv 92 von 113 (vorher 17 von 37), Idle 73 von 112 (16 von 36); längste Futterstelle rund 21 min statt über 3 h; längste Wartezeit von Aktiv 25 s (1 min 51 s); längste Strecke ohne Kauf über 24 h Aktiv 21,8 min (2 h 33 min), Idle 20 min (60 min).
+- **Offen nach AP 1.5.5** (nur mit Formel- oder Bot-Änderungen erreichbar, Vorschläge in [6.6](#66-messung-m15-werte-v15) unter „Offen“; Entscheidung PO):
+  - Aktiv: die ersten vier und die Futterstellen ab etwa 17 h knapp über 15 min, längste Strecke ohne Kauf über 24 h 21,8 min statt < 10 min, größter Abstand neuer Optionen in der ersten Stunde 25,7 min statt ≤ 15 min.
+  - Idle: rund ein Drittel der Futterstellen knapp unter 10 min, weil Aktiv und Idle fast gleich schnell sind und die Bänder nur in 10–15 min überlappen.
+  - Überfüllung beim Aufbruch: noch das 10- bis 30-Fache des Platzes (mit v1 bis 930-fach), weil Brut nicht durch Platz begrenzt ist.
 - **Nach Ära I:** Weitere Effektziele (z. B. Grundertrag, Reisedauer, Preise) und Bedingungen kommen mit späteren Mechaniken dazu, ohne die Verrechnungsregel aus 4.13 zu ändern.

@@ -1,9 +1,5 @@
-import {
-  BalanceParams,
-  DEFAULT_BALANCE,
-  TICK_MS,
-  TICKS_PER_SECOND,
-} from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
+import { BalanceParams, TICK_MS, TICKS_PER_SECOND } from '@app/balance/domain/constants';
 import { Num } from '@app/shared/util/num/num';
 import { SiteTypeId } from '@app/site/domain/data/sites-era1.data';
 import { SiteCandidate } from '@app/site/domain/models/map.model';
@@ -25,10 +21,11 @@ function deepFreeze<T>(value: T): T {
 }
 
 describe('step', () => {
-  const createState = (): GameState => deepFreeze(createInitialState({ seed: 'step', now: NOW }));
+  const createState = (): GameState =>
+    deepFreeze(createInitialState({ seed: 'step', now: NOW }, BALANCE_V1));
 
   it('erhöht now und played um dtMs', () => {
-    const { state, events } = step(createState(), TICK_MS);
+    const { state, events } = step(createState(), TICK_MS, BALANCE_V1);
     expect(state.time).toEqual({ now: NOW + TICK_MS, lastSaved: NOW, played: TICK_MS });
     expect(events).toEqual([]);
   });
@@ -36,7 +33,7 @@ describe('step', () => {
   it('verändert die eingefrorene Eingabe nicht', () => {
     const input = createState();
     const before = JSON.stringify(input);
-    const { state } = step(input, TICK_MS);
+    const { state } = step(input, TICK_MS, BALANCE_V1);
     expect(state).not.toBe(input);
     expect(state.time).not.toBe(input.time);
     expect(JSON.stringify(input)).toBe(before);
@@ -44,7 +41,7 @@ describe('step', () => {
 
   it('teilt alle Teile, die der Schritt nicht ändert', () => {
     const input = createState();
-    const { state } = step(input, TICK_MS);
+    const { state } = step(input, TICK_MS, BALANCE_V1);
     expect(state.bought).toBe(input.bought);
     expect(state.rngState).toBe(input.rngState);
     expect(state.seed).toBe(input.seed);
@@ -53,7 +50,7 @@ describe('step', () => {
   });
 
   it('lässt Königinnen brüten und bringt den Grundertrag ein', () => {
-    const { state } = step(createState(), TICK_MS);
+    const { state } = step(createState(), TICK_MS, BALANCE_V1);
     expect(state.units.drones.eq(0.0075)).toBe(true);
     expect(state.units.soldiers.eq(0.0025)).toBe(true);
     // 15 + 1,5 · 0,1 − 0,01 · 13,75
@@ -62,7 +59,7 @@ describe('step', () => {
   });
 
   it('reicht die Parameter an die Brut weiter', () => {
-    const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 60 };
+    const params = { ...BALANCE_V1, queenEggsPerMin: 60 };
     // Alle vier Startpunkte auf Drohnen: `f = 1`, `a = 1`.
     const input = { ...createState(), pheromones: { drones: 4, soldiers: 0, glands: 0 } };
     const { state } = step(input, 1000, params);
@@ -73,7 +70,7 @@ describe('step', () => {
 
   it('hängt die Brut bei genug Nahrung kaum von der Schrittweite ab', () => {
     // Ohne Sammeln: Im feinen Raster sammeln frisch geschlüpfte Drohnen sonst schon mit.
-    const params = { ...DEFAULT_BALANCE, startFood: 1000, droneCollectRate: 0 };
+    const params = { ...BALANCE_V1, startFood: 1000, droneCollectRate: 0 };
     const input = deepFreeze(createInitialState({ seed: 'step', now: NOW }, params));
     let fine = input;
     for (let i = 0; i < 10; i++) {
@@ -98,7 +95,7 @@ describe('step', () => {
     };
 
     it('rechnet Beispiel 1 aus Game-Design §4.3 vollständig', () => {
-      const { res, site, units } = step(swarm(1, 10, 5, 1000), TICK_MS).state;
+      const { res, site, units } = step(swarm(1, 10, 5, 1000), TICK_MS, BALANCE_V1).state;
       expect(res.food.toNumber()).toBeCloseTo(5.2125, 10);
       expect(site.stock.toNumber()).toBeCloseTo(999.65, 10);
       expect(units.drones.toNumber()).toBeCloseTo(10.0075, 10);
@@ -106,18 +103,18 @@ describe('step', () => {
     });
 
     it('sammelt vor der Brut, frische Nahrung reicht im selben Schritt', () => {
-      const { res, units } = step(swarm(1, 10, 0, 1000), TICK_MS).state;
+      const { res, units } = step(swarm(1, 10, 0, 1000), TICK_MS, BALANCE_V1).state;
       expect(units.soldiers.toNumber()).toBeCloseTo(0.0025, 10);
       expect(res.food.toNumber()).toBeCloseTo(0.2125, 10);
     });
 
     it('sammelt mit den Drohnen vom Anfang des Schritts', () => {
-      const { site } = step(swarm(100, 10, 1000, 1000), 1000).state;
+      const { site } = step(swarm(100, 10, 1000, 1000), 1000, BALANCE_V1).state;
       expect(site.stock.toNumber()).toBeCloseTo(996.5, 10);
     });
 
     it('reicht die Parameter an das Sammeln weiter', () => {
-      const params = { ...DEFAULT_BALANCE, droneCollectRate: 1 };
+      const params = { ...BALANCE_V1, droneCollectRate: 1 };
       const { res, site } = step(swarm(0, 10, 0, 1000), 1000, params).state;
       expect(res.food.eq(11.5)).toBe(true);
       expect(site.stock.eq(988.5)).toBe(true);
@@ -125,7 +122,7 @@ describe('step', () => {
 
     it('lässt die Brut bei leerem Vorrat weiterlaufen', () => {
       const input = swarm(1, 10, 5, 0);
-      const { state } = step(input, TICK_MS);
+      const { state } = step(input, TICK_MS, BALANCE_V1);
       expect(state.site).toBe(input.site);
       expect(state.res.food.toNumber()).toBeCloseTo(4.8625, 10);
       expect(state.units.drones.toNumber()).toBeCloseTo(10.0075, 10);
@@ -134,7 +131,9 @@ describe('step', () => {
 
   it('liefert bei gleicher Eingabe dasselbe Ergebnis', () => {
     const input = createState();
-    expect(JSON.stringify(step(input, 250))).toBe(JSON.stringify(step(input, 250)));
+    expect(JSON.stringify(step(input, 250, BALANCE_V1))).toBe(
+      JSON.stringify(step(input, 250, BALANCE_V1)),
+    );
   });
 
   it('lässt Zustand ohne Königinnen und ohne Vorrat bis auf die Zeit unverändert', () => {
@@ -144,7 +143,7 @@ describe('step', () => {
       units: { ...base.units, queens: Num.ZERO },
       site: { ...base.site, stock: Num.ZERO },
     });
-    const { state } = step(input, TICK_MS);
+    const { state } = step(input, TICK_MS, BALANCE_V1);
     expect(state.res).toBe(input.res);
     expect(state.units).toBe(input.units);
     expect(state.site).toBe(input.site);
@@ -153,7 +152,7 @@ describe('step', () => {
 
   it.each([0, -0])('gibt bei dtMs %d denselben Zustand zurück', (dtMs) => {
     const input = createState();
-    const { state, events } = step(input, dtMs);
+    const { state, events } = step(input, dtMs, BALANCE_V1);
     expect(state).toBe(input);
     expect(events).toEqual([]);
   });
@@ -161,7 +160,7 @@ describe('step', () => {
   it.each([-1, -Number.MIN_VALUE, Number.NaN, Infinity, -Infinity])(
     'wirft bei ungültigem dtMs %d einen RangeError',
     (dtMs) => {
-      expect(() => step(createState(), dtMs)).toThrow(RangeError);
+      expect(() => step(createState(), dtMs, BALANCE_V1)).toThrow(RangeError);
     },
   );
 
@@ -171,7 +170,7 @@ describe('step', () => {
     let state = input;
     const events: GameEvent[] = [];
     for (let i = 0; i < ticks; i++) {
-      const result = step(state, TICK_MS);
+      const result = step(state, TICK_MS, BALANCE_V1);
       events.push(...result.events);
       state = deepFreeze(result.state);
     }
@@ -187,7 +186,9 @@ describe('step', () => {
 
 describe('syncClock', () => {
   const createState = (): GameState =>
-    deepFreeze(step(createInitialState({ seed: 'sync', now: NOW }), TICK_MS).state);
+    deepFreeze(
+      step(createInitialState({ seed: 'sync', now: NOW }, BALANCE_V1), TICK_MS, BALANCE_V1).state,
+    );
 
   it('setzt nur time.now und lässt played und lastSaved unverändert', () => {
     const input = createState();
@@ -232,10 +233,10 @@ describe('step mit Weiterziehen', () => {
   ];
 
   // Die übrigen Reisetests nehmen S = 34 bei Q = 1 mit; dafür braucht es 68 Plätze statt 10.
-  const params = { ...DEFAULT_BALANCE, queenSpace: 70 };
+  const params = { ...BALANCE_V1, queenSpace: 70 };
 
   function swarm(candidates: readonly SiteCandidate[] = EXAMPLE_3): GameState {
-    const base = createInitialState({ seed: 'reise', now: NOW });
+    const base = createInitialState({ seed: 'reise', now: NOW }, BALANCE_V1);
     return deepFreeze({
       ...base,
       res: { ...base.res, food: Num.from(100) },
@@ -275,9 +276,9 @@ describe('step mit Weiterziehen', () => {
       res: { ...base.res, food: Num.from(300) },
       units: { ...base.units, queens: Num.from(7) },
     });
-    const start = applyCommand(input, { type: 'depart', target: 0 }, DEFAULT_BALANCE);
+    const start = applyCommand(input, { type: 'depart', target: 0 }, BALANCE_V1);
     expect(start.events.map((event) => event.type)).toEqual(['departed']);
-    const { state, events } = run(deepFreeze(start.state), 30_000, TICK_MS, DEFAULT_BALANCE);
+    const { state, events } = run(deepFreeze(start.state), 30_000, TICK_MS, BALANCE_V1);
     // Unterwegs schlüpfen 21 Eier, gekämpft wird mit S = 39,25.
     expect(state.units.soldiers.toNumber()).toBeCloseTo(39.25 - 8.61, 2);
     expect(state.units.drones.toNumber()).toBeCloseTo(15.75, 10);
@@ -421,7 +422,7 @@ describe('step mit Weiterziehen', () => {
 describe('step mit Funden (Game-Design §4.16)', () => {
   /** Ohne Königin keine Brut: Die Abbaurate ist dann über den ganzen Lauf konstant. */
   const params: BalanceParams = {
-    ...DEFAULT_BALANCE,
+    ...BALANCE_V1,
     startQueens: 0,
     ventFindChance: 1,
     algalMatFindChance: 1,
@@ -555,11 +556,11 @@ describe('step mit Funden (Game-Design §4.16)', () => {
 
 describe('step mit Onboarding (Game-Design §4.18)', () => {
   const createState = (): GameState =>
-    deepFreeze(createInitialState({ seed: 'onboarding', now: NOW }));
+    deepFreeze(createInitialState({ seed: 'onboarding', now: NOW }, BALANCE_V1));
 
   it('behält das Onboarding-Objekt, solange nichts freigeschaltet wird', () => {
     const input = createState();
-    const { state } = step(input, TICK_MS);
+    const { state } = step(input, TICK_MS, BALANCE_V1);
     expect(state.onboarding).toBe(input.onboarding);
   });
 
@@ -570,24 +571,24 @@ describe('step mit Onboarding (Game-Design §4.18)', () => {
       units: { ...input.units, drones: Num.from(100) },
       site: { ...input.site, stock: Num.from(5010) },
     });
-    expect(step(near, TICK_MS).state.onboarding.unlocked).toEqual([]);
-    const { state } = step(near, 1000);
+    expect(step(near, TICK_MS, BALANCE_V1).state.onboarding.unlocked).toEqual([]);
+    const { state } = step(near, 1000, BALANCE_V1);
     expect(state.site.stock.lte(5000)).toBe(true);
     expect(state.onboarding).toEqual({ unlocked: ['map'], seenHints: [] });
   });
 
   it('nutzt den Anteil aus params', () => {
-    const params = { ...DEFAULT_BALANCE, mapUnlockStockShare: 1 };
+    const params = { ...BALANCE_V1, mapUnlockStockShare: 1 };
     expect(step(createState(), TICK_MS, params).state.onboarding.unlocked).toEqual(['map']);
   });
 
   it('schaltet das Genom mit der ersten DNA frei und behält Freischaltungen', () => {
     const input = createState();
     const withDna = deepFreeze({ ...input, res: { ...input.res, dna: Num.from(0.5) } });
-    const unlocked = step(withDna, TICK_MS).state;
+    const unlocked = step(withDna, TICK_MS, BALANCE_V1).state;
     expect(unlocked.onboarding.unlocked).toEqual(['genome']);
     const spent = { ...unlocked, res: { ...unlocked.res, dna: Num.ZERO } };
-    const later = step(spent, TICK_MS).state;
+    const later = step(spent, TICK_MS, BALANCE_V1).state;
     expect(later.onboarding).toBe(unlocked.onboarding);
   });
 });

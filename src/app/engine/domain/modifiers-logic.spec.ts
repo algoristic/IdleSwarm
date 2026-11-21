@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { modifierFactor, NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import {
   attackPerSoldier,
@@ -24,7 +24,7 @@ import {
   uniqueAdaptationPreview,
 } from './modifiers-logic';
 
-const params = DEFAULT_BALANCE;
+const params = BALANCE_V1;
 
 describe('stateModifiers (Game-Design §4.13)', () => {
   const initial = createInitialState({ seed: 'effekte', now: 1000 });

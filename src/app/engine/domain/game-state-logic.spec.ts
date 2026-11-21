@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { nextRandom, seedToRngState } from '@app/shared/util/rng/rng';
 import { generateCandidates } from '@app/site/domain/generator-logic';
 
@@ -7,7 +7,7 @@ import { STATE_VERSION } from './models/game-state.model';
 
 describe('createInitialState', () => {
   const NOW = 1_700_000_000_000;
-  const state = createInitialState({ seed: 'idleswarm', now: NOW });
+  const state = createInitialState({ seed: 'idleswarm', now: NOW }, BALANCE_V1);
 
   it('setzt Version, Seed und Ära', () => {
     expect(STATE_VERSION).toBe(5);
@@ -19,7 +19,7 @@ describe('createInitialState', () => {
   it('erzeugt die Startkandidaten aus dem RNG-Zustand des Seeds und schreibt ihn fort', () => {
     const generated = generateCandidates(
       { origin: { x: 0, y: 0 }, moves: 0, range: 5, rngState: seedToRngState('idleswarm') },
-      DEFAULT_BALANCE,
+      BALANCE_V1,
     );
     expect(JSON.stringify(state.map.candidates)).toBe(JSON.stringify(generated.candidates));
     expect(state.map.candidates).toHaveLength(6);
@@ -31,10 +31,10 @@ describe('createInitialState', () => {
   });
 
   it('beginnt auf Wunsch mit einem übergebenen RNG-Zustand', () => {
-    const custom = createInitialState({ seed: 'idleswarm', now: NOW, rngState: 3 });
+    const custom = createInitialState({ seed: 'idleswarm', now: NOW, rngState: 3 }, BALANCE_V1);
     const generated = generateCandidates(
       { origin: { x: 0, y: 0 }, moves: 0, range: 5, rngState: 3 },
-      DEFAULT_BALANCE,
+      BALANCE_V1,
     );
     expect(custom.seed).toBe('idleswarm');
     expect(custom.rngState).toBe(generated.rngState);
@@ -70,7 +70,7 @@ describe('createInitialState', () => {
   });
 
   it('leitet den Fund-RNG auch bei übergebenem RNG-Zustand aus dem Seed ab', () => {
-    const custom = createInitialState({ seed: 'idleswarm', now: NOW, rngState: 3 });
+    const custom = createInitialState({ seed: 'idleswarm', now: NOW, rngState: 3 }, BALANCE_V1);
     expect(custom.finds.rngState).toBe(state.finds.rngState);
   });
 
@@ -78,7 +78,7 @@ describe('createInitialState', () => {
     const custom = createInitialState(
       { seed: 'idleswarm', now: NOW },
       {
-        ...DEFAULT_BALANCE,
+        ...BALANCE_V1,
         startFood: 7,
         startQueens: 2,
         siteSize: 500,
@@ -145,7 +145,7 @@ describe('createInitialState', () => {
   });
 
   it('teilt keine veränderlichen Teilobjekte zwischen zwei Zuständen', () => {
-    const other = createInitialState({ seed: 'idleswarm', now: NOW });
+    const other = createInitialState({ seed: 'idleswarm', now: NOW }, BALANCE_V1);
     expect(other).not.toBe(state);
     expect(other.time).not.toBe(state.time);
     expect(other.res).not.toBe(state.res);
@@ -175,7 +175,7 @@ describe('createInitialState', () => {
   it('schaltet mit überschriebenen Startwerten frei, was schon erreicht ist', () => {
     const rich = createInitialState(
       { seed: 'idleswarm', now: NOW },
-      { ...DEFAULT_BALANCE, startFood: 100 },
+      { ...BALANCE_V1, startFood: 100 },
     );
     expect(rich.onboarding.unlocked).toEqual(['pheromones']);
   });

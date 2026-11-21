@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { combineEffects, NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
@@ -69,14 +69,14 @@ describe('departureBlocker und canDepart (Game-Design §4.11)', () => {
   it('erlaubt einnehmbare Ziele in Reichweite', () => {
     const state = stateWith();
     expect(
-      [0, 1, 2, 3, 4, 5].map((i) => departureBlocker(state, i, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)),
+      [0, 1, 2, 3, 4, 5].map((i) => departureBlocker(state, i, BALANCE_V1, NEUTRAL_MODIFIERS)),
     ).toEqual([null, 'too-strong', null, null, 'out-of-range', 'out-of-range']);
-    expect(canDepart(state, 0, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(true);
-    expect(canDepart(state, 1, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(false);
+    expect(canDepart(state, 0, BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(true);
+    expect(canDepart(state, 1, BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(false);
   });
 
   it.each([-1, 6, 1.5, Number.NaN, Infinity])('weist den Index %d als unbekannt ab', (index) => {
-    expect(departureBlocker(stateWith(), index, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(
+    expect(departureBlocker(stateWith(), index, BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(
       'unknown-target',
     );
   });
@@ -86,21 +86,21 @@ describe('departureBlocker und canDepart (Game-Design §4.11)', () => {
       ...stateWith(),
       travel: { target: EXAMPLE_3[2], remainingMs: 5000 },
     });
-    expect(departureBlocker(state, 2, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe('traveling');
+    expect(departureBlocker(state, 2, BALANCE_V1, NEUTRAL_MODIFIERS)).toBe('traveling');
   });
 
   it('beurteilt die Einnehmbarkeit mit den mitkommenden Soldaten', () => {
     // Beispiel 5 aus §4.9: „Drohnen zuerst“ nimmt keine Soldaten mit, nur die Algenmatte bleibt.
     const state = stateWith({ queens: 20, drones: 500, soldiers: 130, priority: 'drones-first' });
-    expect(departureBlocker(state, 0, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe('too-strong');
-    expect(departureBlocker(state, 2, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBeNull();
+    expect(departureBlocker(state, 0, BALANCE_V1, NEUTRAL_MODIFIERS)).toBe('too-strong');
+    expect(departureBlocker(state, 2, BALANCE_V1, NEUTRAL_MODIFIERS)).toBeNull();
   });
 });
 
 describe('depart', () => {
   it('bricht zu K1 auf: Restvorrat verfällt, Reise mit d · t_r', () => {
     const input = stateWith();
-    const { state, events } = depart(input, 0, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const { state, events } = depart(input, 0, false, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(state.site.stock).toBe(Num.ZERO);
     expect(state.site.type).toBe(input.site.type);
     expect(state.travel).toEqual({ target: EXAMPLE_3[0], remainingMs: 30_000 });
@@ -127,7 +127,7 @@ describe('depart', () => {
 
   it('wendet den Transport an und meldet die Zurückgelassenen (Beispiel 5, ausgewogen)', () => {
     const input = stateWith({ queens: 20, drones: 500, soldiers: 130 });
-    const { state, events } = depart(input, 0, true, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const { state, events } = depart(input, 0, true, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(state.units.queens.eq(20)).toBe(true);
     expect(state.units.drones.toNumber()).toBeCloseTo(131.58, 2);
     expect(state.units.soldiers.toNumber()).toBeCloseTo(34.21, 2);
@@ -141,27 +141,21 @@ describe('depart', () => {
   });
 
   it('meldet bei leerem Vorrat einen verfallenen Vorrat von 0', () => {
-    const { events } = depart(
-      stateWith({ stock: 0 }),
-      2,
-      false,
-      DEFAULT_BALANCE,
-      NEUTRAL_MODIFIERS,
-    );
+    const { events } = depart(stateWith({ stock: 0 }), 2, false, BALANCE_V1, NEUTRAL_MODIFIERS);
     const [event] = events;
     expect(event?.type === 'departed' && event.forfeitedStock.isZero()).toBe(true);
   });
 
   it.each([1, 4, 5, -1, 6])('lässt den Zustand beim Ziel %d unverändert und ohne Ereignis', (i) => {
     const input = stateWith();
-    const result = depart(input, i, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const result = depart(input, i, false, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(result.state).toBe(input);
     expect(result.events).toEqual([]);
   });
 
   it('bricht während einer Reise nicht erneut auf', () => {
-    const traveling = depart(stateWith(), 0, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).state;
-    const result = depart(traveling, 2, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const traveling = depart(stateWith(), 0, false, BALANCE_V1, NEUTRAL_MODIFIERS).state;
+    const result = depart(traveling, 2, false, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(result.state).toBe(traveling);
     expect(result.events).toEqual([]);
   });
@@ -169,12 +163,12 @@ describe('depart', () => {
 
 describe('arrive (Game-Design §4.11)', () => {
   function traveling(setup: Setup = {}): GameState {
-    return deepFreeze(depart(stateWith(setup), 0, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).state);
+    return deepFreeze(depart(stateWith(setup), 0, false, BALANCE_V1, NEUTRAL_MODIFIERS).state);
   }
 
   it('nimmt K1 mit S = 34 ein (Beispiel 4) und wird zum Schlot mit vollem Vorrat', () => {
     const input = traveling();
-    const { state, events } = arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const { state, events } = arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(state.units.soldiers.toNumber()).toBeCloseTo(24.06, 2);
     expect(state.units.queens).toBe(input.units.queens);
     expect(state.res.dna.toNumber()).toBeCloseTo(13.55, 2);
@@ -203,24 +197,22 @@ describe('arrive (Game-Design §4.11)', () => {
 
   it('erzeugt die Kandidaten um die neue Position mit z = 1 und schreibt den RNG fort', () => {
     const input = traveling();
-    const { state } = arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const { state } = arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS);
     const expected = generateCandidates(
       { origin: { x: 3, y: 0 }, moves: 1, range: 5, rngState: input.rngState },
-      DEFAULT_BALANCE,
+      BALANCE_V1,
     );
     expect(state.map.candidates).toEqual(expected.candidates);
     expect(state.rngState).toBe(expected.rngState);
     expect(state.rngState).not.toBe(input.rngState);
-    expect(JSON.stringify(arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS))).toBe(
-      JSON.stringify(arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)),
+    expect(JSON.stringify(arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS))).toBe(
+      JSON.stringify(arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS)),
     );
   });
 
   it('kostet an einer Futterstelle ohne Abwehr nichts und bringt keine DNA', () => {
-    const input = deepFreeze(
-      depart(stateWith(), 2, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).state,
-    );
-    const { state, events } = arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const input = deepFreeze(depart(stateWith(), 2, false, BALANCE_V1, NEUTRAL_MODIFIERS).state);
+    const { state, events } = arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(state.units).toBe(input.units);
     expect(state.res).toBe(input.res);
     expect(state.site.type).toBe('algal-mat');
@@ -235,7 +227,7 @@ describe('arrive (Game-Design §4.11)', () => {
       position: { x: i, y: 0 },
     }));
     const input = deepFreeze({ ...base, map: { ...base.map, route } });
-    const { state } = arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const { state } = arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(state.map.route).toHaveLength(ROUTE_MAX_POINTS);
     expect(state.map.route[0]).toEqual(route[1]);
     expect(state.map.route.at(-1)).toEqual({ type: 'vent', position: { x: 3, y: 0 } });
@@ -243,12 +235,12 @@ describe('arrive (Game-Design §4.11)', () => {
 
   it('lässt den Zustand ohne Reise unverändert', () => {
     const input = stateWith();
-    expect(arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toEqual({ state: input, events: [] });
-    expect(arrive(input, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).state).toBe(input);
+    expect(arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS)).toEqual({ state: input, events: [] });
+    expect(arrive(input, BALANCE_V1, NEUTRAL_MODIFIERS).state).toBe(input);
   });
 
   it('verliert nie mehr Soldaten, als da sind', () => {
-    const params = { ...DEFAULT_BALANCE, lossFactor: 2 };
+    const params = { ...BALANCE_V1, lossFactor: 2 };
     const input = deepFreeze(depart(stateWith(), 0, false, params, NEUTRAL_MODIFIERS).state);
     const { state, events } = arrive(input, params, NEUTRAL_MODIFIERS);
     expect(state.units.soldiers.gte(0)).toBe(true);
@@ -268,10 +260,8 @@ describe('arrive mit Effekten (Game-Design §4.13, Beispiel 10)', () => {
   );
 
   it('kämpft mit a_s* und M_verlust und gibt Nahrung aus Gefallenen zurück', () => {
-    const input = deepFreeze(
-      depart(stateWith(), 0, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).state,
-    );
-    const { state, events } = arrive(input, DEFAULT_BALANCE, modifiers);
+    const input = deepFreeze(depart(stateWith(), 0, false, BALANCE_V1, NEUTRAL_MODIFIERS).state);
+    const { state, events } = arrive(input, BALANCE_V1, modifiers);
     expect(state.units.soldiers.toNumber()).toBeCloseTo(34 - 5.18, 2);
     expect(state.res.food.sub(input.res.food).toNumber()).toBeCloseTo(64.7, 1);
     expect(state.res.dna.toNumber()).toBeCloseTo(13.55, 2);
@@ -283,10 +273,8 @@ describe('arrive mit Effekten (Game-Design §4.13, Beispiel 10)', () => {
   });
 
   it('gibt ohne Autophagie keine Nahrung zurück', () => {
-    const input = deepFreeze(
-      depart(stateWith(), 0, false, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).state,
-    );
+    const input = deepFreeze(depart(stateWith(), 0, false, BALANCE_V1, NEUTRAL_MODIFIERS).state);
     const withoutRecycling = { ...modifiers, fallenRecycling: false };
-    expect(arrive(input, DEFAULT_BALANCE, withoutRecycling).state.res.food).toBe(input.res.food);
+    expect(arrive(input, BALANCE_V1, withoutRecycling).state.res.food).toBe(input.res.food);
   });
 });

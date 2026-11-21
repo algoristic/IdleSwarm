@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 
 import type { UpgradeRow } from '../../domain/upgrade-logic';
 import { upgradeRowViews } from './upgrade-rows';
@@ -17,7 +17,7 @@ const base: UpgradeRow = {
 
 describe('upgradeRowViews', () => {
   it('zeigt Sammelleistung als Prozent der Grundrate und fehlende Amortisation als Strich', () => {
-    const [view] = upgradeRowViews([base], DEFAULT_BALANCE);
+    const [view] = upgradeRowViews([base], BALANCE_V1);
     expect(view).toMatchObject({
       label: 'Cilien-Schlag I',
       status: 'entwickelt',
@@ -45,7 +45,7 @@ describe('upgradeRowViews', () => {
         paybackMs: 90_000,
       },
     ];
-    const [autophagy, drones] = upgradeRowViews(rows, DEFAULT_BALANCE);
+    const [autophagy, drones] = upgradeRowViews(rows, BALANCE_V1);
     expect(autophagy.effects).toEqual(['Gefallene werden zu Nahrung: nein → ja']);
     expect(drones).toMatchObject({ label: 'Drohne', status: '–', payback: '1 min 30 s' });
     expect(drones.effects).toEqual(['Nahrung/s: 3,5 → 3,7']);

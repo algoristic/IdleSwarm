@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
@@ -31,7 +31,7 @@ const CANDIDATES: readonly SiteCandidate[] = [
 ];
 
 describe('toSonarView', () => {
-  const base = createInitialState({ seed: 'sonar', now: 0 });
+  const base = createInitialState({ seed: 'sonar', now: 0 }, BALANCE_V1);
 
   function state(change: Partial<GameState> = {}, units = { queens: 20, drones: 0, soldiers: 34 }) {
     return {
@@ -47,7 +47,7 @@ describe('toSonarView', () => {
   }
 
   function view(gameState = state(), selected: SonarSource['selected'] = null) {
-    return toSonarView({ state: gameState, selected }, DEFAULT_BALANCE);
+    return toSonarView({ state: gameState, selected }, BALANCE_V1);
   }
 
   it('leitet Urteil und Aufbruchssperre je Ziel ab', () => {

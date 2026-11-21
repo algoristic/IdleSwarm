@@ -36,7 +36,7 @@ describe('GenomeLayerComponent und GenomeOverlayComponent', () => {
     const state = createInitialState({ seed: 'genome-page', now: 0 });
     store.replace({
       ...state,
-      res: { ...state.res, dna: Num.from(30) },
+      res: { ...state.res, dna: Num.from(20) },
       genome: { owned: ['cilia-1'] },
       finds: { ...state.finds, collected: { 'sulfur-pearl': 2 } },
     });
@@ -45,13 +45,13 @@ describe('GenomeLayerComponent und GenomeOverlayComponent', () => {
   });
 
   it('zeigt DNA, Zähler und den Status der Knoten', () => {
-    expect(text('genome.status.dna')).toBe('30 DNA');
+    expect(text('genome.status.dna')).toBe('20 DNA');
     expect(text('genome.status.available')).toBe('3 Adaptionen verfügbar');
     expect(status('cilia-1')).toBe('evolved');
     expect(status('cilia-2')).toBe('available');
     expect(status('filter-feeder')).toBe('locked');
     expect(status('sulfur-shell')).toBe('undiscovered');
-    expect(text('genome.tree.nodes.cilia-2.cost')).toBe('25 DNA');
+    expect(text('genome.tree.nodes.cilia-2.cost')).toBe('18 DNA');
     expect(text('genome.tree.nodes.sulfur-shell.progress')).toBe('2 / 5');
   });
 
@@ -65,7 +65,7 @@ describe('GenomeLayerComponent und GenomeOverlayComponent', () => {
     expect(text('genome.detail.effects.collectRate')).toBe(
       'Sammelleistung je Drohne 120 % → 150 %',
     );
-    expect(text('genome.detail.evolve')).toBe('Für 25 DNA entwickeln');
+    expect(text('genome.detail.evolve')).toBe('Für 18 DNA entwickeln');
 
     query<HTMLButtonElement>('genome.detail.evolve')?.click();
     fixture.detectChanges();
@@ -73,7 +73,7 @@ describe('GenomeLayerComponent und GenomeOverlayComponent', () => {
     expect(store.state().genome.owned).toEqual(['cilia-1', 'cilia-2']);
     expect(status('cilia-2')).toBe('evolved');
     expect(status('filter-feeder')).toBe('too-expensive');
-    expect(text('genome.status.dna')).toBe('5 DNA');
+    expect(text('genome.status.dna')).toBe('2 DNA');
     expect(text('genome.detail.evolved')).toBe('✓ entwickelt · wirkt dauerhaft');
     expect(text('genome.status.available')).toBe('Keine Adaption verfügbar');
   });
@@ -88,7 +88,7 @@ describe('GenomeLayerComponent und GenomeOverlayComponent', () => {
     store.replace({ ...store.state(), res: { ...store.state().res, dna: Num.from(10) } });
     select('cilia-2');
     expect(query<HTMLButtonElement>('genome.detail.evolve')?.disabled).toBe(true);
-    expect(text('genome.detail.evolve')).toBe('25 DNA · es fehlen 15');
+    expect(text('genome.detail.evolve')).toBe('18 DNA · es fehlen 8');
 
     select('filter-feeder');
     expect(text('genome.detail.evolve')).toBe('gesperrt');

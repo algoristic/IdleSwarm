@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import type { CatchUpSummary } from '@app/engine/domain/models/catch-up.model';
 import type { GameEvent } from '@app/engine/domain/models/game-event.model';
@@ -37,7 +37,7 @@ describe('toHudView', () => {
       lastSavedAt: null,
       ...rest,
     };
-    return toHudView(source, DEFAULT_BALANCE);
+    return toHudView(source, BALANCE_V1);
   }
 
   const unit = (hud: ReturnType<typeof view>, id: string) => hud.units.find((u) => u.id === id);
@@ -166,18 +166,18 @@ describe('toHudView', () => {
 
 describe('toPheromoneView', () => {
   const base = createInitialState({ seed: 'hud', now: 0 });
-  const modifiers = stateModifiers(base, DEFAULT_BALANCE);
+  const modifiers = stateModifiers(base, BALANCE_V1);
 
   function view(pheromones: Partial<Pheromones>, change: Partial<GameState> = {}) {
     const state = { ...base, ...change, pheromones: { ...base.pheromones, ...pheromones } };
-    return toPheromoneView(state, DEFAULT_BALANCE, stateModifiers(state, DEFAULT_BALANCE));
+    return toPheromoneView(state, BALANCE_V1, stateModifiers(state, BALANCE_V1));
   }
 
   const row = (pheromone: ReturnType<typeof view>, id: string) =>
     pheromone.rows.find((r) => r.id === id);
 
   it('zeigt die Startverteilung 3 : 1 ohne freie Punkte', () => {
-    const pheromones = toPheromoneView(base, DEFAULT_BALANCE, modifiers);
+    const pheromones = toPheromoneView(base, BALANCE_V1, modifiers);
     expect(pheromones).toMatchObject({
       total: 4,
       distributed: 4,
@@ -249,7 +249,7 @@ describe('toFindsView', () => {
       time: { ...base.time, played },
       finds: { ...base.finds, ...finds },
     };
-    return toFindsView(state, DEFAULT_BALANCE);
+    return toFindsView(state, BALANCE_V1);
   }
 
   it('zeigt ohne Funde 0 / 24, unbekannte Felder und keine Buffs', () => {
@@ -317,7 +317,7 @@ describe('Zähler am Genom-Link', () => {
         lastSaveError: null,
         lastSavedAt: null,
       },
-      DEFAULT_BALANCE,
+      BALANCE_V1,
     ).availableAdaptations;
 
   it('zählt die bezahlbaren Adaptionen', () => {

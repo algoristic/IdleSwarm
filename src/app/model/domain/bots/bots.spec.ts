@@ -1,4 +1,5 @@
-import { BalanceParams, DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
+import { BalanceParams } from '@app/balance/domain/constants';
 import { Bot, createBotView } from '@app/engine/domain/bot-logic';
 import { apply, Command } from '@app/engine/domain/commands-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
@@ -21,7 +22,7 @@ function setup(
   overrides: Partial<BalanceParams> = {},
   patch: (state: GameState) => GameState = (state) => state,
 ) {
-  const params = { ...DEFAULT_BALANCE, ...overrides };
+  const params = { ...BALANCE_V1, ...overrides };
   const initial = createInitialState({ seed: 'bots', now: 0 }, params);
   const state = patch({ ...initial, auto: { ...initial.auto, enabled: true } });
   return {
@@ -256,6 +257,7 @@ describe.each([
         bot,
         durationMs: 600_000,
         sampleEveryMs: 60_000,
+        params: BALANCE_V1,
       });
       return { result, commands };
     };
@@ -587,6 +589,7 @@ describe('Bots über eine Stunde', () => {
         bot,
         durationMs: 3_600_000,
         sampleEveryMs: 60_000,
+        params: BALANCE_V1,
       });
       return { result, commands };
     };

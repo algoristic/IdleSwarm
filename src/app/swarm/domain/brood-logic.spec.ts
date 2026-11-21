@@ -1,4 +1,5 @@
-import { DEFAULT_BALANCE, TICK_MS } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
+import { TICK_MS } from '@app/balance/domain/constants';
 import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
@@ -37,7 +38,7 @@ function createState({ queens = 1, drones = 0, soldiers = 0, food }: Setup): Gam
 describe('applyBrood', () => {
   it('rechnet den Brut-Teil von Beispiel 1 aus Game-Design §4.3', () => {
     const input = createState({ drones: 10, food: 5.2 });
-    const { units, res } = applyBrood(input, TICK_MS, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const { units, res } = applyBrood(input, TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(units.drones.eq(10.0075)).toBe(true);
     expect(units.soldiers.eq(0.0025)).toBe(true);
     expect(res.food.eq(5.0625)).toBe(true);
@@ -45,7 +46,7 @@ describe('applyBrood', () => {
 
   it('rechnet Beispiel 2 aus Game-Design §4.3 und leert die Nahrung exakt', () => {
     const input = createState({ food: 0.05 });
-    const { units, res } = applyBrood(input, TICK_MS, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const { units, res } = applyBrood(input, TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(units.drones.toNumber()).toBeCloseTo(0.00272727, 8);
     expect(units.soldiers.toNumber()).toBeCloseTo(0.00090909, 8);
     expect(res.food.isZero()).toBe(true);
@@ -54,7 +55,7 @@ describe('applyBrood', () => {
   it('brütet mit einer Königin 6 Eier je Minute aus', () => {
     let state = createState({ food: 1000 });
     for (let i = 0; i < 600; i++) {
-      state = applyBrood(state, TICK_MS, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+      state = applyBrood(state, TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS);
     }
     expect(state.units.drones.toNumber()).toBeCloseTo(4.5, 9);
     expect(state.units.soldiers.toNumber()).toBeCloseTo(1.5, 9);
@@ -65,7 +66,7 @@ describe('applyBrood', () => {
     const { units } = applyBrood(
       createState({ food: 1000 }),
       60_000,
-      DEFAULT_BALANCE,
+      BALANCE_V1,
       NEUTRAL_MODIFIERS,
     );
     expect(units.drones.eq(4.5)).toBe(true);
@@ -76,7 +77,7 @@ describe('applyBrood', () => {
     const { units, res } = applyBrood(
       createState({ food: 27.5 }),
       3_600_000,
-      DEFAULT_BALANCE,
+      BALANCE_V1,
       NEUTRAL_MODIFIERS,
     );
     expect(units.drones.eq(1.5)).toBe(true);
@@ -87,29 +88,24 @@ describe('applyBrood', () => {
   it('wird nie negativ, auch nicht bei Nahrung nahe den Schrittkosten', () => {
     for (let i = -50; i <= 50; i++) {
       const food = 0.1375 * (1 + i * 1e-15);
-      const { res } = applyBrood(
-        createState({ food }),
-        TICK_MS,
-        DEFAULT_BALANCE,
-        NEUTRAL_MODIFIERS,
-      );
+      const { res } = applyBrood(createState({ food }), TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS);
       expect(res.food.isNegative()).toBe(false);
     }
   });
 
   it('pausiert ohne Nahrung und gibt denselben Zustand zurück', () => {
     const input = createState({ drones: 3, food: 0 });
-    expect(applyBrood(input, TICK_MS, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(input);
+    expect(applyBrood(input, TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(input);
   });
 
   it('gibt ohne Königinnen denselben Zustand zurück', () => {
     const input = createState({ queens: 0, food: 100 });
-    expect(applyBrood(input, TICK_MS, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).toBe(input);
+    expect(applyBrood(input, TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS)).toBe(input);
   });
 
   it('ändert Königinnen, Kaufzähler, Vorrat und DNA nicht', () => {
     const input = createState({ queens: 2, food: 100 });
-    const state = applyBrood(input, TICK_MS, DEFAULT_BALANCE, NEUTRAL_MODIFIERS);
+    const state = applyBrood(input, TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS);
     expect(state.units.queens).toBe(input.units.queens);
     expect(state.bought).toBe(input.bought);
     expect(state.site).toBe(input.site);
@@ -119,12 +115,12 @@ describe('applyBrood', () => {
   it('verändert die eingefrorene Eingabe nicht', () => {
     const input = createState({ food: 100 });
     const before = JSON.stringify(input);
-    expect(applyBrood(input, TICK_MS, DEFAULT_BALANCE, NEUTRAL_MODIFIERS)).not.toBe(input);
+    expect(applyBrood(input, TICK_MS, BALANCE_V1, NEUTRAL_MODIFIERS)).not.toBe(input);
     expect(JSON.stringify(input)).toBe(before);
   });
 
   it('brütet bei Kosten von 0 auch ohne Nahrung', () => {
-    const params = { ...DEFAULT_BALANCE, droneCost: 0, soldierCost: 0 };
+    const params = { ...BALANCE_V1, droneCost: 0, soldierCost: 0 };
     const { units, res } = applyBrood(createState({ food: 0 }), 1000, params, NEUTRAL_MODIFIERS);
     expect(units.drones.eq(0.075)).toBe(true);
     expect(units.soldiers.eq(0.025)).toBe(true);
@@ -132,7 +128,7 @@ describe('applyBrood', () => {
   });
 
   it('nutzt überschriebene Parameter', () => {
-    const params = { ...DEFAULT_BALANCE, queenEggsPerMin: 60, droneCost: 2, soldierCost: 4 };
+    const params = { ...BALANCE_V1, queenEggsPerMin: 60, droneCost: 2, soldierCost: 4 };
     // Verteilung 2 : 2 statt 3 : 1: `f = 1`, `a = 0,5`.
     const input = {
       ...createState({ queens: 2, food: 10 }),

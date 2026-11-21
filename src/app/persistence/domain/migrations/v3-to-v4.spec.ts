@@ -1,3 +1,4 @@
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 
 import { migrate, MIGRATIONS } from './migrations-logic';
@@ -97,7 +98,10 @@ describe('migrateV3ToV4', () => {
 
   it('erzeugt die Startkandidaten wie ein neues Spiel aus dem übernommenen RNG-Zustand', () => {
     const migrated = migrateV3ToV4(V3_RAW);
-    const fresh = createInitialState({ seed: 'idleswarm', now: 0, rngState: 3898647441 });
+    const fresh = createInitialState(
+      { seed: 'idleswarm', now: 0, rngState: 3898647441 },
+      BALANCE_V1,
+    );
     expect(migrated['map']).toEqual(JSON.parse(JSON.stringify(fresh.map)));
     expect(migrated['rngState']).toBe(fresh.rngState);
     expect(migrated['finds']).toEqual(fresh.finds);

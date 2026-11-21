@@ -1,5 +1,6 @@
 import { compressToBase64, decompressFromBase64 } from 'lz-string';
 
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState, STATE_VERSION } from '@app/engine/domain/models/game-state.model';
 import { step } from '@app/engine/domain/step-logic';
@@ -61,7 +62,7 @@ const FROZEN_V4_SAVE =
 const NOW = 1_700_000_000_000;
 
 function sampleState(): GameState {
-  const initial = createInitialState({ seed: 'idleswarm', now: NOW });
+  const initial = createInitialState({ seed: 'idleswarm', now: NOW }, BALANCE_V1);
   return {
     ...initial,
     time: { now: NOW + 5000, lastSaved: NOW, played: 5000 },
@@ -196,7 +197,7 @@ describe('encodeSave und decodeSave', () => {
   });
 
   it('speichert und lädt den Startzustand von Version 5', () => {
-    const state = createInitialState({ seed: 'idleswarm', now: NOW });
+    const state = createInitialState({ seed: 'idleswarm', now: NOW }, BALANCE_V1);
     expectSameState(decodeSave(encodeSave(state)), state);
   });
 
@@ -328,7 +329,10 @@ describe('eingefrorener Spielstand der Version 2', () => {
   it('bekommt die Startkandidaten aus dem RNG-Zustand nach der Migration 2 → 3', () => {
     // Jede Migration der Kette erzeugt die Kandidaten neu; 3 → 4 beginnt bei 491280603.
     const state = decodeSave(FROZEN_V2_SAVE);
-    const fresh = createInitialState({ seed: 'idleswarm', now: NOW, rngState: 491280603 });
+    const fresh = createInitialState(
+      { seed: 'idleswarm', now: NOW, rngState: 491280603 },
+      BALANCE_V1,
+    );
     expect(JSON.stringify(state.map.candidates)).toBe(JSON.stringify(fresh.map.candidates));
   });
 

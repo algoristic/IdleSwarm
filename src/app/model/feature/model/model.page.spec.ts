@@ -180,7 +180,7 @@ describe('ModelPage', () => {
     byTestId('model.params.reset-droneCost')?.click();
     settle();
     expect(row.hasAttribute('data-changed')).toBe(false);
-    expect(paramInput('droneCost').value).toBe('10');
+    expect(paramInput('droneCost').value).toBe('9');
     expect(byTestId('model.params.export')).toBeNull();
   });
 

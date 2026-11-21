@@ -21,7 +21,7 @@ describe('model-params-logic', () => {
       bots: [{ kind: 'active' }, { kind: 'idle' }],
       params: {},
     });
-    expect(defaults.params.droneCostGrowth).toBe('1,07');
+    expect(defaults.params.droneCostGrowth).toBe('1,04');
   });
 
   it('übernimmt die gewählten Bots in fester Reihenfolge', () => {

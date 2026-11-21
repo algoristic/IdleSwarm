@@ -31,12 +31,7 @@ Zielwerte, Toleranzen und Snapshot-Inhalte legt dieses ADR nicht fest. Die Pacin
 - [`model/feature/state/model.guards.ts`](../../src/app/model/feature/state/model.guards.ts): Im Produktiv-Build ist die Route nur mit `?dev` erreichbar, im Entwicklungs-Build immer. Das Spiel verlinkt sie nicht.
 - [`model/ui/echart/echart.component.ts`](../../src/app/model/ui/echart/echart.component.ts): eigener Wrapper um Apache ECharts (`6.1.0`); Farben aus den `--sw-*`-Tokens.
 - [`model/data-access/sim/sim.worker.ts`](../../src/app/model/data-access/sim/sim.worker.ts): Der Runner läuft im Web Worker, [`reduce-result-logic.ts`](../../src/app/model/domain/reduce-result-logic.ts) verkleinert die Ergebnisse vor dem Senden.
-
-**Geplant:**
-
-| Teil | Umsetzung |
-|---|---|
-| Balancing-Snapshots | ab AP 1.5.5 |
+- Balancing (AP 1.5.5): Werte v1.5 in `DEFAULT_BALANCE`, gemessen in [Game-Design §6.6](../game-design.md#66-messung-m15-werte-v15). Balancing-Snapshots (US-10.09) in [`model/domain/balancing/`](../../src/app/model/domain/balancing/): feste Läufe (Seeds `modell` und `release`, Bots „Aktiv“ und „Idle“, 24 h) mit den wesentlichen Kennzahlen, Toleranz ±5 % relativ mit absolutem Mindestabstand je Kennzahl; die erwarteten Werte stehen als explizite Daten in `balance-snapshot.data.ts` und werden bei gewollten Änderungen von Hand und begründet aktualisiert ([TK §5.6](../technisches-konzept.md#56-balancing-als-test)). Eine neue Abhängigkeit entsteht nicht.
 
 ## Konsequenzen
 

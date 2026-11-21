@@ -43,10 +43,15 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
   const liveRegion = () => query('hud.status.notices') as HTMLElement;
   const spaceBar = () => element().querySelector(`[role="progressbar"][aria-label="Platz"]`);
 
-  /** Alles freigeschaltet, damit Soldat, Schubladen und alle Werte zu sehen sind (US-09.04). */
+  /**
+   * Alles freigeschaltet, damit Soldat, Schubladen und alle Werte zu sehen sind (US-09.04); 15 Nahrung
+   * reichen für eine Drohne, nicht für Soldat, Königin oder Drüsenpunkt.
+   */
   function state(): GameState {
+    const initial = createInitialState({ seed: 'hud', now: SAVED_AT });
     return {
-      ...createInitialState({ seed: 'hud', now: SAVED_AT }),
+      ...initial,
+      res: { ...initial.res, food: Num.from(15) },
       onboarding: { unlocked: [...ONBOARDING_UNLOCK_IDS], seenHints: [...HINT_IDS] },
     };
   }
@@ -103,11 +108,11 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
     fixture.detectChanges();
 
     expect(text('hud.resources.food')).toBe('1.284');
-    // 1,5 Grundertrag + 16 · 0,2 Drohnen
-    expect(text('hud.resources.food-rate')).toBe('4,7');
-    expect(text('hud.resources.base-rate')).toBe('1,5');
-    expect(text('hud.resources.drone-rate')).toBe('3,2');
-    expect(text('hud.resources.eggs')).toBe('12,0');
+    // 4 Grundertrag + 16 · 0,12 Drohnen
+    expect(text('hud.resources.food-rate')).toBe('5,9');
+    expect(text('hud.resources.base-rate')).toBe('4,0');
+    expect(text('hud.resources.drone-rate')).toBe('1,9');
+    expect(text('hud.resources.eggs')).toBe('4,0');
     expect(text('hud.resources.attack')).toBe('3');
     expect(text('hud.resources.dna')).toBe('0');
     expect(text('hud.resources.pheromones')).toBe('4');
@@ -135,20 +140,20 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
     setUnits({ queens: 0 });
     store.tick(1000);
     fixture.detectChanges();
-    expect(text('hud.resources.food')).toBe('16');
+    expect(text('hud.resources.food')).toBe('19');
   });
 
   it('zeigt den Platz ohne Warnung unter 90 %', () => {
-    setUnits({ drones: 8 });
+    setUnits({ drones: 20 });
 
-    expect(text('hud.space.value')).toBe('8 / 10 (80 %)');
+    expect(text('hud.space.value')).toBe('20 / 25 (80 %)');
     expect(spaceBar()?.getAttribute('aria-valuenow')).toBe('80');
     expect(query('hud.space.warning')).toBeNull();
     expect(spaceBar()?.querySelector('[data-warning]')).toBeNull();
   });
 
   it('warnt ab 90 % mit Farbe und Text', () => {
-    setUnits({ drones: 9 });
+    setUnits({ drones: 23 });
 
     expect(text('hud.space.warning')).toBe('Der Platz wird knapp.');
     expect(query('hud.space.overfull')).toBeNull();
@@ -159,9 +164,9 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
   });
 
   it('deckelt den Balken bei 100 %, die Zahlen aber nicht', () => {
-    setUnits({ queens: 2, drones: 15, soldiers: 3 });
+    setUnits({ queens: 2, drones: 45, soldiers: 3 });
 
-    expect(text('hud.space.value')).toBe('21 / 20 (105 %)');
+    expect(text('hud.space.value')).toBe('51 / 50 (102 %)');
     expect(text('hud.space.overfull')).toBe(
       'Zu wenig Platz: Beim Weiterziehen bleiben Einheiten zurück.',
     );
@@ -251,8 +256,8 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
     it('zeigt Anzahl, Preis und den Effekt der Königin', () => {
       setUnits({ drones: 3.9 });
       expect(text('hud.units.drones.count')).toBe('3');
-      expect(text('hud.units.drones.price')).toBe('+1 · 10 N');
-      expect(text('hud.units.queens.effect')).toBe('+6,0 Eier/min, +10 Platz');
+      expect(text('hud.units.drones.price')).toBe('+1 · 9 N');
+      expect(text('hud.units.queens.effect')).toBe('+2,0 Eier/min, +25 Platz');
       expect(query('hud.units.drones.effect')).toBeNull();
     });
 
@@ -263,7 +268,7 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
 
       expect(store.state().units.drones.eq(1)).toBe(true);
       expect(text('hud.units.drones.count')).toBe('1');
-      expect(text('hud.units.drones.price')).toBe('+1 · 11 N');
+      expect(text('hud.units.drones.price')).toBe('+1 · 10 N');
       expect(buyButton('drones')?.disabled).toBe(true);
     });
 
@@ -377,7 +382,7 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
 
     it('sperrt die Pheromon-Drüse ohne genug Nahrung', () => {
       setUnits({});
-      expect(text('hud.pheromones.gland')).toBe('Pheromon-Drüse stärken · +1 Punkt · 100 N');
+      expect(text('hud.pheromones.gland')).toBe('Pheromon-Drüse stärken · +1 Punkt · 150 N');
       expect(button('hud.pheromones.gland')?.disabled).toBe(true);
     });
   });
@@ -395,22 +400,22 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
 
     it('zeigt im Titel die Gesamtrate aus Grundertrag und Drohnen', () => {
       setSite(20_000, 50);
-      expect(text('hud.site.rate')).toBe('+11,5/s');
+      expect(text('hud.site.rate')).toBe('+10,0/s');
       setSite(0, 50);
       expect(text('hud.site.rate')).toBe('+0,0/s');
     });
 
     it('schätzt die Restzeit über Grundertrag und Drohnen', () => {
       setSite(20_000);
-      expect(text('hud.site.time-left')).toBe('leer in ~3 h 42 min');
+      expect(text('hud.site.time-left')).toBe('leer in ~1 h 23 min');
       setSite(20_000, 50);
-      expect(text('hud.site.time-left')).toBe('leer in ~29 min 00 s');
+      expect(text('hud.site.time-left')).toBe('leer in ~33 min 20 s');
     });
 
     it('zeigt die leere Futterstelle ohne Erneuern', () => {
       setSite(0);
 
-      expect(text('hud.site.stock')).toBe('0 / 20.000');
+      expect(text('hud.site.stock')).toBe('0 / 30.000');
       expect(query('hud.site.time-left')).toBeNull();
       expect(query('hud.site.renew')).toBeNull();
     });
@@ -425,14 +430,14 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
       input().value = '10';
       input().dispatchEvent(new Event('input'));
       fixture.detectChanges();
-      expect(text('hud.sacrifice.yield')).toBe('Ertrag: 50 Nahrung');
+      expect(text('hud.sacrifice.yield')).toBe('Ertrag: 45 Nahrung');
 
       (query('hud.sacrifice.submit') as HTMLButtonElement).click();
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(store.state().units.drones.toNumber()).toBeCloseTo(0.5);
-      expect(store.state().res.food.sub(food).toNumber()).toBe(50);
+      expect(store.state().res.food.sub(food).toNumber()).toBe(45);
     });
 
     it('zeigt Ereignisse außerhalb der Status-Region, Funde hervorgehoben', () => {

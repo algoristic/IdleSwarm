@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { combineEffects } from '@app/balance/domain/effects-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
@@ -20,7 +20,7 @@ import {
 } from './genome-logic';
 import type { GenomeNodeId } from './models/genome.model';
 
-const params = DEFAULT_BALANCE;
+const params = BALANCE_V1;
 const initial = Object.freeze(createInitialState({ seed: 'genom', now: 1000 }));
 
 function withGenome(dna: number, owned: readonly GenomeNodeId[] = []): GameState {

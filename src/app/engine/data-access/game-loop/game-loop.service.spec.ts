@@ -119,11 +119,12 @@ describe('GameLoop', () => {
 
     it('teilt das Nachholen wie der Runner, damit das Auto-Weiterziehen rechtzeitig aufbricht', () => {
       const base = store.state();
-      // Viele Drohnen leeren die Startstelle schnell; das Auto-Weiterziehen zieht mehrmals weiter.
+      // Viele Drohnen leeren die Startstelle schnell, genug Königinnen nehmen sie mit; das
+      // Auto-Weiterziehen zieht mehrmals weiter.
       const fresh = {
         ...base,
         auto: { ...base.auto, enabled: true },
-        units: { ...base.units, drones: Num.from(200) },
+        units: { ...base.units, queens: Num.from(40), drones: Num.from(1000) },
       };
       store.replace(fresh);
       loop.start();

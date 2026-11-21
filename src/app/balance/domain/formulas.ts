@@ -183,7 +183,7 @@ export const BADGE_PARAMS: Readonly<Record<CollectionSetId, BadgeParamKeys>> = {
 
 /**
  * DNA-Kosten eines Genom-Knotens der Stufe `s`: `round(c_G · w_G^(s−1))`, kaufmännisch gerundet
- * (Game-Design §4.14); v1 8, 25, 80, 253, 800.
+ * (Game-Design §4.14); v1.5 3, 18, 108, 648, 3.888.
  */
 export function genomeNodeCost(tier: GenomeTier, params: BalanceParams): Num {
   return Num.from(Math.round(params.genomeCost * params.genomeCostGrowth ** (tier - 1)));

@@ -77,7 +77,7 @@ describe('SonarLayerComponent und SonarOverlayComponent', () => {
     expect(text('sonar.detail.type')).toBe('Algenmatte');
     expect(text('sonar.detail.losses')).toBe('keine');
     expect(text('sonar.detail.forfeit')).toBe(
-      'Beim Aufbruch verfällt der Restvorrat von 20.000 Nahrung.',
+      'Beim Aufbruch verfällt der Restvorrat von 30.000 Nahrung.',
     );
   });
 
@@ -86,11 +86,11 @@ describe('SonarLayerComponent und SonarOverlayComponent', () => {
     expect(query('sonar.map.legend.strategy')?.textContent).toContain(
       '◆\u00a0=\u00a0Ziel der Strategie',
     );
-    setUnits({ queens: 1, drones: 9, soldiers: 1 });
+    setUnits({ queens: 1, drones: 24, soldiers: 1 });
 
-    expect(text('sonar.transport.carried')).toBe('Kommen mit: 9 Drohnen, 0 Soldaten');
+    expect(text('sonar.transport.carried')).toBe('Kommen mit: 24 Drohnen, 0 Soldaten');
     expect(text('sonar.transport.left-behind')).toBe('Bleiben zurück und gehen verloren: 1 Soldat');
-    setUnits({ queens: 1, drones: 11, soldiers: 1 });
+    setUnits({ queens: 1, drones: 26, soldiers: 1 });
     expect(text('sonar.transport.left-behind')).toBe(
       'Bleiben zurück und gehen verloren: 1 Drohne und 1 Soldat',
     );
@@ -99,7 +99,7 @@ describe('SonarLayerComponent und SonarOverlayComponent', () => {
   it('zeigt Standort, Reichweite und was ohne Entscheidung passiert', () => {
     expect(text('sonar.status.range')).toBe('Umgebung · Reichweite 5');
     expect(text('sonar.status.site')).toContain(
-      'Hydrothermaler Schlot Vorrat 20.000 / 20.000 (100 %)',
+      'Hydrothermaler Schlot Vorrat 30.000 / 30.000 (100 %)',
     );
     expect(text('sonar.note')).toContain(
       'Auto-Weiterziehen ist aus: Ohne Entscheidung bleibt der Schwarm hier.',

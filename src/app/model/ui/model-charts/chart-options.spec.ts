@@ -83,7 +83,7 @@ describe('buildChartOption', () => {
     const open = lines({ ...base, tab: 'dna', logScale: false }).find((entry) =>
       entry.name.startsWith('Aktiv · Verfügbare Ausgaben'),
     );
-    expect((open?.data[0] as ChartPoint)[2]).toBe(3498);
+    expect((open?.data[0] as ChartPoint)[2]).toBe(13995);
   });
 
   it('schaltet die Achse um', () => {

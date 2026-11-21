@@ -1,11 +1,11 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import type { GameState } from '@app/engine/domain/models/game-state.model';
 import { Num } from '@app/shared/util/num/num';
 
 import { upgradeTable } from './upgrade-logic';
 
-const params = DEFAULT_BALANCE;
+const params = BALANCE_V1;
 
 function reference(): GameState {
   const state = createInitialState({ seed: 'upgrade', now: 0 }, params);

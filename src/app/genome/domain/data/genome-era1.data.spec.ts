@@ -88,14 +88,14 @@ describe('Genom-Daten Ära I (Game-Design §4.14)', () => {
     }
   });
 
-  it('kostet je Stufe 8, 25, 80, 253 und 800 DNA, das ganze Genom 3.498 DNA', () => {
+  it('kostet je Stufe 3, 18, 108, 648 und 3.888 DNA, das ganze Genom 13.995 DNA (Werte v1.5)', () => {
     expect(GENOME_TIERS.map((tier) => genomeNodeCost(tier, DEFAULT_BALANCE).toNumber())).toEqual([
-      8, 25, 80, 253, 800,
+      3, 18, 108, 648, 3888,
     ]);
     const total = GENOME_NODE_IDS.reduce(
       (sum, id) => sum + nodeCost(id, DEFAULT_BALANCE).toNumber(),
       0,
     );
-    expect(total).toBe(3498);
+    expect(total).toBe(13995);
   });
 });

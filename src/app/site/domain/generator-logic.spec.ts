@@ -1,4 +1,4 @@
-import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
+import { BALANCE_V1 } from '@app/balance/domain/balance-v1.testing';
 import { NEUTRAL_MODIFIERS } from '@app/balance/domain/effects-logic';
 import { distanceBetween } from '@app/balance/domain/formulas';
 import { nextRandom } from '@app/shared/util/rng/rng';
@@ -35,7 +35,7 @@ function isSafeInRange(candidate: SiteCandidate, input: GeneratorInput): boolean
  */
 describe('generateCandidates', () => {
   it('erzeugt aus dem Seed „idleswarm“ die nachgerechneten Startkandidaten', () => {
-    const { candidates, rngState } = generateCandidates(start(1378881061), DEFAULT_BALANCE);
+    const { candidates, rngState } = generateCandidates(start(1378881061), BALANCE_V1);
     const expected: readonly [string, number, number, number, number][] = [
       ['algal-mat', -1.3355202136, -2.3790464258, 17967.0415339, 0],
       ['methane-seep', -3.293633596, -4.6881014894, 110733.0565132, 56],
@@ -58,11 +58,9 @@ describe('generateCandidates', () => {
 
   it('verbraucht immer 5 · k Zufallszahlen', () => {
     for (const rngState of [3, 260, 1378881061]) {
-      expect(generateCandidates(start(rngState), DEFAULT_BALANCE).rngState).toBe(
-        advance(rngState, 30),
-      );
+      expect(generateCandidates(start(rngState), BALANCE_V1).rngState).toBe(advance(rngState, 30));
     }
-    const params = { ...DEFAULT_BALANCE, candidateCount: 2 };
+    const params = { ...BALANCE_V1, candidateCount: 2 };
     const result = generateCandidates(start(7), params);
     expect(result.candidates).toHaveLength(2);
     expect(result.rngState).toBe(advance(7, 10));
@@ -70,11 +68,11 @@ describe('generateCandidates', () => {
 
   it('ist deterministisch und verändert die Eingabe nicht', () => {
     const input = Object.freeze({ ...start(42), origin: Object.freeze({ x: 3, y: -2 }) });
-    const first = generateCandidates(input, DEFAULT_BALANCE);
-    const second = generateCandidates(input, DEFAULT_BALANCE);
+    const first = generateCandidates(input, BALANCE_V1);
+    const second = generateCandidates(input, BALANCE_V1);
     expect(JSON.stringify(second)).toBe(JSON.stringify(first));
     expect(input).toEqual({ origin: { x: 3, y: -2 }, moves: 0, range: 5, rngState: 42 });
-    expect(JSON.stringify(generateCandidates(start(43), DEFAULT_BALANCE))).not.toBe(
+    expect(JSON.stringify(generateCandidates(start(43), BALANCE_V1))).not.toBe(
       JSON.stringify(first),
     );
   });
@@ -82,7 +80,7 @@ describe('generateCandidates', () => {
   it('ersetzt ohne Algenmatte in Reichweite den nächstgelegenen Kandidaten in Reichweite', () => {
     // Gezogen: Methanquelle, Bakterienrasen (d ≈ 1,97, nächster), Algenmatte bei d ≈ 5,28 (außer
     // Reichweite), Walsturz, Bakterienrasen, Schlot.
-    const { candidates } = generateCandidates(start(3), DEFAULT_BALANCE);
+    const { candidates } = generateCandidates(start(3), BALANCE_V1);
     expect(candidates.map(({ type }) => type)).toEqual([
       'methane-seep',
       'algal-mat',
@@ -100,7 +98,7 @@ describe('generateCandidates', () => {
 
   it('setzt ohne Kandidaten in Reichweite den nächstgelegenen auf die Distanz R', () => {
     // Gezogen: alle sechs Kandidaten außer Reichweite, der erste ist der nächste.
-    const { candidates } = generateCandidates(start(260), DEFAULT_BALANCE);
+    const { candidates } = generateCandidates(start(260), BALANCE_V1);
     const replaced = candidates[0];
     expect(replaced.type).toBe('algal-mat');
     expect(replaced.position.x).toBeCloseTo(-3.342274791, 8);
@@ -109,7 +107,7 @@ describe('generateCandidates', () => {
     expect(replaced.size.toNumber()).toBeCloseTo(20315.1260145, 4);
     expect(replaced.defense.isZero()).toBe(true);
     expect(candidates[1].type).toBe('methane-seep');
-    const statuses = candidateInfos(candidates, ORIGIN, 5, DEFAULT_BALANCE, NEUTRAL_MODIFIERS).map(
+    const statuses = candidateInfos(candidates, ORIGIN, 5, BALANCE_V1, NEUTRAL_MODIFIERS).map(
       (i) => i.status,
     );
     expect(statuses[0]).toBe('in-range');
@@ -124,7 +122,7 @@ describe('generateCandidates', () => {
       inputs.push({ origin: { x: 12.5, y: -40 }, moves: 7, range: 5, rngState });
     }
     for (const input of inputs) {
-      const { candidates } = generateCandidates(input, DEFAULT_BALANCE);
+      const { candidates } = generateCandidates(input, BALANCE_V1);
       expect(candidates).toHaveLength(6);
       for (const candidate of candidates) {
         const distance = distanceBetween(input.origin, candidate.position);
@@ -138,7 +136,7 @@ describe('generateCandidates', () => {
         candidates,
         input.origin,
         input.range,
-        DEFAULT_BALANCE,
+        BALANCE_V1,
         NEUTRAL_MODIFIERS,
       );
       expect(
@@ -148,8 +146,8 @@ describe('generateCandidates', () => {
   });
 
   it('wächst mit dem Zugzähler z', () => {
-    const atStart = generateCandidates(start(99), DEFAULT_BALANCE).candidates;
-    const later = generateCandidates({ ...start(99), moves: 1 }, DEFAULT_BALANCE).candidates;
+    const atStart = generateCandidates(start(99), BALANCE_V1).candidates;
+    const later = generateCandidates({ ...start(99), moves: 1 }, BALANCE_V1).candidates;
     atStart.forEach((candidate, i) => {
       expect(later[i].size.div(candidate.size).toNumber()).toBeCloseTo(1.4, 10);
     });
@@ -157,7 +155,7 @@ describe('generateCandidates', () => {
 
   it('nutzt die überschriebenen Parameter', () => {
     const params = {
-      ...DEFAULT_BALANCE,
+      ...BALANCE_V1,
       candidateMinDistance: 2,
       candidateMaxDistance: 2,
       algalMatWeight: 0,
@@ -181,7 +179,7 @@ describe('generateCandidates', () => {
   });
 
   it('erzeugt ohne Kandidaten eine leere Liste', () => {
-    const result = generateCandidates(start(5), { ...DEFAULT_BALANCE, candidateCount: 0 });
+    const result = generateCandidates(start(5), { ...BALANCE_V1, candidateCount: 0 });
     expect(result).toEqual({ candidates: [], rngState: 5 });
   });
 });
