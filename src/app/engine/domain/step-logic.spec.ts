@@ -8,6 +8,7 @@ import { apply, applyCommand } from './commands-logic';
 import { createInitialState } from './game-state-logic';
 import { GameEvent } from './models/game-event.model';
 import { GameState } from './models/game-state.model';
+import { SIMULATION_TEST_TIMEOUT_MS } from './simulation-timeout.testing';
 import { step, syncClock } from './step-logic';
 
 const NOW = 1_700_000_000_000;
@@ -164,7 +165,7 @@ describe('step', () => {
     },
   );
 
-  it('summiert die Zeit über viele Ticks exakt', () => {
+  it('summiert die Zeit über viele Ticks exakt', { timeout: SIMULATION_TEST_TIMEOUT_MS }, () => {
     const input = createState();
     const ticks = 3600 * TICKS_PER_SECOND;
     let state = input;

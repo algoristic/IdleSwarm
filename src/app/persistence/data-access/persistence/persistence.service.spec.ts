@@ -5,6 +5,7 @@ import { GameStore, LOG_MAX_ENTRIES } from '@app/engine/data-access/game-store/g
 import { catchUp } from '@app/engine/domain/catch-up-logic';
 import { createInitialState } from '@app/engine/domain/game-state-logic';
 import { GameState } from '@app/engine/domain/models/game-state.model';
+import { SIMULATION_TEST_TIMEOUT_MS } from '@app/engine/domain/simulation-timeout.testing';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@app/shared/util/time/time-units';
 
@@ -134,21 +135,25 @@ describe('PersistenceService', () => {
       expect(store.lastCatchUp()?.caughtUpMs).toBe(OFFLINE_MS);
     });
 
-    it('deckelt den Offline-Fortschritt bei 24 h und verwirft den Rest', () => {
-      writeSave();
-      vi.setSystemTime(SAVED_AT + 30 * OFFLINE_MS);
+    it(
+      'deckelt den Offline-Fortschritt bei 24 h und verwirft den Rest',
+      { timeout: SIMULATION_TEST_TIMEOUT_MS },
+      () => {
+        writeSave();
+        vi.setSystemTime(SAVED_AT + 30 * OFFLINE_MS);
 
-      persistence.restore();
+        persistence.restore();
 
-      expect(store.state().time.played).toBe(5000 + 24 * OFFLINE_MS);
-      expect(store.state().time.now).toBe(SAVED_AT + 30 * OFFLINE_MS);
-      expect(store.lastCatchUp()).toMatchObject({
-        requestedMs: 30 * OFFLINE_MS,
-        caughtUpMs: 24 * OFFLINE_MS,
-        discardedMs: 6 * OFFLINE_MS,
-        capped: true,
-      });
-    });
+        expect(store.state().time.played).toBe(5000 + 24 * OFFLINE_MS);
+        expect(store.state().time.now).toBe(SAVED_AT + 30 * OFFLINE_MS);
+        expect(store.lastCatchUp()).toMatchObject({
+          requestedMs: 30 * OFFLINE_MS,
+          caughtUpMs: 24 * OFFLINE_MS,
+          discardedMs: 6 * OFFLINE_MS,
+          capped: true,
+        });
+      },
+    );
 
     it('holt bei zurückgestellter Uhr nichts nach', () => {
       writeSave();

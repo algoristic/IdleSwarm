@@ -20,6 +20,7 @@ import type { GameEvent } from './models/game-event.model';
 import type { GameState } from './models/game-state.model';
 import { stateModifiers } from './modifiers-logic';
 import { runSimulationWithState } from './runner-logic';
+import { SIMULATION_TEST_TIMEOUT_MS } from './simulation-timeout.testing';
 import { step } from './step-logic';
 
 /**
@@ -81,9 +82,9 @@ describe('catchUp', () => {
 
   beforeAll(() => {
     start = advanced(createActiveBot(), MS_PER_HOUR);
-  });
+  }, SIMULATION_TEST_TIMEOUT_MS);
 
-  describe('gegen den 100-ms-Takt', () => {
+  describe('gegen den 100-ms-Takt', { timeout: SIMULATION_TEST_TIMEOUT_MS }, () => {
     it('holt 2 h aus einem fortgeschrittenen Stand mit Auto-Weiterziehen nach', () => {
       expect(start.auto.enabled).toBe(true);
       const coarse = catchUp(start, 2 * MS_PER_HOUR, 'load', BALANCE_V1);

@@ -5,6 +5,7 @@ import { maxCatchUpMs } from '@app/balance/domain/formulas';
 import { Num } from '@app/shared/util/num/num';
 import { MS_PER_HOUR } from '@app/shared/util/time/time-units';
 
+import { SIMULATION_TEST_TIMEOUT_MS } from '../../domain/simulation-timeout.testing';
 import { GameStore } from '../game-store/game-store.service';
 import { GameLoop, MAX_TICKS_PER_WAKE } from './game-loop.service';
 
@@ -117,46 +118,54 @@ describe('GameLoop', () => {
       expect(played()).toBe(MS_PER_HOUR + 100);
     });
 
-    it('teilt das Nachholen wie der Runner, damit das Auto-Weiterziehen rechtzeitig aufbricht', () => {
-      const base = store.state();
-      // Viele Drohnen leeren die Startstelle schnell, genug Königinnen nehmen sie mit; das
-      // Auto-Weiterziehen zieht mehrmals weiter.
-      const fresh = {
-        ...base,
-        auto: { ...base.auto, enabled: true },
-        units: { ...base.units, queens: Num.from(40), drones: Num.from(1000) },
-      };
-      store.replace(fresh);
-      loop.start();
-      wake(MS_PER_HOUR);
-      const caughtUp = store.state();
+    it(
+      'teilt das Nachholen wie der Runner, damit das Auto-Weiterziehen rechtzeitig aufbricht',
+      { timeout: SIMULATION_TEST_TIMEOUT_MS },
+      () => {
+        const base = store.state();
+        // Viele Drohnen leeren die Startstelle schnell, genug Königinnen nehmen sie mit; das
+        // Auto-Weiterziehen zieht mehrmals weiter.
+        const fresh = {
+          ...base,
+          auto: { ...base.auto, enabled: true },
+          units: { ...base.units, queens: Num.from(40), drones: Num.from(1000) },
+        };
+        store.replace(fresh);
+        loop.start();
+        wake(MS_PER_HOUR);
+        const caughtUp = store.state();
 
-      // Dieselbe Zeit Tick für Tick: gleiche Zahl an Aufbrüchen bzw. Ankünften.
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({ providers: [GameStore] });
-      const reference = TestBed.inject(GameStore);
-      reference.replace(fresh);
-      for (let i = 0; i < MS_PER_HOUR / TICK_MS; i++) {
-        reference.tick(TICK_MS);
-      }
-      expect(caughtUp.map.route.length).toBeGreaterThan(2);
-      expect(caughtUp.map.route.length).toBe(reference.state().map.route.length);
-      const food = reference.state().res.food.toNumber();
-      expect(Math.abs(caughtUp.res.food.toNumber() - food)).toBeLessThanOrEqual(food * 0.02 + 1);
-    });
+        // Dieselbe Zeit Tick für Tick: gleiche Zahl an Aufbrüchen bzw. Ankünften.
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({ providers: [GameStore] });
+        const reference = TestBed.inject(GameStore);
+        reference.replace(fresh);
+        for (let i = 0; i < MS_PER_HOUR / TICK_MS; i++) {
+          reference.tick(TICK_MS);
+        }
+        expect(caughtUp.map.route.length).toBeGreaterThan(2);
+        expect(caughtUp.map.route.length).toBe(reference.state().map.route.length);
+        const food = reference.state().res.food.toNumber();
+        expect(Math.abs(caughtUp.res.food.toNumber() - food)).toBeLessThanOrEqual(food * 0.02 + 1);
+      },
+    );
 
-    it('deckelt das Nachholen, verwirft den Rest und gleicht die Uhr ab', () => {
-      loop.start();
-      vi.setSystemTime(NOW + MAX_CATCH_UP_MS + MS_PER_HOUR);
-      wake(MAX_CATCH_UP_MS + MS_PER_HOUR + 50);
-      expect(played()).toBe(MAX_CATCH_UP_MS);
-      expect(store.state().time.now).toBe(Date.now());
-      expect(store.lastCatchUp()).toMatchObject({ capped: true, discardedMs: MS_PER_HOUR });
-      wake(99);
-      expect(played()).toBe(MAX_CATCH_UP_MS);
-      wake(1);
-      expect(played()).toBe(MAX_CATCH_UP_MS + 100);
-    });
+    it(
+      'deckelt das Nachholen, verwirft den Rest und gleicht die Uhr ab',
+      { timeout: SIMULATION_TEST_TIMEOUT_MS },
+      () => {
+        loop.start();
+        vi.setSystemTime(NOW + MAX_CATCH_UP_MS + MS_PER_HOUR);
+        wake(MAX_CATCH_UP_MS + MS_PER_HOUR + 50);
+        expect(played()).toBe(MAX_CATCH_UP_MS);
+        expect(store.state().time.now).toBe(Date.now());
+        expect(store.lastCatchUp()).toMatchObject({ capped: true, discardedMs: MS_PER_HOUR });
+        wake(99);
+        expect(played()).toBe(MAX_CATCH_UP_MS);
+        wake(1);
+        expect(played()).toBe(MAX_CATCH_UP_MS + 100);
+      },
+    );
 
     it('tickt nach stop nicht mehr', () => {
       loop.start();

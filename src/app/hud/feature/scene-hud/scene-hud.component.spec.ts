@@ -10,6 +10,7 @@ import { HINT_IDS, ONBOARDING_UNLOCK_IDS } from '@app/onboarding/domain/models/o
 import { KEY_VALUE_STORE } from '@app/persistence/data-access/persistence/persistence-service.tokens';
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
 import { KeyValueStore, SAVE_KEY, saveGame } from '@app/persistence/domain/slots-logic';
+import { CLOCK } from '@app/shared/data-access/platform/platform.tokens';
 import { Num } from '@app/shared/util/num/num';
 import { Units } from '@app/swarm/domain/models/units.model';
 
@@ -90,6 +91,8 @@ describe('SceneHudComponent und ResourcesPanelComponent', () => {
         provideHudState(),
         provideRouter([]),
         { provide: KEY_VALUE_STORE, useValue: memory },
+        // Feste Uhr: sonst holt restore() die echte Zeit seit SAVED_AT nach (bis zu 24 h Simulation).
+        { provide: CLOCK, useValue: { now: () => SAVED_AT, monotonic: () => 0 } },
       ],
     });
     store = TestBed.inject(GameStore);
