@@ -40,9 +40,9 @@ Das Spielergebnis darf nicht von der Framerate abhängen. Gleichzeitig braucht d
 - Spielstände führen den RNG-Zustand mit; Neuladen ändert die Zufallsfolge nicht.
 - Negativ: Mulberry32, der Seed-Hash und der Zusatz `#finds` des Fund-Stroms dürfen sich nicht mehr ändern, weil Spielstände von ihnen abhängen.
 - Negativ: Weil Kommandos sofort wirken, zählt für die Reproduktion auch ihre Position zwischen den Schritten, nicht nur ihre Menge.
-- Negativ: Bis AP 1.5.1 geht Zeit verloren: alles über 60 s pro Aufwachen und die Zeit seit dem letzten Speichern beim Laden.
+- Negativ: Zeit über `T_max` (24 h) verfällt, beim Laden wie bei verborgenem Tab (seit AP 1.5.1; vorher ging alles über 60 s pro Aufwachen und die Zeit seit dem letzten Speichern verloren).
 - Negativ: Der adaptive Catch-up ist eine Näherung an die Echtzeit-Simulation. Ein Test muss die Toleranz absichern ([Konzept §10](../technisches-konzept.md#10-qualitätssicherung)).
-- Das Budget (`step` < 2 ms auf einem Mittelklasse-Smartphone, Catch-up für 24 h < 1 s) ist ein Ziel und noch nicht gemessen.
+- Das Budget (`step` < 2 ms auf einem Mittelklasse-Smartphone, Catch-up für 24 h < 1 s) ist ein Ziel. Gemessen ist bisher nur der Catch-up in Vitest unter WSL: 24 h rund 1,1 s, knapp über dem Ziel ([Konzept §10](../technisches-konzept.md#10-qualitätssicherung)); auf Smartphones ist beides offen.
 
 ## Verworfene Alternativen
 

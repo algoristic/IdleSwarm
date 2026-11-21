@@ -28,7 +28,7 @@ IdleSwarm ist ein Einzelspieler-Spiel ohne Multiplayer. Logik, Speicherung und O
 ## Konsequenzen
 
 - Kein Serverbetrieb; Veröffentlichung und Prüfung liegen in einem Workflow.
-- Negativ: Spielstände liegen nur im Browser ([ADR-005](005-speicherformat-localstorage.md)). Geräte werden nicht automatisch abgeglichen; dafür ist ein Export und Import vorgesehen (AP 1.5.2).
+- Negativ: Spielstände liegen nur im Browser ([ADR-005](005-speicherformat-localstorage.md)). Geräte werden nicht automatisch abgeglichen; dafür gibt es Export und Import (AP 1.5.2).
 - Negativ: Spiellogik und Spielstände liegen vollständig beim Client und werden nicht serverseitig geprüft.
 - Negativ: Die App ist an den Pfad `/IdleSwarm/` und die Routing-Grenzen statischen Hostings gebunden.
 

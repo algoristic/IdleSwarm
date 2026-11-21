@@ -98,12 +98,12 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 
 | Domäne | Inhalt |
 | --- | --- |
-| `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine und Pipes (Zahlenformat über `NUMBER_NOTATION`); `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`, `VIEWPORT`, `CLIPBOARD`), `MotionPreferenceService` (reduzierte Bewegung) |
+| `shared` | `util`: `Num`, RNG, Formatierung, Zeiteinheiten, Eingabeparser; `ui`: allgemeine Bausteine (`ModalDialogComponent`, natives `<dialog>`) und Pipes (Zahlenformat über `NUMBER_NOTATION`); `data-access`: Plattform-Tokens (`CLOCK`, `ANIMATION_FRAME`, `VIEWPORT`, `CLIPBOARD`, `PAGE_RELOAD`), `MotionPreferenceService` (reduzierte Bewegung, Einstellung über `MOTION_OVERRIDE`), `AppUpdateService` (Update-Hinweis der PWA) |
 | `balance` | `domain`: Konstanten, Formeln, Effekt-System, Zielbänder (`targets`) |
-| `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
+| `engine` | `domain`: Zusammensetzung des `GameState`, `apply` (Kommandos), `step`, Ereignisse, Offline-Catch-up (`catchUp`), Kaufbarkeit (`isAnyPurchaseAffordable`), Headless-Runner und Bot-Schnittstelle; `data-access`: GameStore, GameLoop, `provideGameCore()` |
 | `swarm` | Einheiten, Brut, Transport, Drohnen opfern, Pheromone |
 | `site` | Futterstellen, Sammeln, Generator, Reichweite, Kampf, Weiterziehen, Strategien, Auto-Weiterziehen (`domain`); Typnamen (`ui`) |
-| `persistence` | `domain`: Serialisierung, Slots, Migrationen; `data-access`: `PersistenceService`, `KEY_VALUE_STORE` |
+| `persistence` | `domain`: Serialisierung, Import (`importSave`), Slots, Migrationen; `data-access`: `PersistenceService` (Autosave, Offline-Nachholen beim Laden, Export, Import, Zurücksetzen), `KEY_VALUE_STORE` |
 | `hud` | HUD der Szene, Ressourcen und Speicherstatus (`feature`, `ui`, `domain` für Eingabeprüfung) |
 | `sonar` | Umgebung (Kartenmodus): Viewmodel, Facade, Ebene und Overlay (`feature`), Sonar-Karte (SVG), Zielliste, Detailpanel, Einstellungsformular (`ui`), Eingabeprüfung und Kartengeometrie (`domain`) |
 | `genome` | Genom Ära I: Knoten, einzigartige Adaptionen, Status, `evolve`, Effektvorschau, Baumgeometrie (`domain`); Namen, Beschreibungen, SVG-Baum und Detailpanel (`ui`); Ebene, Overlay und `GenomeFacade` (`feature`) |
@@ -271,7 +271,7 @@ Das Spiel hat nur ein dunkles Thema; ein helles ist nicht geplant.
 - Klassennamen immer vollständig schreiben. Tailwind findet Klassen durch Scannen der Quellen, also nicht aus Strings zusammensetzen (`'bg-' + x`). Varianten über Signal-Inputs und ein `computed`-Mapping mit vollständigen Klassennamen.
 - Zustände folgen ARIA-Attributen statt Klassen-Ternären: `aria-disabled:`, `aria-selected:`, `aria-current` über eine eigene Variante, `disabled:` bei nativen Elementen.
 - Zahlen (Mengen, Raten, Preise) bekommen `tabular-nums`.
-- Reduzierte Bewegung hat eine Quelle, den `MotionPreferenceService` (`prefers-reduced-motion` plus Einstellung, die mit AP 1.5.3 kommt); er setzt `data-motion` an `<html>`. Utilities nutzen die Variante `motion-reduced:` (nie Tailwinds `motion-reduce:`), Komponenten-CSS `:host-context([data-motion='reduced'])` (nie `@media (prefers-reduced-motion)`), Canvas und Logik lesen `reducedMotion` über ihre Facade.
+- Reduzierte Bewegung hat eine Quelle, den `MotionPreferenceService` (`prefers-reduced-motion` plus Einstellung „Animationen“ über `MOTION_OVERRIDE`); er setzt `data-motion` an `<html>`. Utilities nutzen die Variante `motion-reduced:` (nie Tailwinds `motion-reduce:`), Komponenten-CSS `:host-context([data-motion='reduced'])` (nie `@media (prefers-reduced-motion)`), Canvas und Logik lesen `reducedMotion` über ihre Facade.
 - Breakpoints: `max-md:` Smartphone (< 768 px), `md:max-desktop:` Tablet (768–1199 px), `desktop:` ab 1200 px (Token `--breakpoint-desktop`); dazu `short:` für niedrige Viewports (< 480 px hoch, Smartphone im Querformat), überschreibt die Breiten-Varianten, Gegenstück `not-short:`.
 - **Host-Styling** über die Host-Klasse (`host: { class: 'block' }`, `host: { '[class]': 'classes()' }`). Kein `display` oder andere Eigenschaften auf `:host`, die Aufrufer per Utility ändern könnten: Angulars Komponenten-Styles sind ungelayert und schlagen Tailwinds `@layer utilities`.
 - **Komponenten-CSS** (`.component.css`/`.page.css`, Plain CSS, kein Sass) gibt es nur für Sonderfälle, die Utilities nicht ausdrücken können. Darin werden Tokens als `var(--sw-*)` gelesen; nie fest eingetragene Hex-/RGB-Werte. Keine Tailwind-Direktiven (`@apply`, `@reference`, `@theme`) in Komponenten-Styles. `ViewEncapsulation` nicht überschreiben.
@@ -357,7 +357,7 @@ export class PersistenceService {
 ```
 
 - Services sind `@Injectable()` ohne `providedIn` und werden über `provide<Name>Service()` bereitgestellt; die `provide<Domain>State()`, die einen Service nutzt, schließt ihn ein (Ausnahme Spielkern, §6).
-- **Plattformzugriffe** (localStorage, Worker, `requestAnimationFrame`, `Date.now`, `performance.now`) liegen hinter Injection-Tokens mit Root-Default, damit Tests sie ersetzen können. Vorbilder: `CLOCK` und `ANIMATION_FRAME` (`shared/data-access/platform/platform.tokens.ts`), `KEY_VALUE_STORE` (`persistence/data-access/persistence/persistence-service.tokens.ts`), `SIM_WORKER_FACTORY` (`model/data-access/sim/sim-service.tokens.ts`), `DEV_BUILD` (`model/feature/state/model.guards.ts`).
+- **Plattformzugriffe** (localStorage, Worker, `requestAnimationFrame`, `Date.now`, `performance.now`) liegen hinter Injection-Tokens mit Root-Default, damit Tests sie ersetzen können. Vorbilder: `CLOCK`, `ANIMATION_FRAME`, `VIEWPORT`, `CLIPBOARD` und `PAGE_RELOAD` (`shared/data-access/platform/platform.tokens.ts`), `PREFERS_REDUCED_MOTION` und `MOTION_OVERRIDE` (`shared/data-access/motion-preference/motion-preference-service.tokens.ts`), `KEY_VALUE_STORE` (`persistence/data-access/persistence/persistence-service.tokens.ts`), `SIM_WORKER_FACTORY` (`model/data-access/sim/sim-service.tokens.ts`), `DEV_BUILD` (`model/feature/state/model.guards.ts`).
 - Methoden liefern typisierte Domänenwerte oder Signals. Fehler werden als Codes (z. B. `SaveError`) zurückgegeben oder als Signal bereitgestellt, nicht als Text.
 - Worker-Protokolle (Request/Response-Typen, Type Guards) liegen in `<name>-service.model.ts` bzw. `<name>-service.utils.ts`.
 - Kein `HttpClient`: Es gibt kein Backend (ADR-008).

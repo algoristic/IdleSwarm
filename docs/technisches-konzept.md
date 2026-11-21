@@ -1,6 +1,6 @@
 # IdleSwarm · Technisches Konzept
 
-> Stand: 19.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md) · UI-Referenz: [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
+> Stand: 21.11.2026 · Gehört zu: [Projektplan](projektplan.md), [Produktplanung](produktplanung.md) · UI-Referenz: [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 
 ## 1. Rahmenbedingungen
 
@@ -84,8 +84,10 @@ src/app/
   shared/
     util/num/, format/, rng/    # Num, Formatierung (Zahlen, Dauer, Datum), seeded RNG
     ui/pipes/                   # formatNum, formatRate, formatDown, formatDuration …; NUMBER_NOTATION (Zahlenformat)
-    data-access/platform/       # CLOCK, ANIMATION_FRAME, VIEWPORT, CLIPBOARD
-    data-access/motion-preference/   # MotionPreferenceService: reduzierte Bewegung aus einer Quelle (data-motion)
+    ui/modal-dialog/            # ModalDialogComponent: natives <dialog> (ADR-014)
+    data-access/platform/       # CLOCK, ANIMATION_FRAME, VIEWPORT, CLIPBOARD, PAGE_RELOAD
+    data-access/motion-preference/   # MotionPreferenceService: reduzierte Bewegung aus einer Quelle (data-motion), MOTION_OVERRIDE
+    data-access/app-update/     # AppUpdateService: Update-Hinweis der PWA (ADR-015)
   balance/
     domain/constants.ts, formulas.ts, targets.ts   # Konstanten, Formeln, Pacing-Zielbänder
     domain/models/effect.model.ts, effects-logic.ts # Effekt-System (Modifikatoren)
@@ -94,7 +96,7 @@ src/app/
     domain/models/game-event.model.ts   # GameEvent, StepResult
     domain/game-state-logic.ts, commands-logic.ts, step-logic.ts, step-split-logic.ts, random-logic.ts
     domain/modifiers-logic.ts           # stateEffects, stateModifiers: Effekte aller Quellen
-    domain/runner-logic.ts, cycle-metrics-logic.ts, bot-logic.ts, catch-up (geplant)
+    domain/runner-logic.ts, cycle-metrics-logic.ts, bot-logic.ts, catch-up-logic.ts, purchase-logic.ts
     data-access/game-store/, game-loop/, game-core/   # provideGameCore(), Ereignis-Log, Nachholen im Takt
   swarm/
     domain/models/units.model.ts, transport-priority.model.ts, pheromones.model.ts
@@ -245,9 +247,9 @@ IDs in `data/` (Einheiten, Adaptionen, Futterstellentypen, Funde) sind **stabil*
 | Rendering | `requestAnimationFrame`, liest nur den State; pausiert bei `document.hidden` |
 | Eingaben | Kommandos wie Käufe werden sofort angewendet, nicht erst im nächsten Tick |
 | Determinismus | Zufall nur über den seeded RNG im State (z. B. mulberry32). Gleicher Seed + gleiche Kommandos an gleicher Position zwischen den Ticks ⇒ gleiches Ergebnis. Grundlage für Tests, Modell-Seite und gegen Save-Scumming |
-| Offline-Catch-up | Beim Laden wird `Δt = now − lastSaved` nachgeholt, höchstens `T_max` (`maxCatchUpHours`, Start 24 h, in `balance/domain`, über `params` überschreibbar); der Rest verfällt, die Uhr wird abgeglichen. Negatives `Δt` (Uhr zurückgestellt) holt nichts nach. **Umgesetzt (AP 1.5.1):** `catchUp(state, elapsedMs, source, params)` in `engine/domain/catch-up-logic.ts` rechnet in Schritten von 1 s (`CATCH_UP_STEP_MS`), geteilt an `nextSplitMs` (Ankunft, nächste Abbau-Schwelle, nächster Buff-Ablauf, vorhergesagter Auto-Auslöser); `step` teilt selbst exakt an Ankunft, Abbau-Schwellen und Buff-Ablauf. Eine Teilung an „Nahrung reicht für Brut“ ist nicht nötig: Der Übergang selbst erzeugt keinen messbaren Fehler (siehe [§10](#10-qualitätssicherung)). `catchUp` liefert Endzustand, alle Ereignisse und eine Zusammenfassung (`CatchUpSummary`: nachgeholte und verworfene Zeit, Nahrung als Zufluss, Brutkosten und Netto, DNA, geschlüpfte und verlorene Einheiten je Typ, Ankünfte, Aufbrüche, Funde). `PersistenceService` holt nach `GameStore.load` über `GameStore.catchUp` nach; die Ereignisse landen im Log (es bleibt außerhalb des Spielstands, nur im Arbeitsspeicher; PO-Entscheidung M1.5), die Zusammenfassung in `GameStore.lastCatchUp` (quittieren mit `acknowledgeCatchUp`). Ab `RETURN_SUMMARY_MIN_MS` (5 min) Abwesenheit soll die Oberfläche sie zeigen (`isReturnSummaryDue`). Ein zweites Nachholen vor dem Quittieren einer solchen Zusammenfassung wird mit ihr zusammengefasst (`mergeCatchUpSummaries`) |
+| Offline-Catch-up | Beim Laden wird `Δt = now − lastSaved` nachgeholt, höchstens `T_max` (`maxCatchUpHours`, Start 24 h, in `balance/domain`, über `params` überschreibbar); der Rest verfällt, die Uhr wird abgeglichen. Negatives `Δt` (Uhr zurückgestellt) holt nichts nach. **Umgesetzt (AP 1.5.1):** `catchUp(state, elapsedMs, source, params)` in `engine/domain/catch-up-logic.ts` rechnet in Schritten von 1 s (`CATCH_UP_STEP_MS`), geteilt an `nextSplitMs` (Ankunft, nächste Abbau-Schwelle, nächster Buff-Ablauf, vorhergesagter Auto-Auslöser); `step` teilt selbst exakt an Ankunft, Abbau-Schwellen und Buff-Ablauf. Eine Teilung an „Nahrung reicht für Brut“ ist nicht nötig: Der Übergang selbst erzeugt keinen messbaren Fehler (siehe [§10](#10-qualitätssicherung)). `catchUp` liefert Endzustand, alle Ereignisse und eine Zusammenfassung (`CatchUpSummary`: nachgeholte und verworfene Zeit, Nahrung als Zufluss, Brutkosten und Netto, DNA, geschlüpfte und verlorene Einheiten je Typ, Ankünfte, Aufbrüche, Funde). `PersistenceService` holt nach `GameStore.load` über `GameStore.catchUp` nach; die Ereignisse landen im Log (es bleibt außerhalb des Spielstands, nur im Arbeitsspeicher; PO-Entscheidung M1.5), die Zusammenfassung in `GameStore.lastCatchUp` (quittieren mit `acknowledgeCatchUp`). Ab `RETURN_SUMMARY_MIN_MS` (5 min) nachgeholter Zeit zeigt die Oberfläche sie als Rückkehr-Zusammenfassung (`isReturnSummaryDue`, [§8.5](#85-barrierearmut)). Ein zweites Nachholen vor dem Quittieren einer solchen Zusammenfassung wird mit ihr zusammengefasst (`mergeCatchUpSummaries`) |
 | Hintergrund-Tab | Browser drosseln Timer, daher erkennt der GameLoop große Zeitsprünge. **Umgesetzt (AP 1.4.6):** Bis 60 s Rückstand je Aufwachen (`MAX_TICKS_PER_WAKE`) läuft der Takt Tick für Tick; größere Rückstände (verborgener Tab, eingefrorene Seite) holt er wie der Headless-Runner in Schritten von 1 s (`CATCH_UP_STEP_MS`) nach, geteilt an `nextSplitMs`, damit Ankunft, Abbau-Schwellen und Auto-Weiterziehen auf die Millisekunde fallen. Seit AP 1.5.1 läuft das über denselben Weg wie der Offline-Fortschritt (`GameStore.catchUp(…, 'background')` → `catchUp`), mit derselben Obergrenze `T_max`; den Rest verwirft der Takt und gleicht die Uhr ab |
-| Performance-Budget | `step` < 2 ms auf einem Mittelklasse-Smartphone; Catch-up für 24 h < 1 s |
+| Performance-Budget | `step` < 2 ms auf einem Mittelklasse-Smartphone; Catch-up für 24 h < 1 s. Gemessen (M1.5): 24 h Catch-up rund 1,1 s (Vitest, WSL, [§10](#10-qualitätssicherung)), also knapp über dem Ziel; auf echten Smartphones noch nicht gemessen (offen nach M1.5, [Projektplan §3.3](projektplan.md#offen-nach-m15)) |
 
 ## 5. Mathematisches Modell & Modell-Seite
 
@@ -538,3 +540,6 @@ Die Entscheidungen sind als einzelne Dateien in [`docs/adr/`](adr/README.md) fes
 | ADR-010 | Tailwind CSS v4 mit semantischen Tokens; K2-Ebenen in Komponenten-CSS |
 | ADR-011 | Texte über `@angular/localize`; Übersetzung später |
 | ADR-012 | Formulare mit Signal Forms (`@angular/forms/signals`) |
+| ADR-013 | Webfont Nunito (variabel, latin + latin-ext) selbst gehostet |
+| ADR-014 | Modale Dialoge mit dem nativen `<dialog>` (`showModal()`), keine neue Abhängigkeit |
+| ADR-015 | PWA mit `@angular/service-worker` (Vorab-Cache, Manifest, Update-Hinweis) |

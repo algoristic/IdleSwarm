@@ -31,6 +31,8 @@ Als Vorbild dient PortfoliGo: Tailwind v4, semantische Tokens, keine Arbitrary V
 
 - Seit M1.4 (AP 1.4.1–1.4.6) gibt es die Kamera-Tokens `--sw-zoom-duration`, `--sw-zoom-fade-duration`, `--sw-ease-zoom` und `--sw-zoom-reduced-duration`; Ebenen, Kamera, `--ms`, Ereigniszahlen und `env(safe-area-inset-*)` stehen nach der K2-Ausnahme in Komponenten-CSS (`shell.page.css`, `scene-world.component.css`, `scene-hud.component.css` …), alle übrigen HUD-, Karten- und Genom-Panels in Utilities. Der Breakpoint `desktop:` (Token `--breakpoint-desktop`, 75rem = 1200 px) ergänzt Tailwinds `md:` für die Grenze Tablet/Desktop ([Konzept §8.4](../technisches-konzept.md#84-responsives-layout)). Reduzierte Bewegung hat eine eigene Variante `motion-reduced:` (Attribut `data-motion='reduced'` an `<html>` aus dem `MotionPreferenceService`, vor dem App-Start ersatzweise `prefers-reduced-motion`); Tailwinds `motion-reduce:` wird nicht verwendet, Komponenten-CSS liest dasselbe Attribut über `:host-context([data-motion='reduced'])` ([Konzept §8.5](../technisches-konzept.md#85-barrierearmut)).
 
+- Seit AP 1.5.8 gibt es die Variante `short:` (Höhe < 30rem = 480 px, Smartphone im Querformat), die die Breiten-Varianten überschreibt, mit dem Gegenstück `not-short:` ([Konzept §8.4](../technisches-konzept.md#84-responsives-layout)).
+
 ## Konsequenzen
 
 - Layout, Abstände und Breakpoints der vielen HUD-Teile ab M1.4 entstehen direkt im Template; Mobile-Varianten (`max-md:`, `md:max-desktop:`, `desktop:`) bleiben an der Stelle, an der sie wirken.
