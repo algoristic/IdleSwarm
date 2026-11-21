@@ -20,5 +20,6 @@ export class SaveStatusComponent {
     'restored-from-backup': $localize`:@@featureHud-saveStatus-notice-restoredFromBackup:Der Spielstand war beschädigt und wurde aus der Sicherung wiederhergestellt.`,
     'save-unreadable': $localize`:@@featureHud-saveStatus-notice-saveUnreadable:Der Spielstand konnte nicht gelesen werden. Es wurde ein neues Spiel begonnen.`,
     'save-failed': $localize`:@@featureHud-saveStatus-notice-saveFailed:Speichern ist fehlgeschlagen. Es wird beim nächsten Mal erneut versucht.`,
+    'update-ready': $localize`:@@featureHud-saveStatus-notice-updateReady:Neue Version verfügbar. Sie startet beim nächsten Öffnen.`,
   };
 }

@@ -19,6 +19,8 @@ export interface HudSource {
   readonly lastSavedAt: number | null;
   /** Zahlenformat der Anzeige; die Preise werden auf dessen Stellen gerundet. Standard: Kurzformen. */
   readonly notation?: Notation;
+  /** Der Service Worker hat eine neue Version geladen (US-07.06). Standard: nein. */
+  readonly updateReady?: boolean;
 }
 
 /** Schubladen am rechten Rand der Szene (Mockup `.tabs`); lokaler UI-Zustand, nie im Spielstand. */
@@ -28,8 +30,11 @@ export type HudDrawer = (typeof HUD_DRAWERS)[number];
 /** Freigeschaltete Teile (US-09.04); gesperrte blendet das HUD aus. */
 export type HudUnlocks = Readonly<Record<OnboardingUnlockId, boolean>>;
 
-/** Hinweise unter den Ressourcen; `SaveStatusComponent` bildet sie auf Texte ab. */
-export type HudNotice = RestoreNotice | 'save-failed';
+/**
+ * Hinweise unter den Ressourcen; `SaveStatusComponent` bildet sie auf Texte ab. `update-ready` trägt
+ * die Aktion „Neu laden“.
+ */
+export type HudNotice = RestoreNotice | 'save-failed' | 'update-ready';
 
 export interface SpaceView {
   readonly used: Num;

@@ -31,7 +31,7 @@
 | E2E-Tests | **Playwright** | Desktop- und Mobile-Viewports, Touch-Emulation |
 | Code-Qualität | ESLint (angular-eslint, `eslint-plugin-import-x`), Prettier | Schichtregeln je Domäne, Determinismus in `domain`/`util`, Importreihenfolge |
 | CI/CD | GitHub Actions → GitHub Pages | Lint, Test, Build bei jedem Push; Deploy von `main` |
-| PWA | `@angular/pwa` (Service Worker, Manifest) | Installierbar und offline startbar (AP 1.5.6) |
+| PWA | `@angular/service-worker` mit Web-App-Manifest ([ADR-015](adr/015-pwa-service-worker.md)) | Installierbar und offline startbar (AP 1.5.6) |
 
 Jede neue Laufzeitabhängigkeit braucht eine ADR. Versionen in `package.json` sind exakt angegeben, ohne `^` oder `~`.
 
@@ -506,7 +506,8 @@ Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan ([Projek
 ## 11. Deployment & PWA
 
 - GitHub Actions baut bei Push auf `main` und veröffentlicht auf GitHub Pages (`base-href` = Repository-Name).
-- `@angular/pwa`: Service Worker cacht das App-Shell; das Spiel startet offline. Updates werden beim nächsten Start aktiv, mit Hinweis „Neue Version verfügbar“.
+- PWA mit `@angular/service-worker` ([ADR-015](adr/015-pwa-service-worker.md), AP 1.5.6): Der Service Worker (nur Produktions-Build) lädt `index.html`, alle JS- und CSS-Bundles einschließlich der Lazy Chunks, die Schriftdateien (`media/*.woff2`), Manifest und Icons vorab in den Cache (`ngsw-config.json`); Web Worker cacht er beim ersten Abruf. Das Spiel startet offline. Manifest `public/manifest.webmanifest` mit relativen `start_url`/`scope`, damit es unter `/IdleSwarm/` stimmt.
+- Updates: Eine neue Version lädt im Hintergrund und wird beim nächsten Start aktiv. Liegt sie bereit (`VERSION_READY`), zeigt das HUD den Hinweis „Neue Version verfügbar“ mit „Neu laden“ (speichert, dann `PAGE_RELOAD`); `AppUpdateService` in `shared/data-access/app-update`.
 - Versionsnummer und Build-Datum stehen in den Einstellungen (AP 1.5.3): die Version aus `package.json` (JSON-Import, nur das Feld `version` landet im Bundle), der Build-Zeitpunkt über `ng build --define IDLESWARM_BUILD_TIME=<Unix-ms>` in der CI (Token `BUILD_INFO` in `settings/feature/state/settings.tokens.ts`); ohne Define (Dev-Server, lokaler Build, Tests) zeigt die Info „Entwicklung“.
 
 ## 12. Architektur-Entscheidungen (ADRs)

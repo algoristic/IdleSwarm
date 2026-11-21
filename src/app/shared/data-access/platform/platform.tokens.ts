@@ -70,3 +70,15 @@ export const CLIPBOARD = new InjectionToken<Clipboard>('CLIPBOARD', {
     },
   }),
 });
+
+/** Neuladen der Seite (`location.reload`); als Token, damit Tests es ersetzen können. */
+export interface PageReload {
+  reload(): void;
+}
+
+export const PAGE_RELOAD = new InjectionToken<PageReload>('PAGE_RELOAD', {
+  providedIn: 'root',
+  factory: () => ({
+    reload: () => location.reload(),
+  }),
+});

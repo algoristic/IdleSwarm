@@ -160,6 +160,7 @@ describe('toHudView', () => {
         lastSaveError: new SaveError('storage', 'voll'),
       }).notices,
     ).toEqual(['restored-from-backup', 'save-failed']);
+    expect(view(undefined, { updateReady: true }).notices).toEqual(['update-ready']);
   });
 });
 

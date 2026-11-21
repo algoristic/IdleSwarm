@@ -21,7 +21,9 @@ Randbedingungen: kein Backend und Hosting auf GitHub Pages ([ADR-008](008-kein-b
 
 **Umgesetzt** in [AP 1.4.3](../projektplan.md#m14--k2-präsentation--mobile) (erster Teil: Palette, Grundstil, Webfont): Schriftdateien unter `src/fonts/nunito/` (latin 39 KB, latin-ext 36 KB), Lizenz unter `public/fonts/nunito/OFL.txt`, `@font-face` und `--font-sans` in `src/styles.css`, `body` mit `font-sans font-semibold`.
 
-**Offen:** Kein `<link rel="preload">`: Die gebündelten Dateien tragen einen Hash im Namen, den `index.html` nicht kennt. Die Schriftdateien liegen bewusst nicht unter `public/`, damit der Build sie nicht zusätzlich ungebündelt kopiert. Der Service Worker der PWA (AP 1.5.6) muss die Dateien aus `media/` vorab cachen.
+**Offen:** Kein `<link rel="preload">`: Die gebündelten Dateien tragen einen Hash im Namen, den `index.html` nicht kennt. Die Schriftdateien liegen bewusst nicht unter `public/`, damit der Build sie nicht zusätzlich ungebündelt kopiert. Den Offline-Fall deckt der Service Worker ab.
+
+**Umgesetzt** in AP 1.5.6: Der Service Worker ([ADR-015](015-pwa-service-worker.md)) lädt `media/*.woff2` vorab in den Cache (Gruppe `app` in `ngsw-config.json`).
 
 ## Konsequenzen
 

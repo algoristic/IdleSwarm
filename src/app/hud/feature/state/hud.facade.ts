@@ -3,6 +3,7 @@ import { computed, inject, Injectable } from '@angular/core';
 import { DEFAULT_BALANCE } from '@app/balance/domain/constants';
 import { GameStore } from '@app/engine/data-access/game-store/game-store.service';
 import { PersistenceService } from '@app/persistence/data-access/persistence/persistence.service';
+import { AppUpdateService } from '@app/shared/data-access/app-update/app-update.service';
 import { NUMBER_NOTATION } from '@app/shared/ui/pipes/number-notation/number-notation.token';
 import type { UnitType } from '@app/swarm/domain/models/units.model';
 
@@ -16,6 +17,7 @@ export class HudFacade {
   readonly #store = inject(GameStore);
   readonly #persistence = inject(PersistenceService);
   readonly #notation = inject(NUMBER_NOTATION);
+  readonly #appUpdate = inject(AppUpdateService);
 
   hud = computed<HudView>(() =>
     toHudView(
@@ -25,6 +27,7 @@ export class HudFacade {
         lastSaveError: this.#persistence.lastSaveError(),
         lastSavedAt: this.#persistence.lastSavedAt(),
         notation: this.#notation(),
+        updateReady: this.#appUpdate.updateReady(),
       },
       DEFAULT_BALANCE,
     ),
@@ -54,5 +57,11 @@ export class HudFacade {
 
   acknowledgeReturnSummary(): void {
     this.#store.acknowledgeCatchUp();
+  }
+
+  /** Speichert und lädt neu, damit die bereitliegende Version startet (US-07.06). */
+  reloadForUpdate(): void {
+    this.#persistence.save();
+    this.#appUpdate.reload();
   }
 }

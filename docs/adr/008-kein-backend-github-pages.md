@@ -21,9 +21,10 @@ IdleSwarm ist ein Einzelspieler-Spiel ohne Multiplayer. Logik, Speicherung und O
 - Der Build nutzt `--base-href /IdleSwarm/`. Eine Kopie von `index.html` als `404.html` hält das Angular-Routing auf GitHub Pages funktionsfähig.
 - Deployt wird nur bei einem Push auf `main` und nur nach erfolgreicher Prüfung.
 
+**Umgesetzt** in AP 1.5.6: PWA mit `@angular/service-worker` ([ADR-015](015-pwa-service-worker.md)); Manifest und Service Worker arbeiten mit Pfaden relativ zum Base-Href `/IdleSwarm/`.
+
 **Geplant:**
 
-- PWA (`@angular/pwa`): Umsetzung in AP 1.5.6
 - E2E-Tests und das zugehörige CI-Gate: Umsetzung ab AP 1.5.7
 
 ## Konsequenzen

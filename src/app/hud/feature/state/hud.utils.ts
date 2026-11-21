@@ -320,10 +320,13 @@ function toSpaceView({ units }: GameState, params: BalanceParams, modifiers: Mod
   };
 }
 
-function toNotices({ notice, lastSaveError }: HudSource): HudNotice[] {
+function toNotices({ notice, lastSaveError, updateReady = false }: HudSource): HudNotice[] {
   const notices: HudNotice[] = notice === null ? [] : [notice];
   if (lastSaveError !== null) {
     notices.push('save-failed');
+  }
+  if (updateReady) {
+    notices.push('update-ready');
   }
   return notices;
 }
