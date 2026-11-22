@@ -1,6 +1,6 @@
 # IdleSwarm · Projektplan
 
-> Stand: 21.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
+> Stand: 22.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 
 ## 1. Ziel und Rahmen
 
@@ -13,7 +13,7 @@ IdleSwarm ist ein Idle-Browserspiel für eine Person, ohne Multiplayer. Der Spie
 | Technik | Angular (zoneless, Signals), Spiellogik als reines TypeScript, kein Backend (Details: [Technisches Konzept](technisches-konzept.md)) |
 | Team | 1 Entwickler + KI-Unterstützung |
 | Planung | Aufwand in **Personentagen (PT)**, Meilensteine **ohne Termine** |
-| Vorgehen | iterativ: Jeder Meilenstein endet mit einem spielbaren Stand und einem kurzen Spieltest-Review |
+| Vorgehen | iterativ: Jeder Meilenstein endet mit einem spielbaren Stand und einem kurzen Spieltest-Review; jede Ausbaustufe beginnt mit UI-Mockups und endet mit einer Playtest-Schleife (§6) |
 
 ### Leitprinzip: Das Modell zuerst
 
@@ -33,7 +33,7 @@ Es gibt keine Klick-Mechanik für Ressourcen. Ein fester [Grundertrag](game-desi
 | 4 | Ära III · Land | Gebiete an mehreren Fronten erobern und leerfressen, bis der Planet eingenommen ist; Zivilisation als Gegner | grob + Entscheidungspunkte |
 | 5 | Ära IV+ · Weltraum | Ausbreitung über Sonnensystem und Galaxis mit globaler Übersicht; endlose Skalierung | grob + Entscheidungspunkte |
 
-Jede Ausbaustufe endet mit einem veröffentlichten Release (1.0, 2.0, …). Spielstände bleiben über alle Stufen hinweg kompatibel (Migrationen, siehe Technisches Konzept).
+Jede Ausbaustufe endet mit einem veröffentlichten Release; die Versionsnummer folgt [§6 (Versionierung)](#6-vorgehen). Spielstände bleiben über alle Stufen hinweg kompatibel (Migrationen, siehe Technisches Konzept).
 
 ## 3. Ausbaustufe 1 · Basisspiel (Ära I Ursuppe)
 
@@ -60,7 +60,7 @@ Ein vollständiges, ausbalanciertes Spiel für Ära I: Der Schwarm sammelt Nahru
 | M1.2 | Weiterziehen & Kampf | Schwarm zieht über die Sonar-Karte von Futterstelle zu Futterstelle, manuell und automatisch; Kampf und Verluste funktionieren | 9,5–13,5 PT |
 | M1.3 | Progression | Genom, Pheromone und Funde vollständig; Modell-Seite zeigt Upgrade-Wirkung und Pacing-Zielband | 8,5–12 PT |
 | M1.4 | K2-Präsentation & Mobile | Oberfläche entspricht Mockup K2 inkl. Zoom-Übergängen; auf Smartphone voll bedienbar | 9–13,5 PT |
-| M1.5 | Idle, Balancing & Release 1.0 | Offline-Fortschritt, Onboarding, PWA; Balancing innerhalb der Zielbänder; Release 1.0 veröffentlicht | 9–13,5 PT |
+| M1.5 | Idle, Balancing & Release | Offline-Fortschritt, Onboarding, PWA; Balancing innerhalb der Zielbänder; Release veröffentlicht | 9–13,5 PT |
 | | **Summe AS1** | | **55–80 PT** (+ ~15 % Puffer) |
 
 Die Meilensteine sind so geschnitten, dass zuerst die Mechanik steht (M1.0–M1.3) und danach die Präsentation (M1.4). Die Sonar-Karte (M1.2) und das Genom (M1.3) werden trotzdem schon im K2-Stil gebaut. M1.4 fügt sie zur Zoom-Welt zusammen und macht sie mobiltauglich.
@@ -130,7 +130,7 @@ flowchart TB
         ap145["1.4.5 Mobile"]
         ap146["1.4.6 Barrierearmut & Performance"]
     end
-    subgraph M1_5["M1.5 · Idle, Balancing & Release 1.0"]
+    subgraph M1_5["M1.5 · Idle, Balancing & Release"]
         ap151["1.5.1 Offline-Fortschritt"]
         ap152["1.5.2 Spielstand-Verwaltung"]
         ap153["1.5.3 Einstellungen"]
@@ -138,7 +138,7 @@ flowchart TB
         ap155["1.5.5 Balancing"]
         ap156["1.5.6 PWA"]
         ap157["1.5.7 E2E-Tests"]
-        ap158["1.5.8 Playtest & Release"]
+        ap158["1.5.8 Playtest-Schleife & Release"]
     end
 
     ap101 --> ap102
@@ -287,7 +287,7 @@ flowchart TB
 | 1.4.5 | Mobile | Pinch → Moduswechsel, Breakpoints, Bottom-Sheets, Touch-Ziele ≥ 44 px; aus der M1.2-Durchsicht: Beschriftungen der Sonar-Karte und ihre Darstellung auf Mobilgeräten überarbeiten; aus der M1.3-Durchsicht: Genom-Baum auf dem Smartphone lesbar und treffbar machen (Beschriftungen, Trefferflächen ≥ 44 px ohne Überlappung benachbarter Knoten), Links im HUD-Kopf ≥ 44 px | 2–3 | US-08.06, 08.07 |
 | 1.4.6 | Barrierearmut & Performance | `prefers-reduced-motion`, Fokusführung, Pause bei verdecktem Tab, Profiling auf Smartphone | 1–1,5 | US-08.08, 09.03 |
 
-#### M1.5 · Idle, Balancing & Release 1.0
+#### M1.5 · Idle, Balancing & Release
 
 | AP | Arbeitspaket | Inhalt | PT | Stories |
 |---|---|---|---|---|
@@ -298,7 +298,7 @@ flowchart TB
 | 1.5.5 | Balancing | Zielwerte festlegen, Bot-Läufe, Anpassen, Kennzahlen als Regressions-Snapshots; aus der M1.2-Durchsicht: neu bewerten, ob die längste Wartezeit für „Aktiv“ (Ziel ≤ 60 s) das Warten misst oder eher die Kaufkraft am Spielbeginn; aus der M1.3-Durchsicht ([Game-Design §6.5](game-design.md#65-messung-m13)): DNA-Senke (Genom nach rund 3 h komplett), Pacing-Abweichungen der Messung M1.3, kein Kampf bei „Aktiv“ und „Idle“, „Idle“ genau auf der Grenze „< 60 min“ der längsten Strecke ohne Kauf (Band bleibt exklusiv). **Umgesetzt:** Die Wartezeit zählt wie „Kauf“ (Einheit, Drüsenpunkt, Adaption; PO-Entscheidung). Werte v1.5 bei unveränderten Zielbändern ([Game-Design §6.6](game-design.md#66-messung-m15-werte-v15)): Genom bei „Aktiv“ nach rund 12 h komplett, „Aktiv“ und „Idle“ nehmen in 24 h je rund 30-mal mit Kampf ein, die meisten Futterstellen liegen im Band. Balancing-Snapshots für Seeds `modell` und `release`, „Aktiv“ und „Idle“, 24 h, Toleranz ±5 % ([TK §5.6](technisches-konzept.md#56-balancing-als-test)). Verfehlte Bänder siehe „Offen nach M1.5“ | 2–3 | US-10.09 |
 | 1.5.6 | PWA | Manifest, Service Worker, Icons; aus der M1.4-Durchsicht: Der Service Worker muss die gebündelten Schriftdateien (`media/*.woff2`, [ADR-013](adr/013-webfont-nunito.md)) vorab cachen. **Umgesetzt** mit `@angular/service-worker` ([ADR-015](adr/015-pwa-service-worker.md)): Vorab-Cache für App, Bundles, Schriften und Icons, Manifest mit eigenen Icons, Hinweis „Neue Version verfügbar“ mit „Neu laden“; Offline-Start im Browser geprüft | 0,5 | US-07.06 |
 | 1.5.7 | E2E-Tests | Smoke-Tests für Desktop- und Mobile-Viewport; aus der M1.4-Durchsicht: Moduswechsel über Zoom-Leiste, Zurück-Knopf und Tasten sowie Bottom-Sheets und Log mit Einträgen im Smartphone-Viewport abdecken (Test-IDs `shell.*`). **Umgesetzt:** Playwright-Smoke (devDependency) gegen den Produktions-Build für Desktop und Smartphone, dazu Querformat; neues Spiel mit Onboarding, Kauf, Moduswechsel, Schubladen, Weiterziehen, Einstellungen mit Export und Import, Rückkehr-Zusammenfassung; die CI deployt nur nach grünem E2E-Lauf ([TK §10](technisches-konzept.md#10-qualitätssicherung)) | 1–1,5 | – |
-| 1.5.8 | Playtest & Release | 3–5 externe Testspieler, Bugfixing, Release 1.0; aus der M1.4-Durchsicht: Profiling und Pinch auf echten Geräten (iOS, Android), Körnung (`mix-blend-mode: overlay`) auf dem Desktop mit echter GPU prüfen ([TK §10](technisches-konzept.md#10-qualitätssicherung)); Querformat auf dem Smartphone; Kartenbeschriftung „(hier)“ weicht Zielen nicht aus, „Reichweite“ liegt auf dem Desktop teils unter dem Titel-Panel. **Umgesetzt (Code-Anteile, PO-Entscheidung):** Querformat auf dem Smartphone (Variante `short:`, [TK §8.4](technisches-konzept.md#84-responsives-layout)); „(hier)“ weicht Zielen aus; Ringnummern und „Reichweite“ stehen unter den Ringen und damit nicht mehr unter dem Titel-Panel; Nachbesserungen aus der Browser-Prüfung (Dialoge mit fester Fußleiste, Hinweiskarte, Kopfzeile bei 360 px); Version 1.0.0 mit Build-Datum in den Einstellungen. **Beim PO:** 3–5 externe Testspieler und Bugfixing daraus, Profiling und Pinch auf echten Geräten (iOS, Android), Körnung auf dem Desktop mit echter GPU, Veröffentlichen von Release 1.0 (Push auf `main`) | 2–3 | – |
+| 1.5.8 | Playtest-Schleife & Release | Schleife aus (1) Playtest mit 3–5 externen Testspielern, (2) Umsetzen des Feedbacks, (1) erneutem Playtest usw., bis der PO abnimmt; danach Release (Version 0.1.0 nach Bestätigung, §6); aus der M1.4-Durchsicht: Profiling und Pinch auf echten Geräten (iOS, Android), Körnung (`mix-blend-mode: overlay`) auf dem Desktop mit echter GPU prüfen ([TK §10](technisches-konzept.md#10-qualitätssicherung)); Querformat auf dem Smartphone; Kartenbeschriftung „(hier)“ weicht Zielen nicht aus, „Reichweite“ liegt auf dem Desktop teils unter dem Titel-Panel. **Umgesetzt (Code-Anteile, PO-Entscheidung):** Querformat auf dem Smartphone (Variante `short:`, [TK §8.4](technisches-konzept.md#84-responsives-layout)); „(hier)“ weicht Zielen aus; Ringnummern und „Reichweite“ stehen unter den Ringen und damit nicht mehr unter dem Titel-Panel; Nachbesserungen aus der Browser-Prüfung (Dialoge mit fester Fußleiste, Hinweiskarte, Kopfzeile bei 360 px); Version 0.0.1 mit Build-Datum in den Einstellungen. **Beim PO:** 3–5 externe Testspieler und Bugfixing daraus, Profiling und Pinch auf echten Geräten (iOS, Android), Körnung auf dem Desktop mit echter GPU, Veröffentlichen des Release (Push auf `main`) | 2–3 | – |
 
 #### Offen nach M1.5
 
@@ -341,7 +341,7 @@ Diese Zielbänder werden auf der Modell-Seite überwacht und in AP 1.5.5 feinjus
 
 ## 4. Spätere Ausbaustufen (grob)
 
-Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Beginnt mit der Stufe eine neue Ära (AS3–AS5), gehört zum Konzept-Meilenstein eine **Mockup-Runde**: Es entstehen mehrere UI-Mockups für die Ära, eines davon wird ausgewählt und dient wie [Mockup K2-K](mockups/k2-kurzgesagt.html) für Ära I als UI-Leitbild. Erst danach werden die Arbeitspakete detailliert. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
+Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Das erste Arbeitspaket jedes Konzept-Meilensteins (`AP x.0.0`) ist die **Mockup-Runde** ([§6](#6-vorgehen)): Es entstehen mehrere UI-Mockups für die Stufe, eines davon wird ausgewählt und dient wie [Mockup K2-K](mockups/k2-kurzgesagt.html) für Ära I als UI-Leitbild. Erst danach werden die Arbeitspakete detailliert. Das letzte Arbeitspaket jeder Stufe ist die **Playtest-Schleife** vor dem Release. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
 
 ### AS2 · Evolution: große Ascension und Langzeitmotivation
 
@@ -349,11 +349,11 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M2.0 | Konzept & Entscheidungen |
+| M2.0 | Konzept, UI-Mockups & Entscheidungen |
 | M2.1 | Große Ascension & Prestige-Währung |
 | M2.2 | Mutationen & Erfolge |
 | M2.3 | Aktive Fähigkeiten |
-| M2.4 | Balancing & Release 2.0 |
+| M2.4 | Balancing & Release |
 
 | Entscheidungspunkt | Optionen | Vorbild Swarm Simulator |
 |---|---|---|
@@ -378,7 +378,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | M3.3 | Verteidigungsarten & Spezialeinheiten |
 | M3.4 | Zweiter Rohstoff |
 | M3.5 | Visuelle Ära II (Szene, Karte, Genom) |
-| M3.6 | Balancing & Release 3.0 |
+| M3.6 | Balancing & Release |
 
 | Entscheidungspunkt | Optionen |
 |---|---|
@@ -400,7 +400,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | M4.2 | Gebietseroberung & Fronten |
 | M4.3 | Zivilisation als Gegner |
 | M4.4 | Planeteneinnahme |
-| M4.5 | Balancing & Release 4.0 |
+| M4.5 | Balancing & Release |
 
 | Entscheidungspunkt | Optionen | Vorbild Swarm Simulator |
 |---|---|---|
@@ -422,7 +422,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | M5.1 | Ausbreitung im Sonnensystem |
 | M5.2 | FTL & weitere Systeme |
 | M5.3 | Galaxis-Gesamtübersicht & Endlos-Skalierung |
-| M5.4 | Release 5.0 |
+| M5.4 | Release |
 
 | Entscheidungspunkt | Optionen |
 |---|---|
@@ -459,5 +459,11 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 - **Iterativ je Meilenstein:** Am Meilenstein-Ende stehen ein spielbarer Stand auf GitHub Pages, ein kurzer Spieltest und ein Blick auf die Modell-Seite.
 - **Definition of Done (AP):** Code folgt den Regeln aus [`CLAUDE.md`](../CLAUDE.md), Tests für die wesentliche Logik (siehe „Tests bis M5.0“), CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen), Umsetzungsstand in ADRs, technischem Konzept und Regeldateien nachgezogen.
 - **Planung späterer Stufen:** Vor jeder neuen Ausbaustufe wird dieser Plan um die Detaillierung der Stufe ergänzt, nachdem der Konzept-Meilenstein abgeschlossen ist.
-- **Mockup-Runde vor jeder neuen Ära:** Bevor die Arbeitspakete einer neuen Ära detailliert werden, entstehen im Konzept-Meilenstein mehrere UI-Mockups. Eines wird ausgewählt und als UI-Leitbild der Ära festgehalten (für Ära I: [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html), Ebenen und Bedienung aus [K2](mockups/k2-zoom.html)).
+- **UI-Mockups am Anfang jeder Ausbaustufe:** Das erste Arbeitspaket einer Stufe (`AP x.0.0`, im Konzept-Meilenstein) erstellt mehrere UI-Mockups. Der PO wählt eines aus, es wird als UI-Leitbild der Stufe festgehalten. Erst danach werden die Arbeitspakete der Stufe detailliert. AS1 hatte diese Runde vor Beginn des Plans (UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html), Ebenen und Bedienung aus [K2](mockups/k2-zoom.html)), daher gibt es kein AP 1.0.0.
+- **Playtest-Schleife am Ende jeder Ausbaustufe:** Das letzte Arbeitspaket der Stufe (letztes AP des letzten Meilensteins) ist eine Schleife aus (1) Playtest, (2) Umsetzen des Feedbacks, (1) erneutem Playtest usw., bis der PO die Stufe abnimmt. Danach folgt das Release. In AS1 ist das AP 1.5.8.
+- **Versionierung** (`MAJOR.MINOR.PATCH` in `package.json`, angezeigt in den Einstellungen):
+  - **MAJOR** wird nur auf ausdrückliche Ansage des PO erhöht.
+  - **MINOR** wird erhöht, wenn eine Ausbaustufe abgeschlossen ist und der PO das bestätigt; PATCH beginnt dann wieder bei 0.
+  - **PATCH** wird bei jedem normalen Commit erhöht.
+  - Stand: 0.0.1, weil AS1 noch nicht abgeschlossen ist. Mit der Abnahme von AS1 wird daraus 0.1.0.
 - **Tests bis M5.0:** Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan. Getestet werden nur die **wesentliche** Logik (z. B. Formeln, `apply`/`step`, Determinismus, Migrationen) und die **wesentlichen** E2E-Abläufe. Hauptziel der Tests ist bis dahin, unbeabsichtigte Regressionen zu vermeiden, nicht Vollständigkeit. Der vollständige Testplan entsteht in M5.0.

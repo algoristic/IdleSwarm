@@ -24,7 +24,7 @@ Randbedingungen: jede neue Laufzeitabhängigkeit braucht eine ADR, Versionen sin
 
 ### Umsetzungsstand
 
-**Umgesetzt** in [AP 1.5.6](../projektplan.md#m15--idle-balancing--release-10): Abhängigkeit, `ngsw-config.json`, `angular.json`, `provideServiceWorker` in `app.config.ts`, Manifest und Icons unter `public/`, Tags in `src/index.html` (`manifest`, `theme-color`, `apple-touch-icon`, `apple-mobile-web-app-*`, Favicon ICO und SVG), `AppUpdateService` mit Spec, Token `PAGE_RELOAD`, Hinweis „Neue Version verfügbar“ mit „Neu laden“ in `SaveStatusComponent`. Geprüft: `ngsw.json` des Builds mit `--base-href /IdleSwarm/` enthält Schriften, Icons und Manifest, die Hash-Tabelle stimmt mit den Dateien überein; ein statischer Server liefert `ngsw-worker.js`, Manifest und Icons aus.
+**Umgesetzt** in [AP 1.5.6](../projektplan.md#m15--idle-balancing--release): Abhängigkeit, `ngsw-config.json`, `angular.json`, `provideServiceWorker` in `app.config.ts`, Manifest und Icons unter `public/`, Tags in `src/index.html` (`manifest`, `theme-color`, `apple-touch-icon`, `apple-mobile-web-app-*`, Favicon ICO und SVG), `AppUpdateService` mit Spec, Token `PAGE_RELOAD`, Hinweis „Neue Version verfügbar“ mit „Neu laden“ in `SaveStatusComponent`. Geprüft: `ngsw.json` des Builds mit `--base-href /IdleSwarm/` enthält Schriften, Icons und Manifest, die Hash-Tabelle stimmt mit den Dateien überein; ein statischer Server liefert `ngsw-worker.js`, Manifest und Icons aus.
 
 **Geprüft** in der Browser-Prüfung zum Abschluss von M1.5: Offline-Start, Schrift Nunito und Manifest, Konsole ohne Fehler.
 

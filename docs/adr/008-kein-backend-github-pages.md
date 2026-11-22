@@ -35,4 +35,4 @@ IdleSwarm ist ein Einzelspieler-Spiel ohne Multiplayer. Logik, Speicherung und O
 ## Verworfene Alternativen
 
 - **Eigenes Backend für Logik oder Speicherung:** für ein Einzelspieler-Spiel im Client nicht nötig.
-- **Cloud-Sync in Release 1.0:** bleibt ein optionales späteres Thema.
+- **Cloud-Sync im Release von AS1:** bleibt ein optionales späteres Thema.

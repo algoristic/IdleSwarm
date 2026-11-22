@@ -5,6 +5,7 @@
 - Niemals ohne ausdrückliche Anweisung des Nutzers stagen (`git add`, `git stage` o. Ä.) oder committen – auch nicht nach Abschluss einer Aufgabe.
 - Änderungen bleiben im Working Tree; nach Änderungen nur berichten, was geändert wurde.
 - Eine Erlaubnis zum Stagen/Committen gilt nur für den jeweiligen Auftrag, nicht dauerhaft.
+- **Version** ([Projektplan §6](docs/projektplan.md#6-vorgehen)): Jeder Commit erhöht die PATCH-Stelle im selben Commit (`npm version patch --no-git-tag-version`, ändert `package.json` und `package-lock.json`). MINOR nur, wenn eine Ausbaustufe abgeschlossen ist und der Nutzer das bestätigt; MAJOR nur auf ausdrückliche Ansage des Nutzers. Keine git-Tags.
 
 ## Projektkontext
 
