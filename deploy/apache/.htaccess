@@ -1,0 +1,26 @@
+# Apache-Konfiguration für den Server-Rollout von `main` (ADR-016).
+# Die CI legt diese Datei neben den Build unter /IdleSwarm/.
+
+AddType application/manifest+json .webmanifest
+
+# SPA-Fallback: vorhandene Dateien und Ordner direkt, alle anderen Pfade (z. B. /umgebung) an
+# index.html, damit das Angular-Routing greift.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /IdleSwarm/
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Einstieg, Service Worker und Manifest immer neu prüfen, damit Updates ankommen (ADR-015);
+# Bundles und Schriften tragen einen Hash im Namen und dürfen lange im Cache bleiben.
+<IfModule mod_headers.c>
+  <FilesMatch "^(index\.html|ngsw\.json|ngsw-worker\.js|safety-worker\.js|worker-basic\.min\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "-[A-Za-z0-9]{8}\.(js|css|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

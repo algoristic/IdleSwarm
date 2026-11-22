@@ -456,7 +456,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 ## 6. Vorgehen
 
-- **Iterativ je Meilenstein:** Am Meilenstein-Ende stehen ein spielbarer Stand auf GitHub Pages, ein kurzer Spieltest und ein Blick auf die Modell-Seite.
+- **Iterativ je Meilenstein:** Am Meilenstein-Ende stehen ein spielbarer Stand auf dem Teststand (GitHub Pages, Branch `development`; für Spieler nach dem Merge nach `main` auf dem eigenen Server, [ADR-016](adr/016-deployment-branches-sftp.md)), ein kurzer Spieltest und ein Blick auf die Modell-Seite.
 - **Definition of Done (AP):** Code folgt den Regeln aus [`CLAUDE.md`](../CLAUDE.md), Tests für die wesentliche Logik (siehe „Tests bis M5.0“), CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen), Umsetzungsstand in ADRs, technischem Konzept und Regeldateien nachgezogen.
 - **Planung späterer Stufen:** Vor jeder neuen Ausbaustufe wird dieser Plan um die Detaillierung der Stufe ergänzt, nachdem der Konzept-Meilenstein abgeschlossen ist.
 - **UI-Mockups am Anfang jeder Ausbaustufe:** Das erste Arbeitspaket einer Stufe (`AP x.0.0`, im Konzept-Meilenstein) erstellt mehrere UI-Mockups. Der PO wählt eines aus, es wird als UI-Leitbild der Stufe festgehalten. Erst danach werden die Arbeitspakete der Stufe detailliert. AS1 hatte diese Runde vor Beginn des Plans (UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html), Ebenen und Bedienung aus [K2](mockups/k2-zoom.html)), daher gibt es kein AP 1.0.0.

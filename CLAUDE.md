@@ -5,6 +5,7 @@
 - Niemals ohne ausdrückliche Anweisung des Nutzers stagen (`git add`, `git stage` o. Ä.) oder committen – auch nicht nach Abschluss einer Aufgabe.
 - Änderungen bleiben im Working Tree; nach Änderungen nur berichten, was geändert wurde.
 - Eine Erlaubnis zum Stagen/Committen gilt nur für den jeweiligen Auftrag, nicht dauerhaft.
+- **Branches** ([ADR-016](docs/adr/016-deployment-branches-sftp.md)): gearbeitet wird auf Feature-Branches mit Pull Request nach `development` (nur Prüfung); `development` ist der Teststand auf GitHub Pages, `main` der Spielerstand auf dem Server (Merge aus `development`). Pushen und Mergen nur auf Ansage.
 - **Version** ([Projektplan §6](docs/projektplan.md#6-vorgehen)): Ein normaler Commit ändert die Version nicht; die Build-Kennung (Build-Nummer, Commit, Zeitpunkt) setzt die CI automatisch. Die Spielerversion in `package.json` ändert sich nur auf Ansage des Nutzers (`npm version <patch|minor|major> --no-git-tag-version`, ändert `package.json` und `package-lock.json`): PATCH für ein Update an Spieler, MINOR nach bestätigtem Abschluss einer Ausbaustufe, MAJOR nur auf ausdrückliche Ansage. Keine git-Tags.
 
 ## Projektkontext
@@ -66,7 +67,7 @@
 - Pfad-Alias `@app/*` → `src/app/*`.
 - **Exakte Versionen:** Jede Version in `package.json` ist exakt (`"4.3.5"`), nie `^`, `~`, `>=` oder `*`. Die `.npmrc` setzt `save-exact=true`; nach `npm i` trotzdem `package.json` prüfen. Updates sind bewusste Versionssprünge.
 - Node per `nvm use` (`.nvmrc`).
-- CI (`.github/workflows/ci.yml`) prüft Lint, Format, Unit-Tests mit Abdeckung und Build bei jedem Push; ein Push auf `main` deployt auf GitHub Pages (Base-Href `/IdleSwarm/`).
+- CI (`.github/workflows/ci.yml`) prüft Lint, Format, Unit-Tests mit Abdeckung, Build und E2E bei Pull Requests und Pushes auf `main`/`development` ([ADR-016](docs/adr/016-deployment-branches-sftp.md)); ein Push auf `development` deployt auf GitHub Pages, ein Push auf `main` per SFTP auf den eigenen Server (beide Base-Href `/IdleSwarm/`, Apache-Konfiguration in `deploy/apache/.htaccess`).
 - Die Modell-Seite (`/modell`) ist im Produktiv-Build nur mit `?dev` erreichbar (`DEV_BUILD`, `modelRouteGuard`).
 
 ## 0. Umgang mit dieser Datei

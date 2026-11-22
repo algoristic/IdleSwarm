@@ -1,6 +1,6 @@
 # ADR-008: Kein Backend, Hosting auf GitHub Pages
 
-**Status:** Angenommen
+**Status:** Angenommen; Rollout je Branch ergänzt durch [ADR-016](016-deployment-branches-sftp.md)
 **Datum:** 2026-11-18
 
 ## Kontext
@@ -24,6 +24,8 @@ IdleSwarm ist ein Einzelspieler-Spiel ohne Multiplayer. Logik, Speicherung und O
 **Umgesetzt** in AP 1.5.6: PWA mit `@angular/service-worker` ([ADR-015](015-pwa-service-worker.md)); Manifest und Service Worker arbeiten mit Pfaden relativ zum Base-Href `/IdleSwarm/`.
 
 **Umgesetzt** in AP 1.5.7: E2E-Smoke mit Playwright (devDependency) gegen den Pages-Build unter `/IdleSwarm/`; ohne grünen E2E-Lauf kein Deployment (TK §10).
+
+**Geändert** durch [ADR-016](016-deployment-branches-sftp.md): GitHub Pages zeigt den Stand von `development` (Teststand); `main` geht per SFTP auf einen eigenen Apache-Server, ebenfalls unter `/IdleSwarm/`. Ein Backend gibt es weiterhin nicht. Pushes auf Feature-Branches lösen nur über einen Pull Request eine Prüfung aus.
 
 ## Konsequenzen
 

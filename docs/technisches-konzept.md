@@ -9,7 +9,7 @@
 | Spielart | Einzelspieler-Idle-Spiel im Browser, kein Multiplayer |
 | Backend | **keines**: Logik, Speicherung und Offline-Fortschritt laufen vollständig im Client |
 | Plattformen | Desktop-Browser und Mobile (aktuelle Chrome-, Safari-, Firefox- und Edge-Versionen), Hoch- und Querformat |
-| Hosting | statisch über GitHub Pages (`algoristic/IdleSwarm`) |
+| Hosting | statisch: Spielerstand (`main`) auf eigenem Apache-Server per SFTP, Teststand (`development`) über GitHub Pages (`algoristic/IdleSwarm`), beide unter `/IdleSwarm/` ([ADR-016](adr/016-deployment-branches-sftp.md)) |
 | Sprache | Deutsch; Texte über `@angular/localize` mit festen IDs, damit eine spätere Übersetzung möglich bleibt ([ADR-011](adr/011-i18n-localize.md)) |
 
 ## 2. Technologie-Stack
@@ -30,7 +30,7 @@
 | Unit-Tests | **Vitest** | Standard-Testrunner im aktuellen Angular-CLI, schnell, gut für reine TS-Logik |
 | E2E-Tests | **Playwright** | Desktop- und Mobile-Viewports, Touch-Emulation |
 | Code-Qualität | ESLint (angular-eslint, `eslint-plugin-import-x`), Prettier | Schichtregeln je Domäne, Determinismus in `domain`/`util`, Importreihenfolge |
-| CI/CD | GitHub Actions → GitHub Pages | Lint, Test, Build bei jedem Push; Deploy von `main` |
+| CI/CD | GitHub Actions → GitHub Pages und SFTP | Lint, Format, Test, Build und E2E bei Pull Requests und Pushes auf `main`/`development`; Deploy von `development` auf Pages, von `main` per SFTP auf den Server |
 | PWA | `@angular/service-worker` mit Web-App-Manifest ([ADR-015](adr/015-pwa-service-worker.md)) | Installierbar und offline startbar (AP 1.5.6) |
 
 Jede neue Laufzeitabhängigkeit braucht eine ADR. Versionen in `package.json` sind exakt angegeben, ohne `^` oder `~`.
@@ -513,11 +513,11 @@ Bis zum Konzept-Meilenstein M5.0 gibt es keinen vollständigen Testplan ([Projek
 | UI | Komponententests nur für Komponenten und Seiten mit eigener Logik (z. B. Formular-Parsing); rein darstellende Komponenten deckt der E2E-Smoke ab |
 | E2E | Playwright-Smoke (AP 1.5.7, `e2e/`, `playwright.config.ts`, `npm run e2e`) gegen den Produktions-Build, Projekte `desktop` (1440 × 900) und `smartphone` (Pixel 7 mit Touch, 390 × 844), Service Worker blockiert: neues Spiel (Ressourcen, Hinweis `collect`, Gesperrtes fehlt, Kauf einer Drohne, Umleitung von `/umgebung`), fortgeschrittener Stand (Moduswechsel über Zoom-Leiste, Zurück-Knopf und Browser-Verlauf, Tasten W/G/Esc am Desktop, Schublade bzw. Bottom-Sheet), Weiterziehen mit Reisestatus und Log-Eintrag, Einstellungen (Zahlenformat, Export, fehlerhafter Import), Rückkehr-Zusammenfassung nach 1 h. Spielstände erzeugt `e2e/support/game-states.ts` mit den echten Domänenfunktionen (Bot-Lauf, `encodeSave`) und legt sie vor dem Laden in den `localStorage`; Laufzeit lokal rund 10 s |
 | Performance | Ziel: 60 fps in der Szene, Moduswechsel ohne Ruckeln. **Stand AP 1.4.6 (Emulation):** Headless-Chromium mit Software-Raster, 4× CPU-Drosselung, 250.000 Drohnen. Smartphone 390 × 844, DPR 2, 150 Sprites: mit Hintergrund-Cache und Schein-Sprite Median und 95-Perzentil 16,7–16,8 ms je Frame, auch während der Moduswechsel (vorher 95-Perzentil 33,4 ms); teuer sind Pixelflächen, nicht JavaScript (Szene-Skript < 1 % der Samples). **Risiko:** Desktop 1440 × 900 mit 300 Sprites bleibt im Software-Compositing bei rund 30 fps; Hauptursache ist die Körnung (`mix-blend-mode: overlay` über der sich jeden Frame ändernden Szene), ohne Körnung 60 fps. Auf echter GPU zu prüfen. Profiling auf echten Geräten (iOS, Android) steht aus |
-| CI-Gates | Lint, Unit-Tests, Build und E2E müssen grün sein, bevor auf `main` deployt wird; E2E läuft seit AP 1.5.7 im Job `verify` gegen den Pages-Build (`E2E_BASE_PATH=/IdleSwarm/`), bei Fehlern wird der Report als Artefakt hochgeladen |
+| CI-Gates | Lint, Unit-Tests, Build und E2E müssen grün sein, bevor von `development` (Pages) oder `main` (Server) deployt wird; Pull Requests prüfen dasselbe ohne Rollout; E2E läuft seit AP 1.5.7 im Job `verify` gegen den Pages-Build (`E2E_BASE_PATH=/IdleSwarm/`), bei Fehlern wird der Report als Artefakt hochgeladen |
 
 ## 11. Deployment & PWA
 
-- GitHub Actions baut bei Push auf `main` und veröffentlicht auf GitHub Pages (`base-href` = Repository-Name).
+- GitHub Actions baut einmal mit `base-href` `/IdleSwarm/` und liefert nach grüner Prüfung je Branch aus ([ADR-016](adr/016-deployment-branches-sftp.md)): Push auf `development` → GitHub Pages (Fallback `404.html`), Push auf `main` → eigener Apache-Server per SFTP (lftp, Secrets `SFTP_*`, Fallback und Cache-Regeln in `deploy/apache/.htaccess`; `index.html` und `ngsw.json` werden zuletzt hochgeladen). Pull Requests prüfen ohne Rollout.
 - PWA mit `@angular/service-worker` ([ADR-015](adr/015-pwa-service-worker.md), AP 1.5.6): Der Service Worker (nur Produktions-Build) lädt `index.html`, alle JS- und CSS-Bundles einschließlich der Lazy Chunks, die Schriftdateien (`media/*.woff2`), Manifest und Icons vorab in den Cache (`ngsw-config.json`); Web Worker cacht er beim ersten Abruf. Das Spiel startet offline. Manifest `public/manifest.webmanifest` mit relativen `start_url`/`scope`, damit es unter `/IdleSwarm/` stimmt.
 - Updates: Eine neue Version lädt im Hintergrund und wird beim nächsten Start aktiv. Liegt sie bereit (`VERSION_READY`), zeigt das HUD den Hinweis „Neue Version verfügbar“ mit „Neu laden“ (speichert, dann `PAGE_RELOAD`); `AppUpdateService` in `shared/data-access/app-update`.
 - Version und Build-Kennung stehen in den Einstellungen (AP 1.5.3, Versionierung nach [Projektplan §6](projektplan.md#6-vorgehen)): die Spielerversion aus `package.json` (JSON-Import, nur das Feld `version` landet im Bundle); Build-Nummer (`git rev-list --count HEAD`, dafür checkt die CI die volle Historie aus), Kurz-Hash des Commits und Build-Zeitpunkt über `ng build --define IDLESWARM_BUILD_NUMBER=… --define IDLESWARM_BUILD_COMMIT="…"` und `--define IDLESWARM_BUILD_TIME=<Unix-ms>` in der CI (Token `BUILD_INFO` in `settings/feature/state/settings.tokens.ts`); ohne Define (Dev-Server, lokaler Build, Tests) zeigt die Info „Entwicklung“.
@@ -543,3 +543,4 @@ Die Entscheidungen sind als einzelne Dateien in [`docs/adr/`](adr/README.md) fes
 | ADR-013 | Webfont Nunito (variabel, latin + latin-ext) selbst gehostet |
 | ADR-014 | Modale Dialoge mit dem nativen `<dialog>` (`showModal()`), keine neue Abhängigkeit |
 | ADR-015 | PWA mit `@angular/service-worker` (Vorab-Cache, Manifest, Update-Hinweis) |
+| ADR-016 | Branch-Modell: `development` auf GitHub Pages, `main` per SFTP auf den eigenen Server; Pull Requests nur Prüfung |
