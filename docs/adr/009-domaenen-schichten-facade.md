@@ -56,7 +56,7 @@ Als Vorbild dient die Architektur aus PortfoliGo (Domäne × Schicht, Facades, N
 **Umgesetzt** in M1.5 (AP 1.5.1–1.5.8):
 
 - Neue Fachdomänen mit eigenem Teil des Zustands: `settings` (Zahlenformat, Animationen, Autosave-Intervall; Dialog „Einstellungen“ mit Export, Import und Zurücksetzen, `SettingsFacade`) und `onboarding` (Freischaltungen und Hinweise, `OnboardingFacade`, Hinweiskarte). Die Einstellungen wirken über Tokens aus dem Spielstand: `MOTION_OVERRIDE` stellt der Bootstrap app-weit bereit (`provideAppliedSettings()`), `NUMBER_NOTATION` der State der Shell (`provideSettingsState()`).
-- Weitere Plattformzugriffe hinter Tokens: `CLIPBOARD` und `PAGE_RELOAD` ([`platform.tokens.ts`](../../src/app/shared/data-access/platform/platform.tokens.ts)), `BUILD_INFO` (Version und Build-Datum). `AppUpdateService` in `shared/data-access` wandelt die Observables von `SwUpdate` sofort in Signals um ([ADR-015](015-pwa-service-worker.md)).
+- Weitere Plattformzugriffe hinter Tokens: `CLIPBOARD` und `PAGE_RELOAD` ([`platform.tokens.ts`](../../src/app/shared/data-access/platform/platform.tokens.ts)), `BUILD_INFO` (Version und Build-Kennung). `AppUpdateService` in `shared/data-access` wandelt die Observables von `SwUpdate` sofort in Signals um ([ADR-015](015-pwa-service-worker.md)).
 
 ## Konsequenzen
 

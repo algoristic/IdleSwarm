@@ -3,7 +3,13 @@ import type { SettingsView } from '../../ui/dialog-settings/dialog-settings.comp
 import type { BuildInfo } from './settings.tokens';
 
 export function toSettingsView(settings: Settings, build: BuildInfo): SettingsView {
-  return { settings, version: build.version, buildTime: build.buildTime };
+  return {
+    settings,
+    version: build.version,
+    buildTime: build.buildTime,
+    buildNumber: build.buildNumber,
+    commit: build.commit,
+  };
 }
 
 /**

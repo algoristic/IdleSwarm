@@ -9,10 +9,19 @@ describe('settings.utils', () => {
   });
 
   it('setzt das Viewmodel aus Einstellungen und Build zusammen', () => {
-    expect(toSettingsView(DEFAULT_SETTINGS, { version: '1.0.0', buildTime: null })).toEqual({
+    expect(
+      toSettingsView(DEFAULT_SETTINGS, {
+        version: '0.1.0',
+        buildTime: null,
+        buildNumber: 412,
+        commit: 'a1b2c3d',
+      }),
+    ).toEqual({
       settings: DEFAULT_SETTINGS,
-      version: '1.0.0',
+      version: '0.1.0',
       buildTime: null,
+      buildNumber: 412,
+      commit: 'a1b2c3d',
     });
   });
 });

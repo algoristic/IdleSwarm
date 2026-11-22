@@ -21,6 +21,8 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Volle Historie, damit die Build-Nummer (Zahl der Commits) stimmt (Projektplan §6).
+          fetch-depth: 0
 
       - name: Node einrichten
         uses: actions/setup-node@v7
@@ -40,9 +42,14 @@ jobs:
       - name: Unit-Tests mit Abdeckung
         run: npm run test:coverage
 
-      # Build-Zeitpunkt (Unix-Zeit in ms) für die Einstellungen (TK §11).
+      # Build-Kennung für die Einstellungen (TK §11): Zeitpunkt (Unix-Zeit in ms),
+      # Build-Nummer (Zahl der Commits bis HEAD) und Kurz-Hash des Commits.
       - name: Build
-        run: npm run build -- --base-href /IdleSwarm/ --define "IDLESWARM_BUILD_TIME=$(date +%s%3N)"
+        run: >-
+          npm run build -- --base-href /IdleSwarm/
+          --define "IDLESWARM_BUILD_TIME=$(date +%s%3N)"
+          --define "IDLESWARM_BUILD_NUMBER=$(git rev-list --count HEAD)"
+          --define "IDLESWARM_BUILD_COMMIT=\"$(git rev-parse --short=7 HEAD)\""
 
       # GitHub Pages liefert für unbekannte Pfade 404.html aus; so greift das Angular-Routing.
       - name: SPA-Fallback anlegen

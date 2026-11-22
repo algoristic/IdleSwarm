@@ -100,7 +100,17 @@
           <dd class="text-right tabular-nums" data-testid="settings.version">
             {{ _view.version }}
           </dd>
-          <dt class="text-fg-muted" i18n="@@uiSettings-dialogSettings-buildDate">Build</dt>
+          <dt class="text-fg-muted" i18n="@@uiSettings-dialogSettings-buildNumber">Build</dt>
+          <dd class="text-right tabular-nums" data-testid="settings.build-number">
+            @if (_view.buildNumber !== null && _view.commit !== null) {
+              {{ _view.buildNumber }} ({{ _view.commit }})
+            } @else {
+              <ng-container i18n="@@uiSettings-dialogSettings-buildNumberDev"
+                >Entwicklung</ng-container
+              >
+            }
+          </dd>
+          <dt class="text-fg-muted" i18n="@@uiSettings-dialogSettings-buildTime">Erstellt</dt>
           <dd class="text-right tabular-nums" data-testid="settings.build-date">
             @if (_view.buildTime !== null) {
               <time [attr.datetime]="_view.buildTime | formatIsoDateTime">{{

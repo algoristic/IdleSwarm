@@ -27,6 +27,9 @@ export interface SettingsView {
   readonly version: string;
   /** `null` ohne Build-Zeitpunkt (Dev-Server). */
   readonly buildTime: number | null;
+  /** Build-Nummer und Commit; `null` in der Entwicklung. */
+  readonly buildNumber: number | null;
+  readonly commit: string | null;
 }
 
 /** Zustand des Dialogs; nur Oberfläche, nicht im Spielstand. */

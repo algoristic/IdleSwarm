@@ -41,7 +41,10 @@ describe('SettingsFacade', () => {
         { provide: KEY_VALUE_STORE, useValue: memoryStore() },
         { provide: CLOCK, useValue: { now: () => NOW, monotonic: () => 0 } },
         { provide: CLIPBOARD, useValue: { writeText } },
-        { provide: BUILD_INFO, useValue: { version: '1.2.3', buildTime: NOW } },
+        {
+          provide: BUILD_INFO,
+          useValue: { version: '1.2.3', buildTime: NOW, buildNumber: 7, commit: 'abc1234' },
+        },
       ],
     });
     facade = TestBed.inject(SettingsFacade);
@@ -59,6 +62,8 @@ describe('SettingsFacade', () => {
       settings: store.state().settings,
       version: '1.2.3',
       buildTime: NOW,
+      buildNumber: 7,
+      commit: 'abc1234',
     });
   });
 
