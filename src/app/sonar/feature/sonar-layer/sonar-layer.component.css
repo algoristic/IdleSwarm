@@ -1,8 +1,0 @@
-/*
- * K2-Ausnahme (CLAUDE.md §4): Die Bühne ist so groß wie `--ms`, damit das Kartenzentrum in der
- * Mitte des Viewports liegt, wo die Welt im Kartenmodus hinschrumpft. Die Legende ragt darunter.
- */
-.sonar-layer__stage {
-  width: var(--ms);
-  height: var(--ms);
-}

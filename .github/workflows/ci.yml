@@ -1,6 +1,6 @@
 name: CI
 
-# Branch-Modell (ADR-016): Feature-Branches laufen nur über Pull Requests (Prüfung ohne
+# Branch-Modell: Feature-Branches laufen nur über Pull Requests (Prüfung ohne
 # Rollout), `development` geht auf GitHub Pages, `main` per SFTP auf den Server.
 on:
   push:
@@ -27,8 +27,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          # Volle Historie, damit die Build-Nummer (Zahl der Commits) stimmt (Projektplan §6).
-          fetch-depth: 0
 
       - name: Node einrichten
         uses: actions/setup-node@v7
@@ -48,20 +46,14 @@ jobs:
       - name: Unit-Tests mit Abdeckung
         run: npm run test:coverage
 
-      # Build-Kennung für die Einstellungen (TK §11): Zeitpunkt (Unix-Zeit in ms),
-      # Build-Nummer (Zahl der Commits bis HEAD) und Kurz-Hash des Commits.
       - name: Build
-        run: >-
-          npm run build -- --base-href /IdleSwarm/
-          --define "IDLESWARM_BUILD_TIME=$(date +%s%3N)"
-          --define "IDLESWARM_BUILD_NUMBER=$(git rev-list --count HEAD)"
-          --define "IDLESWARM_BUILD_COMMIT=\"$(git rev-parse --short=7 HEAD)\""
+        run: npm run build -- --base-href /IdleSwarm/
 
       # GitHub Pages liefert für unbekannte Pfade 404.html aus; so greift das Angular-Routing.
       - name: SPA-Fallback anlegen
         run: cp dist/idle-swarm/browser/index.html dist/idle-swarm/browser/404.html
 
-      # E2E-Smoke (TK §10) gegen genau diesen Build; ohne grünen Lauf kein Deployment.
+      # E2E-Smoke gegen genau diesen Build; ohne grünen Lauf kein Deployment.
       - name: Playwright-Browser installieren
         run: npx playwright install --with-deps chromium
 
@@ -182,8 +174,8 @@ jobs:
         env:
           SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
 
-      # Erst die gehashten Dateien spiegeln (entfernt veraltete), dann `index.html` und
-      # `ngsw.json`: So verweisen Seite und Service Worker nie auf noch fehlende Dateien.
+      # Erst die gehashten Dateien spiegeln (entfernt veraltete), dann `index.html`: So verweist
+      # die Seite nie auf noch fehlende Dateien.
       # Das Passwort kommt nur über LFTP_PASSWORD herein, nie über die Kommandozeile.
       - name: Per SFTP hochladen
         run: |
@@ -193,10 +185,9 @@ jobs:
           set net:timeout 30
           set sftp:connect-program "ssh -a -x -o StrictHostKeyChecking=yes"
           mkdir -p -f "$SFTP_PATH"
-          mirror --reverse --delete --parallel=4 --verbose --exclude-glob index.html --exclude-glob ngsw.json site/ "$SFTP_PATH"
+          mirror --reverse --delete --parallel=4 --verbose --exclude-glob index.html site/ "$SFTP_PATH"
           cd "$SFTP_PATH"
           put site/index.html -o index.html
-          put site/ngsw.json -o ngsw.json
           bye
           EOF
         env:

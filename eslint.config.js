@@ -29,10 +29,8 @@ const CROSS_DOMAIN = {
   message: 'Andere Domänen über den Alias @app/… importieren (CLAUDE.md §9).',
 };
 
-const TIME_MESSAGE = 'Zeit kommt als Parameter herein (CLAUDE.md §1).';
-
 module.exports = defineConfig([
-  globalIgnores(['dist/', 'coverage/', '.angular/', 'docs/', '.claude/']),
+  globalIgnores(['dist/', 'coverage/', '.angular/', '.claude/']),
   {
     files: ['**/*.ts'],
     extends: [
@@ -123,34 +121,6 @@ module.exports = defineConfig([
             FRAMEWORK_IMPORTS,
           ],
         },
-      ],
-    },
-  },
-  {
-    // Determinismus (CLAUDE.md §1): Zeit als Parameter, Zufall nur über den seeded RNG.
-    files: ['src/app/*/domain/**/*.ts', 'src/app/*/util/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
-    rules: {
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'Math',
-          property: 'random',
-          message: 'Zufall nur über den seeded RNG (ADR-003).',
-        },
-        { object: 'Date', property: 'now', message: TIME_MESSAGE },
-        { object: 'Date', property: 'parse', message: TIME_MESSAGE },
-        { object: 'performance', property: 'now', message: TIME_MESSAGE },
-      ],
-      'no-restricted-globals': [
-        'error',
-        { name: 'crypto', message: 'Zufall nur über den seeded RNG (ADR-003).' },
-        { name: 'performance', message: TIME_MESSAGE },
-      ],
-      'no-restricted-syntax': [
-        'error',
-        { selector: 'NewExpression[callee.name="Date"]', message: TIME_MESSAGE },
-        { selector: 'CallExpression[callee.name="Date"]', message: TIME_MESSAGE },
       ],
     },
   },

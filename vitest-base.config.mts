@@ -7,8 +7,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcovonly'],
       thresholds: {
-        // Untergrenze laut technischem Konzept §10 (Sicherheitsnetz, kein Ziel); gilt für die
-        // Angular-freien Schichten domain und util.
+        // Untergrenze (Sicherheitsnetz, kein Ziel) für die Angular-freien Schichten domain und util.
         'src/app/*/{domain,util}/**/*.ts': {
           statements: 70,
           branches: 70,
