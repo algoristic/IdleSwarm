@@ -16,6 +16,7 @@
 - `docs/game-design.md`: Formeln, Startwerte, Kostenkurven, Spielstand-Format.
 - `docs/produktplanung.md`: User Stories (`US-xx.yy`).
 - `docs/technisches-konzept.md` (TK): Stack, Architektur, Simulation, Persistenz, Rendering.
+- `docs/kernschleife-v2.md`: Vorschläge für die Überarbeitung der Ära I (M1.6), Grundlage für AP 1.6.1 und 1.6.2.
 - `docs/adr/`: Architektur-Entscheidungen mit Umsetzungsstand.
 
 **Arbeitsweise:** Gearbeitet wird ein AP nach dem anderen („Setze AP x.y.z aus `docs/projektplan.md` um“).

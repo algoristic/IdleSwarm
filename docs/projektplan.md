@@ -1,6 +1,6 @@
 # IdleSwarm · Projektplan
 
-> Stand: 22.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
+> Stand: 23.11.2026 · Grundlage: [Projektidee (archiviert)](archiv/projektidee.md), [Produktplanung](produktplanung.md), [Technisches Konzept](technisches-konzept.md), UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html)
 
 ## 1. Ziel und Rahmen
 
@@ -13,7 +13,7 @@ IdleSwarm ist ein Idle-Browserspiel für eine Person, ohne Multiplayer. Der Spie
 | Technik | Angular (zoneless, Signals), Spiellogik als reines TypeScript, kein Backend (Details: [Technisches Konzept](technisches-konzept.md)) |
 | Team | 1 Entwickler + KI-Unterstützung |
 | Planung | Aufwand in **Personentagen (PT)**, Meilensteine **ohne Termine** |
-| Vorgehen | iterativ: Jeder Meilenstein endet mit einem spielbaren Stand und einem kurzen Spieltest-Review; jede Ausbaustufe beginnt mit UI-Mockups und endet mit einer Playtest-Schleife (§6) |
+| Vorgehen | iterativ: Jeder Meilenstein endet mit einem spielbaren Stand und einem kurzen Spieltest-Review; jede Ausbaustufe beginnt mit einer Begriffsrunde und UI-Mockups und endet mit einer Playtest-Schleife (§6) |
 
 ### Leitprinzip: Das Modell zuerst
 
@@ -23,13 +23,17 @@ Idle-Spiele stehen und fallen mit ihrer Wachstumskurve: Wird die Wartezeit zu la
 
 Es gibt keine Klick-Mechanik für Ressourcen. Ein fester [Grundertrag](game-design.md#41-grundertrag) trägt den Start, danach zählen Käufe und Entscheidungen. Das Spiel wird mit jeder Ära strategischer: In der Ursuppe wählt man Käufe und Ziele, im Urmeer verteilt man den Schwarm auf 2–3 Standorte, an Land erobert man Gebiete an mehreren Fronten, und im Weltraum steuert man die Ausbreitung über eine globale Übersicht. Das [Mockup K2-K](mockups/k2-kurzgesagt.html) ist die optische Vorlage, sein Klick-Verhalten gilt aber nicht mehr.
 
+### Leitprinzip: Eine neue Mechanik je Ära
+
+Jede Ära führt eine grundlegend neue Mechanik ein, statt alle Mechaniken von Anfang an mitzuführen. Ära I bleibt dadurch schlank (PO-Entscheidung nach Playtest-Runde 1, [M1.6](#m16--überarbeitung-ära-i)): Soldaten und Kampf kommen erst mit Ära II ([AS3](#as3--ära-ii-urmeer)).
+
 ## 2. Ausbaustufen im Überblick
 
 | AS | Name | Kern | Detaillierung |
 |---|---|---|---|
 | **1** | **Basisspiel · Ära I Ursuppe** | vollständige Kernschleife einer Ära, K2-Oberfläche, Desktop und Mobile, Modell-Seite | **detailliert** (Abschnitt 3) |
 | 2 | Evolution · große Ascension | Prestige-Schicht (Einzeller → Mehrzeller), Mutationen, Erfolge, aktive Fähigkeiten | grob + Entscheidungspunkte |
-| 3 | Ära II · Urmeer | neue Biome, 2–3 gleichzeitige Standorte, Verteidigungsarten, zweiter Rohstoff, Spezialeinheiten | grob + Entscheidungspunkte |
+| 3 | Ära II · Urmeer | neue Biome, 2–3 gleichzeitige Standorte, Soldaten und Kampf, Verteidigungsarten, zweiter Rohstoff, Spezialeinheiten | grob + Entscheidungspunkte |
 | 4 | Ära III · Land | Gebiete an mehreren Fronten erobern und leerfressen, bis der Planet eingenommen ist; Zivilisation als Gegner | grob + Entscheidungspunkte |
 | 5 | Ära IV+ · Weltraum | Ausbreitung über Sonnensystem und Galaxis mit globaler Übersicht; endlose Skalierung | grob + Entscheidungspunkte |
 
@@ -51,6 +55,8 @@ Ein vollständiges, ausbalanciertes Spiel für Ära I: Der Schwarm sammelt Nahru
 - K2-Oberfläche für Desktop und Mobile
 - Modell-Seite
 
+**Mit M1.6 geändert** (PO-Entscheidung nach Playtest-Runde 1): Pheromone, Soldaten, Kampf und „Drohnen opfern“ entfallen in Ära I, die Kernschleife wird überarbeitet ([M1.6](#m16--überarbeitung-ära-i)). Der Umfang oben beschreibt den Stand bis M1.5.
+
 ### 3.2 Meilensteine
 
 | MS | Name | Ergebnis (Abnahmekriterium) | Aufwand |
@@ -61,15 +67,16 @@ Ein vollständiges, ausbalanciertes Spiel für Ära I: Der Schwarm sammelt Nahru
 | M1.3 | Progression | Genom, Pheromone und Funde vollständig; Modell-Seite zeigt Upgrade-Wirkung und Pacing-Zielband | 8,5–12 PT |
 | M1.4 | K2-Präsentation & Mobile | Oberfläche entspricht Mockup K2 inkl. Zoom-Übergängen; auf Smartphone voll bedienbar | 9–13,5 PT |
 | M1.5 | Idle, Balancing & Release | Offline-Fortschritt, Onboarding, PWA; Balancing innerhalb der Zielbänder; Release veröffentlicht | 9–13,5 PT |
-| | **Summe AS1** | | **55–80 PT** (+ ~15 % Puffer) |
+| M1.6 | Überarbeitung Ära I | Kernschleife v2 ohne Pheromone, Soldaten, Kampf und „Drohnen opfern“; Begriffe der Ära I; Futterstellen je Typ und Reise in der Szene; Balancing in den Zielbändern | 17,5–28 PT |
+| | **Summe AS1** | | **72,5–108 PT** (+ ~15 % Puffer) |
 
-Die Meilensteine sind so geschnitten, dass zuerst die Mechanik steht (M1.0–M1.3) und danach die Präsentation (M1.4). Die Sonar-Karte (M1.2) und das Genom (M1.3) werden trotzdem schon im K2-Stil gebaut. M1.4 fügt sie zur Zoom-Welt zusammen und macht sie mobiltauglich.
+Die Meilensteine sind so geschnitten, dass zuerst die Mechanik steht (M1.0–M1.3) und danach die Präsentation (M1.4). Die Sonar-Karte (M1.2) und das Genom (M1.3) werden trotzdem schon im K2-Stil gebaut. M1.4 fügt sie zur Zoom-Welt zusammen und macht sie mobiltauglich. M1.6 ist aus der ersten Runde der Playtest-Schleife (AP 1.5.8) entstanden und überarbeitet die Kernschleife vor dem Release.
 
 ```
-M1.0 ──► M1.1 ──► M1.2 ──► M1.3 ──► M1.4 ──► M1.5
+M1.0 ──► M1.1 ──► M1.2 ──► M1.3 ──► M1.4 ──► M1.5 ──► M1.6 ──► AP 1.5.8 (Playtest-Schleife & Release)
 ```
 
-Abhängigkeiten: M1.4 baut auf den Ansichten aus M1.2 (Sonar) und M1.3 (Genom) auf. Die Aufgaben 1.4.1 (Ebenen und Kamera) und 1.4.2 (Szene-Canvas) können schon nach M1.1 vorgezogen werden. M1.5 setzt alle Mechaniken voraus.
+Abhängigkeiten: M1.4 baut auf den Ansichten aus M1.2 (Sonar) und M1.3 (Genom) auf. Die Aufgaben 1.4.1 (Ebenen und Kamera) und 1.4.2 (Szene-Canvas) können schon nach M1.1 vorgezogen werden. M1.5 setzt alle Mechaniken voraus. Die Playtest-Schleife (AP 1.5.8) läuft nach M1.6 weiter; erst danach folgt der Release.
 
 ### 3.3 Arbeitspakete
 
@@ -139,6 +146,19 @@ flowchart TB
         ap156["1.5.6 PWA"]
         ap157["1.5.7 E2E-Tests"]
         ap158["1.5.8 Playtest-Schleife & Release"]
+    end
+    subgraph M1_6["M1.6 · Überarbeitung Ära I"]
+        ap161["1.6.1 Konzept Kernschleife v2"]
+        ap162["1.6.2 Begriffe Ära I"]
+        ap163["1.6.3 Mockups Futterstellen & Reise"]
+        ap164["1.6.4 Rückbau Pheromone"]
+        ap165["1.6.5 Rückbau Soldaten & Kampf"]
+        ap166["1.6.6 Rückbau Drohnen opfern"]
+        ap167["1.6.7 Kernschleife v2"]
+        ap168["1.6.8 Genom & Funde v2"]
+        ap169["1.6.9 Oberfläche Weiterziehen"]
+        ap1610["1.6.10 Szene: Typen & Reise"]
+        ap1611["1.6.11 Onboarding, Bots & Balancing v2"]
     end
 
     ap101 --> ap102
@@ -213,6 +233,23 @@ flowchart TB
     ap155 --> ap158
     ap156 --> ap158
     ap157 --> ap158
+    ap155 --> ap161
+    ap161 --> ap162
+    ap162 --> ap163
+    ap161 --> ap164
+    ap161 --> ap165
+    ap161 --> ap166
+    ap164 --> ap167
+    ap165 --> ap167
+    ap166 --> ap167
+    ap167 --> ap168
+    ap163 --> ap169
+    ap167 --> ap169
+    ap163 --> ap1610
+    ap168 --> ap1611
+    ap169 --> ap1611
+    ap1610 --> ap1611
+    ap1611 --> ap158
 
     classDef done fill:#d4edda,stroke:#2e7d32,color:#1b4d20
     class ap101,ap102,ap103,ap104,ap105,ap106,ap107 done
@@ -298,11 +335,39 @@ flowchart TB
 | 1.5.5 | Balancing | Zielwerte festlegen, Bot-Läufe, Anpassen, Kennzahlen als Regressions-Snapshots; aus der M1.2-Durchsicht: neu bewerten, ob die längste Wartezeit für „Aktiv“ (Ziel ≤ 60 s) das Warten misst oder eher die Kaufkraft am Spielbeginn; aus der M1.3-Durchsicht ([Game-Design §6.5](game-design.md#65-messung-m13)): DNA-Senke (Genom nach rund 3 h komplett), Pacing-Abweichungen der Messung M1.3, kein Kampf bei „Aktiv“ und „Idle“, „Idle“ genau auf der Grenze „< 60 min“ der längsten Strecke ohne Kauf (Band bleibt exklusiv). **Umgesetzt:** Die Wartezeit zählt wie „Kauf“ (Einheit, Drüsenpunkt, Adaption; PO-Entscheidung). Werte v1.5 bei unveränderten Zielbändern ([Game-Design §6.6](game-design.md#66-messung-m15-werte-v15)): Genom bei „Aktiv“ nach rund 12 h komplett, „Aktiv“ und „Idle“ nehmen in 24 h je rund 30-mal mit Kampf ein, die meisten Futterstellen liegen im Band. Balancing-Snapshots für Seeds `modell` und `release`, „Aktiv“ und „Idle“, 24 h, Toleranz ±5 % ([TK §5.6](technisches-konzept.md#56-balancing-als-test)). Verfehlte Bänder siehe „Offen nach M1.5“ | 2–3 | US-10.09 |
 | 1.5.6 | PWA | Manifest, Service Worker, Icons; aus der M1.4-Durchsicht: Der Service Worker muss die gebündelten Schriftdateien (`media/*.woff2`, [ADR-013](adr/013-webfont-nunito.md)) vorab cachen. **Umgesetzt** mit `@angular/service-worker` ([ADR-015](adr/015-pwa-service-worker.md)): Vorab-Cache für App, Bundles, Schriften und Icons, Manifest mit eigenen Icons, Hinweis „Neue Version verfügbar“ mit „Neu laden“; Offline-Start im Browser geprüft | 0,5 | US-07.06 |
 | 1.5.7 | E2E-Tests | Smoke-Tests für Desktop- und Mobile-Viewport; aus der M1.4-Durchsicht: Moduswechsel über Zoom-Leiste, Zurück-Knopf und Tasten sowie Bottom-Sheets und Log mit Einträgen im Smartphone-Viewport abdecken (Test-IDs `shell.*`). **Umgesetzt:** Playwright-Smoke (devDependency) gegen den Produktions-Build für Desktop und Smartphone, dazu Querformat; neues Spiel mit Onboarding, Kauf, Moduswechsel, Schubladen, Weiterziehen, Einstellungen mit Export und Import, Rückkehr-Zusammenfassung; die CI deployt nur nach grünem E2E-Lauf ([TK §10](technisches-konzept.md#10-qualitätssicherung)) | 1–1,5 | – |
-| 1.5.8 | Playtest-Schleife & Release | Schleife aus (1) Playtest mit 3–5 externen Testspielern, (2) Umsetzen des Feedbacks, (1) erneutem Playtest usw., bis der PO abnimmt; danach Release (Version 0.1.0 nach Bestätigung, §6); Hinweis „Neu in Version …“: Beim ersten Start nach einem Wechsel der Spielerversion (§6) zeigt das Spiel einmal die Patch Notes dieser Version, danach bleiben sie in den Einstellungen abrufbar (offen: wo die zuletzt gesehene Version gespeichert wird, im Spielstand mit Migration oder außerhalb, und wie die Patch Notes gepflegt werden); aus der M1.4-Durchsicht: Profiling und Pinch auf echten Geräten (iOS, Android), Körnung (`mix-blend-mode: overlay`) auf dem Desktop mit echter GPU prüfen ([TK §10](technisches-konzept.md#10-qualitätssicherung)); Querformat auf dem Smartphone; Kartenbeschriftung „(hier)“ weicht Zielen nicht aus, „Reichweite“ liegt auf dem Desktop teils unter dem Titel-Panel. **Umgesetzt (Code-Anteile, PO-Entscheidung):** Querformat auf dem Smartphone (Variante `short:`, [TK §8.4](technisches-konzept.md#84-responsives-layout)); „(hier)“ weicht Zielen aus; Ringnummern und „Reichweite“ stehen unter den Ringen und damit nicht mehr unter dem Titel-Panel; Nachbesserungen aus der Browser-Prüfung (Dialoge mit fester Fußleiste, Hinweiskarte, Kopfzeile bei 360 px); Version 0.0.1 mit Build-Nummer, Commit und Build-Datum in den Einstellungen. **Beim PO:** 3–5 externe Testspieler und Bugfixing daraus, Profiling und Pinch auf echten Geräten (iOS, Android), Körnung auf dem Desktop mit echter GPU, Veröffentlichen des Release (Push auf `main`) | 2–3 | – |
+| 1.5.8 | Playtest-Schleife & Release | Schleife aus (1) Playtest mit 3–5 externen Testspielern, (2) Umsetzen des Feedbacks, (1) erneutem Playtest usw., bis der PO abnimmt; danach Release (Version 0.1.0 nach Bestätigung, §6); Hinweis „Neu in Version …“: Beim ersten Start nach einem Wechsel der Spielerversion (§6) zeigt das Spiel einmal die Patch Notes dieser Version, danach bleiben sie in den Einstellungen abrufbar (offen: wo die zuletzt gesehene Version gespeichert wird, im Spielstand mit Migration oder außerhalb, und wie die Patch Notes gepflegt werden); aus der M1.4-Durchsicht: Profiling und Pinch auf echten Geräten (iOS, Android), Körnung (`mix-blend-mode: overlay`) auf dem Desktop mit echter GPU prüfen ([TK §10](technisches-konzept.md#10-qualitätssicherung)); Querformat auf dem Smartphone; Kartenbeschriftung „(hier)“ weicht Zielen nicht aus, „Reichweite“ liegt auf dem Desktop teils unter dem Titel-Panel. **Umgesetzt (Code-Anteile, PO-Entscheidung):** Querformat auf dem Smartphone (Variante `short:`, [TK §8.4](technisches-konzept.md#84-responsives-layout)); „(hier)“ weicht Zielen aus; Ringnummern und „Reichweite“ stehen unter den Ringen und damit nicht mehr unter dem Titel-Panel; Nachbesserungen aus der Browser-Prüfung (Dialoge mit fester Fußleiste, Hinweiskarte, Kopfzeile bei 360 px); Version 0.0.1 mit Build-Nummer, Commit und Build-Datum in den Einstellungen. **Beim PO:** 3–5 externe Testspieler und Bugfixing daraus, Profiling und Pinch auf echten Geräten (iOS, Android), Körnung auf dem Desktop mit echter GPU, Veröffentlichen des Release (Push auf `main`). **Runde 1 (23.11.2026):** Das Feedback des PO führt zu [M1.6](#m16--überarbeitung-ära-i); die Schleife läuft nach M1.6 weiter | 2–3 | – |
+
+#### M1.6 · Überarbeitung Ära I
+
+Anlass ist die erste Runde der Playtest-Schleife (AP 1.5.8): Das Gesamtkonzept der Ära I ist noch nicht stimmig. Die Vorschläge für die neue Kernschleife, die Folgen der Streichungen und ein erster Entwurf der Begriffe stehen in [Kernschleife v2 · Vorschläge](kernschleife-v2.md).
+
+**Entschieden** (PO, 23.11.2026):
+
+- Das Pheromon-System entfällt komplett.
+- Soldaten und Kampf entfallen in Ära I und kommen mit Ära II ([AS3](#as3--ära-ii-urmeer)); jede Ära bringt eine grundlegend neue Mechanik ([§1](#leitprinzip-eine-neue-mechanik-je-ära)).
+- „Drohnen opfern“ entfällt; zurückbleibende Drohnen werden beim Aufbruch automatisch zu Nahrung.
+- Die Kernschleife verbindet Elemente von [Swarm Simulator](https://github.com/swarmsim/swarm) mit Ressourcenknappheit und aktivem Weiterziehen, ohne dessen Mechaniken zu kopieren; sie soll idle laufen können, aber Strategie verlangen.
+- Die Begriffe der Ära I werden gesichtet und passen danach zur Welt der Einzeller und Mikroben des Meeres (z. B. passt „Walsturz“ eher in Ära II).
+
+| AP | Arbeitspaket | Inhalt | PT | Stories |
+|---|---|---|---|---|
+| 1.6.1 | Konzept Kernschleife v2 | Einen Vorschlag aus [Kernschleife v2](kernschleife-v2.md) wählen (Tendenz PO: N2; vorher N2 mit den Teilungen aus K3 gesammelt darstellen und die Teilungen erklären), als Prototyp auf der Modell-Seite durchrechnen, Game-Design v2 schreiben: Formeln, Startwerte, DNA-Quelle ohne Kampf, Verwertung zurückbleibender Drohnen, Reichweite steigt früh und wiederholt (Playtest 1: keine Steigerung erlebt), Fragmente deutlich häufiger (Playtest 1; Messung M1.5: 2–7 Fragmente in 24 h), Strategien ohne Kampf, Spielstand-Format v2 mit Migration; Zielbänder (§3.5) prüfen; 1.6.7 in Teil-APs schneiden | 2–3 | – |
+| 1.6.2 | Begriffe Ära I | Begriffsrunde (§6) für Ära I nachholen: Einheiten, Ressourcen, Futterstellentypen, Genom-Knoten, Funde und Sets, Strategien; Glossar der [Produktplanung](produktplanung.md#3-glossar); entfallende und neue IDs festlegen (z. B. `whale-fall`), Migration einplanen | 0,5–1 | – |
+| 1.6.3 | Mockups Futterstellen & Reise | Darstellung je Futterstellentyp in der Szene, Übergang Aufbruch → Reise → Ankunft (Playtest 1: beim Wechsel in die Szene während der Reise sieht man nur die leere Futterstelle), Auto-Weiterziehen im Titel der Umgebung; PO wählt aus | 1–1,5 | – |
+| 1.6.4 | Rückbau Pheromone | Pheromone und Drüse aus Domain, HUD, Modell-Seite, Bots, Onboarding und Genom („Zweite Drüse“) entfernen; Migration; Specs und E2E anpassen | 1–1,5 | US-03.01–03.03 (entfallen) |
+| 1.6.5 | Rückbau Soldaten & Kampf | Soldaten, Abwehr, Kampf, Verluste, Mitnahme-Priorität und kampfbezogene Strategien aus Ära I entfernen, ebenso Genom-Ast „Kampf“, Schwefelpanzer, Autophagie und `combatLoss`-Boni; Migration; Specs und E2E anpassen | 2–3 | US-04.04–04.06 |
+| 1.6.6 | Rückbau Drohnen opfern | Drohnen → Nahrung und Drohnen → Königin entfernen; zurückbleibende Drohnen werden beim Aufbruch automatisch zu Nahrung (Ausbeute aus 1.6.1) | 0,5–1 | US-04.07, 04.08 |
+| 1.6.7 | Kernschleife v2 | Umsetzung des in 1.6.1 gewählten Vorschlags; wird in 1.6.1 in Teil-APs geschnitten | 4–8 | – |
+| 1.6.8 | Genom & Funde v2 | Genom ohne Ast „Kampf“, mit einem Ast für Reichweite bzw. Bewegung; Fundtabelle, Fragmente und Sets nach 1.6.1 und 1.6.2 | 1,5–2 | US-05.01, 06.01–06.04 |
+| 1.6.9 | Oberfläche Weiterziehen | Auto-Weiterziehen prominent im Titel der Umgebung; Strategie und Schwelle erscheinen erst bei eingeschaltetem Auto-Weiterziehen (Playtest 1: Auto-Weiterziehen versteckt, Strategie-Umschalter zu prominent); Strategien nach 1.6.1 | 0,5–1 | US-04.10, 04.11 |
+| 1.6.10 | Szene: Typen & Reise | Futterstellen je Typ und Übergangsanimation der Reise nach dem Mockup aus 1.6.3; reduzierte Bewegung berücksichtigen | 2–3 | US-08.02 |
+| 1.6.11 | Onboarding, Bots & Balancing v2 | Freischaltfolge des Onboardings, Bots der Modell-Seite, Zielbänder, Balancing-Snapshots und E2E-Smoke auf die Kernschleife v2 umstellen; offene Punkte aus „Offen nach M1.5“ zu Balancing und Onboarding neu bewerten | 2–3 | US-09.04, 10.09 |
+
+**Erledigt vorab** (Playtest 1, ohne AP): Die Notiz „Im Hintergrund läuft der Schwarm weiter …“ im Detailpanel des Genoms entfällt.
 
 #### Offen nach M1.5
 
-AS1 endet mit M1.5. Die folgenden Punkte aus der M1.5-Durchsicht gehören zu keinem Arbeitspaket; ob und wann sie bearbeitet werden, entscheidet der PO.
+Die folgenden Punkte aus der M1.5-Durchsicht gehören zu keinem Arbeitspaket; ob und wann sie bearbeitet werden, entscheidet der PO. Balancing und Onboarding werden mit M1.6 ohnehin neu gemessen (AP 1.6.11).
 
 - **Balancing** ([Game-Design §6.6](game-design.md#66-messung-m15-werte-v15), [§7](game-design.md#7-ausblick)): „Aktiv“ verfehlt die längste Strecke ohne Kauf über 24 h (21,8 min statt < 10 min) und den Abstand neuer Optionen in der ersten Stunde (25,7 min statt ≤ 15 min), einzelne Futterstellen liegen knapp über 15 min; bei „Idle“ liegt rund ein Drittel der Futterstellen knapp unter 10 min (die Bänder von „Aktiv“ und „Idle“ überlappen nur in 10–15 min); beim Aufbruch ist der Platz noch 10- bis 30-fach überfüllt. Erreichbar nur mit Formel- oder Bot-Änderungen. Seit der neuen Wartezeit-Definition zählen Soldaten auch für Bots als Kauf, die keine kaufen; der Anteil der Wartezeit über 24 h fällt dadurch auf rund 0 %.
 - **Zeitbudget Catch-up:** 24 h Nachholen dauern rund 1,1 s (Vitest, WSL) statt < 1 s ([TK §4](technisches-konzept.md#4-simulation), [§10](technisches-konzept.md#10-qualitätssicherung)); auf Smartphones blockiert das Laden nach langer Abwesenheit womöglich mehrere Sekunden. Mögliche Mittel: `step` und `Num` beschleunigen oder das Nachholen stückeln.
@@ -321,9 +386,9 @@ Diese Punkte aus der Projektidee werden in AP 1.1.1 bzw. im jeweiligen AP entsch
 |---|---|---|
 | Brauchen Königinnen für Drohnen, Soldaten und Königinnen dieselbe Menge Nahrung? | **Entschieden** (siehe [Game-Design](game-design.md#22-einheiten)): Nein, eigene Nahrungskosten je Einheitentyp (Drohne < Soldat < Königin). Eier/min ist nur die Brutrate, keine Ressource. | 1.1.1 |
 | Was ersetzt den Klick? | **Entschieden:** Ein fester Grundertrag aus der Futterstelle (Startwert 1,5 Nahrung/s, siehe [Game-Design](game-design.md#41-grundertrag)). Er trägt den Spielstart und verhindert, dass der Schwarm ohne Drohnen und Nahrung feststeckt, solange die Futterstelle Vorrat hat. | 1.1.9 |
-| Wie verhindern wir, dass Soldaten ausgehen und der Spieler feststeckt? | **Entschieden** (siehe Game-Design [§4.6](game-design.md#46-futterstellen-generator), [§4.10](game-design.md#410-drohnen-opfern)): Kombination aus Option 1 und 3 der Projektidee: **Drohnen opfern** mit Umwandlungsverlust (Ausbeute 50 %, per Genom verringerbar, Mindestverlust 10 %) **und** garantierte Algenmatte mit Abwehr 0 in Reichweite. Keine pluripotenten Drohnen. | 1.2.1, 1.2.5 |
-| Wie hängt die Pheromon-Gesamtzahl mit der Brutrate zusammen? | **Entschieden** (siehe [Game-Design §4.15](game-design.md#415-pheromone)): Brutrate = Königinnen × Basisrate × verteilte Punkte / Startpunkte (`P_v / P_0`, Start 4 Punkte, 3 : 1); das Verhältnis teilt nur auf Drohnen und Soldaten auf, freie Punkte brüten nicht. Die Drüse kostet Nahrung (`100 · 2^k`). Königinnen werden nur gezielt gekauft. | 1.3.4 |
-| Was passiert mit zurückgelassenen Einheiten? | **Entschieden** (siehe [Game-Design §4.9](game-design.md#49-transportkapazität)): Sie gehen verloren (ohne Rückerstattung); die Mitnahme-Priorität (Drohnen zuerst, Soldaten zuerst, ausgewogen; Standard ausgewogen) entscheidet, wer bleibt. Königinnen kommen immer mit. | 1.2.4 |
+| Wie verhindern wir, dass Soldaten ausgehen und der Spieler feststeckt? | **Entschieden** (siehe Game-Design [§4.6](game-design.md#46-futterstellen-generator), [§4.10](game-design.md#410-drohnen-opfern)): Kombination aus Option 1 und 3 der Projektidee: **Drohnen opfern** mit Umwandlungsverlust (Ausbeute 50 %, per Genom verringerbar, Mindestverlust 10 %) **und** garantierte Algenmatte mit Abwehr 0 in Reichweite. Keine pluripotenten Drohnen. **Mit M1.6 gegenstandslos:** keine Soldaten in Ära I, „Drohnen opfern“ entfällt. | 1.2.1, 1.2.5, 1.6.5, 1.6.6 |
+| Wie hängt die Pheromon-Gesamtzahl mit der Brutrate zusammen? | **Entschieden** (siehe [Game-Design §4.15](game-design.md#415-pheromone)): Brutrate = Königinnen × Basisrate × verteilte Punkte / Startpunkte (`P_v / P_0`, Start 4 Punkte, 3 : 1); das Verhältnis teilt nur auf Drohnen und Soldaten auf, freie Punkte brüten nicht. Die Drüse kostet Nahrung (`100 · 2^k`). Königinnen werden nur gezielt gekauft. **Mit M1.6 verworfen:** Das Pheromon-System entfällt. | 1.3.4, 1.6.4 |
+| Was passiert mit zurückgelassenen Einheiten? | **Entschieden** (siehe [Game-Design §4.9](game-design.md#49-transportkapazität)): Sie gehen verloren (ohne Rückerstattung); die Mitnahme-Priorität (Drohnen zuerst, Soldaten zuerst, ausgewogen; Standard ausgewogen) entscheidet, wer bleibt. Königinnen kommen immer mit. **Mit M1.6 geändert:** Zurückbleibende Drohnen werden automatisch zu Nahrung; die Mitnahme-Priorität entfällt mit den Soldaten. | 1.2.4, 1.6.5, 1.6.6 |
 | Wann zieht der Schwarm im Idle-Betrieb weiter? | **Entschieden** (siehe [Game-Design §4.12](game-design.md#412-strategien-und-auto-weiterziehen)): Bei eingeschaltetem Auto-Weiterziehen, sobald der Vorrat die einstellbare Schwelle erreicht (0–90 %, Standard: leer), zum Ziel der Strategie; findet sie keins, zur sicheren Futterstelle. Auto-Weiterziehen ist in einem neuen Spiel ausgeschaltet und wirkt auch im Offline-Fortschritt. | 1.2.7 |
 | Wird der Kaufzähler beim Weiterziehen zurückgesetzt? | **Entschieden** (siehe [Game-Design §4.11](game-design.md#411-weiterziehen-und-reise)): Nein, der Kaufzähler `bought` bleibt beim Weiterziehen für alle Einheitentypen erhalten. | 1.2.6 |
 
@@ -341,7 +406,7 @@ Diese Zielbänder werden auf der Modell-Seite überwacht und in AP 1.5.5 feinjus
 
 ## 4. Spätere Ausbaustufen (grob)
 
-Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Das erste Arbeitspaket jedes Konzept-Meilensteins (`AP x.0.0`) ist die **Mockup-Runde** ([§6](#6-vorgehen)): Es entstehen mehrere UI-Mockups für die Stufe, eines davon wird ausgewählt und dient wie [Mockup K2-K](mockups/k2-kurzgesagt.html) für Ära I als UI-Leitbild. Erst danach werden die Arbeitspakete detailliert. Das letzte Arbeitspaket jeder Stufe ist die **Playtest-Schleife** vor dem Release. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
+Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin werden die unten genannten Entscheidungspunkte getroffen und auf der Modell-Seite durchgerechnet. Das erste Arbeitspaket jedes Konzept-Meilensteins (`AP x.0.0`) ist die **Begriffsrunde**, das zweite (`AP x.0.1`) die **Mockup-Runde** ([§6](#6-vorgehen)): Es entstehen mehrere UI-Mockups für die Stufe, eines davon wird ausgewählt und dient wie [Mockup K2-K](mockups/k2-kurzgesagt.html) für Ära I als UI-Leitbild. Erst danach werden die Arbeitspakete detailliert. Das letzte Arbeitspaket jeder Stufe ist die **Playtest-Schleife** vor dem Release. Viele Mechaniken orientieren sich an [Swarm Simulator](https://github.com/swarmsim/swarm), werden aber an die Schwarm-Biologie von IdleSwarm angepasst.
 
 ### AS2 · Evolution: große Ascension und Langzeitmotivation
 
@@ -349,7 +414,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M2.0 | Konzept, UI-Mockups & Entscheidungen |
+| M2.0 | Konzept, Begriffe, UI-Mockups & Entscheidungen |
 | M2.1 | Große Ascension & Prestige-Währung |
 | M2.2 | Mutationen & Erfolge |
 | M2.3 | Aktive Fähigkeiten |
@@ -372,10 +437,10 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M3.0 | Konzept, UI-Mockups & Entscheidungen |
+| M3.0 | Konzept, Begriffe, UI-Mockups & Entscheidungen |
 | M3.1 | Biome & Futterstellen der Ära II |
 | M3.2 | Mehrere Standorte |
-| M3.3 | Verteidigungsarten & Spezialeinheiten |
+| M3.3 | Soldaten, Verteidigungsarten & Spezialeinheiten |
 | M3.4 | Zweiter Rohstoff |
 | M3.5 | Visuelle Ära II (Szene, Karte, Genom) |
 | M3.6 | Balancing & Release |
@@ -383,6 +448,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | Entscheidungspunkt | Optionen |
 |---|---|
 | Biome | Biome als Unterebenen der Ära (Meeresgrund, offenes Meer, Küste) mit eigenen Futterstellentypen vs. gemischte Karte |
+| Soldaten und Kampf | **Entschieden:** neue Mechanik der Ära II (in Ära I entfallen mit [M1.6](#m16--überarbeitung-ära-i)). Offen: Rolle, Kampfmodell, Platzbedarf; der unterschiedliche Platzbedarf von Drohnen und Soldaten muss sichtbar sein (Playtest 1: war nicht offensichtlich) |
 | Mehrere Standorte | **Entschieden:** 2–3 gleichzeitig. Offen: Aufteilung des Schwarms über feste Anteile vs. Zuweisung beim Kauf; Freischaltung der weiteren Standorte |
 | Verteidigungsarten | weiterhin ein Abwehrwert vs. Typen mit Konter-System (z. B. Panzer, Gift, Schwarm) |
 | Zweiter Rohstoff | Kalk/Mineralien, die nicht aus Nahrung kommen, für Schalen und Panzer: ja/nein, Quelle |
@@ -395,7 +461,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M4.0 | Konzept, UI-Mockups & Entscheidungen |
+| M4.0 | Konzept, Begriffe, UI-Mockups & Entscheidungen |
 | M4.1 | Land-Biome & Planetenkarte |
 | M4.2 | Gebietseroberung & Fronten |
 | M4.3 | Zivilisation als Gegner |
@@ -418,7 +484,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 
 | MS | Name |
 |---|---|
-| M5.0 | Konzept, UI-Mockups & Entscheidungen |
+| M5.0 | Konzept, Begriffe, UI-Mockups & Entscheidungen |
 | M5.1 | Ausbreitung im Sonnensystem |
 | M5.2 | FTL & weitere Systeme |
 | M5.3 | Galaxis-Gesamtübersicht & Endlos-Skalierung |
@@ -445,7 +511,7 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 | Risiko | Auswirkung | Gegenmaßnahme |
 |---|---|---|
 | Spiel wird langweilig (zu lange Wartezeiten, keine Entscheidungen) | hoch | Modell-Seite ab M1.1, Pacing-Zielbänder, Regressions-Snapshots |
-| Spieler steckt fest (keine Soldaten, keine Drohnen, kein erreichbares Ziel) | hoch | Grundertrag, garantierte Futterstelle mit Abwehr 0, Drohnen opfern, Stillstands-Warnung im Modell |
+| Spieler steckt fest (keine Soldaten, keine Drohnen, kein erreichbares Ziel) | hoch | Grundertrag, garantierte Futterstelle mit Abwehr 0, Drohnen opfern, Stillstands-Warnung im Modell; mit M1.6 neu bewerten (AP 1.6.1) |
 | K2-Übergänge ruckeln auf Smartphones (`clip-path`, `blur`) | mittel | Profiling in AP 1.4.6, vereinfachte Übergänge als Fallback, `prefers-reduced-motion` |
 | Mobile-Layout passt nicht zu K2 (Platz für Seitenpanels) | mittel | Bottom-Sheets ab AP 1.4.5, frühe Tests auf echtem Gerät |
 | Spielstände späterer Stufen inkompatibel | mittel | Versionierte Saves mit Migrationskette ab M1.0 |
@@ -459,8 +525,9 @@ Die späteren Stufen beginnen jeweils mit einem **Konzept-Meilenstein**. Darin w
 - **Iterativ je Meilenstein:** Am Meilenstein-Ende stehen ein spielbarer Stand auf dem Teststand (GitHub Pages, Branch `development`; für Spieler nach dem Merge nach `main` auf dem eigenen Server, [ADR-016](adr/016-deployment-branches-sftp.md)), ein kurzer Spieltest und ein Blick auf die Modell-Seite.
 - **Definition of Done (AP):** Code folgt den Regeln aus [`CLAUDE.md`](../CLAUDE.md), Tests für die wesentliche Logik (siehe „Tests bis M5.0“), CI grün, Stories abgenommen, Modell-Seite um neue Mechaniken ergänzt (falls betroffen), Umsetzungsstand in ADRs, technischem Konzept und Regeldateien nachgezogen.
 - **Planung späterer Stufen:** Vor jeder neuen Ausbaustufe wird dieser Plan um die Detaillierung der Stufe ergänzt, nachdem der Konzept-Meilenstein abgeschlossen ist.
-- **UI-Mockups am Anfang jeder Ausbaustufe:** Das erste Arbeitspaket einer Stufe (`AP x.0.0`, im Konzept-Meilenstein) erstellt mehrere UI-Mockups. Der PO wählt eines aus, es wird als UI-Leitbild der Stufe festgehalten. Erst danach werden die Arbeitspakete der Stufe detailliert. AS1 hatte diese Runde vor Beginn des Plans (UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html), Ebenen und Bedienung aus [K2](mockups/k2-zoom.html)), daher gibt es kein AP 1.0.0.
-- **Playtest-Schleife am Ende jeder Ausbaustufe:** Das letzte Arbeitspaket der Stufe (letztes AP des letzten Meilensteins) ist eine Schleife aus (1) Playtest, (2) Umsetzen des Feedbacks, (1) erneutem Playtest usw., bis der PO die Stufe abnimmt. Danach folgt das Release. In AS1 ist das AP 1.5.8.
+- **Begriffsrunde am Anfang jeder Ausbaustufe:** Das erste Arbeitspaket einer Stufe (`AP x.0.0`, im Konzept-Meilenstein) legt die Spielbegriffe der Ära fest (Einheiten, Ressourcen, Orte, Genom, Funde), passend zu ihrer Welt. Sie gehen in das Glossar der [Produktplanung](produktplanung.md#3-glossar) ein und sind die Grundlage der Mockups. Für Ära I wird die Runde in AP 1.6.2 nachgeholt.
+- **UI-Mockups am Anfang jeder Ausbaustufe:** Das zweite Arbeitspaket einer Stufe (`AP x.0.1`, im Konzept-Meilenstein) erstellt mehrere UI-Mockups. Der PO wählt eines aus, es wird als UI-Leitbild der Stufe festgehalten. Erst danach werden die Arbeitspakete der Stufe detailliert. AS1 hatte diese Runde vor Beginn des Plans (UI-Leitbild [Mockup K2-K · Kurzgesagt-Stil](mockups/k2-kurzgesagt.html), Ebenen und Bedienung aus [K2](mockups/k2-zoom.html)), daher gibt es kein AP 1.0.1.
+- **Playtest-Schleife am Ende jeder Ausbaustufe:** Das letzte Arbeitspaket der Stufe (letztes AP des letzten Meilensteins) ist eine Schleife aus (1) Playtest, (2) Umsetzen des Feedbacks, (1) erneutem Playtest usw., bis der PO die Stufe abnimmt. Danach folgt das Release. In AS1 ist das AP 1.5.8; seine erste Runde hat M1.6 ausgelöst, danach läuft die Schleife weiter.
 - **Versionierung:** Getrennt werden die Spielerversion, die Build-Kennung und die Version des Spielstand-Formats. Die Spielerversion folgt nicht der Bedeutung von SemVer (es gibt keine Schnittstelle, die brechen könnte; den Spielstand halten die Migrationen kompatibel), sondern zählt Releases für Spieler.
   - **Spielerversion** `MAJOR.MINOR.PATCH` in `package.json`, von Hand und selten geändert, angezeigt in den Einstellungen:
     - **MAJOR** wird nur auf ausdrückliche Ansage des PO erhöht. `1.0` steht für das Vollrelease.
