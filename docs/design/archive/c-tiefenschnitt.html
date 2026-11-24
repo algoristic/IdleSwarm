@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IdleSwarm · Dummy C: Tiefenschnitt</title>
+    <link rel="stylesheet" href="shared/base.css" />
+    <style>
+      :root {
+        --bg: #f3ede2;
+        --surface: #fffaf1;
+        --surface-2: #f0e7d7;
+        --border: #d8cab1;
+        --fg: #2a251e;
+        --muted: #6b604f;
+        --accent: #1d7466;
+        --accent-fg: #ffffff;
+        --warn: #9a5b00;
+        --danger: #b3261e;
+        --find: #8e24aa;
+        --mark: #b86e00;
+        --zone-0: #dcf0f1;
+        --zone-1: #bde0e5;
+        --zone-2: #98cbd5;
+        --zone-3: #72b2c2;
+        --font: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+        color-scheme: light;
+      }
+      body {
+        height: 100vh;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+      }
+      @media (max-width: 820px) {
+        body {
+          grid-template-columns: 1fr;
+          grid-template-rows: 45vh 1fr;
+          height: auto;
+          min-height: 100vh;
+          overflow: auto;
+        }
+      }
+      .column {
+        position: relative;
+        border-right: 1px solid var(--border);
+        background: var(--surface);
+        min-height: 0;
+      }
+      .column__scroll {
+        height: 100%;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+      }
+      .column__title {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0.9rem;
+        background: linear-gradient(var(--surface) 70%, transparent);
+        pointer-events: none;
+      }
+      .column__title h1 {
+        font-size: 17px;
+        font-style: italic;
+      }
+      .column__title button {
+        pointer-events: auto;
+      }
+      .map {
+        width: 100%;
+        display: block;
+      }
+      .map [data-action] {
+        cursor: pointer;
+      }
+      .main {
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        min-height: 0;
+      }
+      .ledger {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .ledger div {
+        padding: 0.6rem 1rem;
+        border-right: 1px solid var(--border);
+      }
+      .ledger small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-style: italic;
+      }
+      .ledger strong {
+        font-size: 20px;
+        font-variant-numeric: tabular-nums;
+      }
+      .ledger span {
+        font-size: 12px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .tabs {
+        display: flex;
+        gap: 0.25rem;
+        padding: 0.6rem 1rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .tab {
+        font: inherit;
+        font-size: 15px;
+        background: none;
+        border: 1px solid transparent;
+        border-bottom: 0;
+        border-radius: 8px 8px 0 0;
+        padding: 0.4rem 0.9rem;
+        cursor: pointer;
+        color: var(--muted);
+      }
+      .tab[aria-selected='true'] {
+        background: var(--surface);
+        border-color: var(--border);
+        color: var(--fg);
+        margin-bottom: -1px;
+        font-weight: 700;
+      }
+      .tab__badge {
+        font-size: 11px;
+        background: var(--find);
+        color: #fff;
+        border-radius: 99px;
+        padding: 0 0.4rem;
+        margin-left: 0.25rem;
+      }
+      .content {
+        overflow-y: auto;
+        padding: 1rem 1.25rem 5rem;
+        background: var(--surface);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th {
+        text-align: left;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--muted);
+        font-size: 12.5px;
+        border-bottom: 1px solid var(--border);
+        padding: 0.3rem 0.5rem;
+      }
+      td {
+        border-bottom: 1px solid var(--border);
+        padding: 0.55rem 0.5rem;
+        vertical-align: middle;
+      }
+      td.r,
+      th.r {
+        text-align: right;
+      }
+      .sub {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .locked td {
+        opacity: 0.45;
+      }
+      .seg {
+        display: inline-flex;
+      }
+      .seg .btn {
+        border-radius: 0;
+        margin-left: -1px;
+      }
+      .seg .btn:first-child {
+        border-radius: 8px 0 0 8px;
+      }
+      .seg .btn:last-child {
+        border-radius: 0 8px 8px 0;
+      }
+      .is-here td {
+        background: #1d746612;
+      }
+      .is-best td:first-child {
+        box-shadow: inset 3px 0 var(--accent);
+      }
+      .statusbar {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.7rem 1.25rem;
+        border-top: 2px solid var(--fg);
+        background: var(--surface-2);
+        flex-wrap: wrap;
+      }
+      .statusbar__main {
+        flex: 1;
+        min-width: 220px;
+      }
+      .statusbar__line {
+        font-size: 13px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .stamp {
+        font-weight: 700;
+        border: 2px solid currentColor;
+        border-radius: 6px;
+        padding: 0.1rem 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 12px;
+      }
+      .stamp--frisst {
+        color: var(--accent);
+      }
+      .stamp--unterwegs {
+        color: var(--warn);
+      }
+      .stamp--stelle-leer,
+      .stamp--keine-stelle {
+        color: var(--danger);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .effects {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .effects span {
+        color: var(--find);
+        font-size: 13px;
+        border: 1px solid var(--find);
+        border-radius: 99px;
+        padding: 0 0.5rem;
+        font-variant-numeric: tabular-nums;
+      }
+      h3 {
+        font-size: 15px;
+        margin: 1.2rem 0 0.4rem;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="column">
+      <div class="column__title">
+        <h1>Tiefenschnitt der Küste</h1>
+        <button class="btn btn--small" data-action="follow" id="follow">📍 folgen</button>
+      </div>
+      <div class="column__scroll" id="scroll">
+        <svg class="map" id="map" viewBox="-6 -40 300 1090" role="img" aria-label="Senkrechter Kartenschnitt"></svg>
+      </div>
+    </section>
+    <section class="main">
+      <div class="ledger" id="ledger"></div>
+      <nav class="tabs" id="tabs" role="tablist"></nav>
+      <div class="content" id="content"></div>
+      <footer class="statusbar" id="status"></footer>
+    </section>
+
+    <script src="shared/sim.js"></script>
+    <script src="shared/ui.js"></script>
+    <script>
+      const sim = IdleSwarmSim.create({ geometry: 'vertical' });
+      const { CFG } = sim;
+      const U = IdleSwarmUI;
+      const { num, int, rate, time, esc } = U;
+      const INK = { algenfilm: '#2e7d32', plankton: '#1565c0', krebs: '#c2410c', schnee: '#546e7a', seegras: '#1b5e20' };
+      let tab = 'schwarm';
+      let follow = true;
+      let highlight = null;
+      const $ = (id) => document.getElementById(id);
+      const scroll = $('scroll');
+
+      ['wheel', 'touchmove'].forEach((ev) => scroll.addEventListener(ev, () => (follow = false), { passive: true }));
+
+      function r(p) {
+        if (p.type === 'seegras') return 8;
+        return Math.max(2.5, Math.min(7, 2 + 0.9 * Math.log10(p.size / 1000)));
+      }
+
+      function renderMap(d) {
+        const s = sim.state;
+        const out = [];
+        out.push(`<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#00000018" stroke-width="2.5"/></pattern></defs>`);
+        CFG.zones.forEach((z, i) => {
+          const locked = i > d.reachZone;
+          out.push(`<rect x="0" y="${i * 260}" width="120" height="260" fill="var(--zone-${i})"/>`);
+          if (locked) out.push(`<rect x="0" y="${i * 260}" width="120" height="260" fill="url(#hatch)"/>`);
+          out.push(`<line x1="-6" x2="296" y1="${i * 260}" y2="${i * 260}" stroke="var(--fg)" stroke-width=".6"/>`);
+          out.push(`<text x="128" y="${i * 260 + 12}" font-size="10" font-weight="700" fill="var(--fg)">${i} · ${esc(z.name)}</text>`);
+          out.push(`<text x="128" y="${i * 260 + 23}" font-size="8" font-style="italic" fill="var(--muted)">${locked ? '🔒 ' : ''}ab Antrieb ${num(z.threshold)}</text>`);
+        });
+        out.push(`<line x1="120" x2="120" y1="0" y2="1040" stroke="var(--fg)" stroke-width=".6"/>`);
+        out.push(`<circle cx="${s.pos.x}" cy="${s.pos.y}" r="${d.range}" fill="none" stroke="var(--accent)" stroke-dasharray="3 3" stroke-width=".8"/>`);
+
+        if (s.travel) out.push(`<line x1="${s.pos.x}" y1="${s.pos.y}" x2="${s.travel.to.x}" y2="${s.travel.to.y}" stroke="var(--warn)" stroke-width="1.5"/>`);
+        else {
+          const next = sim.nextTarget();
+          if (next) out.push(`<line x1="${s.pos.x}" y1="${s.pos.y}" x2="${next.obj.x}" y2="${next.obj.y}" stroke="${next.reason === 'mark' ? 'var(--mark)' : 'var(--fg)'}" stroke-dasharray="1 3"/>`);
+        }
+
+        // Beschriftungen rechts neben der Wassersäule, Überlappungen nach unten schieben
+        const labelled = s.places.filter((p) => p.known).sort((a, b) => a.y - b.y);
+        let lastY = -99;
+        for (const p of labelled) {
+          const t = CFG.placeTypes[p.type];
+          const isMark = s.mark && s.mark.kind === 'place' && s.mark.id === p.id;
+          const isHere = d.here === p;
+          const isHi = highlight === p.id;
+          const reachable = d.thrust >= sim.placeThreshold(p);
+          const ly = Math.max(p.y + 3, lastY + 10, Math.floor(p.y / 260) * 260 + 34);
+          lastY = ly;
+          const fill = p.sealed ? 0 : p.stock / p.size;
+          out.push(`<g data-action="mark" data-kind="place" data-id="${p.id}" opacity="${p.sealed ? 0.35 : reachable ? 1 : 0.5}">
+            <circle cx="${p.x}" cy="${p.y}" r="${r(p) + 4}" fill="transparent"/>
+            <circle cx="${p.x}" cy="${p.y}" r="${r(p)}" fill="#fff" stroke="${INK[p.type]}" stroke-width="1.2"/>
+            <circle cx="${p.x}" cy="${p.y}" r="${r(p) * Math.sqrt(fill)}" fill="${INK[p.type]}"/>
+            ${isMark ? `<circle cx="${p.x}" cy="${p.y}" r="${r(p) + 3}" fill="none" stroke="var(--mark)" stroke-width="1.8"/>` : ''}
+            ${isHi ? `<circle cx="${p.x}" cy="${p.y}" r="${r(p) + 6}" fill="none" stroke="var(--fg)" stroke-dasharray="1.5 1.5"/>` : ''}
+            <polyline points="${p.x + r(p)},${p.y} 124,${ly - 3} 128,${ly - 3}" fill="none" stroke="var(--border)" stroke-width=".6"/>
+            <text x="130" y="${ly}" font-size="8" fill="${isHere ? 'var(--accent)' : 'var(--fg)'}" font-weight="${isHere || isMark ? 700 : 400}">${isMark ? '🚩 ' : ''}${isHere ? '● ' : ''}${t.name}${p.sealed ? ' (versiegt)' : ''} · ${num(p.stock)}</text>
+          </g>`);
+        }
+        for (const f of s.finds) {
+          const ok = sim.findTargetable(f);
+          const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
+          out.push(`<g data-action="mark" data-kind="find" data-id="${f.id}" opacity="${ok ? 1 : 0.45}">
+            <circle cx="${f.x}" cy="${f.y}" r="7" fill="#fff" stroke="${isMark ? 'var(--mark)' : 'var(--find)'}" stroke-width="${isMark ? 2 : 1}" stroke-dasharray="${ok ? '' : '2 2'}"/>
+            <text x="${f.x}" y="${f.y + 3}" text-anchor="middle" font-size="8">${CFG.finds[f.type].icon}</text>
+          </g>`);
+        }
+        let dots = '';
+        for (let i = 0; i < 10; i++) {
+          const a = i * 2.4 + s.t * 1.5;
+          dots += `<circle cx="${(s.pos.x + Math.cos(a) * (2 + (i % 3) * 1.8)).toFixed(1)}" cy="${(s.pos.y + Math.sin(a) * (2 + (i % 3) * 1.8)).toFixed(1)}" r="1" fill="var(--fg)"/>`;
+        }
+        out.push(dots);
+        U.setHTML($('map'), out.join(''));
+
+        if (follow) {
+          const svg = $('map');
+          const scale = svg.clientHeight / 1090;
+          const target = (s.pos.y + 40) * scale - scroll.clientHeight / 2;
+          if (Math.abs(scroll.scrollTop - target) > 4) scroll.scrollTop = target;
+        }
+        $('follow').setAttribute('aria-pressed', String(follow));
+        $('follow').classList.toggle('btn--primary', follow);
+      }
+
+      function renderLedger(d) {
+        const s = sim.state;
+        U.setHTML(
+          $('ledger'),
+          `<div><small>Vorrat</small><strong>${num(s.vorrat)}</strong><br><span>Kapazität ${num(d.capacity)}${s.vorrat > d.capacity ? ' – Ernte gedämpft' : ''}</span></div>
+          <div><small>Eier</small><strong>${int(s.eier)}</strong><br><span>${d.starre ? 'ruhen in Starre' : rate(d.eggRate)}</span></div>
+          <div><small>Ernte</small><strong>${rate(d.harvest)}</strong><br><span>Appetit ${rate(d.appetite)}</span></div>
+          <div><small>Antrieb : Masse</small><strong>${num(d.thrust)} : ${num(d.mass)}</strong><br><span>Tempo ${num(d.baseSpeed)} KP/s</span></div>`,
+        );
+      }
+
+      const TABS = [
+        ['schwarm', 'Schwarm'],
+        ['ausbau', 'Ausbauten'],
+        ['stellen', 'Stellen'],
+        ['logbuch', 'Logbuch'],
+      ];
+
+      function renderTabs() {
+        const s = sim.state;
+        const badge = { ausbau: s.freeRanks ? `<span class="tab__badge">✨${s.freeRanks}</span>` : '', stellen: `<span class="muted"> ${s.places.filter((p) => p.known && !p.sealed).length}</span>` };
+        U.setHTML($('tabs'), TABS.map(([k, l]) => `<button class="tab" role="tab" data-action="tab" data-v="${k}" aria-selected="${tab === k}">${l}${badge[k] || ''}</button>`).join(''));
+      }
+
+      function tabSchwarm(d) {
+        const s = sim.state;
+        const rows = CFG.units
+          .map((u, i) => {
+            if (!s.unlocked[i]) return `<tr class="locked"><td>${u.name}<span class="sub">ab 1 ${CFG.units[i - 1].name}</span></td><td class="r">–</td><td></td><td></td></tr>`;
+            const max = sim.maxBuy(i);
+            const q = Math.max(1, Math.floor(max * 0.25));
+            const dis = max < 1 ? 'disabled' : '';
+            return `<tr><td><strong>${u.name}</strong><span class="sub">${i === 0 ? `erntet ${num(d.feed)}/s` : `erzeugt ${rate(d.production[i - 1])} ${CFG.units[i - 1].plural}`}</span></td>
+              <td class="r"><strong>${int(s.units[i])}</strong></td>
+              <td class="num"><span class="sub">${num(u.cost)} Vorrat, 1 Ei${i ? `, ${num(u.req)} ${CFG.units[i - 1].plural}` : ''}</span></td>
+              <td class="r"><span class="seg"><button class="btn btn--small" data-action="buy" data-i="${i}" data-mode="1" ${dis}>1</button><button class="btn btn--small" data-action="buy" data-i="${i}" data-mode="25" ${dis}>${int(q)}</button><button class="btn btn--small" data-action="buy" data-i="${i}" data-mode="max" ${dis}>alle ${int(max)}</button></span></td></tr>`;
+          })
+          .join('');
+        const eff = Object.entries(s.effects).filter(([, v]) => v > 0);
+        return `<table><thead><tr><th>Stufe</th><th class="r">Bestand</th><th>Preis je Stück</th><th class="r">Kaufen</th></tr></thead><tbody>${rows}</tbody></table>
+          <h3>Wirkungen von Fundstücken</h3>${eff.length ? `<div class="effects">${eff.map(([k, v]) => `<span>${CFG.finds[k].icon} ${CFG.finds[k].name} · ${time(v)}</span>`).join('')}</div>` : '<p class="muted">Keine aktiv. Fundstücke in der Wassersäule anklicken, um sie als Ziel zu markieren.</p>'}`;
+      }
+
+      function tabAusbau(d) {
+        const s = sim.state;
+        return `${s.freeRanks ? `<p class="warn">✨ Keimzelle: ${s.freeRanks} Rang gratis.</p>` : ''}<table><thead><tr><th>Ausbau</th><th class="r">Rang</th><th>Wirkung jetzt → nächster Rang</th><th class="r"></th></tr></thead><tbody>${CFG.upgradeOrder
+          .map((k) => {
+            const u = CFG.upgrades[k];
+            const l = s.upg[k];
+            const cost = sim.upgradeCost(k);
+            return `<tr><td><strong>${u.name}</strong><span class="sub">${u.label}</span></td><td class="r">${l}</td>
+              <td class="num">${num(u.effect(l))} → ${num(u.effect(l + 1))} ${u.unit}${k === 'geisseln' ? `<span class="sub">Reichweite ${num(d.range)} KP, +70 bei Rang ${(Math.floor(l / 3) + 1) * 3}</span>` : ''}</td>
+              <td class="r"><button class="btn btn--small ${s.freeRanks ? 'btn--mark' : ''}" data-action="upg" data-k="${k}" ${s.freeRanks || s.vorrat >= cost ? '' : 'disabled'}>${s.freeRanks ? 'gratis' : num(cost)}</button></td></tr>`;
+          })
+          .join('')}</tbody></table>`;
+      }
+
+      function tabStellen(d) {
+        const s = sim.state;
+        const best = sim.alternatives()[0];
+        const list = s.places
+          .filter((p) => p.known)
+          .map((p) => ({ p, info: sim.travelInfo(p) }))
+          .sort((a, b) => a.p.zone - b.p.zone || a.p.y - b.p.y);
+        const rows = list
+          .map(({ p, info }) => {
+            const t = CFG.placeTypes[p.type];
+            const isHere = d.here === p;
+            const isMark = s.mark && s.mark.kind === 'place' && s.mark.id === p.id;
+            const can = sim.placeTargetable(p) && !isHere;
+            const state = p.sealed ? 'versiegt' : isHere ? 'hier' : d.thrust < sim.placeThreshold(p) ? `ab Antrieb ${num(sim.placeThreshold(p))}` : `${time(info.time)} Reise`;
+            return `<tr class="${isHere ? 'is-here' : ''} ${best && best.place === p ? 'is-best' : ''}" data-action="hi" data-id="${p.id}">
+              <td><strong style="color:${INK[p.type]}">${t.name}</strong><span class="sub">Zone ${p.zone} · ${esc(t.trait)}</span></td>
+              <td class="r">${num(p.stock)}<span class="sub">von ${num(p.size)}</span></td>
+              <td class="r">${state}<span class="sub">${can ? `Ø ${rate(info.avg)}` : ''}</span></td>
+              <td class="r">${isMark ? `<button class="btn btn--small btn--mark" data-action="mark" data-kind="place" data-id="${p.id}">🚩 aufheben</button>` : `<button class="btn btn--small" data-action="mark" data-kind="place" data-id="${p.id}" ${can ? '' : 'disabled'}>markieren</button>`}</td></tr>`;
+          })
+          .join('');
+        const finds = s.finds
+          .map((f) => {
+            const def = CFG.finds[f.type];
+            const ok = sim.findTargetable(f);
+            const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
+            return `<tr><td><strong>${def.icon} ${def.name}</strong><span class="sub">Zone ${f.zone} · ${def.text}</span></td><td></td><td class="r">${ok ? `${time(sim.travelInfo(f).time)} Reise` : 'Vorschau'}</td>
+              <td class="r"><button class="btn btn--small ${isMark ? 'btn--mark' : ''}" data-action="mark" data-kind="find" data-id="${f.id}" ${ok ? '' : 'disabled'}>${isMark ? '🚩 aufheben' : 'markieren'}</button></td></tr>`;
+          })
+          .join('');
+        return `<p class="muted">Grüner Balken: beste Alternative der Wanderautomatik. Ø = erwartete Durchschnittsernte inklusive Reisezeit.</p>
+          <table><thead><tr><th>Stelle</th><th class="r">Bestand</th><th class="r">Erreichbarkeit</th><th class="r">Ziel</th></tr></thead><tbody>${rows}</tbody></table>
+          <h3>Fundstücke</h3><table><tbody>${finds || '<tr><td class="muted">Gerade keines – in vordersten Zonen entsteht nach 2 bis 4 Minuten ein neues.</td></tr>'}</tbody></table>`;
+      }
+
+      function tabLogbuch() {
+        return `<ul class="log">${sim.state.log.map((e) => `<li class="log__item log__item--${e.kind}"><span class="muted">${U.clock(e.t)}</span> ${esc(e.text)}</li>`).join('')}</ul>`;
+      }
+
+      function renderStatus(d) {
+        const s = sim.state;
+        const st = U.statusOf(sim, d);
+        const next = sim.nextTarget();
+        const nextText = next ? `${next.reason === 'mark' ? '🚩 Markiert' : 'Automatik'}: ${next.kind === 'place' ? CFG.placeTypes[next.obj.type].name : CFG.finds[next.obj.type].name} in Zone ${next.obj.zone}` : 'Kein ansteuerbares Ziel bekannt';
+        let line;
+        if (s.travel) line = `Ankunft in ${time((s.travel.dist - s.travel.done) / d.speed)} · ${nextText}`;
+        else if (d.here) line = `${CFG.placeTypes[d.here.type].name}: ${num(d.here.stock)} Nahrung, ${d.timeToEmpty !== null ? `leer in ${time(d.timeToEmpty)}` : 'versiegt nie'} · danach ${nextText}`;
+        else line = nextText;
+        const warn = sim.markWarning();
+        U.setHTML(
+          $('status'),
+          `<span class="stamp stamp--${st.code}">${esc(st.text)}</span>
+          <div class="statusbar__main"><div class="statusbar__line">${line}</div>${warn ? `<div class="warn">⚠ ${warn}</div>` : ''}</div>
+          ${d.here ? '<button class="btn" data-action="leave">Stelle verlassen</button>' : ''}`,
+        );
+      }
+
+      function render() {
+        const d = sim.derive();
+        renderMap(d);
+        renderLedger(d);
+        renderTabs();
+        const html = tab === 'schwarm' ? tabSchwarm(d) : tab === 'ausbau' ? tabAusbau(d) : tab === 'stellen' ? tabStellen(d) : tabLogbuch();
+        U.setHTML($('content'), html);
+        renderStatus(d);
+      }
+
+      U.delegate(document.body, (action, data) => {
+        if (action === 'tab') tab = data.v;
+        if (action === 'buy') sim.buyUnit(Number(data.i), data.mode);
+        if (action === 'upg') sim.buyUpgrade(data.k);
+        if (action === 'leave') sim.leave();
+        if (action === 'mark') {
+          sim.toggleMark(data.kind, Number(data.id));
+          if (data.kind === 'place') highlight = Number(data.id);
+        }
+        if (action === 'hi') {
+          highlight = Number(data.id);
+          const p = sim.placeById(highlight);
+          if (p) {
+            follow = false;
+            const scale = $('map').clientHeight / 1090;
+            scroll.scrollTop = (p.y + 40) * scale - scroll.clientHeight / 2;
+          }
+        }
+        if (action === 'follow') follow = true;
+        render();
+      });
+      U.run(sim, render);
+    </script>
+  </body>
+</html>

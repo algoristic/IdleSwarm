@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IdleSwarm · Dummy D: Leitstand</title>
+    <link rel="stylesheet" href="shared/base.css" />
+    <style>
+      :root {
+        --bg: #0c0e11;
+        --surface: #14171c;
+        --surface-2: #1c2027;
+        --border: #2a3039;
+        --fg: #e7e9ec;
+        --muted: #8b939f;
+        --accent: #ffb547;
+        --accent-fg: #1d1300;
+        --mark: #7cc4ff;
+        --find: #d59bff;
+        --zone-0: #18222c;
+        --zone-1: #1a2833;
+        --zone-2: #1c2e3a;
+        --zone-3: #1e3441;
+        --mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+        --radius: 6px;
+      }
+      body {
+        font-size: 13px;
+      }
+      .num,
+      td,
+      .kpi strong {
+        font-family: var(--mono);
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .bar__brand {
+        padding: 0.6rem 1rem;
+        font-weight: 700;
+        border-right: 1px solid var(--border);
+        display: grid;
+        align-content: center;
+      }
+      .bar__brand small {
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .kpi {
+        padding: 0.5rem 1rem;
+        border-right: 1px solid var(--border);
+        min-width: 130px;
+      }
+      .kpi small {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .kpi strong {
+        font-size: 16px;
+      }
+      .kpi span {
+        display: block;
+        color: var(--muted);
+        font-size: 11.5px;
+        font-family: var(--mono);
+      }
+      .kpi--status {
+        margin-left: auto;
+        display: grid;
+        align-content: center;
+        font-weight: 700;
+      }
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.4rem;
+        background: var(--muted);
+      }
+      .dot--frisst {
+        background: #5ee08f;
+        box-shadow: 0 0 8px #5ee08f;
+      }
+      .dot--unterwegs {
+        background: var(--accent);
+      }
+      .dot--stelle-leer,
+      .dot--keine-stelle {
+        background: var(--danger);
+      }
+      .strip {
+        padding: 0.6rem 1rem 0.2rem;
+        display: grid;
+        gap: 0.4rem;
+      }
+      .minimap {
+        width: 100%;
+        height: auto;
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      .minimap [data-action] {
+        cursor: pointer;
+      }
+      .ladder {
+        position: relative;
+        height: 34px;
+      }
+      .ladder svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.6fr) minmax(240px, 0.8fr);
+        gap: 0.75rem;
+        padding: 0.5rem 1rem 5rem;
+      }
+      @media (max-width: 1200px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .plan {
+          grid-column: 1 / -1;
+          order: -1;
+        }
+      }
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.7rem 0.8rem;
+        align-self: start;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .panel h2 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        text-align: left;
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 11px;
+        padding: 0.25rem 0.4rem;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      td {
+        padding: 0.3rem 0.4rem;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      .r {
+        text-align: right;
+      }
+      .name {
+        font-family: var(--font);
+        font-size: 13px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      tr.is-here td {
+        background: #5ee08f14;
+      }
+      tr.is-best td {
+        background: #ffb5471a;
+      }
+      tr.is-mark td {
+        background: #7cc4ff1f;
+      }
+      tr.is-off td {
+        opacity: 0.45;
+      }
+      tr[data-action] {
+        cursor: pointer;
+      }
+      .avgbar {
+        height: 4px;
+        background: var(--surface-2);
+        min-width: 60px;
+        border-radius: 2px;
+      }
+      .avgbar i {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+        border-radius: 2px;
+      }
+      .why {
+        border-left: 3px solid var(--accent);
+        background: var(--surface-2);
+        padding: 0.6rem 0.8rem;
+        line-height: 1.55;
+        font-size: 13.5px;
+      }
+      .why b {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .why .m {
+        color: var(--mark);
+      }
+      .why--warn {
+        border-color: var(--warn);
+      }
+      .actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .tag {
+        font-size: 10.5px;
+        padding: 0 0.35rem;
+        border-radius: 3px;
+        border: 1px solid currentColor;
+        margin-left: 0.3rem;
+      }
+      .tag--best {
+        color: var(--accent);
+      }
+      .tag--mark {
+        color: var(--mark);
+      }
+      .tag--here {
+        color: #5ee08f;
+      }
+      .cond {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .cond b {
+        color: var(--fg);
+        font-weight: 600;
+      }
+      .ok {
+        color: #5ee08f;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar" id="bar"></header>
+    <section class="strip">
+      <svg class="minimap" id="map" viewBox="-2 -2 1044 124" role="img" aria-label="Übersichtskarte"></svg>
+      <div class="ladder"><svg id="ladder" viewBox="0 0 1000 34" preserveAspectRatio="none"></svg></div>
+      <div class="cond" id="cond"></div>
+    </section>
+    <main class="grid">
+      <section class="panel" id="left"></section>
+      <section class="panel plan" id="plan"></section>
+      <section class="panel" id="right"></section>
+    </main>
+
+    <script src="shared/sim.js"></script>
+    <script src="shared/ui.js"></script>
+    <script>
+      const sim = IdleSwarmSim.create({ geometry: 'strip' });
+      const { CFG } = sim;
+      const U = IdleSwarmUI;
+      const { num, int, rate, time, esc } = U;
+      const COL = { algenfilm: '#79d38a', plankton: '#8fc8ff', krebs: '#ff9a63', schnee: '#cfd8e3', seegras: '#3fbf6a' };
+      let hover = null;
+      const $ = (id) => document.getElementById(id);
+      const nameOf = (t) => (t.kind === 'place' ? CFG.placeTypes[t.obj.type].name : CFG.finds[t.obj.type].name);
+
+      function renderBar(d) {
+        const s = sim.state;
+        const st = U.statusOf(sim, d);
+        U.setHTML(
+          $('bar'),
+          `<div class="bar__brand">IdleSwarm · Leitstand<small>Winzlinge · Dummy D</small></div>
+          <div class="kpi"><small>Vorrat / Kapazität</small><strong>${num(s.vorrat)}</strong><span>${num(d.capacity)} · ${U.pct(s.vorrat / d.capacity)}</span></div>
+          <div class="kpi"><small>Eier</small><strong>${int(s.eier)}</strong><span>${d.starre ? '±0/s' : '+' + rate(d.eggRate)}</span></div>
+          <div class="kpi"><small>Ernte / Appetit</small><strong>${num(d.harvest)}</strong><span>von ${rate(d.appetite)}</span></div>
+          <div class="kpi"><small>Antrieb / Masse</small><strong>${num(d.thrust)}</strong><span>M ${num(d.mass)} · ${U.pct(d.ratio)}</span></div>
+          <div class="kpi"><small>Reisetempo</small><strong>${num(d.speed)}</strong><span>KP/s · Reichw. ${num(d.range)}</span></div>
+          <div class="kpi"><small>Spielzeit</small><strong>${U.clock(s.t)}</strong><span>${s.stats.travels} Reisen · ${U.pct(s.stats.starreTime / Math.max(1, s.t))} Starre</span></div>
+          <div class="kpi kpi--status"><span style="font-family:var(--font);font-size:13px;color:var(--fg)"><i class="dot dot--${st.code}"></i>${esc(st.text)}</span></div>`,
+        );
+      }
+
+      function renderMap(d) {
+        const s = sim.state;
+        const out = [];
+        CFG.zones.forEach((z, i) => {
+          out.push(`<rect x="${i * 260}" y="0" width="260" height="120" fill="var(--zone-${i})" opacity="${i > d.reachZone ? 0.4 : 1}" stroke="var(--border)"/>`);
+          out.push(`<text x="${i * 260 + 5}" y="11" font-size="9" fill="var(--muted)">${i} ${esc(z.name)}${i > d.reachZone ? ' · gesperrt' : ''}</text>`);
+        });
+        out.push(`<circle cx="${s.pos.x}" cy="${s.pos.y}" r="${d.range}" fill="none" stroke="var(--accent)" stroke-opacity=".35" stroke-dasharray="3 3"/>`);
+        const best = sim.alternatives()[0];
+        if (s.travel) out.push(`<line x1="${s.pos.x}" y1="${s.pos.y}" x2="${s.travel.to.x}" y2="${s.travel.to.y}" stroke="var(--accent)" stroke-width="1.5"/>`);
+        for (const p of s.places) {
+          if (!p.known) continue;
+          const isHover = hover === p.id;
+          const isMark = s.mark && s.mark.kind === 'place' && s.mark.id === p.id;
+          const rr = p.type === 'seegras' ? 8 : 3 + Math.min(5, Math.log10(p.size / 1000));
+          out.push(`<g data-action="mark" data-kind="place" data-id="${p.id}" opacity="${p.sealed ? 0.3 : 1}">
+            <circle cx="${p.x}" cy="${p.y}" r="${rr + 4}" fill="transparent"/>
+            <circle cx="${p.x}" cy="${p.y}" r="${rr}" fill="${COL[p.type]}" fill-opacity="${0.25 + 0.75 * (p.sealed ? 0 : p.stock / p.size)}" stroke="${isMark ? 'var(--mark)' : best && best.place === p ? 'var(--accent)' : 'none'}" stroke-width="2"/>
+            ${isHover ? `<circle cx="${p.x}" cy="${p.y}" r="${rr + 5}" fill="none" stroke="#fff"/>` : ''}
+          </g>`);
+        }
+        for (const f of s.finds) {
+          const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
+          out.push(`<g data-action="mark" data-kind="find" data-id="${f.id}" opacity="${sim.findTargetable(f) ? 1 : 0.4}"><rect x="${f.x - 5}" y="${f.y - 5}" width="10" height="10" transform="rotate(45 ${f.x} ${f.y})" fill="none" stroke="${isMark ? 'var(--mark)' : 'var(--find)'}" stroke-width="${isMark ? 2.5 : 1.2}"/></g>`);
+        }
+        out.push(`<polygon points="${s.pos.x},${s.pos.y - 6} ${s.pos.x + 5},${s.pos.y + 4} ${s.pos.x - 5},${s.pos.y + 4}" fill="var(--accent)"/>`);
+        U.setHTML($('map'), out.join(''));
+      }
+
+      // Antriebsleiter auf logarithmischer Skala: wo steht der Schwarm vor der nächsten Zugangsschwelle?
+      function renderLadder(d) {
+        const lo = Math.log10(50);
+        const hi = Math.log10(1e8);
+        const x = (v) => ((Math.log10(Math.max(50, v)) - lo) / (hi - lo)) * 1000;
+        const marks = [
+          ['Gezeitentümpel', 500],
+          ['Felsenbecken', 2e4],
+          ['Flachwasser', 1e6],
+          ['Seegraswiese', 1e8],
+        ];
+        U.setHTML(
+          $('ladder'),
+          `<rect x="0" y="14" width="1000" height="6" fill="var(--surface-2)"/>
+          <rect x="0" y="14" width="${Math.min(1000, x(d.thrust))}" height="6" fill="var(--accent)"/>
+          ${marks
+            .map(
+              ([n, v]) => `<line x1="${x(v)}" x2="${x(v)}" y1="10" y2="24" stroke="${d.thrust >= v ? 'var(--accent)' : 'var(--muted)'}"/>
+              <text x="${Math.min(x(v), 995)}" y="8" font-size="8" fill="var(--muted)" text-anchor="end">${n} ${num(v)}</text>`,
+            )
+            .join('')}
+          <text x="2" y="33" font-size="8" fill="var(--muted)">Antrieb (log.) · aktuell ${num(d.thrust)}</text>`,
+        );
+        const s = sim.state;
+        const atSee = d.here && d.here.type === 'seegras';
+        U.setHTML(
+          $('cond'),
+          `<span>Ziel des Zeitalters:</span>
+          <span class="${d.thrust >= 1e8 ? 'ok' : ''}">${d.thrust >= 1e8 ? '✔' : '○'} Antrieb 100 Mio.</span>
+          <span class="${atSee ? 'ok' : ''}">${atSee ? '✔' : '○'} An der Seegraswiese ernten</span>
+          <span class="${s.units[5] >= 1 ? 'ok' : ''}">${s.units[5] >= 1 ? '✔' : '○'} 1 Urnest</span>`,
+        );
+      }
+
+      function renderLeft(d) {
+        const s = sim.state;
+        const chain = CFG.units
+          .map((u, i) => {
+            if (!s.unlocked[i]) return `<tr class="is-off"><td class="name">${u.name}</td><td class="r">–</td><td class="r sub" colspan="2">ab 1 ${CFG.units[i - 1].name}</td></tr>`;
+            const max = sim.maxBuy(i);
+            const dis = max < 1 ? 'disabled' : '';
+            const limit = max < 1 ? (s.vorrat < u.cost ? 'Vorrat' : s.eier < 1 ? 'Eier' : CFG.units[i - 1].plural) : null;
+            return `<tr><td class="name">${u.name}<div class="sub">${i ? '+' + rate(d.production[i - 1]) + ' ' + CFG.units[i - 1].plural : 'Sammler'}</div></td>
+              <td class="r">${int(s.units[i])}</td>
+              <td class="r sub">${num(u.cost)}${i ? `<br>+${num(u.req)}` : ''}</td>
+              <td class="r"><button class="btn btn--small" data-action="buy" data-i="${i}" data-mode="1" ${dis}>1</button> <button class="btn btn--small" data-action="buy" data-i="${i}" data-mode="25" ${dis}>¼</button> <button class="btn btn--small" data-action="buy" data-i="${i}" data-mode="max" ${dis}>${limit ? `fehlt: ${limit}` : int(max)}</button></td></tr>`;
+          })
+          .join('');
+        const upg = CFG.upgradeOrder
+          .map((k) => {
+            const u = CFG.upgrades[k];
+            const l = s.upg[k];
+            const cost = sim.upgradeCost(k);
+            const can = s.freeRanks || s.vorrat >= cost;
+            const wait = !can && d.harvest > 0 ? ` · ~${time((cost - s.vorrat) / d.harvest)}` : '';
+            return `<tr><td class="name">${u.name} <span class="sub">${l}</span><div class="sub">${num(u.effect(l))} → ${num(u.effect(l + 1))}${wait}</div></td>
+              <td class="r"><button class="btn btn--small" data-action="upg" data-k="${k}" ${can ? '' : 'disabled'}>${s.freeRanks ? '✨ gratis' : num(cost)}</button></td></tr>`;
+          })
+          .join('');
+        U.setHTML(
+          $('left'),
+          `<h2>Kette <span>Kosten: Vorrat + 1 Ei + Vorstufe</span></h2><table><thead><tr><th>Stufe</th><th class="r">Anz.</th><th class="r">Preis</th><th class="r">Kaufen</th></tr></thead><tbody>${chain}</tbody></table>
+          <h2>Ausbauten ${s.freeRanks ? `<span style="color:var(--find)">✨ ${s.freeRanks} Keimzelle</span>` : ''}</h2><table><tbody>${upg}</tbody></table>`,
+        );
+      }
+
+      function explain(d) {
+        const s = sim.state;
+        const alts = sim.alternatives();
+        const best = alts[0];
+        const next = sim.nextTarget();
+        const lines = [];
+        if (s.travel) {
+          const tgt = s.travel.kind === 'place' ? sim.placeById(s.travel.id) : sim.findById(s.travel.id);
+          lines.push(`Der Schwarm ist <b>unterwegs</b> zu ${tgt ? (s.travel.kind === 'place' ? CFG.placeTypes[tgt.type].name : CFG.finds[tgt.type].name) : '–'} und kommt in <b>${time((s.travel.dist - s.travel.done) / d.speed)}</b> an. Bis dahin ruhen Eier und Kette (Starre).`);
+          if (d.ratio < 1) lines.push(`Die Masse (${num(d.mass)}) übersteigt den Antrieb (${num(d.thrust)}); deshalb nur ${num(d.baseSpeed)} statt 20 KP/s. Mehr Geißeln beschleunigen.`);
+        } else if (d.here) {
+          const t = CFG.placeTypes[d.here.type];
+          if (d.timeToEmpty === null) lines.push(`Der Schwarm frisst an der <b>${t.name}</b>. Sie versiegt nie.`);
+          else lines.push(`Der Schwarm frisst an einem <b>${t.name}</b>: noch ${num(d.hereAvail)} Nahrung, bei ${rate(d.appetite)} Appetit <b>leer in ${time(d.timeToEmpty)}</b>.`);
+        } else lines.push('Der Schwarm befindet sich an keiner Stelle und steht still.');
+        if (next && next.reason === 'mark') {
+          lines.push(`Danach geht es zum <span class="m">markierten Ziel</span>: ${nameOf(next)} in Zone ${next.obj.zone}.`);
+          if (best) lines.push(`Ohne Markierung hätte die Automatik ${CFG.placeTypes[best.place.type].name} gewählt (Ø ${rate(best.avg)}).`);
+        } else if (best && best.avg > 0) {
+          const second = alts[1];
+          lines.push(`Danach wählt die Automatik <b>${CFG.placeTypes[best.place.type].name}</b> in Zone ${best.place.zone}: ${num(best.A)} Nahrung, ${time(best.time)} Reise, im Schnitt <b>${rate(best.avg)}</b>${second ? ` – mehr als ${CFG.placeTypes[second.place.type].name} mit ${rate(second.avg)}` : ''}.`);
+        } else lines.push('Kein ansteuerbares Ziel bekannt. Mehr Reichweite bringen Geißeln (alle 3 Ränge +70 KP).');
+        return lines.join(' ');
+      }
+
+      function renderPlan(d) {
+        const s = sim.state;
+        const alts = sim.alternatives();
+        const maxAvg = alts.length ? alts[0].avg : 1;
+        const known = s.places.filter((p) => p.known);
+        const rows = [];
+        if (d.here) rows.push({ p: d.here, info: null });
+        alts.forEach((a) => rows.push({ p: a.place, info: a }));
+        known.filter((p) => p !== d.here && !alts.some((a) => a.place === p)).forEach((p) => rows.push({ p, info: null }));
+        const body = rows
+          .slice(0, 18)
+          .map(({ p, info }, idx) => {
+            const t = CFG.placeTypes[p.type];
+            const isHere = p === d.here;
+            const isMark = s.mark && s.mark.kind === 'place' && s.mark.id === p.id;
+            const isBest = alts[0] && alts[0].place === p;
+            const off = !isHere && !info;
+            const reason = p.sealed ? 'versiegt' : d.thrust < sim.placeThreshold(p) ? `Antrieb ${num(sim.placeThreshold(p))}` : '';
+            const cls = [isHere && 'is-here', isMark && 'is-mark', isBest && !s.mark && 'is-best', off && 'is-off'].filter(Boolean).join(' ');
+            return `<tr class="${cls}" data-action="hover" data-id="${p.id}">
+              <td class="name"><span style="color:${COL[p.type]}">●</span> ${t.name}${isHere ? '<span class="tag tag--here">hier</span>' : ''}${isBest ? '<span class="tag tag--best">Automatik</span>' : ''}${isMark ? '<span class="tag tag--mark">markiert</span>' : ''}</td>
+              <td class="r">${p.zone}</td>
+              <td class="r">${num(p.stock)}</td>
+              <td class="r">${info ? num(info.distance) : '–'}</td>
+              <td class="r">${info ? time(info.time) : '–'}</td>
+              <td class="r">${info ? num(info.A) : isHere ? num(d.hereAvail) : '–'}</td>
+              <td class="r">${info ? rate(info.avg) : reason || (isHere ? rate(d.harvest) : '')}</td>
+              <td>${info ? `<div class="avgbar"><i style="width:${(info.avg / maxAvg) * 100}%"></i></div>` : ''}</td>
+              <td class="r">${info ? `<button class="btn btn--small ${isMark ? 'btn--mark' : ''}" data-action="mark" data-kind="place" data-id="${p.id}">${isMark ? 'aufheben' : '🚩'}</button>` : ''}</td>
+            </tr>`;
+          })
+          .join('');
+        const warn = sim.markWarning();
+        U.setHTML(
+          $('plan'),
+          `<h2>Reiseplan der Wanderautomatik <span>${known.length} bekannte Stellen</span></h2>
+          <div class="why">${explain(d)}</div>
+          ${warn ? `<div class="why why--warn">⚠ ${warn}</div>` : ''}
+          <div class="actions">${d.here ? '<button class="btn" data-action="leave">Stelle jetzt verlassen</button>' : ''}${s.mark ? '<button class="btn btn--mark" data-action="unmark">Markierung aufheben</button>' : ''}</div>
+          <div style="overflow-x:auto"><table><thead><tr><th>Stelle</th><th class="r">Zone</th><th class="r">Bestand</th><th class="r">Strecke</th><th class="r">Reise</th><th class="r">bei Ankunft</th><th class="r">Ø-Ernte</th><th></th><th></th></tr></thead><tbody>${body}</tbody></table></div>
+          <p class="sub">Ø-Ernte = Nahrung bei Ankunft ÷ (Reisezeit + Fresszeit). Die Automatik zieht weiter, sobald die aktuelle Stelle leer ist, und wählt die Zeile mit dem höchsten Ø – außer du markierst ein Ziel.</p>`,
+        );
+      }
+
+      function renderRight(d) {
+        const s = sim.state;
+        const finds = s.finds
+          .slice()
+          .sort((a, b) => a.zone - b.zone)
+          .map((f) => {
+            const def = CFG.finds[f.type];
+            const ok = sim.findTargetable(f);
+            const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
+            return `<tr class="${isMark ? 'is-mark' : ok ? '' : 'is-off'}"><td class="name">${def.icon} ${def.name}<div class="sub">${def.text}</div></td><td class="r">${ok ? time(sim.travelInfo(f).time) : 'Vorschau'}</td>
+              <td class="r">${ok ? `<button class="btn btn--small ${isMark ? 'btn--mark' : ''}" data-action="mark" data-kind="find" data-id="${f.id}">${isMark ? 'aufheben' : '🚩'}</button>` : ''}</td></tr>`;
+          })
+          .join('');
+        const eff = Object.entries(s.effects).filter(([, v]) => v > 0);
+        U.setHTML(
+          $('right'),
+          `<h2>Fundstücke</h2><table><tbody>${finds || '<tr><td class="sub">Keines sichtbar.</td></tr>'}</tbody></table>
+          <h2>Aktive Wirkungen</h2>${eff.length ? `<table><tbody>${eff.map(([k, v]) => `<tr><td class="name">${CFG.finds[k].icon} ${CFG.finds[k].name}</td><td class="r">${time(v)}</td></tr>`).join('')}</tbody></table>` : '<span class="sub">keine</span>'}
+          <h2>Ereignisse</h2><ul class="log">${s.log
+            .slice(0, 12)
+            .map((e) => `<li class="log__item log__item--${e.kind}"><span class="sub num">${U.clock(e.t)}</span> ${esc(e.text)}</li>`)
+            .join('')}</ul>`,
+        );
+      }
+
+      function render() {
+        const d = sim.derive();
+        renderBar(d);
+        renderMap(d);
+        renderLadder(d);
+        renderLeft(d);
+        renderPlan(d);
+        renderRight(d);
+      }
+
+      U.delegate(document.body, (action, data) => {
+        if (action === 'buy') sim.buyUnit(Number(data.i), data.mode);
+        if (action === 'upg') sim.buyUpgrade(data.k);
+        if (action === 'leave') sim.leave();
+        if (action === 'mark') sim.toggleMark(data.kind, Number(data.id));
+        if (action === 'unmark' && sim.state.mark) sim.toggleMark(sim.state.mark.kind, sim.state.mark.id);
+        if (action === 'hover') hover = hover === Number(data.id) ? null : Number(data.id);
+        render();
+      });
+      U.run(sim, render);
+    </script>
+  </body>
+</html>
