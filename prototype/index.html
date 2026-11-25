@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0f33">
+<title>IdleSwarm – Prototyp Winzlinge</title>
+<style>
+  /* Prototyp des Zeitalters Winzlinge nach Produktspezifikation v6 und Mockup 5d (deckend).
+     Eine Datei ohne Framework und ohne externe Abhängigkeiten. */
+  :root {
+    --night: #0c0f33;
+    --ink: #f6f4ff;
+    --muted: #a7aee8;
+    --panel: #171d58;
+    --panel-2: #212a72;
+    --panel-3: #2c368a;
+    --cyan: #3ee6e0;
+    --pink: #ff4f8b;
+    --yellow: #ffd23f;
+    --orange: #ff8a3d;
+    --lime: #8cf25a;
+    --violet: #9b6bff;
+    --ease: cubic-bezier(.62, 0, .22, 1);
+    --dur: 1s;
+    --font: "Avenir Next", "Montserrat", "Nunito", "Futura", "Century Gothic", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #05061a; color: var(--ink);
+    font: 14px/1.35 var(--font);
+    display: flex; justify-content: center;
+    overscroll-behavior: none;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button[aria-disabled="true"], button:disabled { cursor: default; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .app {
+    position: relative; width: 100%; max-width: 430px; height: 100dvh; overflow: hidden;
+    background: var(--night); isolation: isolate;
+    user-select: none; -webkit-user-select: none;
+  }
+  @media (min-width: 600px) {
+    body { align-items: center; }
+    .app { height: min(900px, 96dvh); border-radius: 36px; box-shadow: 0 30px 80px rgb(0 0 0 / .7); }
+  }
+
+  /* ---------- Tiefenebenen ---------- */
+  .layer {
+    position: absolute; left: 50%; top: 40%; width: 0; height: 0;
+    transform-origin: 0 0;
+    transition: transform var(--dur) var(--ease), filter var(--dur) var(--ease), opacity var(--dur) var(--ease);
+    will-change: transform, filter, opacity;
+    pointer-events: none;
+  }
+  .layer > svg { position: absolute; display: block; overflow: visible; }
+  .layer--far > svg { left: -1000px; top: -1000px; }
+  .layer--map > svg { left: -1000px; top: -1000px; }
+  .layer--main > svg { left: -450px; top: -450px; }
+  .layer--neuron > svg { left: -500px; top: -560px; }
+
+  .app { --px: 0px; --py: 0px; }
+  .app[data-view="main"] .layer--far    { transform: translate(0px, 0px) scale(2.2); filter: blur(5px) brightness(.5); opacity: 1; }
+  .app[data-view="main"] .layer--map    { transform: translate(0px, 0px) scale(2); filter: blur(2.6px) brightness(.7); opacity: 1; }
+  .app[data-view="main"] .layer--main   { transform: translate(0px, 0px) scale(1); filter: blur(0) brightness(1); opacity: 1; }
+  .app[data-view="main"] .layer--neuron { transform: scale(.05); filter: blur(3px) brightness(1); opacity: 0; }
+  .app[data-view="map"] .layer--far     { transform: translate(calc(var(--px) * .35), calc(var(--py) * .35)) scale(1.15); filter: blur(4px) brightness(.95); opacity: 1; }
+  .app[data-view="map"] .layer--map     { transform: translate(var(--px), var(--py)) scale(1); filter: blur(0) brightness(1); opacity: 1; pointer-events: auto; }
+  .app[data-view="map"] .layer--main    { transform: translate(var(--px), var(--py)) scale(.135); filter: blur(1px) brightness(1); opacity: 0; }
+  .app[data-view="map"] .layer--neuron  { transform: scale(.004); opacity: 0; }
+  .app[data-view="neuron"] .layer--far    { transform: translate(0px, 0px) scale(9); filter: blur(4px) brightness(1); opacity: 0; }
+  .app[data-view="neuron"] .layer--map    { transform: translate(0px, 0px) scale(7.8); filter: blur(3px) brightness(1); opacity: 0; }
+  .app[data-view="neuron"] .layer--main   { transform: translate(0px, 0px) scale(5); filter: blur(3px) brightness(1); opacity: 0; }
+  .app[data-view="neuron"] .layer--neuron { transform: scale(1); filter: blur(0) brightness(1); opacity: 1; pointer-events: auto; }
+
+  .app[data-view="map"] { touch-action: none; cursor: grab; }
+  .app.panning { cursor: grabbing; }
+  .app.panning .layer { transition: none !important; }
+
+  .map-only { transition: opacity calc(var(--dur) * .6) ease; }
+  .app[data-view="main"] .map-only, .app[data-view="neuron"] .map-only { opacity: 0; }
+  .app[data-view="map"] .map-only { transition-delay: calc(var(--dur) * .45); }
+
+  .app.no-anim .layer, .app.no-anim .sheet, .app.no-anim .ctx > *, .app.no-anim .map-only, .app.no-anim .gauge * { transition: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    .layer { transition: opacity .3s linear; }
+    .swim, .bob, .sig, .node__pulse, .drift, .node__sel, .swirl, .route, .cilia { animation: none !important; }
+    .node__pulse { stroke-width: 0; }
+  }
+
+  /* ---------- Bewegung ---------- */
+  .swim { animation: swim 3.2s ease-in-out infinite alternate; }
+  .swim--2 { animation-duration: 2.6s; }
+  .swim--3 { animation-duration: 3.8s; }
+  .cilia { animation: cilia .6s linear infinite; }
+  @keyframes cilia { to { stroke-dashoffset: -1.15; } }
+  @keyframes swim { from { transform: translate(-2px, 1px) rotate(-6deg); } to { transform: translate(3px, -1px) rotate(7deg); } }
+  .bob { animation: bob 5s ease-in-out infinite alternate; }
+  .bob--2 { animation-duration: 6.5s; }
+  .bob--3 { animation-duration: 4.2s; }
+  @keyframes bob { from { transform: translate(-3px, -2px) scale(.97); } to { transform: translate(3px, 2px) scale(1.03); } }
+  .swirl { animation: swirl 140s linear infinite; }
+  .swirl--map { animation-duration: 60s; }
+  .swirl--fast { animation-duration: 40s; }
+  @keyframes swirl { to { transform: rotate(360deg); } }
+  .drift { animation: drift 18s ease-in-out infinite alternate; }
+  .drift--fast { animation: driftFast 2.4s linear infinite; }
+  @keyframes drift { to { transform: translate(14px, -22px); } }
+  @keyframes driftFast { from { transform: translate(0, -60px); } to { transform: translate(0, 60px); } }
+  .site-scale { transition: transform 1.2s ease; }
+
+  /* ---------- Neuron ---------- */
+  .twig { fill: none; stroke: #6d2668; stroke-width: 3; stroke-linecap: round; }
+  .twig--term { stroke: #d64484; stroke-width: 4; }
+  .dend { fill: none; stroke: #ff4f8b; stroke-width: 11; stroke-linecap: round; }
+  .dend--glow { stroke: #4a1c64; stroke-width: 30; }
+  .dend--core { stroke: #ff9cc4; stroke-width: 3.5; }
+  .axon { fill: none; stroke: #ff4f8b; stroke-width: 8; stroke-linecap: round; }
+  .axon--glow { stroke: #4a1c64; stroke-width: 26; }
+  .sig { fill: none; stroke: #8ffcff; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 2 24; }
+  .sig--in { animation: sigIn 1.4s linear infinite; }
+  .sig--out { animation: sigOut 1.4s linear infinite; }
+  @keyframes sigIn { to { stroke-dashoffset: 26; } }
+  @keyframes sigOut { to { stroke-dashoffset: -26; } }
+  .bead { fill: var(--yellow); }
+  .bead--next { fill: #8a3a5c; stroke: var(--yellow); stroke-width: 1.8; stroke-dasharray: 2.4 2; }
+  .node { cursor: pointer; }
+  .node__hit { fill: transparent; }
+  .node__body { fill: #ffe98a; }
+  .node__shade { fill: var(--yellow); }
+  .node--poor .node__body { fill: #8f7fb8; }
+  .node--poor .node__shade { fill: #6c5c9c; }
+  .node__pulse { fill: none; stroke: var(--yellow); stroke-width: 3; transform-origin: 0 0; animation: pulse 2.2s ease-out infinite; }
+  @keyframes pulse { from { transform: scale(1); stroke-width: 3; } to { transform: scale(1.7); stroke-width: 0; } }
+  .node__rank { fill: #1a1440; font: 900 17px var(--font); text-anchor: middle; }
+  .node__sel { fill: none; stroke: #fff; stroke-width: 2; stroke-dasharray: 5 6; transform-origin: 0 0; animation: swirl 12s linear infinite; }
+  .n-name { fill: #fff; font: 800 12.5px var(--font); text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; paint-order: stroke; stroke: #1a0b3d; stroke-width: 4px; }
+  .n-cost { fill: var(--yellow); font: 700 11.5px var(--font); text-anchor: middle; font-variant-numeric: tabular-nums; paint-order: stroke; stroke: #1a0b3d; stroke-width: 4px; }
+  .n-cost--poor { fill: #b7a2e8; }
+  .n-name--l, .n-cost--l { text-anchor: start; }
+  .myel { fill: #34207a; }
+  .myel--on { fill: var(--orange); }
+  .myel--next { fill: #34207a; stroke: var(--yellow); stroke-width: 1.6; stroke-dasharray: 3 2.5; }
+  .ranvier { fill: #1a0b3d; stroke: #ff9cc4; stroke-width: 1.6; }
+  .ranvier--on { fill: var(--cyan); stroke: none; }
+  .n-mile { fill: #e9dcff; font: 800 11px var(--font); text-anchor: end; paint-order: stroke; stroke: #1a0b3d; stroke-width: 3px; }
+  .n-mile--on { fill: var(--cyan); }
+  .n-mile--sub { font-weight: 600; font-size: 10px; fill: #b7a2e8; }
+  .org { fill: #542b53; }
+  .org__mid { fill: #733c4f; }
+  .org__in { fill: none; stroke: #a4655e; stroke-width: 3; stroke-linecap: round; }
+
+  /* ---------- Umgebung (Koordinaten in Pixeln, Ursprung am Schwarm) ---------- */
+  .m-label { fill: var(--ink); font: 800 12px var(--font); paint-order: stroke; stroke: #0c0f33; stroke-width: 3.6px; stroke-linejoin: round; text-anchor: middle; }
+  .m-meta { fill: var(--muted); font: 700 10.5px var(--font); font-variant-numeric: tabular-nums; paint-order: stroke; stroke: #0c0f33; stroke-width: 3.4px; stroke-linejoin: round; text-anchor: middle; }
+  .m-gold { fill: var(--yellow); }
+  .m-teal { fill: var(--cyan); }
+  .m-pink { fill: #ffa3c2; }
+  .m-deep { fill: #8f97d8; }
+  .m-ring { font: 800 9.5px var(--font); fill: var(--cyan); }
+  .m-label, .m-meta, .m-ring { pointer-events: none; }
+  .m-site { cursor: pointer; }
+  .m-site--dead { opacity: .35; }
+  .route { fill: none; stroke: var(--yellow); stroke-width: 3; stroke-linecap: round; stroke-dasharray: .1 7.5; animation: route 1.2s linear infinite; }
+  .route--auto { stroke: var(--cyan); opacity: .7; }
+  @keyframes route { to { stroke-dashoffset: -7.6; } }
+
+  /* ---------- Bedienoberfläche ---------- */
+  .hud { position: absolute; z-index: 5; left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top)); display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 6px; }
+  .pill { background: #171d58; border-radius: 16px; padding: 7px 11px 8px; box-shadow: 0 4px 0 #080a26; min-width: 0; }
+  .pill__k { font-size: 9.5px; font-weight: 800; color: var(--muted); display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: .1em; }
+  .pill__k i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .pill__k em { margin-left: auto; font-style: normal; letter-spacing: .02em; text-transform: none; font-size: 10.5px; color: #8890d0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .pill__v { font-size: 17px; font-weight: 900; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pill__v small { font-size: 11px; font-weight: 700; color: var(--muted); }
+  .pill__s { font-size: 10.5px; font-weight: 800; color: #8890d0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; margin-top: 2px; }
+  .pill__bar { height: 5px; border-radius: 3px; background: #0c0f33; margin-top: 4px; overflow: hidden; }
+  .pill__bar span { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--lime); transition: width .3s; }
+  .pill__bar span.over { background: var(--orange); }
+
+  .ctx { position: absolute; z-index: 5; left: 12px; right: 58px; top: calc(80px + env(safe-area-inset-top)); height: 40px; }
+  .ctx > * {
+    position: absolute; inset: 0; display: flex; align-items: center; gap: 8px;
+    background: #171d58; border-radius: 20px; padding: 0 6px 0 10px; font-size: 13px;
+    box-shadow: 0 4px 0 #080a26;
+    opacity: 0; transform: translateY(-6px); transition: opacity .25s, transform .25s;
+    pointer-events: none;
+  }
+  .app[data-view="main"] .ctx__main, .app[data-view="map"] .ctx__map, .app[data-view="neuron"] .ctx__neuron {
+    opacity: 1; transform: none; transition-delay: calc(var(--dur) * .55); pointer-events: auto;
+  }
+  .ctx b { font-weight: 900; }
+  .ctx .sub { color: var(--muted); font-size: 12px; font-weight: 600; }
+  .ctx .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ring { width: 26px; height: 26px; flex: none; }
+  .tag { font-size: 11px; font-weight: 900; border-radius: 12px; padding: 5px 10px; white-space: nowrap; color: #1a1440; max-width: 46%; overflow: hidden; text-overflow: ellipsis; }
+  .tag--gold { background: var(--yellow); }
+  .tag--pink { background: var(--pink); color: #fff; max-width: none; }
+  .tag--teal { background: var(--cyan); }
+  .tag--ghost { background: var(--panel-3); color: var(--muted); }
+  .tag:empty { display: none; }
+
+  /* Zweite Zeile: Menü und aktive Wirkungen der Fundstücke */
+  .chips { position: absolute; z-index: 5; left: 12px; right: 40px; top: calc(130px + env(safe-area-inset-top)); display: flex; flex-wrap: wrap; gap: 5px; pointer-events: none; }
+  .menu-btn { position: absolute; z-index: 5; right: 12px; top: calc(80px + env(safe-area-inset-top)); width: 40px; height: 40px; border-radius: 50%; background: var(--panel); box-shadow: 0 4px 0 #080a26; display: grid; place-items: center; }
+  .chip { font-size: 10.5px; font-weight: 900; border-radius: 10px; padding: 4px 8px; background: #0c0f33; color: var(--yellow); white-space: nowrap; }
+  .chip--speed { color: var(--pink); }
+  .chip--free { color: var(--lime); }
+
+  .gauge { position: absolute; z-index: 4; right: 10px; top: calc(134px + env(safe-area-inset-top)); width: 12px; height: 122px; }
+  .gauge::before { content: ""; position: absolute; left: 5px; top: 4px; height: 76px; width: 2px; border-radius: 1px; background: #4a5199; }
+  .gauge::after { content: ""; position: absolute; left: 5px; top: 84px; height: 30px; border-left: 2px dashed #4a5199; }
+  .gauge.is-last::after { display: none; }
+  .gauge i { position: absolute; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: #3a4290; transition: all .4s var(--ease); }
+  .gauge i:nth-child(1) { top: 0; } .gauge i:nth-child(2) { top: 38px; } .gauge i:nth-child(3) { top: 76px; }
+  .gauge i:nth-child(4) { top: 114px; background: none; border: 1.5px dashed #6a74c8; }
+  .gauge.open i:nth-child(4) { border: 0; background: #6a74c8; }
+  .gauge.is-last i:nth-child(4) { display: none; }
+  .app[data-view="neuron"] .gauge i:nth-child(1) { background: var(--pink); box-shadow: 0 0 0 4px #8f3266; transition-delay: calc(var(--dur) * .5); }
+  .app[data-view="main"] .gauge i:nth-child(2) { background: var(--orange); box-shadow: 0 0 0 4px #8f5232; transition-delay: calc(var(--dur) * .5); }
+  .app[data-view="map"] .gauge i:nth-child(3) { background: var(--cyan); box-shadow: 0 0 0 4px #2a7f8f; transition-delay: calc(var(--dur) * .5); }
+  .gauge span { position: absolute; right: 18px; font-size: 9.5px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; text-align: right; opacity: 0; transition: opacity .3s; background: #0c0f33; border-radius: 8px; padding: 3px 7px; margin-top: -3px; }
+  .gauge span:nth-of-type(1) { top: -3px; color: var(--pink); } .gauge span:nth-of-type(2) { top: 35px; color: var(--orange); } .gauge span:nth-of-type(3) { top: 73px; color: var(--cyan); }
+  .gauge span:nth-of-type(4) { top: 111px; color: #a7aee8; }
+  .gauge.is-last span:nth-of-type(4) { display: none; }
+  .app[data-view="neuron"] .gauge span:nth-of-type(1), .app[data-view="main"] .gauge span:nth-of-type(2), .app[data-view="map"] .gauge span:nth-of-type(3), .app[data-view="map"] .gauge span:nth-of-type(4) { opacity: 1; transition-delay: calc(var(--dur) * .5); }
+
+  .recenter { opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .app.panned .recenter { opacity: 1; pointer-events: auto; }
+  .zoom__btn--ghost { background: var(--panel-2); box-shadow: 0 4px 0 #0c0f33; }
+
+  /* Blätter unten */
+  .sheet {
+    position: absolute; z-index: 5; left: 0; right: 0; bottom: 0;
+    padding: 16px 14px calc(14px + env(safe-area-inset-bottom));
+    background: var(--panel); border-radius: 28px 28px 0 0;
+    box-shadow: 0 -6px 0 #080a26;
+    opacity: 0; transform: translateY(40px); pointer-events: none;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .app[data-view="main"] .sheet--main, .app[data-view="map"] .sheet--map, .app[data-view="neuron"] .sheet--neuron {
+    opacity: 1; transform: none; pointer-events: auto;
+    transition: opacity .45s ease calc(var(--dur) * .6), transform .45s var(--ease) calc(var(--dur) * .6);
+  }
+  .sheet--neuron { background: #24104f; }
+  .sheet__grip { width: 36px; height: 5px; border-radius: 3px; background: #434676; margin: -6px auto 10px; }
+  .sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .sheet__head h2 { font-size: 17px; font-weight: 900; white-space: nowrap; }
+  .sheet__head h2 small { font-size: 12px; font-weight: 700; color: var(--muted); margin-left: 6px; }
+
+  .zoom { position: absolute; top: -70px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  .zoom__label { background: #0c0f33; border-radius: 8px; padding: 2px 7px; }
+  .zoom--out { left: 14px; }
+  .zoom--in { right: 14px; }
+  .zoom__btn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; }
+  .zoom__btn--cyan { background: var(--cyan); box-shadow: 0 4px 0 #1a9a96; }
+  .zoom__btn--pink { background: var(--pink); box-shadow: 0 4px 0 #b52a5e; }
+  .zoom__btn--orange { background: var(--orange); box-shadow: 0 4px 0 #b9561a; }
+  .zoom__btn:active { transform: translateY(3px); box-shadow: none; }
+
+  .seg { display: flex; background: #0c0f33; border-radius: 14px; padding: 3px; }
+  .seg button { font-size: 12px; font-weight: 800; padding: 5px 11px; border-radius: 11px; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #1a1440; }
+
+  .units { display: grid; gap: 7px; max-height: 40dvh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .units::-webkit-scrollbar { display: none; }
+  .unit { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 10px; background: var(--panel-2); border-radius: 18px; padding: 7px 7px 7px 8px; }
+  .unit[hidden] { display: none; }
+  .unit__icon { width: 42px; height: 42px; border-radius: 50%; background: var(--panel-3); display: grid; place-items: center; }
+  .unit__name { font-weight: 900; font-size: 14.5px; white-space: nowrap; }
+  .unit__name .num { font-weight: 800; color: var(--cyan); margin-left: 5px; }
+  .unit__meta { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .buy { min-width: 92px; border-radius: 14px; padding: 6px 10px 5px; text-align: center; background: var(--yellow); color: #1a1440; box-shadow: 0 3px 0 #c99700; }
+  .buy:active:not([aria-disabled="true"]) { transform: translateY(2px); box-shadow: 0 1px 0 #c99700; }
+  .buy b { display: block; font-size: 15px; font-weight: 900; line-height: 1.1; }
+  .buy span { display: block; font-size: 10.5px; font-weight: 800; color: #53443f; white-space: nowrap; }
+  .buy[aria-disabled="true"] { background: var(--panel-3); color: var(--muted); box-shadow: 0 3px 0 #1a2060; }
+  .buy[aria-disabled="true"] span { color: #8890d0; }
+  .unit--locked { background: none; border: 2px dashed var(--panel-3); padding-top: 4px; padding-bottom: 4px; }
+  .unit--locked .unit__icon { width: 30px; height: 30px; margin-left: 6px; background: none; }
+
+  .next { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; background: var(--panel-2); border-radius: 18px; padding: 9px 12px 9px 10px; }
+  .next__star { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--yellow); box-shadow: 0 0 0 5px #494869; }
+  .next__star--auto { background: var(--cyan); box-shadow: 0 0 0 5px #2a5f78; }
+  .next__star--none { background: var(--panel-3); box-shadow: 0 0 0 5px #1a2060; }
+  .next__k { font-size: 10px; font-weight: 900; color: var(--yellow); text-transform: uppercase; letter-spacing: .1em; }
+  .next__k--auto { color: var(--cyan); }
+  .next__v { font-size: 15.5px; font-weight: 900; }
+  .next__m { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .next__t { text-align: right; font-size: 21px; font-weight: 900; }
+  .next__t small { display: block; font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .why { font-size: 12.5px; color: var(--muted); margin: 9px 2px 10px; min-height: 3.9em; }
+  .why b { color: var(--ink); }
+  .warn { color: #ffa3c2; font-weight: 800; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { border-radius: 14px; padding: 10px; font-weight: 900; font-size: 13.5px; text-align: center; background: var(--panel-3); box-shadow: 0 3px 0 #10164a; }
+  .btn--warn { background: #3a1f5e; color: #ffa3c2; box-shadow: 0 3px 0 #1d0f33; }
+  .btn--gold { background: var(--yellow); color: #1a1440; box-shadow: 0 3px 0 #c99700; }
+  .btn[aria-disabled="true"] { opacity: .45; }
+
+  .up { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+  .up h2 { font-size: 19px; font-weight: 900; }
+  .up__rank { font-size: 11.5px; font-weight: 900; background: var(--pink); color: #fff; border-radius: 12px; padding: 4px 10px; }
+  .up__fx { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: 10px 0 12px; font-size: 13.5px; }
+  .up__fx dt { color: #c0a8ee; font-weight: 600; }
+  .up__fx dd { font-weight: 800; }
+  .up__fx dd em { font-style: normal; color: var(--yellow); }
+  .up__fx dd small { font-weight: 600; color: #c0a8ee; }
+  .up__tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 12px; }
+  .up__tabs button { font-size: 11.5px; font-weight: 900; padding: 6px 4px; border-radius: 11px; background: #170a36; color: #c0a8ee; }
+  .up__tabs button[aria-pressed="true"] { background: var(--pink); color: #fff; }
+  .buy--wide { display: flex; width: 100%; justify-content: center; align-items: baseline; gap: 8px; padding: 12px 11px 11px; border-radius: 16px; }
+  .buy--wide b { display: inline; font-size: 16px; }
+  .buy--wide span { display: inline; font-size: 12.5px; }
+
+  /* Hinweise */
+  .toasts { position: absolute; z-index: 8; left: 24px; right: 24px; top: calc(160px + env(safe-area-inset-top)); display: grid; gap: 6px; justify-items: center; pointer-events: none; }
+  .toast { background: #0c0f33; border-radius: 12px; padding: 6px 11px; font-size: 11.5px; font-weight: 700; box-shadow: 0 4px 0 #05061a; animation: toast 4.2s ease forwards; max-width: 100%; text-align: center; }
+  .toast b { color: var(--yellow); }
+  @keyframes toast { 0% { opacity: 0; transform: translateY(-8px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+  /* Dialoge */
+  .modal { position: absolute; inset: 0; z-index: 10; background: rgb(5 6 26 / .78); display: none; align-items: flex-end; justify-content: center; padding: 12px; }
+  .modal.open { display: flex; }
+  .modal__card { width: 100%; max-height: 86%; overflow-y: auto; background: var(--panel); border-radius: 26px; padding: 18px 16px 16px; box-shadow: 0 6px 0 #080a26; }
+  .modal__card h2 { font-size: 19px; font-weight: 900; margin-bottom: 4px; }
+  .modal__card h3 { font-size: 12px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin: 14px 0 6px; }
+  .modal__card p { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .modal__card p b { color: var(--ink); }
+  .stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13px; }
+  .stats dt { color: var(--muted); font-weight: 600; }
+  .stats dd { font-weight: 800; text-align: right; }
+  .modal__actions { display: grid; gap: 8px; margin-top: 14px; }
+  .modal__actions--2 { grid-template-columns: 1fr 1fr; }
+  .modal textarea { width: 100%; height: 110px; border-radius: 12px; border: 0; background: #0c0f33; color: var(--ink); font: 11px/1.3 ui-monospace, monospace; padding: 8px; resize: none; user-select: text; -webkit-user-select: text; }
+  .loglist { font-size: 12.5px; color: var(--muted); display: grid; gap: 3px; max-height: 30vh; overflow-y: auto; }
+  .loglist b { color: var(--ink); }
+  .busy { position: absolute; inset: 0; z-index: 12; display: none; place-items: center; background: rgb(5 6 26 / .85); font-weight: 900; }
+  .busy.open { display: grid; }
+</style>
+</head>
+<body>
+<div class="app no-anim" data-view="main" id="app">
+
+  <!-- Ebene 3 (am tiefsten): nächste Zone, unscharf -->
+  <div class="layer layer--far" aria-hidden="true">
+    <svg id="farSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000"></svg>
+  </div>
+
+  <!-- Ebene 2: Umgebung, nur die aktuelle Zone -->
+  <div class="layer layer--map">
+    <svg id="mapSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000" aria-label="Umgebung: Stellen in Reichweite"></svg>
+  </div>
+
+  <!-- Ebene 1: Schwarm an der Stelle -->
+  <div class="layer layer--main">
+    <svg width="900" height="900" viewBox="-450 -450 900 900" aria-label="Schwarm">
+      <defs>
+        <clipPath id="cFress"><path id="pFress" d="M9 0C9-3.2 5-4.6 0-4.4C-6-4.2-9.5-3-9.5 0C-9.5 3-6 4.4-1 4.2C1 4.1 2 2.4 3.6 2.6C5.6 2.9 9 3 9 0Z"/></clipPath>
+        <clipPath id="cBrut"><circle r="15"/></clipPath>
+        <g id="fress">
+          <ellipse class="cilia" rx="10.4" ry="5.4" fill="none" stroke="#ffcf9e" stroke-width="1.1" stroke-dasharray=".35 .8"/>
+          <use href="#pFress" fill="#ffb27a"/>
+          <g clip-path="url(#cFress)">
+            <use href="#pFress" fill="#ff8a3d" transform="translate(.6 .8)"/>
+            <ellipse cx="-1" cy="5.6" rx="10" ry="2.2" fill="#e5612a"/>
+          </g>
+          <path d="M-1.5 3.3C.8 3.2 1.9 1.7 3.6 1.8" fill="none" stroke="#b9461a" stroke-width=".7" stroke-linecap="round"/>
+          <g fill="#22a86a"><circle cx="-3" cy="-1" r="1.2"/><circle cx="-6" cy="1" r=".95"/><circle cx="-.6" cy="1.2" r=".8"/></g>
+          <g fill="#8cf25a"><circle cx="-3.3" cy="-1.3" r=".4"/><circle cx="-6.2" cy=".7" r=".3"/></g>
+          <path d="M5.2-1.6l.5-1.1.4 1.1 1.1-.3-.8.8.8.8-1.1-.3-.4 1.1-.5-1.1-1.1.3.8-.8-.8-.8z" fill="#ffd0a0"/>
+        </g>
+        <g id="brut">
+          <circle r="18.5" fill="#7a2560"/>
+          <circle r="15" fill="#ff9cc4"/>
+          <g clip-path="url(#cBrut)"><circle cx="2.2" cy="2.8" r="15" fill="#ff4f8b"/><circle cx="3" cy="22" r="13" fill="#d8336f"/></g>
+          <circle cx="-4.5" cy="-3" r="3.6" fill="#ffd23f"/><circle cx="-5.5" cy="-4" r="1.1" fill="#fff4b8"/>
+          <circle cx="4.5" cy="-1.5" r="3.2" fill="#ffd23f"/><circle cx="3.6" cy="-2.5" r="1" fill="#fff4b8"/>
+          <circle cx="-.5" cy="5.5" r="3" fill="#ffd23f"/><circle cx="-1.4" cy="4.6" r=".9" fill="#fff4b8"/>
+        </g>
+        <g id="etr">
+          <ellipse rx="22" ry="17" fill="#4b2a8f"/>
+          <ellipse rx="19" ry="14.5" fill="#c7a6ff"/>
+          <ellipse cx="2" cy="2.5" rx="18" ry="13.5" fill="#9b6bff"/>
+          <g fill="#ffd23f"><circle cx="-9" cy="0" r="3.2"/><circle cx="-2" cy="-4.5" r="3.2"/><circle cx="6" cy="-1.5" r="3.2"/><circle cx="-1.5" cy="4" r="3.2"/><circle cx="6.5" cy="6.5" r="2.6"/></g>
+          <g fill="#fff4b8"><circle cx="-10" cy="-1" r="1"/><circle cx="-3" cy="-5.5" r="1"/><circle cx="5" cy="-2.5" r="1"/></g>
+        </g>
+        <g id="gel">
+          <circle r="27" fill="#5e3a14"/>
+          <g fill="#ffd23f"><circle cx="-10" cy="-6" r="9"/><circle cx="8" cy="-9" r="8.5"/><circle cx="11" cy="8" r="9"/><circle cx="-8" cy="11" r="8.5"/><circle cx="0" cy="0" r="8"/></g>
+          <g fill="#ffe98a"><circle cx="-13" cy="-9" r="3"/><circle cx="5" cy="-12" r="2.8"/><circle cx="8" cy="5" r="3"/><circle cx="-11" cy="8" r="2.8"/><circle cx="-2.5" cy="-2.5" r="2.6"/></g>
+        </g>
+        <g id="bkl">
+          <circle r="36" fill="#6a1a6b"/>
+          <g fill="#ff4f8b"><circle cx="-14" cy="-10" r="14"/><circle cx="12" cy="-13" r="13"/><circle cx="15" cy="11" r="14"/><circle cx="-11" cy="14" r="13"/><circle r="12"/></g>
+          <g fill="#ff9cc4"><circle cx="-18" cy="-14" r="5"/><circle cx="8" cy="-17" r="4.6"/><circle cx="11" cy="7" r="5"/><circle cx="-15" cy="10" r="4.6"/></g>
+          <g fill="#ffd23f"><circle cx="-12" cy="-8" r="3"/><circle cx="14" cy="-11" r="3"/><circle cx="17" cy="13" r="3"/><circle cx="-9" cy="16" r="3"/><circle r="3.4"/></g>
+        </g>
+        <g id="urn">
+          <circle r="48" fill="#2a1060"/>
+          <circle r="42" fill="#9b6bff"/>
+          <circle cx="4" cy="5" r="40" fill="#6c3fd6"/>
+          <circle r="27" fill="#ff8a3d"/>
+          <circle cx="3" cy="3" r="24" fill="#e5612a"/>
+          <g fill="#ffd23f"><circle cx="-8" cy="-6" r="6"/><circle cx="8" cy="-4" r="5.5"/><circle cx="0" cy="9" r="6"/></g>
+          <g fill="#fff4b8"><circle cx="-10" cy="-8" r="2"/><circle cx="6" cy="-6" r="1.8"/><circle cx="-2" cy="7" r="2"/></g>
+        </g>
+        <g id="sparkle">
+          <path d="M0-15L3.6-3.6 15 0 3.6 3.6 0 15-3.6 3.6-15 0-3.6-3.6Z" fill="#ffe98a"/>
+        </g>
+      </defs>
+      <g id="mainBg"></g>
+      <g id="mainSite"></g>
+      <g id="mainDrift" class="drift"></g>
+      <g id="mainSwarm" class="swirl"></g>
+    </svg>
+  </div>
+
+  <!-- Ebene 0 (am nächsten): Ausbauten als Neuron im Inneren des Schwarms -->
+  <div class="layer layer--neuron">
+    <svg id="neuronSvg" width="1000" height="1400" viewBox="-500 -560 1000 1400" aria-label="Ausbauten als Nervenzelle">
+      <defs>
+        <clipPath id="cNode"><circle r="20"/></clipPath>
+        <clipPath id="cSoma"><path d="M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z"/></clipPath>
+        <filter id="nBlur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+      </defs>
+      <rect x="-500" y="-560" width="1000" height="1400" fill="#14082f"/>
+      <g transform="translate(0 -8)">
+        <circle r="640" fill="#1a0b3d"/>
+        <circle r="470" fill="#210f4a"/>
+        <circle r="320" fill="#291358"/>
+        <circle r="190" fill="#311766"/>
+      </g>
+      <g id="neuronOrg" filter="url(#nBlur)"></g>
+      <path class="twig" d="M-70 -78Q-150 -70 -200 -40"/><path class="twig" d="M-110 -118Q-170 -150 -190 -205"/><path class="twig" d="M8 -120Q60 -170 70 -230"/><path class="twig" d="M96 -78Q170 -80 210 -40"/><path class="twig" d="M120 -110Q170 -150 205 -190"/><path class="twig" d="M-36 10Q-120 20 -210 70"/><path class="twig" d="M36 14Q110 40 210 110"/><path class="twig" d="M-150 -70Q-175 -20 -215 0"/>
+      <g id="neuronG"></g>
+      <circle cx="0" cy="-8" r="84" fill="#461d6a"/>
+      <circle cx="0" cy="-8" r="62" fill="#64256f"/>
+      <path d="M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z" fill="#ff9cc4"/>
+      <path d="M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z" fill="#ff4f8b" transform="translate(4.5 6)" clip-path="url(#cSoma)"/>
+      <circle cx="4" cy="-6" r="17" fill="#6a1a6b"/>
+      <circle cx="6" cy="-4" r="17" fill="#4b0f55" clip-path="circle(17px at -2px -2px)"/>
+      <circle cx="9" cy="-11" r="5" fill="#ff9cc4"/>
+    </svg>
+  </div>
+
+  <!-- Bedienoberfläche -->
+  <header class="hud">
+    <div class="pill">
+      <div class="pill__k"><i style="background:var(--lime)"></i>Vorrat<em class="num" id="hudVCap"></em></div>
+      <div class="pill__v num" id="hudV">0</div>
+      <div class="pill__bar"><span id="hudVBar"></span></div>
+    </div>
+    <div class="pill">
+      <div class="pill__k"><i style="background:var(--yellow)"></i>Eier</div>
+      <div class="pill__v num" id="hudE">0</div>
+      <div class="pill__s num" id="hudERate"></div>
+    </div>
+    <div class="pill">
+      <div class="pill__k"><i style="background:var(--orange)"></i>Ernte</div>
+      <div class="pill__v num" id="hudH">0</div>
+      <div class="pill__s num" id="hudHUnit"></div>
+    </div>
+  </header>
+
+  <div class="ctx">
+    <div class="ctx__main">
+      <svg class="ring" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="10" fill="none" stroke="#0c0f33" stroke-width="4"/><circle id="ctxRing" cx="13" cy="13" r="10" fill="none" stroke="#8cf25a" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 13 13)"/></svg>
+      <span class="grow" id="ctxMainText"></span>
+      <span class="tag tag--gold" id="ctxMainTag"></span>
+    </div>
+    <div class="ctx__map">
+      <span class="grow" id="ctxMapText"></span>
+      <span class="tag tag--teal" id="ctxMapTag"></span>
+    </div>
+    <div class="ctx__neuron">
+      <span class="grow" id="ctxNeuronText"></span>
+      <span class="tag tag--pink">Impuls = bezahlbar</span>
+    </div>
+  </div>
+
+  <button class="menu-btn" id="menuBtn" aria-label="Menü">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><g fill="#a7aee8"><rect x="2" y="3" width="12" height="2" rx="1"/><rect x="2" y="7" width="12" height="2" rx="1"/><rect x="2" y="11" width="12" height="2" rx="1"/></g></svg>
+  </button>
+  <div class="chips" id="chips"></div>
+
+  <div class="gauge" id="gauge" aria-hidden="true">
+    <i></i><i></i><i></i><i></i>
+    <span>Ausbau</span><span>Schwarm</span><span>Umgebung</span><span id="gaugeNext"></span>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- Blatt: Schwarm / Kette -->
+  <section class="sheet sheet--main" aria-label="Kette">
+    <div class="zoom zoom--out"><button class="zoom__btn zoom__btn--cyan" data-go="map" aria-label="Herauszoomen zur Umgebung">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0c0f33" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="2.8" fill="#0c0f33" stroke="none"/><circle cx="12" cy="12" r="6.5" stroke-dasharray="2 2.8"/><circle cx="12" cy="12" r="10.2"/></svg>
+    </button><span class="zoom__label">Umgebung</span></div>
+    <div class="zoom zoom--in"><button class="zoom__btn zoom__btn--pink" data-go="neuron" aria-label="Hineinzoomen zu den Ausbauten">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="10" r="3.8" fill="#fff" stroke="none"/><path d="M9.5 7.5L5 3M12 6.4V2M14.6 7.6L19 4M12 13.6V19M12 19l-3 3M12 19l3 3M8.5 11.5L3.5 13M15.5 11.5l5 1.5"/></svg>
+    </button><span class="zoom__label">Ausbau</span></div>
+
+    <div class="sheet__grip"></div>
+    <div class="sheet__head">
+      <h2>Kette <small class="num" id="massLabel"></small></h2>
+      <div class="seg" role="group" aria-label="Kaufmenge" id="buyMode">
+        <button aria-pressed="true" data-mode="1">1</button><button aria-pressed="false" data-mode="q">25 %</button><button aria-pressed="false" data-mode="max">Max</button>
+      </div>
+    </div>
+    <div class="units" id="units"></div>
+  </section>
+
+  <!-- Blatt: Umgebung -->
+  <section class="sheet sheet--map" aria-label="Ziele">
+    <div class="zoom zoom--out recenter"><button class="zoom__btn zoom__btn--ghost" data-recenter aria-label="Umgebung auf den Schwarm zentrieren">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3ee6e0" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.8" fill="#3ee6e0" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+    </button><span class="zoom__label">Zur Mitte</span></div>
+    <div class="zoom zoom--in"><button class="zoom__btn zoom__btn--orange" data-go="main" aria-label="Hineinzoomen zum Schwarm">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="#0c0f33"><ellipse cx="9" cy="10" rx="3.4" ry="2.5"/><ellipse cx="15.5" cy="8" rx="3" ry="2.2"/><ellipse cx="14" cy="15" rx="3.4" ry="2.5"/><ellipse cx="7.5" cy="16" rx="2.6" ry="2"/></svg>
+    </button><span class="zoom__label">Schwarm</span></div>
+
+    <div class="sheet__grip"></div>
+    <div class="next">
+      <div class="next__star" id="nextStar"><svg width="22" height="22" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="#1a1440"/></svg></div>
+      <div style="min-width:0">
+        <div class="next__k" id="nextK">Nächster Aufbruch</div>
+        <div class="next__v" id="nextV"></div>
+        <div class="next__m num" id="nextM"></div>
+      </div>
+      <div class="next__t num" id="nextT"></div>
+    </div>
+    <p class="why" id="why"></p>
+    <div class="actions">
+      <button class="btn" id="btnUnmark">Markierung lösen</button>
+      <button class="btn btn--warn" id="btnLeave">Stelle verlassen</button>
+    </div>
+  </section>
+
+  <!-- Blatt: Ausbau -->
+  <section class="sheet sheet--neuron" aria-label="Ausbau">
+    <div class="zoom zoom--out"><button class="zoom__btn zoom__btn--orange" data-go="main" aria-label="Herauszoomen zum Schwarm">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="#0c0f33"><ellipse cx="9" cy="10" rx="3.4" ry="2.5"/><ellipse cx="15.5" cy="8" rx="3" ry="2.2"/><ellipse cx="14" cy="15" rx="3.4" ry="2.5"/><ellipse cx="7.5" cy="16" rx="2.6" ry="2"/></svg>
+    </button><span class="zoom__label">Schwarm</span></div>
+
+    <div class="sheet__grip"></div>
+    <div class="up__tabs" id="upTabs"></div>
+    <div class="up">
+      <h2 id="upName"></h2>
+      <div class="up__rank num" id="upRank"></div>
+    </div>
+    <dl class="up__fx num" id="upFx"></dl>
+    <button class="buy buy--wide num" id="upBuy"><b>Ausbauen</b><span></span></button>
+  </section>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal__card" id="modalCard"></div></div>
+  <div class="busy" id="busy"><span id="busyText">Nachberechnung …</span></div>
+</div>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   Spielwerte (ALL-CFG-01): alle Zahlen des Balancings an einer Stelle
+   ===================================================================== */
+const CFG = {
+  dt: 0.25,                                   // TEC-03
+  start: { vorrat: 50, eier: 10, fress: 5 },  // P1-STA-01
+  units: [                                    // P1-KET-01
+    { name: 'Fressling',   plural: 'Fresslinge',    short: 'F.',  icon: 'fress', cost: 10,  req: 0,    prod: 0, mass: 1 },
+    { name: 'Brutling',    plural: 'Brutlinge',     short: 'B.',  icon: 'brut',  cost: 500, req: 100,  prod: 2, mass: 5 },
+    { name: 'Eiträgerin',  plural: 'Eiträgerinnen', short: 'Et.', icon: 'etr',   cost: 2e4, req: 1000, prod: 3, mass: 30 },
+    { name: 'Gelege',      plural: 'Gelege',        short: 'G.',  icon: 'gel',   cost: 1e6, req: 1000, prod: 4, mass: 200 },
+    { name: 'Brutklumpen', plural: 'Brutklumpen',   short: 'Bk.', icon: 'bkl',   cost: 5e7, req: 1000, prod: 5, mass: 1200 },
+    { name: 'Urnest',      plural: 'Urnester',      short: 'U.',  icon: 'urn',   cost: 2e9, req: 1000, prod: 6, mass: 8000 },
+  ],
+  upgrades: {                                 // P1-AUS-01: Wirkung base·factor^l, Kosten cost·growth^l
+    herd:  { name: 'Brutherd',  base: 1,    factor: 1.7, cost: 30,  growth: 3 },
+    verd:  { name: 'Verdauung', base: 1,    factor: 1.5, cost: 300, growth: 5 },
+    geis:  { name: 'Geißeln',   base: 50,   factor: 1.8, cost: 125, growth: 2.2 },
+    kropf: { name: 'Kropf',     base: 2000, factor: 1.5, cost: 80,  growth: 1.55 },
+  },
+  reach: { base: 140, step: 70, every: 3 },   // P1-AUS-03
+  travel: { base: 20, minFactor: 0.25 },      // P1-REI-02
+  zones: [                                    // P1-KAR-01
+    { name: 'Wassertropfen',  threshold: 0 },
+    { name: 'Gezeitentümpel', threshold: 500 },
+    { name: 'Felsenbecken',   threshold: 2e4 },
+    { name: 'Flachwasser',    threshold: 1e6 },
+  ],
+  map: {
+    baseSize: 5000, sizeGrowth: 60,           // P1-STE-02
+    randMin: 0.75, randMax: 1.25, startRand: 0.6,
+    zoneRadius: 400,                          // [offen] P1-KAR-05: Zonenfläche als Kreis um den Ursprung
+    minDist: 20,                              // [offen] P1-KAR-05: Vorschlag Mindestabstand
+    initial: { algen: 3, krebs: 1, schnee: 1 },  // P1-KAR-02
+    goneDelay: 10,                            // P1-STE-05
+  },
+  siteTypes: {                                // P1-STE-03
+    algen:    { name: 'Algenfilm',     factor: 1,   g: 0.01 },
+    plankton: { name: 'Planktonwolke', factor: 4,   g: 0, lifetime: 180 },
+    krebs:    { name: 'Toter Krebs',   factor: 10,  g: 0, decay: 0.003, minFrac: 0.01 },
+    schnee:   { name: 'Meeresschnee',  factor: 3,   g: 0.003, eggMult: 2 },
+    seegras:  { name: 'Seegraswiese',  factor: 1e5, g: 0.004, threshold: 1e8, floorFrac: 0.01, goal: true, zone: 3 },
+  },
+  spawn: { interval: 25, maxInReach: 10, minTargets: 3, weights: { algen: 3, plankton: 1, krebs: 1, schnee: 1 } }, // P1-STE-07/08
+  finds: {                                    // P1-FUN-04
+    respawnMin: 120, respawnMax: 240,
+    types: {
+      fress: { name: 'Fressrausch',       weight: 3, text: 'Appetit ×3 für 60 s' },
+      lege:  { name: 'Legeschub',         weight: 3, text: 'Eier-Rate ×5 für 60 s' },
+      verm:  { name: 'Vermehrungsrausch', weight: 3, text: 'Erzeugung der Kette ×3 für 60 s' },
+      wind:  { name: 'Rückenwind',        weight: 2, text: 'Reisetempo ×4 für 60 s' },
+      blase: { name: 'Nahrungsblase',     weight: 3, text: 'Sofort Vorrat: 180 s Ø-Ernte' },
+      ballen:{ name: 'Eierballen',        weight: 2, text: 'Sofort Eier: 180 s Eier-Rate' },
+      schub: { name: 'Wachstumsschub',    weight: 2, text: 'Sofort 120 s Erzeugung je Stufe' },
+      keim:  { name: 'Keimzelle',         weight: 1, text: 'Nächster Rang eines Ausbaus gratis' },
+    },
+    buffDuration: 60, mult: { fress: 3, lege: 5, verm: 3, wind: 4 },
+    blaseMin: 1000, blaseSec: 180, avgWindow: 120, ballenMin: 50, ballenSec: 180, schubSec: 120,
+  },
+  offlineMax: 24 * 3600,                      // ALL-OFF-02
+  saveEvery: 10,                              // ALL-OFF-01
+};
+const SAVE_KEY = 'idleswarm-prototyp';
+const SAVE_VERSION = 1;
+const HIST_LEN = Math.round(CFG.finds.avgWindow / CFG.dt);
+
+/* =====================================================================
+   Spiellogik: reine Funktionen auf dem Zustand, ohne DOM (TEC-04)
+   ===================================================================== */
+function rnd(s) { // mulberry32, Zustand im Spielstand für reproduzierbare Läufe
+  let t = (s.rng = (s.rng + 0x6D2B79F5) | 0);
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function pickWeighted(s, weights) {
+  const entries = Object.entries(weights);
+  let r = rnd(s) * entries.reduce((a, [, w]) => a + w, 0);
+  for (const [k, w] of entries) { r -= w; if (r < 0) return k; }
+  return entries[entries.length - 1][0];
+}
+const upEff = (k, l) => CFG.upgrades[k].base * CFG.upgrades[k].factor ** l;
+const upCost = (k, l) => CFG.upgrades[k].cost * CFG.upgrades[k].growth ** l;
+const reachFor = (l) => CFG.reach.base + CFG.reach.step * Math.floor(l / CFG.reach.every);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+function newGame(seed) {
+  const s = {
+    v: SAVE_VERSION, seed, rng: seed, t: 0,
+    vorrat: CFG.start.vorrat, eier: CFG.start.eier,
+    units: [CFG.start.fress, 0, 0, 0, 0, 0], unlocked: [true, true, false, false, false, false],
+    ranks: { herd: 0, verd: 0, geis: 0, kropf: 0 }, free: 0,
+    zone: 0, pos: { x: 0, y: 0 }, at: null, travel: null,
+    sites: [], finds: [], findTimers: {}, spawnTimers: [0, 0, 0, 0],
+    buffs: { fress: 0, lege: 0, verm: 0, wind: 0 },
+    mark: null, leave: false, nextId: 1,
+    hist: new Array(HIST_LEN).fill(0), histI: 0, histSum: 0, lastH: 0,
+    stats: { firstTravel: null, travels: 0, dried: 0, spawned: 0, finds: 0, marks: 0, leaves: 0,
+      noHarvest: 0, noHarvestZone: [0, 0, 0, 0], timeZone: [0, 0, 0, 0], total: 0, endAt: null },
+    ended: false, endSeen: false, savedAt: Date.now(),
+  };
+  const start = makeSite(s, 'algen', 0, 0, 0, CFG.map.startRand);
+  start.known = true;
+  s.sites.push(start);
+  s.at = start.id;
+  for (let z = 0; z < CFG.zones.length; z++) {
+    for (const [type, n] of Object.entries(CFG.map.initial)) {
+      for (let i = 0; i < n; i++) {
+        const p = placeInDisc(s, z, 0, 0, CFG.map.zoneRadius);
+        s.sites.push(makeSite(s, type, z, p.x, p.y, randF(s)));
+      }
+    }
+    if (z === CFG.siteTypes.seegras.zone) {
+      const p = placeInDisc(s, z, 0, 0, CFG.map.zoneRadius * 0.8);
+      s.sites.push(makeSite(s, 'seegras', z, p.x, p.y, randF(s)));
+    }
+    s.finds.push(makeFind(s, z));
+  }
+  discover(s, derive(s));
+  return s;
+}
+const randF = (s) => CFG.map.randMin + rnd(s) * (CFG.map.randMax - CFG.map.randMin);
+
+function makeSite(s, type, zone, x, y, rf) {
+  const T = CFG.siteTypes[type];
+  const size = CFG.map.baseSize * CFG.map.sizeGrowth ** zone * T.factor * rf;
+  return { id: s.nextId++, type, zone, x, y, size, stock: size, born: s.t, dead: false, goneAt: null, known: false, shape: Math.floor(rnd(s) * 1e6) };
+}
+function makeFind(s, zone) {
+  const p = placeInDisc(s, zone, 0, 0, CFG.map.zoneRadius);
+  return { id: s.nextId++, type: pickWeighted(s, Object.fromEntries(Object.entries(CFG.finds.types).map(([k, v]) => [k, v.weight]))), zone, x: p.x, y: p.y };
+}
+// Zufällige Position in einem Kreis, innerhalb der Zonenfläche, mit Mindestabstand zu Stellen der Zone und zum Schwarm
+function placeInDisc(s, zone, cx, cy, r) {
+  let best = null, bestD = -1;
+  for (let i = 0; i < 40; i++) {
+    const a = rnd(s) * Math.PI * 2, rr = Math.sqrt(rnd(s)) * r;
+    const p = { x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr };
+    if (Math.hypot(p.x, p.y) > CFG.map.zoneRadius) continue;
+    let d = dist(p, s.pos);
+    for (const o of s.sites) if (o.zone === zone) d = Math.min(d, dist(p, o));
+    if (d >= CFG.map.minDist) return p;
+    if (d > bestD) { bestD = d; best = p; }
+  }
+  return best || { x: cx, y: cy };
+}
+
+function derive(s) {
+  const r = s.ranks, b = s.buffs, F = CFG.finds.mult;
+  const thrust = upEff('geis', r.geis);
+  let mass = 0;
+  for (let k = 0; k < 6; k++) mass += s.units[k] * CFG.units[k].mass;
+  const ratio = mass > 0 ? Math.min(1, thrust / mass) : 1;
+  const baseSpeed = CFG.travel.base * Math.max(CFG.travel.minFactor, Math.sqrt(ratio));
+  const speed = baseSpeed * (b.wind > 0 ? F.wind : 1);
+  const digest = upEff('verd', r.verd);
+  const appetite = s.units[0] * digest * (b.fress > 0 ? F.fress : 1);
+  const capacity = upEff('kropf', r.kropf);
+  const site = currentSite(s);
+  const eatingSchnee = site && !site.dead && CFG.siteTypes[site.type].eggMult && s.lastH > 0;
+  const eggRate = upEff('herd', r.herd) * (eatingSchnee ? CFG.siteTypes.schnee.eggMult : 1) * (b.lege > 0 ? F.lege : 1);
+  const chainMult = b.verm > 0 ? F.verm : 1;
+  return { thrust, mass, speed, baseSpeed, digest, appetite, capacity, eggRate, chainMult, reach: reachFor(r.geis), atFloor: ratio < CFG.travel.minFactor ** 2 };
+}
+const getSite = (s, id) => s.sites.find((x) => x.id === id) || null;
+const getFind = (s, id) => s.finds.find((x) => x.id === id) || null;
+const currentSite = (s) => (s.at != null && !s.travel ? getSite(s, s.at) : null);
+function avail(site) {
+  const T = CFG.siteTypes[site.type];
+  if (site.dead) return 0;
+  return T.floorFrac ? Math.max(0, site.stock - T.floorFrac * site.size) : site.stock;
+}
+const siteThreshold = (site) => Math.max(CFG.zones[site.zone].threshold, CFG.siteTypes[site.type].threshold || 0);
+const reachable = (site, d) => d.thrust >= siteThreshold(site);
+const zoneOk = (s, z) => z === s.zone || z === s.zone + 1;
+function targetable(s, site, d) {
+  return site && site.known && !site.dead && zoneOk(s, site.zone) && reachable(site, d);
+}
+const findTargetable = (s, f, d) => f && zoneOk(s, f.zone) && d.thrust >= CFG.zones[f.zone].threshold;
+
+// P1-ABZ-01: verfügbare Nahrung bei Ankunft, mit Verfall und Versiegen aus den Eigenheiten
+function availAtArrival(s, site, tt) {
+  const T = CFG.siteTypes[site.type];
+  let A = avail(site);
+  if (T.lifetime && site.born + T.lifetime <= s.t + tt) return 0;
+  if (T.decay) {
+    A *= Math.exp(-T.decay * tt);
+    if (A < T.minFrac * site.size) return 0;
+  }
+  return A;
+}
+function rate(s, site, d) {
+  const tt = dist(s.pos, site) / d.speed;
+  const A = availAtArrival(s, site, tt);
+  const avg = d.appetite > 0 && A > 0 ? A / (tt + A / d.appetite) : 0;
+  return { tt, A, avg };
+}
+function bestAlternative(s, d) {
+  let best = null;
+  for (const site of s.sites) {
+    if (site.id === s.at || !targetable(s, site, d)) continue;
+    const r = rate(s, site, d);
+    if (!best || r.avg > best.avg || (r.avg === best.avg && r.tt < best.tt)) best = { site, ...r };
+  }
+  return best;
+}
+function markTarget(s, d) {
+  if (!s.mark) return null;
+  if (s.mark.kind === 'site') { const x = getSite(s, s.mark.id); return targetable(s, x, d) && x.id !== s.at ? { kind: 'site', obj: x } : null; }
+  const f = getFind(s, s.mark.id);
+  return findTargetable(s, f, d) ? { kind: 'find', obj: f } : null;
+}
+function addVorrat(s, h, C) { // P1-VOR-01/02, exakt integriert
+  if (h <= 0) return;
+  const a = Math.min(h, Math.max(0, C - s.vorrat));
+  s.vorrat += a;
+  const rest = h - a;
+  if (rest > 0) s.vorrat = Math.sqrt(s.vorrat * s.vorrat + 2 * C * rest);
+}
+function avgHarvest(s) {
+  const span = Math.min(CFG.finds.avgWindow, s.t);
+  return span > 0 ? s.histSum / span : 0;
+}
+function drySite(s, site, log) {
+  site.dead = true; site.stock = 0;
+  site.goneAt = s.at === site.id && !s.travel ? null : s.t + CFG.map.goneDelay;
+  s.stats.dried++;
+  log && log('dry', site);
+}
+function discover(s, d) {
+  for (const site of s.sites) if (!site.known && zoneOk(s, site.zone) && dist(s.pos, site) <= d.reach) site.known = true;
+}
+function spawnSite(s, zone, d) {
+  const type = pickWeighted(s, CFG.spawn.weights);
+  const p = placeInDisc(s, zone, s.pos.x, s.pos.y, d.reach);
+  const site = makeSite(s, type, zone, p.x, p.y, randF(s));
+  site.known = true;
+  s.sites.push(site);
+  s.stats.spawned++;
+}
+
+function depart(s, target, d, log) {
+  const prev = s.at != null ? getSite(s, s.at) : null;
+  if (prev && prev.dead) prev.goneAt = s.t + CFG.map.goneDelay;
+  const obj = target.obj;
+  if (obj.zone > s.zone) { // P1-KAR-06: die verlassene Zone verschwindet
+    const old = s.zone;
+    s.zone = obj.zone;
+    s.sites = s.sites.filter((x) => x.zone >= s.zone);
+    s.finds = s.finds.filter((x) => x.zone >= s.zone);
+    for (const z of Object.keys(s.findTimers)) if (+z < s.zone) delete s.findTimers[z];
+    s.spawnTimers[s.zone + 1] = 0;
+    log && log('zone', { from: old, to: s.zone });
+  }
+  s.at = null;
+  s.travel = { kind: target.kind, id: obj.id, x0: s.pos.x, y0: s.pos.y, tx: obj.x, ty: obj.y, dist: dist(s.pos, obj), done: 0 };
+  s.leave = false;
+  s.stats.travels++;
+  if (s.stats.firstTravel == null) s.stats.firstTravel = s.t;
+  log && log('depart', target);
+}
+function applyFind(s, f, d, log) {
+  const F = CFG.finds;
+  switch (f.type) {
+    case 'fress': case 'lege': case 'verm': case 'wind': s.buffs[f.type] += F.buffDuration; break; // P1-FUN-05
+    case 'blase': s.vorrat += Math.max(F.blaseMin, F.blaseSec * avgHarvest(s)); break;          // ohne Kapazität
+    case 'ballen': s.eier += Math.max(F.ballenMin, F.ballenSec * d.eggRate); break;
+    case 'schub': {
+      const u = s.units.slice();
+      for (let k = 0; k < 5; k++) s.units[k] += F.schubSec * u[k + 1] * CFG.units[k + 1].prod;
+      break;
+    }
+    case 'keim': s.free++; break;
+  }
+  s.stats.finds++;
+  log && log('find', f);
+}
+
+function step(s, log) {
+  const dt = CFG.dt;
+  const d = derive(s);
+  const B = s.buffs;
+
+  // Eier und Kette erzeugen immer (P1-STR-01)
+  s.eier += d.eggRate * dt;
+  const u = s.units.slice();
+  for (let k = 1; k < 6; k++) s.units[k - 1] += u[k] * CFG.units[k].prod * d.chainMult * dt;
+  for (let k = 2; k < 6; k++) if (s.units[k - 1] >= 1) s.unlocked[k] = true;
+
+  // Ernte (P1-ERN-01/02)
+  let H = 0;
+  const site = currentSite(s);
+  if (site && !site.dead) {
+    H = Math.min(d.appetite, avail(site) / dt);
+    site.stock -= H * dt;
+    addVorrat(s, H * dt, d.capacity);
+  }
+  s.lastH = H;
+  s.histSum += H * dt - s.hist[s.histI];
+  s.hist[s.histI] = H * dt;
+  s.histI = (s.histI + 1) % HIST_LEN;
+  s.stats.total += H * dt;
+  s.stats.timeZone[s.zone] += dt;
+  if (H <= 0) { s.stats.noHarvest += dt; s.stats.noHarvestZone[s.zone] += dt; }
+
+  // Restdauern (P1-FUN-06)
+  if (H > 0 && B.fress > 0) B.fress = Math.max(0, B.fress - dt);
+  B.lege = Math.max(0, B.lege - dt);
+  B.verm = Math.max(0, B.verm - dt);
+  if (s.travel && B.wind > 0) B.wind = Math.max(0, B.wind - dt);
+
+  // Stellen: Wuchs, Verfall, Versiegen
+  for (const x of s.sites) {
+    if (x.dead) continue;
+    const T = CFG.siteTypes[x.type];
+    if (T.lifetime && s.t - x.born >= T.lifetime) { drySite(s, x, log); continue; }
+    if (T.decay) x.stock *= Math.exp(-T.decay * dt);
+    if (T.g && x.stock > 0) x.stock += T.g * x.stock * (1 - x.stock / x.size) * dt;
+    if (T.minFrac && x.stock < T.minFrac * x.size) { drySite(s, x, log); continue; }
+    if (!T.floorFrac && x.stock <= x.size * 1e-12) drySite(s, x, log);
+  }
+  // Verschwinden (P1-STE-05/06)
+  if (s.sites.some((x) => x.goneAt != null && s.t >= x.goneAt)) {
+    const gone = new Set(s.sites.filter((x) => x.goneAt != null && s.t >= x.goneAt).map((x) => x.id));
+    s.sites = s.sites.filter((x) => !gone.has(x.id));
+    if (s.travel && s.travel.kind === 'site' && gone.has(s.travel.id)) {
+      s.travel = null; s.at = null;
+      log && log('abort');
+    }
+  }
+
+  // Reise
+  if (s.travel) {
+    const tr = s.travel;
+    tr.done = Math.min(tr.dist, tr.done + d.speed * dt);
+    const f = tr.dist > 0 ? tr.done / tr.dist : 1;
+    s.pos = { x: tr.x0 + (tr.tx - tr.x0) * f, y: tr.y0 + (tr.ty - tr.y0) * f };
+    if (tr.done >= tr.dist) {
+      s.travel = null;
+      s.pos = { x: tr.tx, y: tr.ty };
+      if (s.mark && s.mark.kind === tr.kind && s.mark.id === tr.id) s.mark = null;
+      if (tr.kind === 'site') {
+        s.at = tr.id;
+        log && log('arrive', getSite(s, tr.id));
+      } else {
+        const fnd = getFind(s, tr.id);
+        s.at = null;
+        if (fnd) {
+          applyFind(s, fnd, d, log);
+          s.finds = s.finds.filter((x) => x.id !== fnd.id);
+          s.findTimers[fnd.zone] = s.t + CFG.finds.respawnMin + rnd(s) * (CFG.finds.respawnMax - CFG.finds.respawnMin);
+        }
+      }
+    }
+  }
+
+  // Entdecken und neue Stellen (P1-KAR-03, P1-STE-07/08)
+  const d2 = derive(s);
+  discover(s, d2);
+  const last = CFG.zones.length - 1;
+  for (const z of [s.zone, s.zone + 1]) {
+    if (z > last) continue;
+    s.spawnTimers[z] += dt;
+    if (s.spawnTimers[z] >= CFG.spawn.interval) {
+      s.spawnTimers[z] -= CFG.spawn.interval;
+      const n = s.sites.filter((x) => x.zone === z && !x.dead && !CFG.siteTypes[x.type].goal && dist(s.pos, x) <= d2.reach).length;
+      if (n < CFG.spawn.maxInReach) spawnSite(s, z, d2);
+    }
+  }
+  for (let guard = 0; guard < CFG.spawn.minTargets; guard++) {
+    const n = s.sites.filter((x) => x.id !== s.at && targetable(s, x, d2) && dist(s.pos, x) <= d2.reach).length;
+    if (n >= CFG.spawn.minTargets) break;
+    const next = s.zone + 1 <= last && d2.thrust >= CFG.zones[s.zone + 1].threshold ? s.zone + 1 : s.zone;
+    spawnSite(s, next, d2);
+  }
+  // Fundstücke nachlegen (P1-FUN-02)
+  for (const z of Object.keys(s.findTimers)) {
+    if (s.t >= s.findTimers[z]) {
+      delete s.findTimers[z];
+      if (+z >= s.zone) s.finds.push(makeFind(s, +z));
+    }
+  }
+  // Markierung erlischt, sobald das Ziel nicht mehr ansteuerbar ist (P1-AUT-03)
+  if (s.mark && !(s.travel && s.travel.kind === s.mark.kind && s.travel.id === s.mark.id) && !markTarget(s, d2)) {
+    const isCur = s.mark.kind === 'site' && s.mark.id === s.at;
+    s.mark = null;
+    if (!isCur) log && log('unmark');
+  }
+
+  // Abzugsreife und Wanderautomatik (P1-ABZ-02, P1-AUT-01)
+  if (!s.travel) {
+    const cur = currentSite(s);
+    let ripe = s.leave || !cur || cur.dead;
+    const best = bestAlternative(s, d2);
+    if (cur && !cur.dead && d2.appetite > 0 && avail(cur) < d2.appetite * dt) ripe = true;
+    // Ernte, die an der aktuellen Stelle jetzt möglich ist (im Ankunftsschritt war H noch 0)
+    if (cur && !cur.dead && best && Math.min(d2.appetite, avail(cur) / dt) < best.avg) ripe = true;
+    if (ripe) {
+      const target = markTarget(s, d2) || (best ? { kind: 'site', obj: best.site } : null);
+      if (target) {
+        if (s.leave) s.stats.leaves++;
+        depart(s, target, d2, log);
+      } else if (s.leave) {
+        s.leave = false;
+        log && log('noTarget');
+      }
+    }
+  }
+
+  // Ende des MVP (P1-END-01)
+  const now = currentSite(s);
+  if (!s.ended && now && CFG.siteTypes[now.type].goal && s.lastH > 0 && s.units[5] >= 1) {
+    s.ended = true;
+    s.stats.endAt = s.t;
+    log && log('end');
+  }
+  s.t += dt;
+}
+
+function maxBuy(s, k) {
+  const U = CFG.units[k];
+  let m = Math.min(Math.floor(s.vorrat / U.cost), Math.floor(s.eier));
+  if (k > 0) m = Math.min(m, Math.floor(s.units[k - 1] / U.req));
+  return Math.max(0, m);
+}
+function buyAmount(s, k, mode) {
+  const m = maxBuy(s, k);
+  if (m < 1) return 0;
+  if (mode === '1') return 1;
+  if (mode === 'q') return Math.max(1, Math.floor(m * 0.25));
+  return m;
+}
+function buyUnit(s, k, n) {
+  if (n < 1 || n > maxBuy(s, k) || !s.unlocked[k]) return false;
+  const U = CFG.units[k];
+  s.vorrat -= U.cost * n;
+  s.eier -= n;
+  if (k > 0) s.units[k - 1] -= U.req * n;
+  s.units[k] += n;
+  return true;
+}
+function buyUpgrade(s, key) {
+  const l = s.ranks[key];
+  if (s.free > 0) { s.free--; s.ranks[key]++; return 'free'; }
+  const c = upCost(key, l);
+  if (s.vorrat < c) return false;
+  s.vorrat -= c;
+  s.ranks[key]++;
+  return true;
+}
+
+/* =====================================================================
+   Formatierung (de-DE)
+   ===================================================================== */
+const SUFFIX = ['', 'Tsd.', 'Mio.', 'Mrd.', 'Bio.', 'Brd.', 'Trio.', 'Trd.', 'Quad.', 'Qrd.', 'Quint.'];
+function dec(n, digits) {
+  return n.toFixed(digits).replace('.', ',').replace(/,0+$/, '');
+}
+function group(n) {
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function fmt(n) {
+  if (!isFinite(n)) return '∞';
+  if (n < 0) return '−' + fmt(-n);
+  if (n < 100) return dec(Math.floor(n * 10) / 10, 1);
+  if (n < 10000) return group(Math.floor(n));
+  const e = Math.min(SUFFIX.length - 1, Math.floor(Math.log10(n) / 3));
+  if (Math.log10(n) / 3 >= SUFFIX.length) return dec(n / 10 ** Math.floor(Math.log10(n)), 2) + 'e' + Math.floor(Math.log10(n));
+  const v = n / 10 ** (e * 3);
+  return (v < 100 ? dec(Math.floor(v * 10) / 10, 1) : group(Math.floor(v))) + ' ' + SUFFIX[e];
+}
+const fmtInt = (n) => fmt(Math.floor(n + 1e-9));
+function fmtTime(sec) {
+  if (!isFinite(sec)) return '–';
+  sec = Math.max(0, Math.ceil(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+}
+function fmtDuration(sec) {
+  sec = Math.round(sec);
+  if (sec < 60) return `${sec} s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ${sec % 60} s`;
+  return `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min`;
+}
+
+/* =====================================================================
+   Oberfläche
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const app = $('app');
+const NS = 'http://www.w3.org/2000/svg';
+let S = null;
+let speed = 1;
+let buyMode = '1';
+let selUp = 'geis';
+const UP_KEYS = ['herd', 'verd', 'geis', 'kropf'];
+
+function toast(html) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = html;
+  $('toasts').appendChild(el);
+  while ($('toasts').children.length > 2) $('toasts').firstChild.remove();
+  setTimeout(() => el.remove(), 4300);
+}
+function liveLog(type, x) {
+  if (type === 'find') toast(`Fundstück <b>${CFG.finds.types[x.type].name}</b>: ${CFG.finds.types[x.type].text}`);
+  else if (type === 'zone') toast(`Der Schwarm sinkt in die Zone <b>${CFG.zones[x.to].name}</b>. ${CFG.zones[x.from].name} ist verlassen.`);
+  else if (type === 'abort') toast('Das Reiseziel ist verschwunden. Der Schwarm treibt an keiner Stelle.');
+  else if (type === 'unmark') toast('Markiertes Ziel ist nicht mehr ansteuerbar.');
+  else if (type === 'noTarget') toast('Kein ansteuerbares Ziel – der Schwarm bleibt.');
+  else if (type === 'end') showEnd();
+}
+
+/* ---------- Kleine Helfer für prozedurale Formen ---------- */
+function lcg(seed) { let x = seed % 2147483647 || 1; return () => ((x = (x * 16807) % 2147483647) - 1) / 2147483646; }
+function blobPath(r, seed, n = 9, jitter = 0.28, cx = 0, cy = 0) {
+  const R = lcg(seed + 7);
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + R() * 0.3;
+    const rr = r * (1 - jitter + R() * jitter * 2);
+    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+  }
+  const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+  let d = `M${mid(pts[n - 1], pts[0]).map((v) => v.toFixed(1)).join(' ')}`;
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], m = mid(p, pts[(i + 1) % n]);
+    d += `Q${p[0].toFixed(1)} ${p[1].toFixed(1)} ${m[0].toFixed(1)} ${m[1].toFixed(1)}`;
+  }
+  return d + 'Z';
+}
+
+/* ---------- Symbole der Stellen auf der Umgebungskarte ---------- */
+function siteIcon(site, r) {
+  const R = lcg(site.shape);
+  switch (site.type) {
+    case 'algen': {
+      const p = blobPath(r, site.shape);
+      return `<path d="${p}" fill="#22a86a" transform="translate(${r * .09} ${r * .12})"/><path d="${p}" fill="#8cf25a"/>`;
+    }
+    case 'plankton': {
+      let dots = '';
+      for (let i = 0; i < 8; i++) { const a = R() * 6.28, rr = Math.sqrt(R()) * r * .62; dots += `<circle cx="${(Math.cos(a) * rr).toFixed(1)}" cy="${(Math.sin(a) * rr).toFixed(1)}" r="${(r * (.07 + R() * .05)).toFixed(1)}"/>`; }
+      return `<circle r="${r}" fill="#233e8b"/><circle r="${r * .67}" fill="#275597"/><g fill="#8ffcff">${dots}</g>`;
+    }
+    case 'krebs': {
+      const k = r / 6.3;
+      return `<g transform="rotate(${Math.round(R() * 360)}) scale(${k.toFixed(2)})"><g stroke="#ff6a3d" stroke-width="1.2" stroke-linecap="round" fill="none"><path d="M-3 3l-3 4M0 3.6l-1 4.6M3 3l3 4M-3-3l-3-4M0-3.6l-1-4.6M3-3l3-4"/><path d="M5.4-1.5q3.5-2 4.5-5M5.4 1.5q3.5 2 4.5 5"/></g><path d="${blobPath(5.2, site.shape, 8, .12)}" fill="#ff6a3d" transform="translate(.6 .9)"/><path d="${blobPath(5.2, site.shape, 8, .12)}" fill="#ffb07a"/></g>`;
+    }
+    case 'schnee': {
+      let dots = '';
+      for (let i = 0; i < 7; i++) { const a = R() * 6.28, rr = Math.sqrt(R()) * r * .7; dots += `<circle cx="${(Math.cos(a) * rr).toFixed(1)}" cy="${(Math.sin(a) * rr).toFixed(1)}" r="${(r * (.1 + R() * .1)).toFixed(1)}"/>`; }
+      return `<circle r="${r}" fill="#374287"/><g fill="#f6f4ff">${dots}</g>`;
+    }
+    case 'seegras': {
+      let blades = '';
+      for (let i = 0; i < 9; i++) {
+        const x = (i - 4) * r * .2, h = r * (1.1 + R() * .7), bend = (R() - .5) * r * .8;
+        blades += `<path d="M${(x - r * .07).toFixed(1)} ${r * .5}Q${(x + bend).toFixed(1)} ${(r * .5 - h * .6).toFixed(1)} ${(x + bend * 1.4).toFixed(1)} ${(r * .5 - h).toFixed(1)}Q${(x + bend * .6 + r * .08).toFixed(1)} ${(r * .5 - h * .5).toFixed(1)} ${(x + r * .07).toFixed(1)} ${r * .5}Z" fill="${i % 2 ? '#8cf25a' : '#22a86a'}"/>`;
+      }
+      return `<ellipse cy="${r * .5}" rx="${r * 1.1}" ry="${r * .3}" fill="#1e7e66"/>${blades}`;
+    }
+  }
+  return '';
+}
+const ICON_R = { algen: 15, plankton: 15, krebs: 14, schnee: 14, seegras: 30 };
+
+/* ---------- Umgebung ---------- */
+const REACH_PX = 252;
+let pan = { x: 0, y: 0 };
+let drag = null;
+let mapScale = 1;
+
+function niceRing(sec) {
+  const steps = [2, 5, 10, 15, 20, 30, 60, 120, 180, 300, 600, 900, 1800, 3600];
+  return steps.find((x) => x >= sec) || 3600;
+}
+function renderMap(d) {
+  const s = S;
+  const k = (mapScale = REACH_PX / d.reach);
+  const P = (o) => ({ x: (o.x - s.pos.x) * k, y: (o.y - s.pos.y) * k });
+  const auto = !s.travel ? bestAlternative(s, d) : null;
+  const mt = markTarget(s, d);
+  let h = '';
+  // Wasser: einzige Transparenz, dahinter scheint die nächste Zone durch
+  h += `<circle r="${REACH_PX}" fill="#22308a" fill-opacity=".4"/><circle r="${REACH_PX * .68}" fill="#26359a" fill-opacity=".22"/><circle r="${REACH_PX * .34}" fill="#2a3aa6" fill-opacity=".22"/>`;
+
+  // Nächste Zone: Geister der bekannten Stellen, antippbar
+  const nz = s.zone + 1 < CFG.zones.length ? s.zone + 1 : null;
+  let labels = '';
+  if (nz != null) {
+    const open = d.thrust >= CFG.zones[nz].threshold;
+    for (const x of s.sites) {
+      if (x.zone !== nz || !x.known || x.dead) continue;
+      const p = P(x), r = ICON_R[x.type] * (x.type === 'seegras' ? 1 : 1.1);
+      const isMark = s.mark && s.mark.kind === 'site' && s.mark.id === x.id;
+      const ok = targetable(s, x, d);
+      h += `<g class="m-site" data-mark="site:${x.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="${r + 10}" fill="transparent"/><circle r="${r}" fill="none" stroke="${isMark ? '#ffd23f' : '#8f97d8'}" stroke-width="1.6" stroke-dasharray="3 4" opacity=".85"/></g>`;
+      if (!ok && !isMark) continue;
+      const meta = fmtTime(dist(s.pos, x) / d.speed) + (isMark ? ' · markiert' : '');
+      labels += `<text class="m-label m-deep${isMark ? ' m-gold' : ''}" x="${p.x.toFixed(1)}" y="${(p.y + r + 15).toFixed(1)}">${CFG.siteTypes[x.type].name} ↓</text><text class="m-meta" x="${p.x.toFixed(1)}" y="${(p.y + r + 27).toFixed(1)}">${meta}</text>`;
+    }
+    for (const f of s.finds) {
+      if (f.zone !== nz) continue;
+      const p = P(f);
+      const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
+      h += `<g class="m-site" data-mark="find:${f.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="26" fill="transparent"/><circle r="18" fill="none" stroke="${isMark ? '#ffd23f' : '#c9b260'}" stroke-width="1.6" stroke-dasharray="3 4"/><use href="#sparkle" transform="scale(.6)" opacity=".7"/></g>`;
+      labels += `<text class="m-label m-gold" x="${p.x.toFixed(1)}" y="${(p.y + 33).toFixed(1)}" opacity=".8">${CFG.finds.types[f.type].name} ★ ↓</text><text class="m-meta" x="${p.x.toFixed(1)}" y="${(p.y + 45).toFixed(1)}">${open ? fmtTime(dist(s.pos, f) / d.speed) + (isMark ? ' · markiert' : '') : `Zone ${nz} ab Antrieb ${fmt(CFG.zones[nz].threshold)}`}</text>`;
+    }
+  }
+
+  // Aktuelle Zone
+  for (const x of s.sites) {
+    if (x.zone !== s.zone || !x.known) continue;
+    const p = P(x);
+    const frac = x.dead ? 0 : Math.max(0, x.stock / x.size);
+    const r = ICON_R[x.type] * (0.55 + 0.45 * Math.sqrt(frac));
+    const isCur = x.id === s.at;
+    const isMark = s.mark && s.mark.kind === 'site' && s.mark.id === x.id;
+    const isAuto = !s.mark && auto && auto.site.id === x.id;
+    const isTravel = s.travel && s.travel.kind === 'site' && s.travel.id === x.id;
+    h += `<g class="m-site${x.dead ? ' m-site--dead' : ''}" data-mark="site:${x.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="${ICON_R[x.type] + 10}" fill="transparent"/>${isCur ? '' : siteIcon(x, r)}${isMark || isTravel ? `<circle r="${ICON_R[x.type] + 7}" fill="none" stroke="#ffd23f" stroke-width="1.8" stroke-dasharray="4 3"/>` : isAuto ? `<circle r="${ICON_R[x.type] + 7}" fill="none" stroke="#3ee6e0" stroke-width="1.8" stroke-dasharray="4 3"/>` : ''}</g>`;
+    if (isCur) continue;
+    const T = CFG.siteTypes[x.type];
+    let meta, cls = '';
+    if (x.dead) meta = 'versiegt';
+    else if (!reachable(x, d)) meta = `ab Antrieb ${fmt(siteThreshold(x))}`;
+    else {
+      meta = fmtTime(dist(s.pos, x) / d.speed);
+      if (T.lifetime) meta += ` · noch ${fmtTime(x.born + T.lifetime - s.t)}`;
+      if (isTravel) { meta += ' · Ziel'; cls = ' m-gold'; }
+      else if (isMark) { meta += ' · markiert'; cls = ' m-gold'; }
+      else if (isAuto) { meta += ' · Auto-Ziel'; cls = ' m-teal'; }
+    }
+    labels += `<text class="m-label${T.goal ? ' m-gold' : ''}" x="${p.x.toFixed(1)}" y="${(p.y + r + 15).toFixed(1)}">${T.name}${T.goal ? ' ◆' : ''}</text><text class="m-meta${cls}" x="${p.x.toFixed(1)}" y="${(p.y + r + 27).toFixed(1)}">${meta}</text>`;
+  }
+  for (const f of s.finds) {
+    if (f.zone !== s.zone) continue;
+    const p = P(f);
+    const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
+    const isTravel = s.travel && s.travel.kind === 'find' && s.travel.id === f.id;
+    h += `<g class="m-site" data-mark="find:${f.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="30" fill="transparent"/><circle r="24" fill="#3b407a"/><circle r="15.6" fill="#6c646b"/><use href="#sparkle" transform="scale(.88)"/>${isMark || isTravel ? '<circle r="30" fill="none" stroke="#ffd23f" stroke-width="1.8" stroke-dasharray="4 3"/>' : ''}</g>`;
+    labels += `<text class="m-label m-gold" x="${p.x.toFixed(1)}" y="${(p.y + 39).toFixed(1)}">${CFG.finds.types[f.type].name} ★</text><text class="m-meta${isMark || isTravel ? ' m-gold' : ''}" x="${p.x.toFixed(1)}" y="${(p.y + 51).toFixed(1)}">${fmtTime(dist(s.pos, f) / d.speed)}${isTravel ? ' · Ziel' : isMark ? ' · markiert' : ''}</text>`;
+  }
+
+  // Nur in der Umgebungsansicht: Abdunklung außerhalb der Reichweite, Ringe, Route, Schwarm
+  let only = `<path d="M-1000-1000H1000V1000H-1000ZM${REACH_PX} 0A${REACH_PX} ${REACH_PX} 0 1 0-${REACH_PX} 0A${REACH_PX} ${REACH_PX} 0 1 0 ${REACH_PX} 0Z" fill="#05061a" fill-opacity=".55" fill-rule="evenodd"/>`;
+  const reachSec = d.reach / d.speed;
+  const ring = niceRing(reachSec / 3);
+  let rings = '', ringLabels = '';
+  for (let t = ring; t < reachSec * 0.97; t += ring) {
+    const rp = t * d.speed * k;
+    rings += `<circle r="${rp.toFixed(1)}"/>`;
+    ringLabels += `<text class="m-ring" x="4" y="${(rp + 11).toFixed(1)}">${fmtTime(t)}</text>`;
+  }
+  only += `<g fill="none" stroke="#296ca0" stroke-width="1.3" stroke-dasharray="3.5 5">${rings}</g>${ringLabels}`;
+  only += `<circle r="${REACH_PX}" fill="none" stroke="#214382" stroke-width="10"/><circle r="${REACH_PX}" fill="none" stroke="#3ee6e0" stroke-width="2.3"/>`;
+  const ra = REACH_PX + 14;
+  only += `<path id="mReachArc" d="M${(-ra * Math.sin(55 * Math.PI / 180)).toFixed(1)} ${(ra * Math.cos(55 * Math.PI / 180)).toFixed(1)}A${ra} ${ra} 0 0 0 ${(ra * Math.sin(5 * Math.PI / 180)).toFixed(1)} ${(ra * Math.cos(5 * Math.PI / 180)).toFixed(1)}" fill="none"/><text class="m-label m-teal"><textPath href="#mReachArc" startOffset="50%">Reichweite ${fmt(d.reach)} KP</textPath></text>`;
+  // Route zum Reiseziel oder zum geplanten Ziel
+  let rt = null, rtAuto = false;
+  if (s.travel) rt = { x: s.travel.tx, y: s.travel.ty };
+  else if (mt) rt = mt.obj;
+  else if (auto) { rt = auto.site; rtAuto = true; }
+  if (rt) {
+    const p = P(rt), L = Math.hypot(p.x, p.y);
+    if (L > 30) {
+      const ux = p.x / L, uy = p.y / L;
+      only += `<path class="route${rtAuto ? ' route--auto' : ''}" d="M${(ux * 26).toFixed(1)} ${(uy * 26).toFixed(1)}L${(p.x - ux * 24).toFixed(1)} ${(p.y - uy * 24).toFixed(1)}"/>`;
+    }
+  }
+  // Aktuelle Stelle unter dem Schwarm
+  const cur = currentSite(s);
+  if (cur) {
+    const frac = Math.max(0, cur.stock / cur.size);
+    only += `<g transform="scale(${(1.25 * (0.55 + 0.45 * Math.sqrt(frac))).toFixed(2)})">${siteIcon(cur, ICON_R[cur.type])}</g>`;
+  }
+  only += `<g class="swirl swirl--map">${swarmMini()}</g>`;
+  if (cur) only += `<text class="m-label" y="${ICON_R[cur.type] * 1.3 + 17}">${CFG.siteTypes[cur.type].name}</text><text class="m-meta" y="${ICON_R[cur.type] * 1.3 + 29}">hier · ${fmt(avail(cur))} Bestand</text>`;
+
+  $('mapSvg').innerHTML = h + `<g class="map-only">${only}</g>` + labels;
+}
+let miniCache = { key: '', html: '' };
+function swarmMini() {
+  const nf = Math.min(14, Math.max(S.units[0] >= 1 ? 3 : 0, Math.ceil(2.2 * Math.log2(S.units[0] + 1))));
+  const nb = S.units[1] >= 1 ? Math.min(3, 1 + Math.floor(Math.log10(S.units[1]))) : 0;
+  const key = nf + '/' + nb;
+  if (miniCache.key === key) return miniCache.html;
+  let h = '';
+  for (let i = 0; i < nb; i++) { const a = i * 2.4; h += `<g transform="translate(${(Math.cos(a) * 7).toFixed(1)} ${(Math.sin(a) * 7).toFixed(1)}) rotate(${i * 130}) scale(.42)"><use href="#brut"/></g>`; }
+  for (let i = 0; i < nf; i++) { const a = i * 2.39996, r = 6 + 4.6 * Math.sqrt(i + 1); h += `<g transform="translate(${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}) rotate(${Math.round(a * 57 + 100)}) scale(.55)"><use href="#fress"/></g>`; }
+  miniCache = { key, html: h };
+  return h;
+}
+
+/* ---------- Tiefste Ebene: nächste Zone ---------- */
+let farKey = '';
+function renderFar(d) {
+  const s = S;
+  const nz = s.zone + 1 < CFG.zones.length ? s.zone + 1 : null;
+  const k = REACH_PX / d.reach;
+  const key = [s.zone, nz, Math.round(s.pos.x), Math.round(s.pos.y), d.reach, s.sites.filter((x) => x.zone === nz && x.known).length, s.finds.length].join('|');
+  if (key === farKey) return;
+  farKey = key;
+  const R = lcg(1000 + s.zone * 77);
+  let h = `<rect x="-1000" y="-1000" width="2000" height="2000" fill="#0a0d2e"/><circle r="900" fill="#0e1240"/><circle r="640" fill="#12174e"/><circle r="400" fill="#161c5c"/>`;
+  h += '<g fill="#0b3a44">';
+  for (let i = 0; i < 4; i++) { const x = (R() - .5) * 1400, w = 40 + R() * 60; h += `<path d="M${x.toFixed(0)} 1000C${(x - 30).toFixed(0)} 600 ${(x + 60).toFixed(0)} 300 ${(x + (R() - .5) * 120).toFixed(0)} ${(-100 - R() * 300).toFixed(0)}c${(w * .6).toFixed(0)} 300 ${w.toFixed(0)} 560 ${(w * .9).toFixed(0)} ${(1100 + R() * 200).toFixed(0)}z"/>`; }
+  h += '</g>';
+  h += `<g class="drift" fill="#070923"><path d="M-560-560c90-70 260-80 360-10 30 20 60 20 90-10l30 60-30 60c-30-30-60-30-90-10-100 70-270 60-360-10-20-20-20-60 0-80z"/></g>`;
+  h += '<g fill="#26307e">';
+  for (let i = 0; i < 26; i++) h += `<circle cx="${((R() - .5) * 760).toFixed(0)}" cy="${((R() - .5) * 760).toFixed(0)}" r="${(4 + R() * 5).toFixed(1)}"/>`;
+  h += '</g>';
+  if (nz != null) {
+    for (const x of s.sites) {
+      if (x.zone !== nz || !x.known || x.dead) continue;
+      const px = (x.x - s.pos.x) * k, py = (x.y - s.pos.y) * k, r = ICON_R[x.type] * 2.4;
+      const col = { algen: '#1e7e66', plankton: '#2a5aa0', krebs: '#a0482a', schnee: '#4654b4', seegras: '#1e7e66' }[x.type];
+      const p = blobPath(r, x.shape);
+      h += `<g transform="translate(${px.toFixed(0)} ${py.toFixed(0)})"><path d="${p}" fill="#1a2166" transform="translate(4 6)"/><path d="${p}" fill="${col}"/></g>`;
+    }
+    for (const f of s.finds) {
+      if (f.zone !== nz) continue;
+      const px = (f.x - s.pos.x) * k, py = (f.y - s.pos.y) * k;
+      h += `<g transform="translate(${px.toFixed(0)} ${py.toFixed(0)})"><circle r="44" fill="#2f2f62"/><circle r="26" fill="#5e5462"/><use href="#sparkle"/></g>`;
+    }
+  }
+  $('farSvg').innerHTML = h;
+}
+
+/* ---------- Schwarm an der Stelle ---------- */
+const SITE_COLORS = {
+  algen:    { base: '#1f8a64', shade: '#0f5a4f', mid: '#136b53', top: '#187a57', dot: ['#23885d', '#4cc070'] },
+  plankton: { base: '#233e8b', shade: '#1a2c6a', mid: '#275597', top: '#2f68ad', dot: ['#8ffcff', '#5fd3e0'] },
+  krebs:    { base: '#c4532c', shade: '#7a2e1c', mid: '#e5612a', top: '#ff8a52', dot: ['#ffb07a', '#ffd0a0'] },
+  schnee:   { base: '#2f3a7d', shade: '#1f275c', mid: '#374287', top: '#43509b', dot: ['#f6f4ff', '#c6e6f5'] },
+  seegras:  { base: '#136b53', shade: '#0b4038', mid: '#1e7e66', top: '#22a86a', dot: ['#8cf25a', '#4cc070'] },
+};
+let mainSiteKey = '';
+function renderMainSite() {
+  const s = S;
+  const site = currentSite(s);
+  const key = site ? site.id : s.travel ? 'travel' : 'none';
+  if (key !== mainSiteKey) {
+    mainSiteKey = key;
+    let h = '';
+    if (site) {
+      const C = SITE_COLORS[site.type], R = lcg(site.shape);
+      const blobs = [[0, 0, 190]];
+      for (let i = 0; i < 6; i++) { const a = i * 1.05 + R(), r = 240 + R() * 90; blobs.push([Math.cos(a) * r, Math.sin(a) * r, 70 + R() * 50]); }
+      const paths = blobs.map(([x, y, r], i) => blobPath(r, site.shape + i * 31, 10, .22, x, y));
+      h += `<g fill="${C.shade}" transform="translate(6 8)">${paths.map((p) => `<path d="${p}"/>`).join('')}</g>`;
+      h += `<g fill="${C.base}">${paths.map((p) => `<path d="${p}"/>`).join('')}</g>`;
+      h += `<g fill="${C.mid}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .72, site.shape + i * 53, 9, .25, x, y)}"/>`).join('')}</g>`;
+      h += `<g fill="${C.top}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .38, site.shape + i * 71, 8, .3, x + r * .15, y - r * .1)}"/>`).join('')}</g>`;
+      let dots = '';
+      for (let i = 0; i < 160; i++) { const [bx, by, br] = blobs[Math.floor(R() * blobs.length)]; const a = R() * 6.28, rr = Math.sqrt(R()) * br * .9; dots += `<circle cx="${(bx + Math.cos(a) * rr).toFixed(1)}" cy="${(by + Math.sin(a) * rr).toFixed(1)}" r="${(1 + R() * 1.8).toFixed(1)}" fill="${C.dot[i % 3 === 0 ? 1 : 0]}"/>`; }
+      h += `<g>${dots}</g>`;
+      if (site.type === 'krebs') h += `<g stroke="#ff6a3d" stroke-width="16" stroke-linecap="round" fill="none" opacity=".9"><path d="M-120 60l-90 90M-60 110l-30 120M60 110l40 120M120 60l90 90M-120-60l-90-90M120-60l90-90"/></g>`;
+      if (site.type === 'seegras') { let b = ''; for (let i = 0; i < 14; i++) { const x = -260 + i * 40 + R() * 20, hh = 200 + R() * 200; b += `<path d="M${x} 300Q${x + (R() - .5) * 160} ${300 - hh * .6} ${x + (R() - .5) * 200} ${300 - hh}Q${x + 20} ${300 - hh * .4} ${x + 22} 300Z" fill="${i % 2 ? '#22a86a' : '#8cf25a'}" opacity=".85"/>`; } h += b; }
+    }
+    $('mainSite').innerHTML = `<g class="site-scale" id="siteScale">${h}</g>`;
+    let drift = '';
+    const R2 = lcg(42);
+    const cols = ['#8ea6dc', '#5a6fb8', '#c6e6f5'];
+    for (let i = 0; i < 70; i++) drift += `<circle cx="${((R2() - .5) * 900).toFixed(0)}" cy="${((R2() - .5) * 1000).toFixed(0)}" r="${(0.8 + R2() * 1.8).toFixed(1)}" fill="${cols[i % 3]}"/>`;
+    $('mainDrift').innerHTML = drift;
+    $('mainDrift').setAttribute('class', s.travel ? 'drift--fast' : 'drift');
+  }
+  const sc = $('siteScale');
+  if (sc && site) sc.setAttribute('transform', `scale(${(0.35 + 0.65 * Math.sqrt(Math.max(0, site.stock / site.size))).toFixed(3)})`);
+}
+let swarmKey = '';
+function renderSwarm() {
+  const u = S.units;
+  const counts = [
+    u[0] >= 1 ? Math.min(48, Math.max(3, Math.ceil(3.2 * Math.log2(u[0] + 1)))) : 0,
+    u[1] >= 1 ? Math.min(8, 1 + Math.floor(2 * Math.log10(u[1]))) : 0,
+    ...[2, 3, 4, 5].map((k) => (u[k] >= 1 ? Math.min(4, 1 + Math.floor(Math.log10(u[k]))) : 0)),
+  ];
+  const key = counts.join('/') + (S.travel ? 't' : '');
+  if (key === swarmKey) return;
+  swarmKey = key;
+  let h = '', slot = 0;
+  // Höhere Stufen in der Mitte, Fresslinge außen
+  for (let k = 5; k >= 1; k--) {
+    for (let i = 0; i < counts[k]; i++, slot++) {
+      const a = slot * 2.39996, r = 18 + 22 * Math.sqrt(slot);
+      const sc = [0, 1, 1, 1, .9, .8][k];
+      h += `<g transform="translate(${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}) rotate(${Math.round(a * 57)}) scale(${sc})"><use href="#${CFG.units[k].icon}" class="bob bob--${1 + (slot % 3)}" style="animation-delay:-${(slot * .7) % 5}s"/></g>`;
+    }
+  }
+  const r0 = 30 + 22 * Math.sqrt(slot);
+  for (let i = 0; i < counts[0]; i++) {
+    const a = i * 2.39996, r = r0 + 17 * Math.sqrt(i + 1);
+    h += `<g transform="translate(${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}) rotate(${Math.round(a * 57 + 90)}) scale(${(0.95 + ((i * 37) % 25) / 100).toFixed(2)})"><use href="#fress" class="swim swim--${1 + (i % 3)}" style="animation-delay:-${((i * 1.3) % 5).toFixed(1)}s"/></g>`;
+  }
+  const g = $('mainSwarm');
+  g.innerHTML = h;
+  g.setAttribute('class', S.travel ? 'swirl swirl--fast' : 'swirl');
+}
+
+/* ---------- Neuron: Ausbauten ---------- */
+const DENDS = {
+  herd:  { p0: [-26, -40], c: [-96, -62], p1: [-118, -138], label: [-118, -182] },
+  verd:  { p0: [4, -54], c: [-14, -100], p1: [12, -150], label: [12, -194] },
+  kropf: { p0: [30, -34], c: [104, -50], p1: [126, -128], label: [126, -172] },
+};
+const qb = (p0, c, p1, t) => [(1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * c[0] + t * t * p1[0], (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * c[1] + t * t * p1[1]];
+let neuronKey = '';
+function nodeSvg(key, x, y, rank, afford, sel) {
+  return `<g class="node${afford ? '' : ' node--poor'}" data-up="${key}" transform="translate(${x} ${y})"><circle class="node__hit" r="34"/>${sel ? '<circle class="node__sel" r="28"/>' : ''}${afford ? '<circle class="node__pulse" r="21"/>' : ''}<circle class="node__body" r="20"/><g clip-path="url(#cNode)"><circle class="node__shade" cx="3.5" cy="4.5" r="20"/></g><text class="node__rank" y="5.5">${rank}</text></g>`;
+}
+const canAfford = (key) => S.free > 0 || S.vorrat >= upCost(key, S.ranks[key]);
+const costLabel = (key) => (S.free > 0 ? 'Gratis' : fmt(upCost(key, S.ranks[key])) + ' Vorrat');
+function renderNeuron() {
+  const r = S.ranks;
+  const key = UP_KEYS.map((k) => r[k] + (canAfford(k) ? 'y' : 'n') + costLabel(k)).join('|') + selUp;
+  if (key === neuronKey) return;
+  neuronKey = key;
+  let h = '';
+  for (const k of ['herd', 'verd', 'kropf']) {
+    const D = DENDS[k], path = `M${D.p0}Q${D.c} ${D.p1}`;
+    h += `<path class="dend dend--glow" d="${path}"/><path class="dend" d="${path}"/><path class="dend dend--core" d="${path}"/><path class="sig sig--in" d="${path}"/>`;
+    const shown = Math.min(r[k], 5);
+    for (let i = 0; i <= shown; i++) {
+      const [x, y] = qb(D.p0, D.c, D.p1, 0.22 + (i / 6) * 0.66);
+      h += `<circle class="bead${i === shown ? ' bead--next' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.6"/>`;
+    }
+    h += nodeSvg(k, D.p1[0], D.p1[1], r[k], canAfford(k), selUp === k);
+    h += `<text class="n-name" x="${D.label[0]}" y="${D.label[1]}">${CFG.upgrades[k].name}</text><text class="n-cost${canAfford(k) ? '' : ' n-cost--poor'}" x="${D.label[0]}" y="${D.label[1] + 15}">${costLabel(k)}</text>`;
+  }
+  // Axon: Geißeln, Myelin je Rang, Ranvier-Knoten bei jedem Reichweiten-Schritt
+  const l = r.geis, ev = CFG.reach.every;
+  const base = Math.max(0, (Math.floor(l / ev) - 1) * ev);
+  h += '<path class="axon axon--glow" d="M0 32V196"/><path class="axon" d="M0 32V196"/><path class="sig sig--out" d="M0 32V196"/>';
+  const segY = [42, 62, 82, 114, 134, 154];
+  segY.forEach((y, j) => {
+    const rk = base + j + 1;
+    h += `<rect class="myel${rk <= l ? ' myel--on' : rk === l + 1 ? ' myel--next' : ''}" x="-8" y="${y}" width="16" height="17" rx="7"/>`;
+  });
+  [105.5, 177.5].forEach((y, i) => {
+    const m = base + ev * (i + 1), on = l >= m;
+    h += `<circle class="ranvier${on ? ' ranvier--on' : ''}" cx="0" cy="${y}" r="4"/>`;
+    h += `<text class="n-mile${on ? ' n-mile--on' : ''}" x="-18" y="${y - 2.5}">${on ? 'Reichweite ' : ''}${fmt(reachFor(m))} KP</text><text class="n-mile n-mile--sub" x="-18" y="${y + 10.5}">${on ? 'erreicht mit' : 'ab'} Rang ${m}</text>`;
+  });
+  h += '<path class="twig twig--term" d="M0 196Q-18 214-34 222M0 196Q18 216 30 230"/>';
+  h += nodeSvg('geis', 0, 218, l, canAfford('geis'), selUp === 'geis');
+  h += `<text class="n-name n-name--l" x="34" y="214">${CFG.upgrades.geis.name}</text><text class="n-cost n-cost--l${canAfford('geis') ? '' : ' n-cost--poor'}" x="34" y="229">${costLabel('geis')}</text>`;
+  $('neuronG').innerHTML = h;
+}
+function renderNeuronOrganelles() {
+  const R = lcg(99);
+  let h = '';
+  const spots = [[-150, -260, 46], [170, -300, 34], [-180, 200, 52], [160, 140, 40], [-60, 330, 60], [200, 330, 30], [-210, -60, 26], [210, -40, 28]];
+  for (const [x, y, w] of spots) {
+    const hh = w / 2, a = Math.round(R() * 180 - 90);
+    let wave = `M${-w * .7} 0`;
+    for (let i = 0; i < 4; i++) wave += `q${(w * .17).toFixed(1)} ${(-w * .3).toFixed(1)} ${(w * .35).toFixed(1)} 0`;
+    h += `<g transform="translate(${x} ${y}) rotate(${a})"><rect x="${-w}" y="${-hh}" width="${w * 2}" height="${w}" rx="${hh}" class="org"/><rect x="${-w + 5}" y="${-hh + 5}" width="${w * 2 - 10}" height="${w - 10}" rx="${hh - 5}" class="org__mid"/><path d="${wave}" class="org__in"/></g>`;
+  }
+  h += '<g fill="#3a1f54">';
+  for (let i = 0; i < 40; i++) h += `<circle cx="${((R() - .5) * 1000).toFixed(0)}" cy="${((R() - .5) * 1200).toFixed(0)}" r="${(2.4 + R() * 5.5).toFixed(1)}"/>`;
+  $('neuronOrg').innerHTML = h + '</g>';
+}
+
+/* ---------- Blätter ---------- */
+function buildUnits() {
+  let h = '';
+  CFG.units.forEach((U, k) => {
+    const vb = { fress: '-12.5 -8.8 25 17.6', brut: '-19 -19 38 38', etr: '-23 -18 46 36', gel: '-28 -28 56 56', bkl: '-37 -37 74 74', urn: '-49 -49 98 98' }[U.icon];
+    h += `<div class="unit" id="unit${k}" hidden>
+      <div class="unit__icon"><svg width="${k === 0 ? 34 : 34}" height="${k === 0 ? 24 : 34}" viewBox="${vb}" aria-hidden="true"><use href="#${U.icon}"/></svg></div>
+      <div style="min-width:0"><div class="unit__name">${U.name}<span class="num" id="unitN${k}"></span></div><div class="unit__meta num" id="unitM${k}"></div></div>
+      <button class="buy num" id="unitB${k}" data-buy="${k}"><b></b><span></span></button>
+    </div>`;
+  });
+  h += `<div class="unit unit--locked" id="unitLocked" hidden><div class="unit__icon"><svg width="24" height="24" viewBox="-12 -12 24 24"><circle r="9" fill="none" stroke="#5a64b8" stroke-width="2" stroke-dasharray="2.4 2.6"/><text y="3.6" fill="#7c84c4" font-size="10" font-weight="900" text-anchor="middle">?</text></svg></div><div class="unit__meta" id="unitLockedText"></div><span></span></div>`;
+  $('units').innerHTML = h;
+}
+function renderUnits(d) {
+  const s = S;
+  $('massLabel').textContent = `Masse ${fmtInt(d.mass)}`;
+  let firstLocked = -1;
+  CFG.units.forEach((U, k) => {
+    const row = $('unit' + k);
+    if (!s.unlocked[k]) { row.hidden = true; if (firstLocked < 0) firstLocked = k; return; }
+    row.hidden = false;
+    $('unitN' + k).textContent = fmtInt(s.units[k]);
+    let meta;
+    if (k === 0) meta = `erntet je ${fmt(d.digest * (s.buffs.fress > 0 ? CFG.finds.mult.fress : 1))}/s`;
+    else {
+      const below = CFG.units[k - 1].plural;
+      meta = s.units[k] >= 1 ? `+${fmt(s.units[k] * U.prod * d.chainMult)} ${below}/s` : `je +${fmt(U.prod * d.chainMult)} ${below}/s`;
+    }
+    $('unitM' + k).textContent = meta;
+    const n = buyAmount(s, k, buyMode);
+    const shown = Math.max(1, n);
+    const btn = $('unitB' + k);
+    btn.setAttribute('aria-disabled', n < 1 ? 'true' : 'false');
+    btn.querySelector('b').textContent = '+' + fmtInt(shown);
+    btn.querySelector('span').textContent = k === 0 ? `${fmt(U.cost * shown)} · ${fmtInt(shown)} ${shown === 1 ? 'Ei' : 'Eier'}` : `${fmt(U.cost * shown)} · ${fmt(U.req * shown)} ${CFG.units[k - 1].short}`;
+  });
+  const lk = $('unitLocked');
+  if (firstLocked >= 0) { lk.hidden = false; $('unitLockedText').textContent = `${CFG.units[firstLocked].name} · ab 1 ${CFG.units[firstLocked - 1].name}`; }
+  else lk.hidden = true;
+}
+function renderMapSheet(d) {
+  const s = S;
+  const mt = markTarget(s, d);
+  const auto = bestAlternative(s, d);
+  let kind = 'none', name = '–', meta = '', tt = null, why = '';
+  const star = $('nextStar'), K = $('nextK');
+  if (s.travel) {
+    const tr = s.travel;
+    const obj = tr.kind === 'site' ? getSite(s, tr.id) : getFind(s, tr.id);
+    kind = 'travel';
+    name = obj ? (tr.kind === 'site' ? CFG.siteTypes[obj.type].name : CFG.finds.types[obj.type].name) : '–';
+    meta = obj ? (tr.kind === 'site' ? `Stelle · ${fmt(avail(obj))} Bestand` : `Fundstück · ${CFG.finds.types[obj.type].text}`) : '';
+    tt = (tr.dist - tr.done) / d.speed;
+    why = `Der Schwarm ist <b>unterwegs</b> und erntet nicht; Kette und Brutherd laufen weiter. Eine laufende Reise lässt sich nicht umlenken – markiere das Ziel für den nächsten Aufbruch.`;
+  } else if (mt) {
+    kind = 'mark';
+    const o = mt.obj;
+    tt = dist(s.pos, o) / d.speed;
+    if (mt.kind === 'site') { name = CFG.siteTypes[o.type].name; const r = rate(s, o, d); meta = `Stelle · ${fmt(avail(o))} Bestand · Ø ${fmt(r.avg)}/s`; }
+    else { name = CFG.finds.types[o.type].name; meta = `Fundstück · ${CFG.finds.types[o.type].text}`; }
+  } else if (auto) {
+    kind = 'auto';
+    name = CFG.siteTypes[auto.site.type].name;
+    meta = `Stelle · ${fmt(avail(auto.site))} Bestand · Ø ${fmt(auto.avg)}/s`;
+    tt = auto.tt;
+  }
+  if (!s.travel) {
+    const cur = currentSite(s);
+    const leaveIn = cur && s.lastH > 0 ? avail(cur) / s.lastH : null;
+    const when = cur ? (leaveIn != null ? `Aufbruch, wenn der ${CFG.siteTypes[cur.type].name} leer ist (in ${fmtTime(leaveIn)}), oder mit „Stelle verlassen“.` : 'Aufbruch, sobald die Stelle abzugsreif ist.') : 'Der Schwarm ist an keiner Stelle und zieht sofort weiter.';
+    if (kind === 'mark') {
+      const alt = auto ? `Ohne Markierung zöge der Schwarm zum <b>${CFG.siteTypes[auto.site.type].name}</b>: ${fmt(avail(auto.site))} Bestand, mit Reise Ø ${fmt(auto.avg)}/s.` : '';
+      let warn = '';
+      if (mt.kind === 'site' && rate(s, mt.obj, d).A <= 0) warn = ' <span class="warn">Achtung: Die Stelle versiegt vor der Ankunft.</span>';
+      why = `${alt}${warn} ${when}`;
+    } else if (kind === 'auto') {
+      why = `Die Wanderautomatik wählt die Stelle mit der höchsten Ø-Ernte unter Einrechnung der Reise. ${when} Tippe eine Stelle oder ein Fundstück an, um es zu markieren.`;
+    } else {
+      why = 'Kein ansteuerbares Ziel in Reichweite. Neue Stellen entstehen laufend in der Reichweite.';
+    }
+  }
+  star.className = 'next__star' + (kind === 'auto' ? ' next__star--auto' : kind === 'none' ? ' next__star--none' : '');
+  K.className = 'next__k' + (kind === 'auto' ? ' next__k--auto' : '');
+  K.textContent = kind === 'travel' ? 'Unterwegs zu' : kind === 'auto' ? 'Nächster Aufbruch · Auto-Ziel' : 'Nächster Aufbruch';
+  $('nextV').textContent = name;
+  $('nextM').textContent = meta;
+  $('nextT').innerHTML = tt != null ? `${fmtTime(tt)}<small>Reise</small>` : '';
+  $('why').innerHTML = why;
+  $('btnUnmark').setAttribute('aria-disabled', s.mark ? 'false' : 'true');
+  $('btnLeave').setAttribute('aria-disabled', currentSite(s) ? 'false' : 'true');
+}
+function renderUpSheet(d) {
+  const s = S, k = selUp, l = s.ranks[k];
+  $('upTabs').innerHTML = UP_KEYS.map((x) => `<button data-sel="${x}" aria-pressed="${x === k}">${CFG.upgrades[x].name}</button>`).join('');
+  $('upName').textContent = CFG.upgrades[k].name;
+  $('upRank').textContent = `Rang ${l} → ${l + 1}`;
+  const a = upEff(k, l), b = upEff(k, l + 1);
+  let fx = '';
+  if (k === 'herd') {
+    fx = `<dt>Eier-Rate</dt><dd>${fmt(a)} → <em>${fmt(b)}</em> /s</dd><dt>Aktuell</dt><dd>${fmt(d.eggRate)} Eier/s <small>mit Boni</small></dd>`;
+  } else if (k === 'verd') {
+    fx = `<dt>Fressleistung</dt><dd>${fmt(a)} → <em>${fmt(b)}</em> /s je Fressling</dd><dt>Appetit</dt><dd>${fmt(d.appetite)} → <em>${fmt(d.appetite * b / a)}</em> /s</dd>`;
+  } else if (k === 'kropf') {
+    fx = `<dt>Kapazität</dt><dd>${fmt(a)} → <em>${fmt(b)}</em></dd><dt>Vorrat</dt><dd>${fmt(s.vorrat)} <small>· darüber kommt nur der Anteil C/V an</small></dd>`;
+  } else {
+    const ev = CFG.reach.every, nextM = (Math.floor(l / ev) + 1) * ev;
+    fx = `<dt>Antrieb</dt><dd>${fmt(a)} → <em>${fmt(b)}</em></dd><dt>Reichweite</dt><dd>${fmt(d.reach)} KP <small>· ${fmt(reachFor(nextM))} KP ab Rang ${nextM}</small></dd><dt>Tempo</dt><dd>${fmt(d.baseSpeed)} KP/s <small>· Masse ${fmt(d.mass)}${d.atFloor ? ' · Untergrenze' : ''}</small></dd>`;
+    const nz = s.zone + 1;
+    if (nz < CFG.zones.length) {
+      const th = CFG.zones[nz].threshold;
+      if (a >= th) fx += `<dt>Zone ${nz}</dt><dd>erreichbar <small>· ${CFG.zones[nz].name}</small></dd>`;
+      else { let n = l; while (upEff('geis', n) < th) n++; fx += `<dt>Zone ${nz}</dt><dd>ab Antrieb ${fmt(th)} <small>· noch ${n - l} ${n - l === 1 ? 'Rang' : 'Ränge'}</small></dd>`; }
+    } else {
+      const th = CFG.siteTypes.seegras.threshold;
+      if (a >= th) fx += `<dt>Seegraswiese</dt><dd>erreichbar</dd>`;
+      else { let n = l; while (upEff('geis', n) < th) n++; fx += `<dt>Seegraswiese</dt><dd>ab Antrieb ${fmt(th)} <small>· noch ${n - l} Ränge</small></dd>`; }
+    }
+  }
+  $('upFx').innerHTML = fx;
+  const btn = $('upBuy');
+  btn.setAttribute('aria-disabled', canAfford(k) ? 'false' : 'true');
+  btn.querySelector('span').textContent = s.free > 0 ? `Gratis · Keimzelle (${s.free})` : `${fmt(upCost(k, l))} Vorrat`;
+}
+
+/* ---------- Kopfzeile, Kontext, Tiefenanzeige ---------- */
+function renderHud(d) {
+  const s = S;
+  $('hudV').textContent = fmtInt(s.vorrat);
+  $('hudVCap').textContent = '/ ' + fmt(d.capacity);
+  const bar = $('hudVBar');
+  bar.style.width = Math.min(100, (s.vorrat / d.capacity) * 100) + '%';
+  bar.classList.toggle('over', s.vorrat > d.capacity);
+  $('hudE').textContent = fmtInt(s.eier);
+  $('hudERate').textContent = `+${fmt(d.eggRate)} pro s`;
+  $('hudH').textContent = s.travel ? '0' : fmt(s.lastH);
+  $('hudHUnit').textContent = s.travel ? 'unterwegs' : 'pro Sekunde';
+
+  // Schwarm-Kontext
+  const cur = currentSite(s), ring = $('ctxRing');
+  const mt = markTarget(s, d);
+  if (s.travel) {
+    const tr = s.travel, obj = tr.kind === 'site' ? getSite(s, tr.id) : getFind(s, tr.id);
+    const nm = obj ? (tr.kind === 'site' ? CFG.siteTypes[obj.type].name : CFG.finds.types[obj.type].name) : '';
+    ring.setAttribute('stroke', '#3ee6e0');
+    ring.setAttribute('stroke-dasharray', `${(tr.dist > 0 ? (tr.done / tr.dist) * 100 : 100).toFixed(1)} 100`);
+    $('ctxMainText').innerHTML = `<b>Unterwegs</b> <span class="sub num">· ${nm} in ${fmtTime((tr.dist - tr.done) / d.speed)}</span>`;
+  } else if (cur) {
+    const T = CFG.siteTypes[cur.type];
+    ring.setAttribute('stroke', '#8cf25a');
+    ring.setAttribute('stroke-dasharray', `${(Math.max(0, cur.stock / cur.size) * 100).toFixed(1)} 100`);
+    let sub;
+    if (cur.dead) sub = 'versiegt';
+    else if (s.lastH > 0) sub = T.goal ? `Ø ${fmt(s.lastH)}/s` : `leer in ${fmtTime(avail(cur) / s.lastH)}`;
+    else sub = 'keine Ernte';
+    $('ctxMainText').innerHTML = `<b>${T.name}</b> <span class="sub num">· ${sub}</span>`;
+  } else {
+    ring.setAttribute('stroke-dasharray', '0 100');
+    $('ctxMainText').innerHTML = `<b>An keiner Stelle</b> <span class="sub">· keine Ernte</span>`;
+  }
+  const tag = $('ctxMainTag');
+  if (mt) { tag.className = 'tag tag--gold'; tag.textContent = '★ ' + (mt.kind === 'site' ? CFG.siteTypes[mt.obj.type].name : CFG.finds.types[mt.obj.type].name); }
+  else if (!s.travel) { const a = bestAlternative(s, d); tag.className = 'tag tag--teal'; tag.textContent = a ? '→ ' + CFG.siteTypes[a.site.type].name : ''; }
+  else tag.textContent = '';
+
+  $('ctxMapText').innerHTML = `<b>${CFG.zones[s.zone].name}</b> <span class="sub num">· Tempo ${fmt(d.speed)} KP/s</span>`;
+  $('ctxMapTag').textContent = `Zone ${s.zone}`;
+  const nAff = UP_KEYS.filter(canAfford).length;
+  $('ctxNeuronText').innerHTML = `<b>Ausbau</b> <span class="sub num">· ${nAff}/4 bezahlbar</span>`;
+
+  // Tiefenanzeige: nächste Zone, gesperrt mit Zugangsschwelle
+  const g = $('gauge'), gn = $('gaugeNext');
+  const nz = s.zone + 1;
+  const lock = '<svg width="8" height="9" viewBox="0 0 8 9" aria-hidden="true"><rect x=".5" y="4" width="7" height="5" rx="1.2" fill="#a7aee8"/><path d="M2 4.2V3a2 2 0 0 1 4 0v1.2" fill="none" stroke="#a7aee8" stroke-width="1.3"/></svg>';
+  if (nz < CFG.zones.length) {
+    const open = d.thrust >= CFG.zones[nz].threshold;
+    g.classList.toggle('open', open);
+    g.classList.remove('is-last');
+    gn.innerHTML = open ? `Zone ${nz} offen` : `${lock} Zone ${nz} · ${fmt(CFG.zones[nz].threshold)}`;
+  } else {
+    g.classList.add('is-last');
+  }
+
+  // Wirkungen und Testmodus
+  let chips = '';
+  for (const [k, v] of Object.entries(s.buffs)) if (v > 0) chips += `<span class="chip num">${CFG.finds.types[k].name} ${fmtTime(v)}</span>`;
+  if (s.free > 0) chips += `<span class="chip chip--free">Keimzelle ×${s.free}</span>`;
+  if (speed !== 1) chips += `<span class="chip chip--speed">Test ${speed}×</span>`;
+  if ($('chips').innerHTML !== chips) $('chips').innerHTML = chips;
+}
+
+let lastMap = 0, lastSheet = 0;
+function render(force) {
+  const d = derive(S);
+  const now = performance.now();
+  renderHud(d);
+  const view = app.dataset.view;
+  if (force || now - lastSheet > 200) {
+    lastSheet = now;
+    if (view === 'main' || force) renderUnits(d);
+    if (view === 'map' || force) renderMapSheet(d);
+    if (view === 'neuron' || force) renderUpSheet(d);
+    renderNeuron();
+    renderMainSite();
+    renderSwarm();
+  }
+  if (force || now - lastMap > (view === 'map' ? 250 : 1000)) {
+    lastMap = now;
+    renderMap(d);
+    renderFar(d);
+    setPan(pan.x, pan.y);
+  }
+}
+
+/* ---------- Ansichten und Verschieben ---------- */
+const hashOf = { main: '', map: '#umgebung', neuron: '#ausbau' };
+const fromHash = { '#umgebung': 'map', '#ausbau': 'neuron' };
+function setView(v) {
+  setPan(0, 0);
+  app.dataset.view = v;
+  history.replaceState(null, '', location.pathname + location.search + hashOf[v]);
+  render(true);
+}
+function setPan(x, y) {
+  const len = Math.hypot(x, y);
+  if (len > REACH_PX) { x *= REACH_PX / len; y *= REACH_PX / len; }
+  pan = { x, y };
+  app.style.setProperty('--px', x + 'px');
+  app.style.setProperty('--py', y + 'px');
+  app.classList.toggle('panned', Math.hypot(x, y) > 6);
+}
+document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.go)));
+document.querySelector('[data-recenter]').addEventListener('click', () => setPan(0, 0));
+
+app.addEventListener('pointerdown', (e) => {
+  if (app.dataset.view !== 'map' || e.target.closest('.sheet, .hud, .ctx, .menu-btn, .modal')) return;
+  drag = { id: e.pointerId, x: e.clientX - pan.x, y: e.clientY - pan.y, sx: e.clientX, sy: e.clientY, moved: false };
+  app.setPointerCapture(e.pointerId);
+});
+app.addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) { drag.moved = true; app.classList.add('panning'); }
+  if (drag.moved) setPan(e.clientX - drag.x, e.clientY - drag.y);
+});
+const endDrag = (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const wasTap = !drag.moved;
+  drag = null;
+  app.classList.remove('panning');
+  if (wasTap && e.type === 'pointerup') {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const t = el && el.closest('[data-mark]');
+    if (t) onMark(t.dataset.mark);
+  }
+};
+app.addEventListener('pointerup', endDrag);
+app.addEventListener('pointercancel', endDrag);
+app.addEventListener('wheel', (e) => {
+  if (app.dataset.view !== 'map' || e.target.closest('.sheet, .modal')) return;
+  e.preventDefault();
+  app.classList.add('panning');
+  setPan(pan.x - e.deltaX, pan.y - e.deltaY);
+  clearTimeout(app._wheelEnd);
+  app._wheelEnd = setTimeout(() => app.classList.remove('panning'), 120);
+}, { passive: false });
+
+/* ---------- Eingaben ---------- */
+function onMark(ref) {
+  const [kind, idStr] = ref.split(':');
+  const id = +idStr;
+  const d = derive(S);
+  if (S.mark && S.mark.kind === kind && S.mark.id === id) { S.mark = null; render(true); return; }
+  if (kind === 'site') {
+    const x = getSite(S, id);
+    if (!x) return;
+    if (x.id === S.at) { toast('Hier frisst der Schwarm gerade.'); return; }
+    if (x.dead) { toast('Diese Stelle ist versiegt.'); return; }
+    if (!targetable(S, x, d)) { toast(`<b>${CFG.siteTypes[x.type].name}</b> ist erst ab Antrieb ${fmt(siteThreshold(x))} erreichbar.`); return; }
+    S.mark = { kind, id };
+    S.stats.marks++;
+    if (rate(S, x, d).A <= 0) toast(`Hinweis: <b>${CFG.siteTypes[x.type].name}</b> versiegt vor der Ankunft.`);
+  } else {
+    const f = getFind(S, id);
+    if (!f) return;
+    if (!findTargetable(S, f, d)) { toast(`Zone ${f.zone} ist erst ab Antrieb ${fmt(CFG.zones[f.zone].threshold)} erreichbar.`); return; }
+    S.mark = { kind, id };
+    S.stats.marks++;
+  }
+  render(true);
+}
+$('btnUnmark').addEventListener('click', () => { if (S.mark) { S.mark = null; render(true); } });
+$('btnLeave').addEventListener('click', () => { if (currentSite(S)) { S.leave = true; render(true); } });
+$('buyMode').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-mode]');
+  if (!b) return;
+  buyMode = b.dataset.mode;
+  $('buyMode').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+  render(true);
+});
+$('units').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-buy]');
+  if (!b) return;
+  const k = +b.dataset.buy;
+  if (buyUnit(S, k, buyAmount(S, k, buyMode))) render(true);
+});
+$('neuronSvg').addEventListener('click', (e) => {
+  const n = e.target.closest('[data-up]');
+  if (!n) return;
+  selUp = n.dataset.up;
+  render(true);
+});
+$('upTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-sel]');
+  if (!b) return;
+  selUp = b.dataset.sel;
+  render(true);
+});
+$('upBuy').addEventListener('click', () => { if (buyUpgrade(S, selUp)) render(true); });
+
+/* ---------- Dialoge ---------- */
+function openModal(html) { $('modalCard').innerHTML = html; $('modal').classList.add('open'); }
+function closeModal() { $('modal').classList.remove('open'); }
+$('modal').addEventListener('click', (e) => {
+  if (e.target === $('modal')) closeModal();
+  const a = e.target.closest('[data-act]');
+  if (a) ACTIONS[a.dataset.act]?.(a);
+});
+function statsHtml() {
+  const st = S.stats;
+  const zones = CFG.zones.map((z, i) => (st.timeZone[i] > 0 ? `<dt>ohne Ernte in ${z.name}</dt><dd>${Math.round((st.noHarvestZone[i] / st.timeZone[i]) * 100)} %</dd>` : '')).join('');
+  return `<dl class="stats num">
+    <dt>Spielzeit</dt><dd>${fmtDuration(S.t)}</dd>
+    ${st.endAt != null ? `<dt>bis zur Sprungbedingung</dt><dd>${fmtDuration(st.endAt)}</dd>` : ''}
+    <dt>Erste Reise</dt><dd>${st.firstTravel != null ? fmtTime(st.firstTravel) : '–'}</dd>
+    <dt>Reisen</dt><dd>${fmtInt(st.travels)}</dd>
+    <dt>Fundstücke eingesammelt</dt><dd>${fmtInt(st.finds)}</dd>
+    <dt>Ziele markiert</dt><dd>${fmtInt(st.marks)}</dd>
+    <dt>„Stelle verlassen“</dt><dd>${fmtInt(st.leaves)}</dd>
+    <dt>Stellen versiegt / neu</dt><dd>${fmtInt(st.dried)} / ${fmtInt(st.spawned)}</dd>
+    <dt>Gesamternte</dt><dd>${fmt(st.total)}</dd>
+    <dt>Zeit ohne Ernte</dt><dd>${S.t > 0 ? Math.round((st.noHarvest / S.t) * 100) : 0} %</dd>
+    ${zones}
+  </dl>`;
+}
+function showMenu() {
+  openModal(`<h2>IdleSwarm · Prototyp</h2>
+    <p>Zeitalter Winzlinge, Zone ${S.zone} ${CFG.zones[S.zone].name}. Gespeichert wird automatisch im Browser.</p>
+    <h3>Testmodus</h3>
+    <div class="seg" id="speedSeg">${[1, 5, 20, 100].map((x) => `<button data-act="speed" data-v="${x}" aria-pressed="${x === speed}">${x}×</button>`).join('')}</div>
+    <h3>Statistik</h3>${statsHtml()}
+    <h3>Spielstand</h3>
+    <div class="modal__actions modal__actions--2">
+      <button class="btn" data-act="export">Exportieren</button>
+      <button class="btn" data-act="import">Importieren</button>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn--warn" data-act="reset">Neues Spiel</button>
+      <button class="btn btn--gold" data-act="close">Weiter</button>
+    </div>`);
+}
+const encodeSave = () => btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+const ACTIONS = {
+  close: closeModal,
+  speed: (b) => { speed = +b.dataset.v; document.querySelectorAll('#speedSeg button').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); render(true); },
+  export: () => {
+    save();
+    openModal(`<h2>Spielstand exportieren</h2><p>Text kopieren und sicher aufbewahren.</p><textarea readonly id="exportTa">${encodeSave()}</textarea>
+      <div class="modal__actions modal__actions--2"><button class="btn" data-act="copy">Kopieren</button><button class="btn btn--gold" data-act="close">Fertig</button></div>`);
+  },
+  copy: (b) => { const ta = $('exportTa'); ta.select(); (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject()).then(() => { b.textContent = 'Kopiert'; }, () => { document.execCommand('copy'); b.textContent = 'Kopiert'; }); },
+  import: () => openModal(`<h2>Spielstand importieren</h2><p>Exportierten Text einfügen. Der aktuelle Spielstand wird ersetzt.</p><textarea id="importTa" placeholder="Spielstand einfügen"></textarea><p id="importErr" class="warn"></p>
+      <div class="modal__actions modal__actions--2"><button class="btn" data-act="close">Abbrechen</button><button class="btn btn--gold" data-act="doImport">Laden</button></div>`),
+  doImport: () => {
+    try {
+      const obj = JSON.parse(decodeURIComponent(escape(atob($('importTa').value.trim()))));
+      const s = migrate(obj);
+      if (!s) throw new Error();
+      S = s; resetRenderCaches(); save(); closeModal(); render(true);
+      toast('Spielstand geladen.');
+    } catch { $('importErr').textContent = 'Dieser Text ist kein gültiger Spielstand.'; }
+  },
+  reset: (b) => {
+    if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Wirklich neu beginnen?'; return; }
+    S = newGame((Math.random() * 2 ** 31) | 0); resetRenderCaches(); save(); closeModal(); setView('main');
+    toast('Neues Spiel – die Karte ist neu ausgewürfelt.');
+  },
+  endContinue: () => { S.endSeen = true; closeModal(); },
+};
+$('menuBtn').addEventListener('click', showMenu);
+function showEnd() {
+  S.endSeen = true;
+  openModal(`<h2>Seegraswiese erreicht</h2>
+    <p>Der Schwarm erntet an der Seegraswiese und besitzt ein <b>Urnest</b>: Die Sprungbedingung der Winzlinge ist erfüllt. Hier endet der MVP – der Evolutionssprung ins Zeitalter Organismen folgt später.</p>
+    ${statsHtml()}
+    <div class="modal__actions modal__actions--2"><button class="btn" data-act="reset">Neues Spiel</button><button class="btn btn--gold" data-act="endContinue">Weiterspielen</button></div>`);
+}
+
+/* ---------- Speichern, Laden, Nachberechnung ---------- */
+function save() {
+  if (!S) return;
+  S.savedAt = Date.now();
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch { /* Speicher voll oder gesperrt */ }
+}
+// ALL-OFF-05: fehlende Felder ergänzen, fremde Versionen kontrolliert zurücksetzen
+function migrate(obj) {
+  if (!obj || typeof obj !== 'object' || obj.v !== SAVE_VERSION || !Array.isArray(obj.sites)) return null;
+  const base = newGame(obj.seed || 1);
+  const s = { ...base, ...obj };
+  s.stats = { ...base.stats, ...obj.stats };
+  s.buffs = { ...base.buffs, ...obj.buffs };
+  s.ranks = { ...base.ranks, ...obj.ranks };
+  if (!Array.isArray(s.hist) || s.hist.length !== HIST_LEN) { s.hist = new Array(HIST_LEN).fill(0); s.histI = 0; s.histSum = 0; }
+  return s;
+}
+function load() {
+  let raw = null;
+  try { raw = localStorage.getItem(SAVE_KEY); } catch { /* kein Zugriff */ }
+  if (!raw) return { s: newGame((Math.random() * 2 ** 31) | 0), fresh: true };
+  try {
+    const s = migrate(JSON.parse(raw));
+    if (s) return { s, fresh: false };
+  } catch { /* beschädigt */ }
+  return { s: newGame((Math.random() * 2 ** 31) | 0), fresh: true, reset: true };
+}
+async function catchUp(seconds) {
+  const steps = Math.floor(Math.min(seconds, CFG.offlineMax) / CFG.dt);
+  if (steps <= 0) return;
+  const before = { vorrat: S.vorrat, total: S.stats.total, noHarvest: S.stats.noHarvest, units: S.units.slice(), zone: S.zone };
+  const ev = { arrive: 0, zones: [], dry: 0, finds: [] };
+  const log = (type, x) => {
+    if (type === 'arrive') ev.arrive++;
+    else if (type === 'zone') ev.zones.push(CFG.zones[x.to].name);
+    else if (type === 'dry') ev.dry++;
+    else if (type === 'find') ev.finds.push(CFG.finds.types[x.type].name);
+  };
+  const busy = steps > 20000;
+  if (busy) $('busy').classList.add('open');
+  const CHUNK = 20000;
+  for (let i = 0; i < steps; i += CHUNK) {
+    const n = Math.min(CHUNK, steps - i);
+    for (let j = 0; j < n; j++) step(S, log);
+    if (busy) { $('busyText').textContent = `Nachberechnung … ${Math.round(((i + n) / steps) * 100)} %`; await new Promise((r) => setTimeout(r, 0)); }
+  }
+  $('busy').classList.remove('open');
+  if (seconds < 60) return;
+  const harvested = S.stats.total - before.total;
+  openModal(`<h2>Während du weg warst</h2>
+    <p><b>${fmtDuration(steps * CFG.dt)}</b> nachberechnet${seconds > CFG.offlineMax ? ' (höchstens 24 Stunden)' : ''}.</p>
+    <div class="loglist">
+      <div>Gesamternte: <b>${fmt(harvested)}</b> · Vorrat jetzt <b>${fmt(S.vorrat)}</b></div>
+      <div>Ankünfte an Stellen: <b>${ev.arrive}</b></div>
+      ${ev.zones.map((z) => `<div>Wechsel in die nächste Zone: <b>${z}</b></div>`).join('')}
+      <div>Versiegte Stellen: <b>${ev.dry}</b></div>
+      <div>Dauer ohne Ernte: <b>${fmtDuration(S.stats.noHarvest - before.noHarvest)}</b></div>
+      ${ev.finds.length ? `<div>Fundstücke: <b>${ev.finds.join(', ')}</b></div>` : ''}
+      <div>Fresslinge: <b>${fmtInt(before.units[0])} → ${fmtInt(S.units[0])}</b></div>
+    </div>
+    <div class="modal__actions"><button class="btn btn--gold" data-act="close">Weiter</button></div>`);
+}
+function resetRenderCaches() { mainSiteKey = ''; swarmKey = ''; neuronKey = ''; farKey = ''; miniCache.key = ''; }
+
+/* ---------- Spielschleife ---------- */
+let last = performance.now(), acc = 0, sinceSave = 0, paused = false;
+function frame(now) {
+  if (!paused) {
+    const el = Math.min((now - last) / 1000, 1);
+    acc += el * speed;
+    sinceSave += el;
+    let n = 0;
+    while (acc >= CFG.dt && n < 2000) { step(S, liveLog); acc -= CFG.dt; n++; }
+    if (n >= 2000) acc = 0;
+    if (S.ended && !S.endSeen) showEnd();
+    if (sinceSave >= CFG.saveEvery) { sinceSave = 0; save(); }
+    render(false);
+  }
+  last = now;
+  requestAnimationFrame(frame);
+}
+let hiddenAt = null;
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) { hiddenAt = Date.now(); save(); return; }
+  if (hiddenAt != null) {
+    const gap = (Date.now() - hiddenAt) / 1000;
+    hiddenAt = null;
+    if (gap > 2) { paused = true; await catchUp(gap); paused = false; last = performance.now(); render(true); }
+  }
+});
+window.addEventListener('pagehide', save);
+
+/* ---------- Start ---------- */
+(async function init() {
+  buildUnits();
+  renderNeuronOrganelles();
+  const res = load();
+  S = res.s;
+  app.dataset.view = fromHash[location.hash] || 'main';
+  render(true);
+  requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('no-anim')));
+  if (!res.fresh) {
+    paused = true;
+    await catchUp((Date.now() - (S.savedAt || Date.now())) / 1000);
+    paused = false;
+    last = performance.now();
+    render(true);
+  } else {
+    if (res.reset) toast('Der alte Spielstand passte nicht zu dieser Version und wurde zurückgesetzt.');
+    else toast('Kaufe <b>Fresslinge</b> – sie fressen den Algenfilm. Ist er leer, zieht der Schwarm weiter.');
+    save();
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 # Dokumentation und Werkzeugkonfiguration werden nicht formatiert
 docs/
+prototype/
 .claude/
 README.md
 CLAUDE.md
