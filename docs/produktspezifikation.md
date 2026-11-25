@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Arbeitstitel | IdleSwarm |
-| Dokumentstand | 24. November 2026, Version 4 |
+| Dokumentstand | 25. November 2026, Version 5 |
 | Grundlage | Konzept „IdleSwarm – Konzept für ein Idle Game“ und Prototyp des Zeitalters Winzlinge (Version 5) |
 | Umfang | MVP: Zeitalter Winzlinge (Phase 1). Organismen (Phase 2) als Konzeptstand, nicht Teil des MVP |
 | Gegenstand | Spielmechaniken und Funktionen |
@@ -23,7 +23,7 @@ Motor ist eine Kette von Einheiten, in der jede Stufe die Stufe darunter vermehr
 ### 1.2 Zielgruppe und Plattform
 
 - Spielerinnen und Spieler von Idle- und Incremental-Games, die neben Zahlenwachstum Entscheidungen und Timing schätzen.
-- Plattform: Browser auf dem Desktop.
+- Plattform: Browser, mobile first. Ausgelegt auf Smartphones im Hochformat; auf Tablet und Desktop ebenfalls spielbar.
 - Das Spiel muss sowohl aktiv (häufige Eingriffe) als auch passiv (lange Abwesenheit) tragfähig sein.
 
 ### 1.3 Ziele des MVP
@@ -41,7 +41,7 @@ Erfolgskriterien:
 - Das Zeitalter Organismen (Phase 2) mit Soldaten, Einnahme, Fähigkeiten, Schwärmen, Mutationen, Evolutionssprung, Erbe und Anlagen. Abschnitt 5 hält den Konzeptstand fest; die Ausarbeitung folgt separat, sobald der MVP mit Phase 1 Spaß macht.
 - Die Zeitalter Herrschaft an Land (Phase 3) und In den Weltraum (Phase 4).
 - Ableger, frei festlegbare Reiserouten, Jahreszeiten.
-- Erfolge, Statistiken für Spieler, Cloud-Speicher, Unterstützung mobiler Geräte.
+- Erfolge, Statistiken für Spieler, Cloud-Speicher.
 
 ---
 
@@ -510,6 +510,7 @@ Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige K
 - **`TEC-04` (Muss):** Die Spiellogik ist eigenständig ausführbar, damit sie automatisiert simuliert werden kann (Balancing, Regressionstests).
 - **`TEC-05` (Soll):** Ein Testmodus beschleunigt die Spielzeit (Prototyp: 1×, 5×, 20×, 100×).
 - **`TEC-06` (Soll):** Für Spieltests werden erfasst: Zeitpunkt der ersten Reise, Anzahl der Reisen, versiegte und neu entstandene Stellen, eingesammelte Fundstücke, markierte Ziele und Nutzung von „Stelle verlassen“, Anteil der Zeit in Starre (gesamt und je Zone), Spielzeit bis zur Sprungbedingung der Winzlinge. Für die Simulation des Balancings zusätzlich über die Spielzeit: Anteil der Ausgaben je Ausbau, Verhältnis von Vorrat zu Kapazität, Verhältnis von Antrieb zu Masse (Zeit an der Untergrenze des Reisetempos), Anteil der durch Eier begrenzten Käufe und Eier-Rate im Verhältnis zur Kaufrate. Simuliert wird mit mindestens einem aktiven und einem passiven Spielerprofil.
+- **`TEC-07` (Muss):** Die Oberfläche ist mobile first: Sie wird zuerst für Smartphones im Hochformat gestaltet und ist dort vollständig per Touch bedienbar, ohne waagrechtes Scrollen der Seite. Keine Funktion setzt Hover, Rechtsklick oder Tastatur voraus.
 
 ---
 
@@ -574,7 +575,7 @@ Nach dem MVP (Phase 2):
 
 - [x] Prototyp des Zeitalters Winzlinge
 - [x] Pacing der Winzlinge per Simulation prüfen
-- [ ] UI-Mockups für die Kartenform (9.1, Punkt 1)
+- [ ] UI-Mockups für die Kartenform, mobile first (9.1, Punkt 1)
 - [ ] Frühe Simulation: Appetit und Starre sowie Zeitschritt (9.1, Punkte 2 und 3), Pacing mit ortsfesten Fundstücken und dem Zielwert für die erste Reise, Kennzahlen aus `TEC-06` mit aktivem und passivem Spielerprofil
 - [ ] Spieltest des Prototyps mit Menschen
 - [ ] Balancing anhand der Simulations- und Testergebnisse anpassen
