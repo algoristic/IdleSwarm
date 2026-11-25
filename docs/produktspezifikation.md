@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Arbeitstitel | IdleSwarm |
-| Dokumentstand | 25. November 2026, Version 5 |
+| Dokumentstand | 25. November 2026, Version 6 |
 | Grundlage | Konzept „IdleSwarm – Konzept für ein Idle Game“ und Prototyp des Zeitalters Winzlinge (Version 5) |
 | Umfang | MVP: Zeitalter Winzlinge (Phase 1). Organismen (Phase 2) als Konzeptstand, nicht Teil des MVP |
 | Gegenstand | Spielmechaniken und Funktionen |
@@ -55,10 +55,12 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | --- | --- |
 | Zeitalter | Großer Spielabschnitt mit eigener Kernmechanik, eigener Karte und eigenen Namen. Im MVP: Winzlinge. „Phase n“ bezeichnet das n-te Zeitalter und steht nur in Überschriften und Kennungen (`P1-`, `P2-`) |
 | Durchlauf | Spielverlauf innerhalb eines Zeitalters vom Start bis zum nächsten Schwärmen oder Evolutionssprung |
-| Zone | Abschnitt der Karte eines Zeitalters. Jede Zone hat eine Basisgröße für ihre Stellen und eine Zugangsschwelle |
+| Zone | Tiefenebene der Karte eines Zeitalters. Die Zonen liegen übereinander (`P1-KAR-05`); jede hat eine Basisgröße für ihre Stellen und eine Zugangsschwelle |
+| Aktuelle Zone | Zone, in der sich der Schwarm befindet |
+| Nächste Zone | Zone direkt hinter der aktuellen; ihre bekannten Stellen und ihr Fundstück sind als Vorschau sichtbar |
 | Zugangsschwelle | Mindest-Antrieb, ab dem die Stellen einer Zone oder eines Stellentyps erreichbar sind |
 | Zielstelle | Besondere Stelle in der letzten Zone eines Zeitalters; nur an ihr ist der Evolutionssprung möglich. Nicht zu verwechseln mit dem Reiseziel |
-| Kartenpunkt | Längeneinheit der Karte. Eine Zone ist im Prototyp 260 Kartenpunkte breit |
+| Kartenpunkt | Längeneinheit der Karte. Abstände werden in der Ebene gemessen, auch zwischen zwei Zonen (`P1-KAR-05`) |
 | Zeitschritt (Δt) | Ein Schritt der Simulation, höchstens 0,25 Sekunden (`TEC-03`) |
 | Nachberechnung | Simulation der Abwesenheit beim nächsten Start (`ALL-OFF-02`) |
 
@@ -75,7 +77,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Bestand (S) | Nahrung, die gerade an einer Stelle liegt |
 | Größe (S₀) | Höchster Bestand einer Stelle |
 | Wuchs (g) | Rate, mit der der Bestand einer Stelle nachwächst |
-| Bekannt | Eine Stelle ist bekannt, sobald sie einmal in der Reichweite des Schwarms lag |
+| Bekannt | Eine Stelle ist bekannt, sobald sie einmal in der Reichweite des Schwarms lag (`P1-KAR-03`) |
 | Erreichbar | Eine Stelle ist erreichbar, wenn der Antrieb mindestens ihre Zugangsschwelle erreicht |
 | Ansteuerbar | Eine Stelle ist ansteuerbar, wenn sie bekannt, erreichbar und nicht versiegt ist und ab Organismen ihre Abwehr nicht zu hoch ist (`P2-EIN-07`) |
 | Versiegen | Eine Stelle versiegt, wenn ihr Bestand auf 0 fällt oder ihre Eigenheit es vorsieht. Sie wächst nicht mehr nach, ist nicht ansteuerbar und verschwindet kurz nach dem Aufbruch des Schwarms von der Karte (`P1-STE-05`) |
@@ -114,7 +116,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Erzeugung | Einheiten, die eine Stufe der Kette pro Sekunde in der Stufe darunter hervorbringt |
 | Masse (M) | Summe der Einzelmassen aller Einheiten und aller Soldaten (Jäger zählen halb); Ausbauten haben keine Masse. Senkt das Reisetempo |
 | Antrieb (T) | Entsteht durch den Ausbau für Antrieb (2.9); bestimmt mit der Masse das Reisetempo und ist Voraussetzung für Zugangsschwellen |
-| Reichweite | Radius um den Schwarm, in dem Stellen bekannt werden |
+| Reichweite | Radius um den Schwarm, in dem Stellen der aktuellen und der nächsten Zone bekannt werden |
 | Starre | Zustand, in dem keine Einheiten und keine Brut entstehen |
 
 ### 2.6 Reise
@@ -297,7 +299,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 - **`P1-STE-04` (Muss):** Wuchs ist logistisch und wirkt nur, solange Bestand vorhanden ist: `dS/dt = g · S · (1 − S/S₀)` für S > 0.
 - **`P1-STE-05` (Muss):** Eine Stelle versiegt, wenn ihr Bestand auf 0 fällt oder ihre Eigenheit es vorsieht; ihr Bestand ist dann 0. Eine versiegte Stelle wächst nie mehr nach und ist nicht ansteuerbar. Sie verschwindet 10 Sekunden nach dem Aufbruch des Schwarms von der Karte; befindet sich der Schwarm beim Versiegen nicht an ihr, 10 Sekunden nach dem Versiegen.
 - **`P1-STE-06` (Muss):** Verschwindet das Reiseziel einer laufenden Reise, endet die Reise am aktuellen Ort; der Schwarm befindet sich dann an keiner Stelle (Starre).
-- **`P1-STE-07` (Muss):** Neue Stellen entstehen fortlaufend: je Zone etwa alle 25 Sekunden eine, solange dort weniger als 10 nicht versiegte Stellen liegen (ohne Zielstelle). Gewichtung der Typen: Algenfilm 3, Planktonwolke 1, Toter Krebs 1, Meeresschnee 1. Neue Stellen sind zunächst unbekannt.
+- **`P1-STE-07` (Muss):** Neue Stellen entstehen fortlaufend: in der aktuellen und der nächsten Zone je etwa alle 25 Sekunden eine, solange dort weniger als 10 nicht versiegte Stellen liegen (ohne Zielstelle). Gewichtung der Typen: Algenfilm 3, Planktonwolke 1, Toter Krebs 1, Meeresschnee 1. Neue Stellen sind zunächst unbekannt.
 
 ### 4.9 Karte und Zonen
 
@@ -310,9 +312,11 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 | 2 | Felsenbecken | 20.000 |
 | 3 | Flachwasser | 1 Mio. |
 
-- **`P1-KAR-02` (Muss):** Die Karte wird für jedes neue Spiel zufällig erzeugt: je Zone drei Algenfilme, ein Toter Krebs und ein Meeresschnee, dazu die Seegraswiese am Ende von Zone 3. Planktonwolken entstehen nur als neue Stellen (`P1-STE-07`), weil sie auf der Startkarte versiegen würden, bevor der Schwarm ihre Zone erreicht. Die Startstelle liegt am Rand von Zone 0.
-- **`P1-KAR-03` (Muss):** Eine Stelle wird bekannt, sobald ihr Abstand zum Schwarm höchstens die Reichweite beträgt. Bekannte Stellen bleiben bekannt, bis sie verschwinden.
+- **`P1-KAR-02` (Muss):** Die Karte wird für jedes neue Spiel zufällig erzeugt: je Zone drei Algenfilme, ein Toter Krebs und ein Meeresschnee, dazu die Seegraswiese in Zone 3. Planktonwolken entstehen nur als neue Stellen (`P1-STE-07`), weil sie auf der Startkarte versiegen würden, bevor der Schwarm ihre Zone erreicht. Die Startstelle liegt in Zone 0.
+- **`P1-KAR-03` (Muss):** Eine Stelle der aktuellen oder der nächsten Zone wird bekannt, sobald ihr Abstand zum Schwarm höchstens die Reichweite beträgt. Bekannte Stellen bleiben bekannt, bis sie verschwinden.
 - **`P1-KAR-04` (Muss):** Eine Stelle ist erreichbar, wenn der Antrieb mindestens ihre Zugangsschwelle erreicht. Die Zugangsschwelle einer Stelle ist die ihrer Zone oder, falls höher, die ihres Typs.
+- **`P1-KAR-05` (Muss):** Die Zonen liegen als Tiefenebenen übereinander und teilen sich die Ebene der Kartenpunkte: Jede Position gibt es in jeder Zone. Der Schwarm befindet sich immer in genau einer Zone, der aktuellen Zone; die Zone direkt dahinter ist die nächste Zone. Abstände und Reisestrecken werden in der Ebene gemessen, auch für Reisen in die nächste Zone. Größe und Form der Zonenfläche sowie ein möglicher Aufschlag auf die Strecke beim Wechsel der Zone sind **[offen]**.
+- **`P1-KAR-06` (Muss):** Reiseziele liegen in der aktuellen oder der nächsten Zone; tiefere Zonen sind weder sichtbar noch ansteuerbar. Bricht der Schwarm zu einem Ziel in der nächsten Zone auf, wird diese zur aktuellen Zone. Die verlassene Zone verschwindet mit allen Stellen und ihrem Fundstück; zurück geht es nicht.
 
 ### 4.10 Reise
 
@@ -337,10 +341,10 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 ### 4.12 Fundstücke
 
-- **`P1-FUN-01` (Muss):** Fundstücke liegen an einer festen Position innerhalb einer Zone und bestehen, bis sie eingesammelt werden oder ihre Zone zurückfällt. Je Zone liegt höchstens ein Fundstück. Bei Spielbeginn liegt in jeder Zone eines.
-- **`P1-FUN-02` (Muss):** Vorderste Zonen sind die höchste erreichbare Zone und die Zone davor. Wird ein Fundstück in einer vordersten Zone eingesammelt, entsteht nach einer zufälligen Wartezeit (120 bis 240 s, Zielwert 180 s) ein neues an einer zufälligen Position derselben Zone. Die Wartezeit läuft auch während der Nachberechnung. So liegt dort, wo sich der Schwarm aufhält, regelmäßig ein Fundstück, und es sind höchstens zwei Fundstücke zugleich ansteuerbar.
-- **`P1-FUN-07` (Muss):** Wird eine weitere Zone erreichbar, verschwindet das Fundstück der Zone, die dadurch nicht mehr zu den vordersten Zonen gehört; dort entsteht keines mehr. Ein markiertes Fundstück, das so verschwindet, verliert seine Markierung (`P1-AUT-03`). Fundstücke in noch nicht erreichbaren Zonen bleiben als Vorschau sichtbar, sind aber erst ansteuerbar, wenn ihre Zone erreichbar wird.
-- **`P1-FUN-03` (Muss):** Fundstücke sind auf der Karte immer sichtbar, auch außerhalb der Reichweite, und ihr Typ ist erkennbar. Ein Fundstück ist ansteuerbar, wenn der Antrieb die Zugangsschwelle seiner Zone erreicht. Der Schwarm sammelt es ein, sobald er an seiner Position ankommt; danach wirkt es und wird entfernt. Die Wanderautomatik steuert Fundstücke nur an, wenn der Spieler sie markiert hat (`P1-AUT-03`). Nach dem Einsammeln befindet sich der Schwarm an keiner Stelle und zieht sofort weiter (`P1-AUT-01`).
+- **`P1-FUN-01` (Muss):** Fundstücke liegen an einer festen Position innerhalb einer Zone und bestehen, bis sie eingesammelt werden oder ihre Zone verschwindet (`P1-KAR-06`). Je Zone liegt höchstens ein Fundstück. Bei Spielbeginn liegt in jeder Zone eines.
+- **`P1-FUN-02` (Muss):** Wird ein Fundstück eingesammelt, entsteht nach einer zufälligen Wartezeit (120 bis 240 s, Zielwert 180 s) ein neues an einer zufälligen Position derselben Zone, sofern sie dann noch besteht. Die Wartezeit läuft auch während der Nachberechnung. So liegt dort, wo sich der Schwarm aufhält, regelmäßig ein Fundstück, und es sind höchstens zwei Fundstücke zugleich ansteuerbar: das der aktuellen und das der nächsten Zone.
+- **`P1-FUN-07` (Muss):** Das Fundstück der nächsten Zone ist als Vorschau sichtbar, aber erst ansteuerbar, wenn seine Zone erreichbar wird. Verschwindet eine Zone (`P1-KAR-06`), verschwindet ihr Fundstück mit ihr; eine Markierung darauf erlischt (`P1-AUT-03`).
+- **`P1-FUN-03` (Muss):** Fundstücke der aktuellen und der nächsten Zone sind immer sichtbar, auch außerhalb der Reichweite, und ihr Typ ist erkennbar. Ein Fundstück ist ansteuerbar, wenn der Antrieb die Zugangsschwelle seiner Zone erreicht. Der Schwarm sammelt es ein, sobald er an seiner Position ankommt; danach wirkt es und wird entfernt. Die Wanderautomatik steuert Fundstücke nur an, wenn der Spieler sie markiert hat (`P1-AUT-03`). Nach dem Einsammeln befindet sich der Schwarm an keiner Stelle und zieht sofort weiter (`P1-AUT-01`).
 - **`P1-FUN-04` (Muss):** Typen, Gewichtung und Wirkung:
 
 | Fundstück | Gewicht | Wirkung |
@@ -475,7 +479,7 @@ Zonen in dieser Reihenfolge: Gezeitenzone, Lagune, Riff, offenes Meer. Typfaktor
 
 - **`ALL-OFF-01` (Muss):** Der Spielstand wird automatisch lokal gespeichert, mindestens alle 10 Sekunden und beim Beenden.
 - **`ALL-OFF-02` (Muss):** Beim nächsten Start wird die Abwesenheit nachberechnet, ereignisbasiert oder in festen Zeitschritten. Höchstdauer: 24 Stunden *(Prototyp: 4 Stunden)*.
-- **`ALL-OFF-03` (Muss):** Ereignisse während der Nachberechnung werden protokolliert: Ankünfte, versiegte Stellen, Dauer der Starre, Gesamternte.
+- **`ALL-OFF-03` (Muss):** Ereignisse während der Nachberechnung werden protokolliert: Ankünfte, Wechsel in die nächste Zone, versiegte Stellen, Dauer der Starre, Gesamternte.
 - **`ALL-OFF-04` (Muss):** Der Spielstand kann exportiert und importiert werden.
 - **`ALL-OFF-05` (Muss):** Spielstände älterer Versionen werden ergänzt oder kontrolliert zurückgesetzt, nie unbemerkt beschädigt.
 
@@ -499,6 +503,13 @@ Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige K
 ### 6.4 Konfiguration
 
 - **`ALL-CFG-01` (Muss):** Alle Spielwerte (Einheiten, Stellen, Zonen, Ausbauten, Fundstücke, Fähigkeiten, Formelparameter) liegen in einer Datendatei, sodass das Balancing ohne Codeänderung angepasst werden kann.
+
+### 6.5 Oberfläche
+
+Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`).
+
+- **`ALL-UI-01` (Muss):** Die Oberfläche hat drei Ansichten, die als Tiefenebenen hintereinanderliegen: Ausbau (die Ausbauten im Inneren des Schwarms), Schwarm (die Kette an der aktuellen Stelle) und Umgebung (die aktuelle Zone um den Schwarm). Der Spieler wechselt per Zoom zur benachbarten Ansicht. In der Schwarm- und der Umgebungsansicht liegen die tieferen Ebenen abgedunkelt und unscharf im Hintergrund. Startansicht ist der Schwarm.
+- **`ALL-UI-02` (Muss):** Die Umgebung zeigt nur die aktuelle Zone, ausgerichtet am Schwarm, mit Reichweite und Ringen in Reisezeit. Sie lässt sich bis zum Rand der Reichweite verschieben und wieder auf den Schwarm zentrieren. Die nächste Zone scheint als unscharfe Ebene durch das Wasser der Umgebung, mit ihren bekannten Stellen und ihrem Fundstück. Eine Tiefenanzeige zeigt die aktuelle Ansicht und die nächste Zone; ist diese noch nicht erreichbar, erscheint sie gesperrt mit ihrer Zugangsschwelle. Verlassene Zonen werden nicht angezeigt (`P1-KAR-06`).
 
 ---
 
@@ -529,12 +540,12 @@ Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige K
 
 MVP (Phase 1):
 
-1. **Entdecken und Kartenform** (`P1-KAR-03`, `P1-STE-07`, `P1-AUT-01`): Die Wanderautomatik steuert nur bekannte Stellen an. Ohne bekanntes, ansteuerbares Ziel bleibt der Schwarm stehen, unter Umständen dauerhaft: wenn neue Stellen außerhalb der Reichweite entstehen oder wenn die Reichweite nicht in eine neu erreichbare Zone hineinreicht. Kandidaten:
-   - *Neue Stellen in der Reichweite:* Liegen in der Reichweite weniger als k ansteuerbare Stellen (Startwert 3), entsteht dort eine neue. Mit größerer Reichweite wächst die Auswahl. Bedingungen: Die Obergrenze für neue Stellen bezieht sich auf die Reichweite, nicht nur auf die Zone; die Reichweite reicht beim Erreichen einer Zone in diese hinein (Formel aus `P1-AUS-03` an die Zugangsschwellen anpassen oder neue Stellen bevorzugt in der höchsten erreichbaren Zone innerhalb der Reichweite erzeugen); neue Stellen folgen damit dem Schwarm.
-   - *Wissen je Zone:* Alle Stellen erreichbarer Zonen sind bekannt; Reichweite, `P1-AUS-03` und `P1-KAR-03` entfallen.
-   - *Erkundungsreise:* Ohne ansteuerbares Ziel oder bei neu erreichbarer Zone zieht der Schwarm zur Mitte der äußersten erreichbaren Zone.
+1. **Entdecken** (`P1-KAR-03`, `P1-STE-07`, `P1-AUT-01`): Die Wanderautomatik steuert nur bekannte Stellen an. Ohne bekanntes, ansteuerbares Ziel bleibt der Schwarm stehen, unter Umständen dauerhaft, wenn neue Stellen außerhalb der Reichweite entstehen. Dass die Reichweite nicht in eine neu erreichbare Zone hineinreicht, kommt nicht mehr vor, weil die nächste Zone direkt hinter der aktuellen liegt (`P1-KAR-05`). Kandidaten:
+   - *Neue Stellen in der Reichweite:* Liegen in der Reichweite weniger als k ansteuerbare Stellen (Startwert 3), entsteht dort eine neue, bei erreichbarer nächster Zone bevorzugt in ihr. Mit größerer Reichweite wächst die Auswahl. Die Obergrenze aus `P1-STE-07` bezieht sich dann auf die Reichweite statt auf die Zone; neue Stellen folgen damit dem Schwarm.
+   - *Wissen je Zone:* Alle Stellen der aktuellen und der nächsten Zone sind bekannt; Reichweite, `P1-AUS-03` und `P1-KAR-03` entfallen.
+   - *Erkundungsreise:* Ohne ansteuerbares Ziel zieht der Schwarm in einen noch unbekannten Teil der aktuellen Zone.
 
-   Die Kartenform (Streifen oder Fläche, Maße, Verteilung der Positionen) wird anhand von UI-Mockups entschieden. Vorschlag: waagrechter Streifen, Zonen je 260 × 120 Kartenpunkte, Positionen gleichverteilt mit Mindestabstand 20 Kartenpunkte.
+   Die Kartenform ist entschieden: Zonen als Tiefenebenen nach Mockup 5d (`P1-KAR-05`, `P1-KAR-06`, `ALL-UI-01`, `ALL-UI-02`). Offen sind Größe und Form der Zonenfläche (9.2). Vorschlag für die Verteilung: Positionen gleichverteilt mit Mindestabstand 20 Kartenpunkte.
 2. **Appetit und Starre** (`P1-STR-01`, `P1-KET-05`, `P1-EIE-01`): Die Kette erzeugt nur, solange gefressen wird. Da die Wanderautomatik eine leere Stelle sofort verlässt, entsteht Starre fast nur auf Reisen. Höherer Appetit (Fressrausch, Verdauung, mehr Fresslinge) leert Stellen schneller, verkürzt so die Fresszeit und bremst die Kette, sobald die Nahrung knapper ist als der Appetit. Offen ist damit auch, wie viel Zeit in Starre noch spannend und nicht frustrierend ist. Kandidaten:
    - *Starre abschaffen:* Kette und Brutherd laufen immer, auch unterwegs; das Wachstum begrenzt der Vorrat über die Kaufkosten.
    - *Erzeugung kostet Vorrat:* Jede erzeugte Einheit kostet einen kleinen Teil ihres Kaufpreises; ohne Vorrat steht die Kette. Braucht eine Regel für Rücklage oder Priorität gegenüber Käufen des Spielers.
@@ -556,6 +567,7 @@ MVP (Phase 1):
 | Kennung | Offener Wert |
 | --- | --- |
 | `P1-AUS-04`, `P1-AUS-05` | Wirkung und Kosten von Mehrlingen und Produktions-Ausbau |
+| `P1-KAR-05` | Größe und Form der Zonenfläche; Aufschlag auf die Reisestrecke beim Wechsel in die nächste Zone (Vorschlag: keiner) |
 
 Nach dem MVP (Phase 2):
 
@@ -575,7 +587,7 @@ Nach dem MVP (Phase 2):
 
 - [x] Prototyp des Zeitalters Winzlinge
 - [x] Pacing der Winzlinge per Simulation prüfen
-- [ ] UI-Mockups für die Kartenform, mobile first (9.1, Punkt 1)
+- [x] UI-Mockups für die Kartenform, mobile first: Zonen als Tiefenebenen nach Mockup 5d (`docs/design/mockups/`)
 - [ ] Frühe Simulation: Appetit und Starre sowie Zeitschritt (9.1, Punkte 2 und 3), Pacing mit ortsfesten Fundstücken und dem Zielwert für die erste Reise, Kennzahlen aus `TEC-06` mit aktivem und passivem Spielerprofil
 - [ ] Spieltest des Prototyps mit Menschen
 - [ ] Balancing anhand der Simulations- und Testergebnisse anpassen

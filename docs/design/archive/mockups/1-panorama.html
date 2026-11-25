@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IdleSwarm – Mockup 1: Panorama-Streifen</title>
+<style>
+  :root {
+    --bg: #050f19;
+    --surface: #0b1f2f;
+    --surface-2: #11304a;
+    --line: #1c4058;
+    --fg: #e4f3f0;
+    --muted: #8aaab5;
+    --accent: #5cf0d3;
+    --accent-dim: #1f6f64;
+    --food: #86e08a;
+    --warn: #ffb36b;
+    --gold: #ffd66b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #02080e;
+    color: var(--fg);
+    font: 14px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  .num { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; }
+
+  .phone {
+    width: 100%; max-width: 430px; height: 100dvh;
+    display: flex; flex-direction: column;
+    background: var(--bg); overflow: hidden; position: relative;
+  }
+  @media (min-width: 600px) {
+    body { align-items: center; }
+    .phone { height: min(900px, 96dvh); border-radius: 36px; border: 1px solid var(--line); box-shadow: 0 30px 80px rgb(0 0 0 / .6); }
+  }
+
+  /* HUD */
+  .hud { padding: 12px 16px 8px; background: linear-gradient(var(--surface), var(--bg)); }
+  .hud__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .title { font-size: 19px; font-weight: 650; }
+  .icon-btn { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); }
+  .res { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px; }
+  .res__item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 7px 10px; }
+  .res__label { font-size: 11px; color: var(--muted); }
+  .res__value { font-size: 16px; font-weight: 650; }
+  .res__value span { font-weight: 400; font-size: 12px; }
+  .res__sub { font-size: 11px; color: var(--accent); }
+  .cap { height: 4px; border-radius: 2px; background: var(--surface-2); margin-top: 5px; overflow: hidden; }
+  .cap span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); }
+
+  /* Minikarte */
+  .mini { padding: 4px 16px 6px; }
+  .mini svg { display: block; width: 100%; height: auto; border-radius: 8px; }
+  .mini__zones { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font-size: 10px; white-space: nowrap; color: var(--muted); margin-top: 3px; }
+  .mini__zones span { overflow: hidden; text-overflow: ellipsis; }
+  .mini__zones span:nth-child(n + 3) { opacity: .55; }
+  .mini__zones b { color: var(--accent); font-weight: 600; }
+
+  /* Karte */
+  .map { position: relative; height: 250px; flex: none; border-block: 1px solid var(--line); }
+  .map__scroll { height: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .map__scroll::-webkit-scrollbar { display: none; }
+  .map__world { display: block; }
+  .map__chip {
+    position: absolute; font-size: 11px; padding: 4px 9px; border-radius: 999px;
+    background: rgb(5 15 25 / .78); border: 1px solid var(--line); backdrop-filter: blur(4px);
+  }
+  .map__chip--tl { top: 8px; left: 10px; }
+  .map__chip--bl { bottom: 8px; left: 10px; }
+  .map__zoom { position: absolute; right: 10px; bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .map__zoom button { width: 34px; height: 34px; border-radius: 10px; background: rgb(5 15 25 / .78); border: 1px solid var(--line); font-size: 18px; }
+
+  .lbl { font-size: 4.6px; fill: var(--fg); paint-order: stroke; stroke: #061522; stroke-width: 1.4px; }
+  .lbl--muted { fill: var(--muted); }
+  .lbl--zone { font-size: 4.4px; letter-spacing: .5px; fill: var(--muted); font-weight: 600; }
+  .lbl--gold { fill: var(--gold); font-weight: 600; }
+  .route { fill: none; stroke: var(--gold); stroke-width: 1.1; stroke-dasharray: 3 2; animation: flow 1.2s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -10; } }
+  .swarm { transform-box: fill-box; transform-origin: center; animation: spin 16s linear infinite; }
+  .swarm circle { animation: twinkle 2.4s ease-in-out infinite alternate; }
+  .swarm circle:nth-child(3n) { animation-delay: -.8s; }
+  .swarm circle:nth-child(3n + 1) { animation-delay: -1.6s; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes twinkle { from { opacity: .45; } to { opacity: 1; } }
+  .pulse { transform-box: fill-box; transform-origin: center; animation: pulse 2.6s ease-out infinite; }
+  @keyframes pulse { from { transform: scale(.6); opacity: .8; } to { transform: scale(1.6); opacity: 0; } }
+
+  /* Unterer Bereich */
+  .lower { flex: 1; overflow-y: auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
+  .card__head { display: flex; align-items: center; gap: 10px; }
+  .card__title { font-weight: 650; font-size: 16px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .dot--food { background: var(--food); box-shadow: 0 0 10px var(--food); }
+  .pill { margin-left: auto; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: rgb(255 179 107 / .12); color: var(--warn); }
+  .stock { margin: 12px 0; }
+  .stock__bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+  .stock__bar span { display: block; height: 100%; background: linear-gradient(90deg, #3c9c5a, var(--food)); }
+  .stock__nums { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; }
+  .next { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: rgb(255 214 107 / .07); border: 1px dashed rgb(255 214 107 / .35); margin-bottom: 10px; }
+  .next__icon { width: 28px; height: 28px; display: grid; place-items: center; }
+  .next__body { flex: 1; min-width: 0; }
+  .btn { height: 44px; border-radius: 12px; padding: 0 14px; font-weight: 600; }
+  .btn--ghost { height: 34px; color: var(--muted); font-size: 13px; padding: 0 8px; }
+  .btn--outline { border: 1px solid var(--line); width: 100%; background: var(--surface-2); }
+
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+  .tabs button { height: 36px; border-radius: 9px; font-size: 13px; color: var(--muted); }
+  .tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--fg); font-weight: 600; }
+
+  .units { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .unit { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+  .unit[aria-disabled="true"] { opacity: .5; }
+  .unit__badge { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--bg); background: var(--accent); }
+  .unit__body { flex: 1; min-width: 0; }
+  .unit__row { display: flex; justify-content: space-between; gap: 8px; }
+  .unit__name { font-weight: 600; }
+  .unit__count { font-weight: 650; }
+  .unit__meta { font-size: 12px; color: var(--accent); }
+  .unit__cost { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .buy { display: flex; gap: 4px; flex: none; }
+  .buy button { min-width: 40px; height: 40px; border-radius: 10px; background: var(--surface-2); font-size: 12px; font-weight: 600; line-height: 1.05; }
+  .buy button:disabled { opacity: .45; cursor: default; }
+  .buy__max { background: var(--accent-dim) !important; }
+  .buy__max small { display: block; font-size: 9px; font-weight: 400; color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header class="hud">
+    <div class="hud__top">
+      <div>
+        <div class="eyebrow">Winzlinge · Zone 1</div>
+        <div class="title">Gezeitentümpel</div>
+      </div>
+      <button class="icon-btn" aria-label="Menü">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+      </button>
+    </div>
+    <div class="res">
+      <div class="res__item">
+        <div class="res__label">Vorrat</div>
+        <div class="res__value num">8.430 <span class="muted">/ 10.125</span></div>
+        <div class="cap"><span style="width:83%"></span></div>
+      </div>
+      <div class="res__item">
+        <div class="res__label">Eier</div>
+        <div class="res__value num">412</div>
+        <div class="res__sub num">+4,9/s</div>
+      </div>
+      <div class="res__item">
+        <div class="res__label">Ernte</div>
+        <div class="res__value num">5.718</div>
+        <div class="res__sub num">pro s</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Minikarte: der ganze Streifen auf einen Blick, Rahmen = sichtbarer Ausschnitt -->
+  <div class="mini">
+    <svg viewBox="0 0 1040 120" aria-label="Übersicht aller Zonen">
+      <rect x="0" y="0" width="260" height="120" fill="#0f3146"/>
+      <rect x="260" y="0" width="260" height="120" fill="#123a52"/>
+      <rect x="520" y="0" width="260" height="120" fill="#0a1f2e"/>
+      <rect x="780" y="0" width="260" height="120" fill="#08192a"/>
+      <g stroke="#050f19" stroke-width="4"><path d="M260 0v120M520 0v120M780 0v120"/></g>
+      <g fill="#86e08a"><circle cx="150" cy="40" r="5"/><circle cx="505" cy="30" r="6"/></g>
+      <g fill="#ff9a6b"><circle cx="372" cy="98" r="7"/></g>
+      <g fill="#9fd8ff"><circle cx="346" cy="24" r="6"/></g>
+      <g fill="#e9f6ff"><circle cx="238" cy="96" r="5"/><circle cx="470" cy="70" r="5"/></g>
+      <g fill="#ffd66b"><path d="M398 32 l10 12 -10 12 -10 -12z"/></g>
+      <g fill="#ffd66b" opacity=".45"><path d="M640 66 l10 12 -10 12 -10 -12z"/><path d="M880 22 l10 12 -10 12 -10 -12z"/></g>
+      <path d="M990 90 q4 -30 0 -50 M1005 92 q4 -36 6 -60 M1020 90 q-2 -30 4 -46" stroke="#86e08a" stroke-width="6" fill="none" stroke-linecap="round" opacity=".6"/>
+      <circle cx="300" cy="62" r="9" fill="#5cf0d3"/>
+      <rect x="264" y="4" width="187" height="112" rx="8" fill="none" stroke="#5cf0d3" stroke-width="4"/>
+    </svg>
+    <div class="mini__zones">
+      <span>Wassertropfen</span><span><b>Gezeitentümpel</b></span><span>Felsenbecken</span><span>Flachwasser</span>
+    </div>
+  </div>
+
+  <!-- Karte: waagrechter Streifen, seitlich wischbar -->
+  <div class="map">
+    <div class="map__scroll" id="map">
+      <svg class="map__world" viewBox="0 0 1040 120" width="2167" height="250" aria-label="Karte">
+        <defs>
+          <linearGradient id="sea" x1="0" x2="1">
+            <stop offset="0" stop-color="#0f3146"/>
+            <stop offset=".5" stop-color="#0c2a3e"/>
+            <stop offset="1" stop-color="#071a29"/>
+          </linearGradient>
+          <linearGradient id="depth" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#5cf0d3" stop-opacity=".05"/>
+            <stop offset="1" stop-color="#000" stop-opacity=".35"/>
+          </linearGradient>
+          <radialGradient id="range">
+            <stop offset="0" stop-color="#5cf0d3" stop-opacity=".16"/>
+            <stop offset=".9" stop-color="#5cf0d3" stop-opacity=".05"/>
+            <stop offset="1" stop-color="#5cf0d3" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="halo">
+            <stop offset="0" stop-color="#86e08a" stop-opacity=".5"/>
+            <stop offset="1" stop-color="#86e08a" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="fog" x1="0" x2="1">
+            <stop offset="0" stop-color="#030a12" stop-opacity="0"/>
+            <stop offset=".12" stop-color="#030a12" stop-opacity=".55"/>
+            <stop offset="1" stop-color="#030a12" stop-opacity=".7"/>
+          </linearGradient>
+          <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="5" stroke="#6b93a8" stroke-opacity=".14" stroke-width="1.2"/>
+          </pattern>
+
+          <g id="s-algen"><ellipse rx="6" ry="4" fill="#86e08a" fill-opacity=".9"/><ellipse cx="-1.2" cy="-.8" rx="3" ry="1.4" fill="#d4f8cc" fill-opacity=".6"/></g>
+          <g id="s-plankton" fill="#9fd8ff"><circle r="1.6" cx="-3" cy="-1"/><circle r="1.2" cx="1" cy="-3"/><circle r="1.5" cx="3" cy="1"/><circle r="1" cx="-1" cy="2.6"/><circle r=".9" cx="4.6" cy="-2.4"/><circle r=".8" cx="-5" cy="2"/></g>
+          <g id="s-krebs"><path d="M-6 1a6 5 0 0 1 12 0z" fill="#ff9a6b"/><path d="M-6 1l-2.5-3M6 1l2.5-3M-3 1l-1 3M0 1v3M3 1l1 3" stroke="#ff9a6b" stroke-width=".9" stroke-linecap="round"/></g>
+          <g id="s-schnee" stroke="#e9f6ff" stroke-width="1" stroke-linecap="round"><path d="M0-4.5v9M-3.9-2.25l7.8 4.5M-3.9 2.25l7.8-4.5"/></g>
+          <g id="s-fund"><path d="M0-5l4 5-4 5-4-5z" fill="#ffd66b"/><path d="M0-5l4 5H0z" fill="#fff6d0" fill-opacity=".75"/></g>
+          <g id="s-lock" fill="none" stroke="#8aaab5" stroke-width=".8"><rect x="-2.2" y="-.5" width="4.4" height="3.6" rx=".6" fill="#8aaab5" stroke="none"/><path d="M-1.4-.5v-1.2a1.4 1.4 0 0 1 2.8 0v1.2"/></g>
+        </defs>
+
+        <rect width="1040" height="120" fill="url(#sea)"/>
+        <rect width="1040" height="120" fill="url(#depth)"/>
+
+        <!-- Schwebeteilchen -->
+        <g fill="#cfe9f2" fill-opacity=".18">
+          <circle cx="20" cy="18" r=".6"/><circle cx="64" cy="102" r=".5"/><circle cx="118" cy="66" r=".7"/><circle cx="190" cy="12" r=".5"/>
+          <circle cx="250" cy="40" r=".6"/><circle cx="322" cy="108" r=".5"/><circle cx="420" cy="14" r=".7"/><circle cx="446" cy="92" r=".5"/>
+          <circle cx="560" cy="34" r=".6"/><circle cx="700" cy="100" r=".5"/><circle cx="760" cy="18" r=".6"/><circle cx="930" cy="80" r=".5"/>
+        </g>
+
+        <!-- Grund -->
+        <path d="M0 112Q20 106 40 112T80 112T120 112T160 112T200 112T240 112T280 112T320 112T360 112T400 112T440 112T480 112T520 112T560 112T600 112T640 112T680 112T720 112T760 112T800 112T840 112T880 112T920 112T960 112T1000 112T1040 112V120H0Z" fill="#0a2333"/>
+
+        <!-- Zonengrenzen -->
+        <g stroke="#5cf0d3" stroke-opacity=".22" stroke-width=".6" stroke-dasharray="2 2"><path d="M260 0v120M520 0v120M780 0v120"/></g>
+        <text class="lbl--zone" x="6" y="9">ZONE 0 · WASSERTROPFEN</text>
+        <text class="lbl--zone" x="266" y="9" fill="#5cf0d3" style="fill:#5cf0d3">ZONE 1 · GEZEITENTÜMPEL</text>
+
+        <!-- Reichweite -->
+        <circle cx="300" cy="62" r="210" fill="url(#range)" stroke="#5cf0d3" stroke-opacity=".3" stroke-width=".6" stroke-dasharray="2.5 2"/>
+
+        <!-- Start -->
+        <circle cx="14" cy="60" r="4" fill="none" stroke="#8aaab5" stroke-opacity=".5" stroke-width=".6" stroke-dasharray="1 1"/>
+        <text class="lbl lbl--muted" x="14" y="70" text-anchor="middle">Start</text>
+
+        <!-- Zone 0 -->
+        <g transform="translate(90 86)" opacity=".35"><circle r="4" fill="none" stroke="#8aaab5" stroke-width=".6"/><path d="M-2-2l4 4M2-2l-4 4" stroke="#8aaab5" stroke-width=".6"/></g>
+        <text class="lbl lbl--muted" x="90" y="96" text-anchor="middle" opacity=".6">versiegt</text>
+        <g transform="translate(150 40) scale(.7)"><use href="#s-algen"/></g>
+        <text class="lbl lbl--muted" x="150" y="50" text-anchor="middle">Algenfilm · 1,1 Tsd.</text>
+        <g transform="translate(238 96) scale(.8)"><use href="#s-schnee"/></g>
+        <text class="lbl lbl--muted" x="238" y="106" text-anchor="middle">Meeresschnee · 14 Tsd.</text>
+
+        <!-- Zone 1 -->
+        <g transform="translate(346 24)"><use href="#s-plankton"/>
+          <circle r="7.5" fill="none" stroke="#11304a" stroke-width="1.2"/>
+          <circle r="7.5" fill="none" stroke="#ffb36b" stroke-width="1.2" pathLength="100" stroke-dasharray="74 100" transform="rotate(-90)"/>
+        </g>
+        <text class="lbl" x="346" y="38" text-anchor="middle">Planktonwolke · 1,1 Mio.</text>
+        <text class="lbl" x="346" y="43.5" text-anchor="middle" style="fill:#ffb36b">versiegt in 2:14</text>
+
+        <g transform="translate(372 98)"><use href="#s-krebs"/></g>
+        <text class="lbl" x="372" y="108" text-anchor="middle">Toter Krebs · 2,9 Mio.</text>
+
+        <g transform="translate(470 70) scale(1.1)"><use href="#s-schnee"/></g>
+        <text class="lbl" x="470" y="81" text-anchor="middle">Meeresschnee · 870 Tsd.</text>
+        <g transform="translate(505 30)"><use href="#s-algen"/></g>
+        <text class="lbl" x="505" y="40" text-anchor="middle">Algenfilm · 310 Tsd.</text>
+
+        <!-- Markiertes Ziel -->
+        <path class="route" d="M300 62 Q350 40 398 44"/>
+        <circle cx="398" cy="44" r="9" fill="#ffd66b" fill-opacity=".12"/>
+        <g transform="translate(398 44) scale(1.1)"><use href="#s-fund"/></g>
+        <path d="M398 38v-12l7 3-7 3" fill="#ffd66b" stroke="#ffd66b" stroke-width=".6" stroke-linejoin="round" transform="translate(0 -2)"/>
+        <text class="lbl lbl--gold" x="398" y="57" text-anchor="middle">Fressrausch</text>
+        <text class="lbl lbl--muted" x="398" y="62.5" text-anchor="middle">markiert · 0:14</text>
+
+        <!-- Aktuelle Stelle und Schwarm -->
+        <circle cx="300" cy="62" r="16" fill="url(#halo)"/>
+        <g transform="translate(300 62) scale(1.4)"><use href="#s-algen"/></g>
+        <g transform="translate(300 62)">
+          <circle r="11" fill="none" stroke="#11304a" stroke-width="1.6"/>
+          <circle r="11" fill="none" stroke="#86e08a" stroke-width="1.6" pathLength="100" stroke-dasharray="38 100" stroke-linecap="round" transform="rotate(-90)"/>
+          <circle class="pulse" r="11" fill="none" stroke="#5cf0d3" stroke-width=".6"/>
+          <g class="swarm" fill="#5cf0d3">
+            <circle cx="-4" cy="-2" r=".9"/><circle cx="-1" cy="-4.5" r=".8"/><circle cx="3" cy="-3" r=".9"/><circle cx="5" cy="1" r=".8"/>
+            <circle cx="2" cy="4" r=".9"/><circle cx="-2.5" cy="3.5" r=".8"/><circle cx="-5.5" cy="1" r=".7"/><circle cx="0" cy="0" r="1"/>
+            <circle cx="6.5" cy="-2.5" r=".6"/><circle cx="-6" cy="-4" r=".6"/><circle cx="4.5" cy="5.5" r=".6"/><circle cx="-4" cy="6" r=".6"/>
+          </g>
+        </g>
+        <text class="lbl" x="300" y="81" text-anchor="middle" style="font-weight:600">Algenfilm · hier</text>
+
+        <!-- Nebel und gesperrte Zonen -->
+        <rect x="510" y="0" width="530" height="120" fill="url(#fog)"/>
+        <rect x="520" y="0" width="520" height="120" fill="url(#hatch)"/>
+        <g transform="translate(529 7.6)"><use href="#s-lock"/></g>
+        <text class="lbl--zone" x="534" y="9">ZONE 2 · FELSENBECKEN</text>
+        <text class="lbl lbl--muted" x="526" y="16">ab Antrieb 20 Tsd.</text>
+        <g transform="translate(789 7.6)"><use href="#s-lock"/></g>
+        <text class="lbl--zone" x="794" y="9">ZONE 3 · FLACHWASSER</text>
+        <text class="lbl lbl--muted" x="786" y="16">ab Antrieb 1 Mio.</text>
+
+        <!-- Fundstücke als Vorschau -->
+        <g opacity=".6">
+          <g transform="translate(640 78)"><use href="#s-fund"/></g>
+          <text class="lbl lbl--muted" x="640" y="89" text-anchor="middle">Legeschub</text>
+          <g transform="translate(880 34)"><use href="#s-fund"/></g>
+          <text class="lbl lbl--muted" x="880" y="45" text-anchor="middle">Keimzelle</text>
+        </g>
+
+        <!-- Zielstelle -->
+        <g stroke="#86e08a" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8">
+          <path d="M992 112q-2-20-6-34M998 112q1-26-2-44M1004 112q2-30 6-50M1010 112q0-24 5-38M1016 112q-1-18 4-28M1022 112q2-22-1-36"/>
+        </g>
+        <text class="lbl" x="1006" y="58" text-anchor="middle" style="fill:#86e08a;font-weight:600">Seegraswiese</text>
+        <text class="lbl lbl--muted" x="1006" y="63.5" text-anchor="middle">Ziel · ab Antrieb 100 Mio.</text>
+      </svg>
+    </div>
+    <span class="map__chip map__chip--bl num">Reichweite 210 KP · Tempo 7,2 KP/s</span>
+    <div class="map__zoom"><button aria-label="Hineinzoomen">+</button><button aria-label="Herauszoomen">−</button></div>
+  </div>
+
+  <div class="lower">
+    <section class="card">
+      <div class="card__head">
+        <span class="dot dot--food"></span>
+        <div>
+          <div class="card__title">Algenfilm</div>
+          <div class="small muted">Hier · Zone 1 · wächst 1 %/s nach</div>
+        </div>
+        <span class="pill num">leer in 0:20</span>
+      </div>
+      <div class="stock">
+        <div class="stock__bar"><span style="width:38%"></span></div>
+        <div class="stock__nums num"><span>112 Tsd. Bestand</span><span class="muted">von 297 Tsd.</span></div>
+      </div>
+      <div class="next">
+        <div class="next__icon">
+          <svg width="16" height="20" viewBox="0 0 16 20"><path d="M2 19V2l12 4-12 4" fill="#ffd66b" stroke="#ffd66b" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="next__body">
+          <div class="small muted">Nächster Aufbruch</div>
+          <div><b>Fressrausch</b> <span class="muted small">· markiert · 0:14 Reise</span></div>
+        </div>
+        <button class="btn btn--ghost">Aufheben</button>
+      </div>
+      <button class="btn btn--outline">Stelle verlassen</button>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true">Kette</button>
+      <button role="tab" aria-selected="false">Ausbau</button>
+      <button role="tab" aria-selected="false">Funde</button>
+    </div>
+
+    <ul class="units">
+      <li class="unit">
+        <div class="unit__badge">1</div>
+        <div class="unit__body">
+          <div class="unit__row"><span class="unit__name">Fressling</span><span class="unit__count num">3.812</span></div>
+          <div class="unit__meta num">frisst 1,5/s</div>
+          <div class="unit__cost num">10 Vorrat · 1 Ei</div>
+        </div>
+        <div class="buy"><button>1</button><button>25 %</button><button class="buy__max">Max<small class="num">412</small></button></div>
+      </li>
+      <li class="unit">
+        <div class="unit__badge">2</div>
+        <div class="unit__body">
+          <div class="unit__row"><span class="unit__name">Brutling</span><span class="unit__count num">41</span></div>
+          <div class="unit__meta num">+82 Fresslinge/s</div>
+          <div class="unit__cost num">500 Vorrat · 1 Ei · 100 Fresslinge</div>
+        </div>
+        <div class="buy"><button>1</button><button>25 %</button><button class="buy__max">Max<small class="num">16</small></button></div>
+      </li>
+      <li class="unit">
+        <div class="unit__badge">3</div>
+        <div class="unit__body">
+          <div class="unit__row"><span class="unit__name">Eiträgerin</span><span class="unit__count num">0</span></div>
+          <div class="unit__meta num">je +3 Brutlinge/s</div>
+          <div class="unit__cost num">20 Tsd. Vorrat · 1 Ei · 1.000 Brutlinge</div>
+        </div>
+        <div class="buy"><button disabled>1</button><button disabled>25 %</button><button class="buy__max" disabled>Max<small class="num">0</small></button></div>
+      </li>
+      <li class="unit" aria-disabled="true">
+        <div class="unit__badge">4</div>
+        <div class="unit__body">
+          <div class="unit__row"><span class="unit__name">Gelege</span><span class="unit__count">–</span></div>
+          <div class="unit__cost">ab 1 Eiträgerin</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+<script>
+  // Nur die Startposition des Ausschnitts, keine Spiellogik
+  document.getElementById('map').scrollLeft = 550;
+</script>
+</body>
+</html>

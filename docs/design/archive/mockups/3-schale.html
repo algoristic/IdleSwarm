@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IdleSwarm – Mockup 3: Schale</title>
+<style>
+  :root {
+    --paper: #f3ead6;
+    --paper-2: #e9dcbf;
+    --ink: #2b2118;
+    --sepia: #6f5a40;
+    --rule: #c9b68f;
+    --red: #a13a26;
+    --green: #47702f;
+    --blue: #2c5574;
+    --gold: #9c6b0e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #cfc2a5;
+    color: var(--ink);
+    font: 15px/1.4 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    display: flex; justify-content: center;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  .num { font-variant-numeric: tabular-nums lining-nums; }
+  .caps { font-variant: small-caps; letter-spacing: .06em; }
+
+  .phone {
+    width: 100%; max-width: 430px; height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgb(255 255 255 / .35), transparent 60%),
+      var(--paper);
+  }
+  @media (min-width: 600px) {
+    body { align-items: center; }
+    .phone { height: min(900px, 96dvh); border-radius: 30px; box-shadow: 0 30px 70px rgb(60 40 10 / .35); }
+  }
+  .page { flex: 1; overflow-y: auto; }
+
+  /* Kopf */
+  .head { padding: 14px 16px 8px; }
+  .head__line { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1.5px solid var(--ink); padding-bottom: 4px; }
+  .head__title { font-size: 24px; font-style: italic; }
+  .head__era { font-size: 13px; color: var(--sepia); }
+  .ledger { display: grid; grid-template-columns: 1.3fr 1fr 1fr; margin-top: 6px; }
+  .ledger > div { padding: 2px 8px; border-left: 1px solid var(--rule); }
+  .ledger > div:first-child { border-left: 0; padding-left: 0; }
+  .ledger__k { font-size: 12px; color: var(--sepia); }
+  .ledger__v { font-size: 17px; }
+  .ledger__v small { font-size: 12px; color: var(--sepia); }
+  .ledger__v--red { color: var(--red); }
+  .stamp {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+    border: 1.5px solid var(--red); color: var(--red); border-radius: 6px; padding: 2px 8px;
+    font-size: 13px; transform: rotate(-1.5deg);
+  }
+
+  /* Karte */
+  .map { position: relative; padding: 4px 8px 0; }
+  .map svg { display: block; width: 100%; height: auto; }
+  .t { font-size: 8px; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 2.4px; stroke-linejoin: round; font-family: inherit; }
+  .t--s { font-size: 7px; fill: var(--sepia); }
+  .t--ring { font-size: 7.4px; fill: var(--sepia); letter-spacing: 1.2px; font-variant: small-caps; }
+  .t--here { font-size: 8.5px; font-style: italic; }
+  .trail { fill: none; stroke: var(--sepia); stroke-width: 1; stroke-dasharray: .5 3; stroke-linecap: round; }
+  .swarm circle { animation: jitter 1.6s ease-in-out infinite alternate; }
+  .swarm circle:nth-child(2n) { animation-duration: 2.1s; }
+  .swarm circle:nth-child(3n) { animation-duration: 1.3s; animation-direction: alternate-reverse; }
+  @keyframes jitter { from { transform: translate(-.6px, .4px); } to { transform: translate(.6px, -.5px); } }
+  .sel { animation: sel 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes sel { 50% { transform: scale(1.12); } }
+
+  .view { position: absolute; bottom: 6px; right: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .view button { font-size: 12px; padding: 3px 9px; border: 1px solid var(--sepia); border-radius: 4px; background: rgb(243 234 214 / .85); color: var(--sepia); }
+  .view button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .pop {
+    position: absolute; right: calc(35% + 16px); top: calc(31.25% - 38px); width: 180px;
+    background: #fbf6ea; border: 1.5px solid var(--ink); border-radius: 4px; padding: 10px 12px 12px;
+    box-shadow: 4px 4px 0 rgb(43 33 24 / .18);
+  }
+  .pop::before {
+    content: ""; position: absolute; right: -8px; top: 32px; width: 12px; height: 12px;
+    background: #fbf6ea; border-right: 1.5px solid var(--ink); border-top: 1.5px solid var(--ink); transform: rotate(45deg);
+  }
+  .pop__title { font-size: 18px; font-style: italic; line-height: 1.1; }
+  .pop__sub { font-size: 12px; color: var(--sepia); margin-bottom: 6px; }
+  .pop dl { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-size: 13px; }
+  .pop dt { color: var(--sepia); }
+  .pop dd { text-align: right; }
+  .pop__warn { color: var(--red); }
+  .pop__close { position: absolute; top: 4px; right: 6px; width: 28px; height: 28px; font-size: 18px; color: var(--sepia); }
+  .ink-btn { display: block; width: 100%; margin-top: 10px; height: 40px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--ink); color: var(--paper); font-size: 14px; }
+
+  /* Unten */
+  .sect { padding: 12px 16px 4px; }
+  .sect__h { font-size: 13px; color: var(--sepia); border-bottom: 1px solid var(--rule); padding-bottom: 2px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .status { font-size: 15px; }
+  .status em { color: var(--green); }
+  .status__bar { height: 6px; border: 1px solid var(--ink); border-radius: 3px; margin: 6px 0 4px; background: repeating-linear-gradient(90deg, transparent 0 9px, rgb(43 33 24 / .12) 9px 10px); }
+  .status__bar span { display: block; height: 100%; width: 38%; background: var(--green); }
+  .status__row { display: flex; justify-content: space-between; font-size: 13px; color: var(--sepia); }
+  .row-btns { display: flex; gap: 8px; margin-top: 8px; }
+  .line-btn { flex: 1; height: 40px; border: 1.5px solid var(--ink); border-radius: 4px; font-size: 14px; }
+
+  .log { list-style: none; font-size: 13px; }
+  .log li { display: grid; grid-template-columns: 44px 1fr; padding: 3px 0; border-bottom: 1px dotted var(--rule); }
+  .log time { color: var(--sepia); }
+
+  .upg { list-style: none; }
+  .upg li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--rule); }
+  .upg__rank { width: 34px; height: 34px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-size: 14px; flex: none; }
+  .upg__body { flex: 1; min-width: 0; }
+  .upg__name { font-size: 16px; }
+  .upg__eff { font-size: 13px; color: var(--sepia); }
+  .upg__eff b { color: var(--ink); font-weight: 600; }
+  .upg__btn { min-width: 76px; height: 40px; border: 1.5px solid var(--ink); border-radius: 4px; font-size: 13px; line-height: 1.1; }
+  .upg__btn small { display: block; font-size: 11px; color: var(--sepia); }
+
+  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1.5px solid var(--ink); background: var(--paper-2); padding-bottom: env(safe-area-inset-bottom); }
+  .tabbar button { height: 52px; font-size: 15px; color: var(--sepia); border-left: 1px solid var(--rule); }
+  .tabbar button:first-child { border-left: 0; }
+  .tabbar button[aria-current="page"] { color: var(--ink); font-style: italic; background: var(--paper); box-shadow: inset 0 3px 0 var(--ink); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="page">
+
+    <header class="head">
+      <div class="head__line">
+        <div class="head__title">Gezeitentümpel</div>
+        <div class="head__era caps">Winzlinge · Zone 1</div>
+      </div>
+      <div class="ledger">
+        <div>
+          <div class="ledger__k">Vorrat</div>
+          <div class="ledger__v num">8.430 <small>/ 10.125</small></div>
+        </div>
+        <div>
+          <div class="ledger__k">Eier</div>
+          <div class="ledger__v num">412 <small>+4,9/s</small></div>
+        </div>
+        <div>
+          <div class="ledger__k">Ernte</div>
+          <div class="ledger__v ledger__v--red num">17.154<small>/s</small></div>
+        </div>
+      </div>
+      <div class="stamp num">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 .5l4.5 5.5L6 11.5 1.5 6z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        Fressrausch · Appetit ×3 · noch 0:42
+      </div>
+    </header>
+
+    <!-- Karte: runde Fläche, Zonen als Ringe um den Ursprung -->
+    <div class="map">
+      <svg viewBox="-200 -200 400 400" aria-label="Karte als Schale mit Zonenringen">
+        <defs>
+          <radialGradient id="dish" r=".5">
+            <stop offset="0" stop-color="#f7f0df"/>
+            <stop offset=".8" stop-color="#efe3c8"/>
+            <stop offset="1" stop-color="#e2d1ad"/>
+          </radialGradient>
+          <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+            <line x1="0" y1="0" x2="0" y2="5" stroke="#2b2118" stroke-opacity=".13" stroke-width=".9"/>
+          </pattern>
+          <pattern id="stipple" width="7" height="7" patternUnits="userSpaceOnUse">
+            <rect width="7" height="7" fill="#e9dcbf" fill-opacity=".55"/>
+            <circle cx="1.5" cy="1.5" r=".55" fill="#6f5a40" fill-opacity=".35"/>
+            <circle cx="5" cy="4.5" r=".45" fill="#6f5a40" fill-opacity=".3"/>
+          </pattern>
+          <mask id="known">
+            <rect x="-200" y="-200" width="400" height="400" fill="#fff"/>
+            <g fill="#000">
+              <circle cx="65" cy="37" r="62"/>
+              <circle cx="0" cy="0" r="50"/>
+              <circle cx="-25" cy="-25" r="50"/>
+              <circle cx="20" cy="-40" r="56"/>
+              <circle cx="40" cy="15" r="56"/>
+            </g>
+          </mask>
+          <clipPath id="inDish"><circle r="192"/></clipPath>
+          <path id="arc0" d="M-40 0A40 40 0 0 1 40 0"/>
+          <path id="arc1" d="M-96 0A96 96 0 0 1 96 0"/>
+          <path id="arc2" d="M-146 0A146 146 0 0 1 146 0"/>
+          <path id="arc3" d="M-182 0A182 182 0 0 1 182 0"/>
+
+          <g id="s-algen"><path d="M-7 0c0-3 3-5 6-4.4 2-1.6 7-.8 7.6 2.2 1.4 2.6-1 5-4 4.6-2 1.4-6 1.2-7.4-.4C-6.6 1.8-7 1-7 0z" fill="#9bbf7a" fill-opacity=".55" stroke="#47702f" stroke-width="1"/></g>
+          <g id="s-plankton" fill="none" stroke="#2c5574" stroke-width=".9"><circle r="1.8" cx="-3" cy="-1"/><circle r="1.3" cx="1.2" cy="-3.2"/><circle r="1.6" cx="3.2" cy="1"/><circle r="1.1" cx="-.8" cy="3"/><circle r=".9" cx="5.4" cy="-2.6"/><circle r=".8" cx="-5.6" cy="2.4"/></g>
+          <g id="s-krebs" fill="none" stroke="#a13a26" stroke-width="1.1" stroke-linecap="round"><path d="M-7 1.5a7 6 0 0 1 14 0z" fill="#d9967f" fill-opacity=".5"/><path d="M-3.5-3.5l1 5M0-4.5v6M3.5-3.5l-1 5" stroke-width=".6"/><path d="M-7 1.5l-3-3.4M7 1.5l3-3.4M-4 1.5l-1.4 3.6M0 1.5v3.8M4 1.5l1.4 3.6"/></g>
+          <g id="s-schnee" stroke="#2b2118" stroke-width="1" stroke-linecap="round"><path d="M0-5v10M-4.3-2.5l8.6 5M-4.3 2.5l8.6-5"/><circle r="1.2" fill="#f3ead6"/></g>
+          <g id="s-fund"><path d="M0-6l5 6-5 6-5-6z" fill="#e3c27a" stroke="#9c6b0e" stroke-width="1.1"/><path d="M-5 0h10M0-6v12" stroke="#9c6b0e" stroke-width=".5"/></g>
+        </defs>
+
+        <!-- Schale -->
+        <circle r="196" fill="url(#dish)"/>
+        <g clip-path="url(#inDish)">
+          <!-- gesperrte Ringe -->
+          <path d="M0-192A192 192 0 1 1 0 192A192 192 0 1 1 0-192ZM0-105A105 105 0 1 0 0 105A105 105 0 1 0 0-105Z" fill="url(#hatch)" fill-rule="evenodd"/>
+          <!-- Nebel über Unbekanntem -->
+          <rect x="-200" y="-200" width="400" height="400" fill="url(#stipple)" mask="url(#known)"/>
+        </g>
+        <circle r="196" fill="none" stroke="#2b2118" stroke-width="2.4"/>
+        <circle r="191" fill="none" stroke="#2b2118" stroke-width=".6"/>
+
+        <!-- Zonenringe -->
+        <g fill="none" stroke="#6f5a40" stroke-width=".8" stroke-dasharray="3 2.5">
+          <circle r="50"/><circle r="105"/><circle r="155"/>
+        </g>
+        <text class="t--ring"><textPath href="#arc0" startOffset="50%" text-anchor="middle">Wassertropfen</textPath></text>
+        <text class="t--ring" style="fill:#2b2118"><textPath href="#arc1" startOffset="50%" text-anchor="middle">Gezeitentümpel</textPath></text>
+        <text class="t--ring"><textPath href="#arc2" startOffset="50%" text-anchor="middle">Felsenbecken · ab Antrieb 20 Tsd.</textPath></text>
+        <text class="t--ring"><textPath href="#arc3" startOffset="50%" text-anchor="middle">Flachwasser · ab Antrieb 1 Mio.</textPath></text>
+
+        <!-- Reiseweg bisher -->
+        <path class="trail" d="M0 0L-25-25L20-40L40 15L65 37"/>
+        <g fill="#f3ead6" stroke="#6f5a40" stroke-width=".8">
+          <circle cx="0" cy="0" r="2.2"/><circle cx="-25" cy="-25" r="2"/><circle cx="20" cy="-40" r="2"/><circle cx="40" cy="15" r="2"/>
+        </g>
+        <text class="t t--s" x="0" y="10" text-anchor="middle">Start</text>
+
+        <!-- Zone 0 -->
+        <g transform="translate(-24 22) scale(.75)"><use href="#s-algen"/></g>
+        <text class="t t--s" x="-24" y="32" text-anchor="middle">Algenfilm 1,1 Tsd.</text>
+        <g transform="translate(12 -14) scale(.8)"><use href="#s-schnee"/></g>
+        <text class="t t--s" x="12" y="-21" text-anchor="middle">14 Tsd.</text>
+
+        <!-- Reichweite -->
+        <circle cx="65" cy="37" r="62" fill="none" stroke="#2b2118" stroke-width=".9" stroke-dasharray="5 3"/>
+        <text class="t t--s" x="65" y="-28" text-anchor="middle" style="font-style:italic">Reichweite</text>
+
+        <!-- Zone 1 -->
+        <g transform="translate(40 85)"><use href="#s-krebs"/></g>
+        <text class="t" x="40" y="97" text-anchor="middle">Toter Krebs</text>
+        <text class="t t--s" x="40" y="105" text-anchor="middle">2,9 Mio. · als Nächstes</text>
+        <path d="M60 50Q48 64 43 75" fill="none" stroke="#47702f" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <path d="M40.5 75.5l2.3-5.4 3 4.4z" fill="#47702f"/>
+
+        <g transform="translate(85 58)"><use href="#s-schnee"/></g>
+        <text class="t" x="94" y="70" text-anchor="middle">Meeresschnee</text>
+
+        <g transform="translate(-30 80)"><use href="#s-fund"/></g>
+        <text class="t" x="-30" y="94" text-anchor="middle" style="fill:#9c6b0e">Wachstumsschub</text>
+
+        <!-- Ausgewählt: Planktonwolke -->
+        <circle class="sel" cx="60" cy="-75" r="11" fill="none" stroke="#2b2118" stroke-width="1.2"/>
+        <g transform="translate(60 -75)"><use href="#s-plankton"/></g>
+
+        <!-- Aktuelle Stelle mit Schwarm -->
+        <g transform="translate(65 37) scale(1.5)"><use href="#s-algen"/></g>
+        <g class="swarm" transform="translate(65 37)" fill="#2b2118">
+          <circle cx="-3" cy="-2" r="1"/><circle cx="0" cy="-4" r=".9"/><circle cx="3" cy="-2.6" r="1"/><circle cx="4.6" cy="1" r=".9"/>
+          <circle cx="1.6" cy="3.4" r="1"/><circle cx="-2.4" cy="3" r=".9"/><circle cx="-5" cy=".6" r=".8"/><circle cx=".4" cy="0" r="1.1"/>
+          <circle cx="6.4" cy="-2" r=".7"/><circle cx="-6" cy="-3.4" r=".7"/><circle cx="5" cy="5" r=".7"/><circle cx="-4.4" cy="5.6" r=".7"/>
+        </g>
+        <text class="t t--here" x="65" y="23" text-anchor="middle">hier</text>
+
+        <!-- Fundstücke in gesperrten Zonen -->
+        <g opacity=".7">
+          <g transform="translate(-122 -40)"><use href="#s-fund"/></g>
+          <text class="t t--s" x="-122" y="-26" text-anchor="middle">Legeschub</text>
+          <g transform="translate(58 -164)"><use href="#s-fund"/></g>
+          <text class="t t--s" x="80" y="-160" text-anchor="start">Keimzelle</text>
+        </g>
+
+        <!-- Seegraswiese am Rand -->
+        <g transform="translate(-128 128)" fill="none" stroke="#47702f" stroke-width="1.4" stroke-linecap="round">
+          <path d="M-10 8q-2-10 1-20M-5 8q1-14-2-24M0 8q2-12 6-20M5 8q0-12 4-18M10 8q1-8 5-12"/>
+        </g>
+        <text class="t" x="-112" y="150" text-anchor="middle" style="fill:#47702f;font-style:italic">Seegraswiese</text>
+        <text class="t t--s" x="-112" y="158" text-anchor="middle">Ziel · Antrieb 100 Mio.</text>
+      </svg>
+
+      <div class="view">
+        <button aria-pressed="true">Ganze Schale</button>
+        <button aria-pressed="false">Umgebung</button>
+      </div>
+
+      <div class="pop" role="dialog" aria-label="Planktonwolke">
+        <button class="pop__close" aria-label="Schließen">×</button>
+        <div class="pop__title">Planktonwolke</div>
+        <div class="pop__sub num">Zone 1 · 1,1 Mio. Bestand</div>
+        <dl class="num">
+          <dt>Reise</dt><dd>0:16</dd>
+          <dt>Ø-Ernte</dt><dd>13,8 Tsd./s</dd>
+          <dt>leer nach</dt><dd>ca. 1:04</dd>
+          <dt class="pop__warn">versiegt in</dt><dd class="pop__warn">2:14</dd>
+        </dl>
+        <button class="ink-btn">Als Ziel markieren</button>
+      </div>
+    </div>
+
+    <section class="sect">
+      <div class="sect__h caps"><span>Jetzt</span><span class="num">Tempo 7,2 KP/s</span></div>
+      <div class="status">Erntet <em>Algenfilm</em>, danach zum toten Krebs.</div>
+      <div class="status__bar"><span></span></div>
+      <div class="status__row num"><span>112 Tsd. von 297 Tsd.</span><span>leer in 0:07</span></div>
+      <div class="row-btns">
+        <button class="line-btn">Stelle verlassen</button>
+      </div>
+    </section>
+
+    <section class="sect">
+      <div class="sect__h caps"><span>Ausbauten</span><span class="num">Vorrat 8.430</span></div>
+      <ul class="upg">
+        <li>
+          <div class="upg__rank num">3</div>
+          <div class="upg__body">
+            <div class="upg__name">Brutherd</div>
+            <div class="upg__eff num">Eier-Rate 4,9 → <b>8,4/s</b></div>
+          </div>
+          <button class="upg__btn num">Ausbauen<small>810</small></button>
+        </li>
+        <li>
+          <div class="upg__rank num">1</div>
+          <div class="upg__body">
+            <div class="upg__name">Verdauung</div>
+            <div class="upg__eff num">Fressleistung 1,5 → <b>2,25</b></div>
+          </div>
+          <button class="upg__btn num">Ausbauen<small>1.500</small></button>
+        </li>
+        <li>
+          <div class="upg__rank num">4</div>
+          <div class="upg__body">
+            <div class="upg__name">Geißeln</div>
+            <div class="upg__eff num">Antrieb 525 → <b>945</b> · Reichweite +70 ab Rang 6</div>
+          </div>
+          <button class="upg__btn num">Ausbauen<small>2.928</small></button>
+        </li>
+        <li>
+          <div class="upg__rank num">4</div>
+          <div class="upg__body">
+            <div class="upg__name">Kropf</div>
+            <div class="upg__eff num">Kapazität 10.125 → <b>15.188</b></div>
+          </div>
+          <button class="upg__btn num">Ausbauen<small>462</small></button>
+        </li>
+      </ul>
+    </section>
+
+    <section class="sect" style="padding-bottom:20px">
+      <div class="sect__h caps"><span>Logbuch</span><span>heute</span></div>
+      <ol class="log num">
+        <li><time>14:02</time><span>Angekommen am Algenfilm, Zone 1</span></li>
+        <li><time>14:01</time><span>Fressrausch eingesammelt</span></li>
+        <li><time>13:58</time><span>Gezeitentümpel erreichbar (Antrieb 525)</span></li>
+        <li><time>13:55</time><span>Meeresschnee in Zone 0 versiegt</span></li>
+      </ol>
+    </section>
+  </div>
+
+  <nav class="tabbar">
+    <button aria-current="page">Karte</button>
+    <button>Kette</button>
+    <button>Ausbau</button>
+    <button>Logbuch</button>
+  </nav>
+</div>
+</body>
+</html>

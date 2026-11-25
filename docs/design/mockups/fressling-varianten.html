@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IdleSwarm – Fressling: fünf Entwürfe</title>
+<style>
+  :root {
+    --night: #0c0f33;
+    --ink: #f6f4ff;
+    --muted: #a7aee8;
+    --panel: #171d58;
+    --panel-2: #212a72;
+    --panel-3: #2c368a;
+    --cyan: #3ee6e0;
+    --yellow: #ffd23f;
+    --orange: #ff8a3d;
+    --font: "Avenir Next", "Montserrat", "Nunito", "Futura", "Century Gothic", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--night); color: var(--ink); font: 15px/1.45 var(--font); padding: 24px 16px 48px; }
+  header { max-width: 1240px; margin: 0 auto 22px; }
+  h1 { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+  header p { color: var(--muted); max-width: 72ch; }
+  .grid { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 370px), 1fr)); gap: 20px; }
+  .card { background: var(--panel); border-radius: 24px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 5px 0 rgb(5 6 26 / .45); }
+  .card h2 { font-size: 18px; font-weight: 900; display: flex; align-items: baseline; gap: 8px; }
+  .card h2 span { font-size: 12px; font-weight: 800; color: #1a1440; background: var(--yellow); border-radius: 10px; padding: 2px 8px; }
+  .card h2 small { font-size: 12px; font-weight: 700; color: var(--muted); }
+  .stage { width: 100%; height: auto; aspect-ratio: 38 / 21; border-radius: 18px; display: block; background: #121858; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: stretch; }
+  .swarm { width: 100%; height: 110px; border-radius: 14px; display: block; background: #161e66; }
+  .icon { width: 84px; border-radius: 14px; background: var(--panel-2); display: grid; place-items: center; align-content: center; gap: 6px; }
+  .icon div { width: 42px; height: 42px; border-radius: 50%; background: var(--panel-3); display: grid; place-items: center; }
+  .cap { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .swarm-wrap { display: grid; gap: 4px; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 13px; }
+  dt { color: var(--cyan); font-weight: 800; }
+  dd { color: var(--muted); }
+
+  /* Bewegung */
+  .wave { animation: wave .45s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: right center; }
+  @keyframes wave { from { transform: scaleY(1); } to { transform: scaleY(-1); } }
+  .cilia { animation: cilia .6s linear infinite; }
+  @keyframes cilia { to { stroke-dashoffset: -1.15; } }
+  .spin { animation: spin .9s linear infinite; transform-box: fill-box; transform-origin: center; }
+  .spin--r { animation-direction: reverse; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .squish { animation: squish 2.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+  @keyframes squish { from { transform: scale(1.04, .95) rotate(-3deg); } to { transform: scale(.96, 1.05) rotate(3deg); } }
+  .sway { animation: sway 2.8s ease-in-out infinite alternate; }
+  @keyframes sway { from { transform: translate(-1px, .5px) rotate(-5deg); } to { transform: translate(1.5px, -.5px) rotate(6deg); } }
+  @media (prefers-reduced-motion: reduce) { .wave, .cilia, .spin, .squish, .sway { animation: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- Gemeinsame Formen; jede Figur schwimmt nach rechts (+x), Länge etwa 20 bis 30 Einheiten -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 1 Hornalge (Ceratium) -->
+    <clipPath id="cCer"><path id="pCer" d="M15.5-.5Q16.6 0 15.5.5L4.6 1.8C4 4.6 1.5 5.6-1 5.4C-2.8 5.2-3.6 4.6-4 4.2L-11 7.6Q-11.9 7.8-11.4 6.9L-5.2 2.4C-5.6 1-5.6-1.2-5.2-2.2L-13.6-5.6Q-14.5-6.3-13.4-6.6L-4-4.2C-3.6-4.6-2.8-5.2-1-5.4C1.5-5.6 4-4.6 4.6-1.8Z"/></clipPath>
+    <g id="cer">
+      <path class="wave" d="M-16.5 0c1.4-1.4 2.6 1.4 4 0s2.6 1.4 4 0 2.4 1.2 3.4 0" fill="none" stroke="#ffb27a" stroke-width=".9" stroke-linecap="round"/>
+      <use href="#pCer" fill="#ffb27a"/>
+      <g clip-path="url(#cCer)">
+        <use href="#pCer" fill="#ff8a3d" transform="translate(.7 .9)"/>
+        <ellipse cy="6.4" rx="7" ry="2" fill="#e5612a"/>
+        <rect x="-1.5" y="-6" width="2.1" height="12" fill="#c4501f"/>
+      </g>
+      <path d="M-.45-6.3q.9.9 0 1.8t0 1.8t0 1.8t0 1.8t0 1.8t0 1.8t0 1.8" fill="none" stroke="#ffe3b8" stroke-width=".6" stroke-linecap="round"/>
+    </g>
+
+    <!-- 2 Pantoffeltierchen (Paramecium) -->
+    <clipPath id="cPar"><path id="pPar" d="M9 0C9-3.2 5-4.6 0-4.4C-6-4.2-9.5-3-9.5 0C-9.5 3-6 4.4-1 4.2C1 4.1 2 2.4 3.6 2.6C5.6 2.9 9 3 9 0Z"/></clipPath>
+    <g id="par">
+      <ellipse class="cilia" rx="10.4" ry="5.4" fill="none" stroke="#ffcf9e" stroke-width="1.1" stroke-dasharray=".35 .8"/>
+      <use href="#pPar" fill="#ffb27a"/>
+      <g clip-path="url(#cPar)">
+        <use href="#pPar" fill="#ff8a3d" transform="translate(.6 .8)"/>
+        <ellipse cx="-1" cy="5.6" rx="10" ry="2.2" fill="#e5612a"/>
+      </g>
+      <path d="M-1.5 3.3C.8 3.2 1.9 1.7 3.6 1.8" fill="none" stroke="#b9461a" stroke-width=".7" stroke-linecap="round"/>
+      <g fill="#22a86a"><circle cx="-3" cy="-1" r="1.2"/><circle cx="-6" cy="1" r=".95"/><circle cx="-.6" cy="1.2" r=".8"/></g>
+      <g fill="#8cf25a"><circle cx="-3.3" cy="-1.3" r=".4"/><circle cx="-6.2" cy=".7" r=".3"/></g>
+      <path d="M5.2-1.6l.5-1.1.4 1.1 1.1-.3-.8.8.8.8-1.1-.3-.4 1.1-.5-1.1-1.1.3.8-.8-.8-.8z" fill="#ffd0a0"/>
+    </g>
+
+    <!-- 3 Kragengeißler (Choanoflagellat) -->
+    <clipPath id="cCho"><ellipse id="pCho" cx="2" rx="5.2" ry="3.9"/></clipPath>
+    <g id="cho">
+      <path class="wave" d="M-22 0c1.4-1.4 2.6 1.4 4 0s2.6 1.4 4 0 2.6 1.4 4 0" fill="none" stroke="#ffb27a" stroke-width=".9" stroke-linecap="round"/>
+      <path d="M-2.8-2.3L-10.6-5.6V5.6L-2.8 2.3Z" fill="#ffcf9e" fill-opacity=".22"/>
+      <path d="M-2.8-2.3L-10.6-5.6M-2.8-1.15L-10.6-2.8M-2.8 0H-10.6M-2.8 1.15L-10.6 2.8M-2.8 2.3L-10.6 5.6" fill="none" stroke="#ffcf9e" stroke-width=".5" stroke-opacity=".8" stroke-linecap="round"/>
+      <g fill="#8cf25a"><circle cx="-8" cy="-2.6" r=".55"/><circle cx="-6.2" cy="1.4" r=".45"/><circle cx="-9.4" cy="3.6" r=".5"/></g>
+      <use href="#pCho" fill="#ffb27a"/>
+      <g clip-path="url(#cCho)">
+        <use href="#pCho" fill="#ff8a3d" transform="translate(.6 .8)"/>
+        <ellipse cx="2" cy="4.4" rx="6" ry="1.6" fill="#e5612a"/>
+      </g>
+      <circle cx="1" cy=".6" r="1.2" fill="#22a86a"/>
+      <circle cx="3.6" cy="-.8" r=".7" fill="#22a86a"/>
+    </g>
+
+    <!-- 4 Rädertierchen (Rotifer) -->
+    <clipPath id="cRot"><path id="pRot" d="M5-4.2C6.2-4.2 6.6-3 6.6 0S6.2 4.2 5 4.2C2 4.4-2 3.4-5 2.2L-8.5 1.4C-9.5 1.2-9.5-1.2-8.5-1.4L-5-2.2C-2-3.4 2-4.4 5-4.2Z"/></clipPath>
+    <g id="rot">
+      <path d="M-8.8-.9L-12.4-2M-8.8.9L-12.4 2" fill="none" stroke="#ff8a3d" stroke-width="1.1" stroke-linecap="round"/>
+      <g fill="#ffb27a"><circle cx="7.2" cy="-2.6" r="2.4"/><circle cx="7.2" cy="2.6" r="2.4"/></g>
+      <circle class="spin" cx="7.2" cy="-2.6" r="3.2" fill="none" stroke="#ffe3b8" stroke-width="1" stroke-dasharray=".4 .7"/>
+      <circle class="spin spin--r" cx="7.2" cy="2.6" r="3.2" fill="none" stroke="#ffe3b8" stroke-width="1" stroke-dasharray=".4 .7"/>
+      <use href="#pRot" fill="#ffb27a"/>
+      <g clip-path="url(#cRot)">
+        <use href="#pRot" fill="#ff8a3d" transform="translate(.6 .8)"/>
+        <ellipse cy="4.6" rx="9" ry="1.8" fill="#e5612a"/>
+        <path d="M-6-3V3M-7.4-3V3" stroke="#ffb27a" stroke-width=".4"/>
+      </g>
+      <circle cx="-1.8" cy=".2" r="1.6" fill="#22a86a"/>
+      <circle cx="-2.2" cy="-.2" r=".5" fill="#8cf25a"/>
+      <g fill="#b9461a"><ellipse cx="2.2" cy="-.75" rx="1.3" ry=".65" transform="rotate(-22 2.2 -.75)"/><ellipse cx="2.2" cy=".75" rx="1.3" ry=".65" transform="rotate(22 2.2 .75)"/></g>
+    </g>
+
+    <!-- 5 Fresszelle (Amöbe) -->
+    <clipPath id="cAmo">
+      <ellipse rx="6.4" ry="5"/>
+      <ellipse cx="6.4" cy="-3.4" rx="4.2" ry="1.9" transform="rotate(-28 6.4 -3.4)"/>
+      <ellipse cx="6" cy="3.8" rx="3.8" ry="1.7" transform="rotate(32 6 3.8)"/>
+      <ellipse cx="-6" cy="3.4" rx="3.2" ry="1.5" transform="rotate(148 -6 3.4)"/>
+      <ellipse cx="-4.6" cy="-4" rx="2.6" ry="1.4" transform="rotate(-140 -4.6 -4)"/>
+    </clipPath>
+    <g id="amo">
+      <g class="squish">
+        <rect x="-12" y="-9" width="24" height="18" fill="#ffb27a" clip-path="url(#cAmo)"/>
+        <g clip-path="url(#cAmo)"><rect x="-12" y="-9" width="24" height="18" fill="#ff8a3d" transform="translate(.8 1)"/><ellipse cy="6.2" rx="11" ry="2.4" fill="#e5612a"/></g>
+        <circle cx="9.4" cy="0" r="2.2" fill="#22a86a"/><circle cx="8.9" cy="-.6" r=".8" fill="#8cf25a"/>
+        <circle cx="2.4" cy="1.8" r="1.4" fill="#22a86a" fill-opacity=".85"/>
+        <circle cx="-.6" cy="-2" r="1" fill="#22a86a" fill-opacity=".7"/>
+        <path d="M-4.6-.2c.6-1.4 2.6-1.6 3.2-.4.5 1.1-.6 2.2-1.8 2.1-1.2 0-1.8-.8-1.4-1.7z" fill="#ffd0a0" fill-opacity=".75"/>
+      </g>
+    </g>
+  </defs>
+</svg>
+
+<header>
+  <h1>Fressling · fünf Entwürfe</h1>
+  <p>Je Entwurf: groß gezeichnet, im Schwarm in der Größe des Hauptbilds und als Symbol in der Kette. Stil wie Mockup 5c, ohne Augen. Grün im Inneren ist gefressene Alge, wo das Vorbild es hergibt.</p>
+</header>
+
+<main class="grid">
+  <section class="card" data-kind="cer" data-scale=".62">
+    <h2><span>1</span>Hornalge <small>Vorbild Ceratium, Dinoflagellat</small></h2>
+    <svg class="stage" viewBox="-19 -10.5 38 21"><use href="#cer"/></svg>
+    <div class="row"><div class="swarm-wrap"><div class="cap">Im Schwarm</div><svg class="swarm"></svg></div><div class="icon"><div><svg width="36" height="24" viewBox="-17 -8 34 16"><use href="#cer"/></svg></div><span class="cap">Symbol</span></div></div>
+    <dl>
+      <dt>Form</dt><dd>Dreizack aus langem Stirnhorn und zwei Hinterhörnern, Panzer mit Querfurche, darin die Quergeißel, hinten die Schleppgeißel</dd>
+      <dt>Stärke</dt><dd>Unverwechselbare Silhouette, auch winzig erkennbar; eindeutig ein Dinoflagellat</dd>
+      <dt>Schwäche</dt><dd>Spitz und sperrig, wirkt im dichten Schwarm unruhig; das Fressen sieht man nicht</dd>
+    </dl>
+  </section>
+
+  <section class="card" data-kind="par" data-scale=".85">
+    <h2><span>2</span>Pantoffeltierchen <small>Vorbild Paramecium, Wimpertierchen</small></h2>
+    <svg class="stage" viewBox="-19 -10.5 38 21"><use href="#par"/></svg>
+    <div class="row"><div class="swarm-wrap"><div class="cap">Im Schwarm</div><svg class="swarm"></svg></div><div class="icon"><div><svg width="34" height="24" viewBox="-12 -8 24 16"><use href="#par"/></svg></div><span class="cap">Symbol</span></div></div>
+    <dl>
+      <dt>Form</dt><dd>Pantoffel mit Mundbucht, Wimpernsaum läuft als Welle um den Körper, innen grüne Nahrungsbläschen</dd>
+      <dt>Stärke</dt><dd>Fressen ist sichtbar; weich und freundlich, ruhiges Schwarmbild</dd>
+      <dt>Schwäche</dt><dd>Klein bleibt fast nur ein Oval, der Wimpernsaum geht im Schwarm unter</dd>
+    </dl>
+  </section>
+
+  <section class="card" data-kind="cho" data-scale=".75">
+    <h2><span>3</span>Kragengeißler <small>Vorbild Choanoflagellat</small></h2>
+    <svg class="stage" viewBox="-23 -10.5 38 21"><use href="#cho"/></svg>
+    <div class="row"><div class="swarm-wrap"><div class="cap">Im Schwarm</div><svg class="swarm"></svg></div><div class="icon"><div><svg width="36" height="24" viewBox="-15 -8 24 16"><use href="#cho"/></svg></div><span class="cap">Symbol</span></div></div>
+    <dl>
+      <dt>Form</dt><dd>Runde Zelle mit Trichterkragen aus feinen Fäden und langer Geißel; im Kragen hängen gefangene Partikel</dd>
+      <dt>Stärke</dt><dd>Der Kragen erklärt das Fressen ohne Worte (Filtern); Trichter und Schweif ergeben eine eigene, kometenhafte Form</dd>
+      <dt>Schwäche</dt><dd>Die Kragenfäden verschwinden in kleiner Größe, dann bleibt ein Punkt mit Schleier</dd>
+    </dl>
+  </section>
+
+  <section class="card" data-kind="rot" data-scale=".8">
+    <h2><span>4</span>Rädertierchen <small>Vorbild Rotifer</small></h2>
+    <svg class="stage" viewBox="-17 -10.5 38 21"><use href="#rot"/></svg>
+    <div class="row"><div class="swarm-wrap"><div class="cap">Im Schwarm</div><svg class="swarm"></svg></div><div class="icon"><div><svg width="34" height="24" viewBox="-13 -8 24 16"><use href="#rot"/></svg></div><span class="cap">Symbol</span></div></div>
+    <dl>
+      <dt>Form</dt><dd>Zwei drehende Wimpernräder am Kopf, innen der Kauer und gefressene Alge, hinten ein Fuß mit zwei Zehen</dd>
+      <dt>Stärke</dt><dd>Die Räder sind die lebendigste Bewegung; der Kauer passt zum Namen; wirkt schon wie ein Tier und leitet zum Zeitalter Organismen über</dd>
+      <dt>Schwäche</dt><dd>Vielzeller, biologisch eine Stufe über Brutling und Algen; am detailreichsten</dd>
+    </dl>
+  </section>
+
+  <section class="card" data-kind="amo" data-scale=".9">
+    <h2><span>5</span>Fresszelle <small>Vorbild Amöbe</small></h2>
+    <svg class="stage" viewBox="-17 -10.5 38 21"><use href="#amo"/></svg>
+    <div class="row"><div class="swarm-wrap"><div class="cap">Im Schwarm</div><svg class="swarm"></svg></div><div class="icon"><div><svg width="34" height="26" viewBox="-12 -9 24 18"><use href="#amo"/></svg></div><span class="cap">Symbol</span></div></div>
+    <dl>
+      <dt>Form</dt><dd>Formlose Zelle mit Scheinfüßchen, die gerade eine Alge umfließt; innen Nahrungsbläschen und ein heller Kern</dd>
+      <dt>Stärke</dt><dd>Das Fressen ist das Bild selbst; wirkt am gefräßigsten</dd>
+      <dt>Schwäche</dt><dd>Keine klare Schwimmrichtung, das Kreisen des Schwarms ist schwer zu lesen; ähnelt den Algenflecken</dd>
+    </dl>
+  </section>
+</main>
+
+<script>
+  // Nur für die Skizze: Schwarm je Entwurf mit fester Zufallsfolge verteilen
+  function rng(seed) {
+    return () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const NS = 'http://www.w3.org/2000/svg';
+  document.querySelectorAll('.card').forEach((card, k) => {
+    const svg = card.querySelector('.swarm');
+    const kind = card.dataset.kind;
+    const scale = Number(card.dataset.scale);
+    const r = rng(11 + k);
+    svg.setAttribute('viewBox', '0 0 300 110');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    let html = '<path d="M-10 70C40 30 120 40 170 70S260 120 320 80V130H-10Z" fill="#14805f" fill-opacity=".55"/>'
+      + '<path d="M60 90C100 60 170 70 210 95S260 120 280 110V130H40Z" fill="#22a86a" fill-opacity=".5"/>';
+    for (let i = 0; i < 26; i++) {
+      html += `<circle cx="${(r() * 300).toFixed(1)}" cy="${(r() * 110).toFixed(1)}" r="${(0.8 + r() * 1.4).toFixed(1)}" fill="#dff9ff" fill-opacity="${(0.2 + r() * 0.4).toFixed(2)}"/>`;
+    }
+    // Schwarm kreist: Richtung folgt grob einer Bahn um die Mitte
+    for (let i = 0; i < 22; i++) {
+      const x = 18 + r() * 264, y = 12 + r() * 86;
+      const ang = Math.atan2(y - 55, x - 150) * 180 / Math.PI + 90 + (r() - 0.5) * 50;
+      const s = (scale * (0.9 + r() * 0.25)).toFixed(2);
+      html += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${ang.toFixed(0)}) scale(${s})"><g class="sway" style="animation-delay:-${(r() * 3).toFixed(2)}s"><use href="#${kind}"/></g></g>`;
+    }
+    svg.innerHTML = html;
+  });
+</script>
+</body>
+</html>

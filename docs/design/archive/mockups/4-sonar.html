@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IdleSwarm – Mockup 4: Sonar</title>
+<style>
+  :root {
+    --bg: #06110f;
+    --panel: #0b1a17;
+    --panel-2: #10241f;
+    --line: #183630;
+    --fg: #d8f5e6;
+    --muted: #6f958a;
+    --green: #6cf2a0;
+    --green-dim: #1f5a3f;
+    --amber: #ffc857;
+    --red: #ff8a6b;
+    --blue: #7cc7ff;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #020605; color: var(--fg);
+    font: 14px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; justify-content: center;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+
+  .phone { width: 100%; max-width: 430px; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+  @media (min-width: 600px) {
+    body { align-items: center; }
+    .phone { height: min(900px, 96dvh); border-radius: 36px; border: 1px solid var(--line); box-shadow: 0 30px 80px rgb(0 0 0 / .7); }
+  }
+  .page { flex: 1; overflow-y: auto; }
+
+  /* Zonenleiste */
+  .track { padding: 14px 16px 6px; }
+  .track__steps { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; align-items: center; gap: 4px; }
+  .step { height: 6px; border-radius: 3px; background: var(--panel-2); position: relative; }
+  .step--done { background: var(--green-dim); }
+  .step--here { background: linear-gradient(90deg, var(--green-dim), var(--green)); }
+  .step--here::after { content: ""; position: absolute; right: -3px; top: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgb(108 242 160 / .2); }
+  .step--locked { background: repeating-linear-gradient(90deg, var(--panel-2) 0 5px, transparent 5px 8px); }
+  .track__labels { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 4px; font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+  .track__labels b { color: var(--fg); font-weight: 600; }
+  .track__next { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .track__bar { flex: 1; height: 4px; border-radius: 2px; background: var(--panel-2); overflow: hidden; }
+  .track__bar span { display: block; height: 100%; width: 3%; background: var(--amber); }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 8px 16px 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .stats > div { padding: 7px 10px; border-left: 1px solid var(--line); background: var(--panel); }
+  .stats > div:first-child { border-left: 0; }
+  .stats__k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .stats__v { font-size: 16px; }
+  .stats__v small { font-size: 11px; color: var(--muted); }
+
+  /* Sonar */
+  .sonar { position: relative; margin: 10px auto 0; width: min(100% - 24px, 380px); aspect-ratio: 1; }
+  .sonar svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sweep {
+    position: absolute; inset: 4%; border-radius: 50%;
+    background: conic-gradient(from 0deg, rgb(108 242 160 / .22), rgb(108 242 160 / 0) 70deg, transparent 360deg);
+    animation: sweep 5s linear infinite;
+  }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  .s-t { font-family: var(--mono); font-size: 4.2px; fill: var(--muted); }
+  .s-l { font-size: 4.6px; fill: var(--fg); paint-order: stroke; stroke: var(--bg); stroke-width: 1.2px; }
+  .s-l--amber { fill: var(--amber); font-weight: 600; }
+  .s-l--green { fill: var(--green); font-weight: 600; }
+  .s-l--muted { fill: var(--muted); }
+  .blip { animation: blip 5s linear infinite; }
+  @keyframes blip { 0%, 100% { opacity: .65; } 8% { opacity: 1; } }
+  .route { fill: none; stroke: var(--amber); stroke-width: .7; stroke-dasharray: 2 1.5; animation: flow 1s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -7; } }
+  .legend { display: flex; justify-content: center; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+
+  /* Hier */
+  .here { margin: 10px 12px 0; padding: 12px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
+  .here__row { display: flex; align-items: center; gap: 10px; }
+  .here__tag { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--bg); background: var(--green); border-radius: 4px; padding: 2px 6px; font-weight: 700; }
+  .here__name { font-weight: 650; font-size: 16px; }
+  .here__time { margin-left: auto; color: var(--red); font-size: 13px; }
+  .meter { height: 6px; border-radius: 3px; background: var(--panel-2); margin: 10px 0 6px; overflow: hidden; }
+  .meter span { display: block; height: 100%; width: 38%; background: var(--green); }
+  .here__foot { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); }
+  .leave { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); font-size: 13px; font-weight: 600; color: var(--fg); }
+
+  /* Ziele */
+  .targets { margin: 14px 12px 20px; }
+  .targets__h { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 6px; }
+  .targets__h h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+  .targets__h span { font-size: 11px; color: var(--muted); }
+  .why { font-size: 12px; color: var(--muted); padding: 8px 10px; border-radius: 10px; border: 1px dashed var(--line); margin-bottom: 8px; }
+  .why b { color: var(--amber); font-weight: 600; }
+  .why em { color: var(--green); font-style: normal; font-weight: 600; }
+  .list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .t-row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 8px; padding: 8px 10px 8px 4px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+  .t-row--marked { border-color: rgb(255 200 87 / .55); background: linear-gradient(90deg, rgb(255 200 87 / .1), var(--panel) 60%); }
+  .star { width: 40px; height: 40px; display: grid; place-items: center; }
+  .t-name { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .t-type { font-size: 11px; color: var(--muted); }
+  .t-auto { font-size: 9.5px; letter-spacing: .08em; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--green); color: var(--green); font-weight: 700; }
+  .t-warn { color: var(--red); }
+  .t-bar { height: 4px; border-radius: 2px; background: var(--panel-2); margin-top: 5px; }
+  .t-bar span { display: block; height: 100%; border-radius: 2px; background: var(--green); }
+  .t-meta { text-align: right; font-size: 12px; }
+  .t-meta b { display: block; font-size: 14px; color: var(--fg); font-weight: 500; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
+  .tabbar button { height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; color: var(--muted); }
+  .tabbar button[aria-current="page"] { color: var(--green); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="page">
+
+    <header class="track">
+      <div class="track__steps">
+        <div class="step step--done"></div>
+        <div class="step step--here"></div>
+        <div class="step step--locked"></div>
+        <div class="step step--locked"></div>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#6cf2a0" stroke-width="1.5" stroke-linecap="round" opacity=".5"><path d="M3 15q-1-6 1-12M8 15q1-8-1-13M13 15q0-6 2-10"/></svg>
+      </div>
+      <div class="track__labels">
+        <span>Wassertropfen</span><span><b>Gezeitentümpel</b></span><span>Felsenbecken</span><span>Flachwasser</span><span>Ziel</span>
+      </div>
+      <div class="track__next">
+        <span>Antrieb</span>
+        <div class="track__bar"><span></span></div>
+        <span class="mono">525 / 20.000</span>
+      </div>
+    </header>
+
+    <div class="stats">
+      <div><div class="stats__k">Vorrat</div><div class="stats__v mono">8.430<small>/10,1T</small></div></div>
+      <div><div class="stats__k">Eier</div><div class="stats__v mono">412<small> +4,9</small></div></div>
+      <div><div class="stats__k">Ernte</div><div class="stats__v mono">5.718<small>/s</small></div></div>
+    </div>
+
+    <!-- Sonar: Schwarm immer in der Mitte, Ringe zeigen die Reisezeit -->
+    <div class="sonar">
+      <div class="sweep"></div>
+      <svg viewBox="-100 -100 200 200" aria-label="Sonar: Stellen nach Richtung und Reisezeit">
+        <defs>
+          <radialGradient id="bg"><stop offset="0" stop-color="#0d2620"/><stop offset="1" stop-color="#06110f"/></radialGradient>
+          <clipPath id="disc"><circle r="92"/></clipPath>
+          <pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#6f958a" stroke-opacity=".18" stroke-width="1"/></pattern>
+        </defs>
+        <circle r="92" fill="url(#bg)"/>
+        <g clip-path="url(#disc)">
+          <!-- Zonen: Zone 0 links, Zone 2 rechts gesperrt -->
+          <rect x="-100" y="-100" width="83.3" height="200" fill="#0a1714" fill-opacity=".7"/>
+          <rect x="91.7" y="-100" width="20" height="200" fill="url(#hatch)"/>
+          <path d="M-16.7-100V100" stroke="#6cf2a0" stroke-opacity=".25" stroke-width=".5" stroke-dasharray="2 2"/>
+          <!-- Gitter -->
+          <g stroke="#6cf2a0" stroke-opacity=".08" stroke-width=".4"><path d="M-92 0H92M0-92V92M-65-65L65 65M-65 65L65-65"/></g>
+        </g>
+        <!-- Reisezeit-Ringe -->
+        <g fill="none" stroke="#6cf2a0" stroke-opacity=".22" stroke-width=".5">
+          <circle r="30"/><circle r="60"/><circle r="90"/>
+        </g>
+        <circle r="87.5" fill="none" stroke="#7cc7ff" stroke-opacity=".5" stroke-width=".5" stroke-dasharray="1.5 1.5"/>
+        <text class="s-t" x="1.5" y="-31.5">0:10</text>
+        <text class="s-t" x="1.5" y="-61.5">0:20</text>
+        <text class="s-t" x="1.5" y="-91.5">0:30</text>
+        <text class="s-t" x="-60" y="-66" style="fill:#7cc7ff">Reichweite</text>
+        <text class="s-t" x="-19" y="88" text-anchor="end">Zone 0</text>
+        <text class="s-t" x="-14.5" y="88">Zone 1</text>
+
+        <!-- Kante: Hinweis auf Fundstück außerhalb -->
+        <g transform="translate(92 6)">
+          <path d="M0-3l4 3-4 3z" fill="#ffc857" fill-opacity=".6"/>
+        </g>
+        <text class="s-l s-l--muted" x="88" y="38" text-anchor="end">Legeschub</text>
+        <text class="s-t" x="88" y="43" text-anchor="end">Zone 2 · gesperrt</text>
+        <path d="M89 34L92 9" stroke="#ffc857" stroke-opacity=".35" stroke-width=".4"/>
+
+        <!-- Zone 0 -->
+        <g class="blip"><circle cx="-26" cy="14" r="2.2" fill="#e9f6ff" fill-opacity=".8"/></g>
+        <text class="s-l s-l--muted" x="-26" y="21" text-anchor="middle">Meeresschnee</text>
+        <g class="blip"><circle cx="-62" cy="-9" r="1.6" fill="#86e08a" fill-opacity=".7"/></g>
+        <text class="s-l s-l--muted" x="-62" y="-3" text-anchor="middle">Algenfilm</text>
+
+        <!-- Zone 1 -->
+        <g class="blip">
+          <circle cx="19" cy="-16" r="3" fill="#7cc7ff"/>
+          <circle cx="19" cy="-16" r="5" fill="none" stroke="#ff8a6b" stroke-width=".7" pathLength="100" stroke-dasharray="74 100" transform="rotate(-90 19 -16)"/>
+        </g>
+        <text class="s-l" x="19" y="-23.5" text-anchor="middle">Planktonwolke</text>
+
+        <g class="blip">
+          <circle cx="30" cy="15" r="4.2" fill="#ff9a6b"/>
+          <circle cx="30" cy="15" r="6.5" fill="none" stroke="#6cf2a0" stroke-width=".7"/>
+        </g>
+        <text class="s-l s-l--green" x="30" y="27" text-anchor="middle">Toter Krebs · AUTO</text>
+
+        <g class="blip"><circle cx="71" cy="3" r="3.2" fill="#e9f6ff"/></g>
+        <text class="s-l" x="71" y="11" text-anchor="middle">Meeresschnee</text>
+        <g class="blip"><circle cx="85" cy="-13" r="2.6" fill="#86e08a"/></g>
+        <text class="s-l" x="82" y="-19" text-anchor="end">Algenfilm</text>
+
+        <!-- Markiertes Fundstück -->
+        <path class="route" d="M0 0L40.8-7.5"/>
+        <path d="M40.8-12.5l4 5-4 5-4-5z" fill="#ffc857"/>
+        <path d="M34.8-15.5h12v16h-12z" fill="none" stroke="#ffc857" stroke-width=".6" stroke-dasharray="3 2"/>
+        <text class="s-l s-l--amber" x="40.8" y="5.5" text-anchor="middle">Fressrausch ★</text>
+
+        <!-- Schwarm -->
+        <circle r="7" fill="#06110f" stroke="#6cf2a0" stroke-width=".8"/>
+        <g fill="#6cf2a0">
+          <circle cx="-2" cy="-1.2" r=".7"/><circle cx=".4" cy="-2.6" r=".6"/><circle cx="2.4" cy="-1" r=".7"/><circle cx="2" cy="1.8" r=".6"/>
+          <circle cx="-.6" cy="2.4" r=".7"/><circle cx="-2.8" cy="1.2" r=".6"/><circle cx="0" cy="0" r=".8"/>
+        </g>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i style="background:#86e08a"></i>Algen</span>
+      <span><i style="background:#7cc7ff"></i>Plankton</span>
+      <span><i style="background:#ff9a6b"></i>Krebs</span>
+      <span><i style="background:#e9f6ff"></i>Schnee</span>
+      <span><i style="background:#ffc857"></i>Fund</span>
+    </div>
+
+    <section class="here">
+      <div class="here__row">
+        <span class="here__tag">Hier</span>
+        <span class="here__name">Algenfilm</span>
+        <span class="here__time mono">leer in 0:20</span>
+      </div>
+      <div class="meter"><span></span></div>
+      <div class="here__foot">
+        <span class="mono">112 Tsd. / 297 Tsd.</span>
+        <button class="leave">Stelle verlassen</button>
+      </div>
+    </section>
+
+    <section class="targets">
+      <div class="targets__h"><h2>Ziele</h2><span>nach Ø-Ernte mit Reise</span></div>
+      <div class="why">Nächster Aufbruch: <b>Fressrausch</b> (markiert). Ohne Markierung: <em>Toter Krebs</em>, weil er mit Reise am meisten Ernte bringt.</div>
+      <ul class="list">
+        <li class="t-row t-row--marked">
+          <button class="star" aria-label="Markierung aufheben" aria-pressed="true">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="#ffc857"/></svg>
+          </button>
+          <div>
+            <div class="t-name"><span class="dot" style="background:#ffc857"></span>Fressrausch</div>
+            <div class="t-type">Fundstück · Appetit ×3 für 60 s</div>
+          </div>
+          <div class="t-meta mono muted"><b>0:14</b>Reise</div>
+        </li>
+        <li class="t-row">
+          <button class="star" aria-label="Als Ziel markieren" aria-pressed="false">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="none" stroke="#6f958a" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <div class="t-name"><span class="dot" style="background:#ff9a6b"></span>Toter Krebs <span class="t-auto">AUTO</span></div>
+            <div class="t-type mono">2,9 Mio. · Ø 5,6 Tsd./s</div>
+            <div class="t-bar"><span style="width:100%"></span></div>
+          </div>
+          <div class="t-meta mono muted"><b>0:11</b>Reise</div>
+        </li>
+        <li class="t-row">
+          <button class="star" aria-label="Als Ziel markieren" aria-pressed="false">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="none" stroke="#6f958a" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <div class="t-name"><span class="dot" style="background:#7cc7ff"></span>Planktonwolke</div>
+            <div class="t-type mono">1,1 Mio. · Ø 5,5 Tsd./s · <span class="t-warn">versiegt in 2:14</span></div>
+            <div class="t-bar"><span style="width:98%"></span></div>
+          </div>
+          <div class="t-meta mono muted"><b>0:08</b>Reise</div>
+        </li>
+        <li class="t-row">
+          <button class="star" aria-label="Als Ziel markieren" aria-pressed="false">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="none" stroke="#6f958a" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <div class="t-name"><span class="dot" style="background:#e9f6ff"></span>Meeresschnee</div>
+            <div class="t-type mono">870 Tsd. · Ø 4,9 Tsd./s · Eier ×2</div>
+            <div class="t-bar"><span style="width:88%"></span></div>
+          </div>
+          <div class="t-meta mono muted"><b>0:24</b>Reise</div>
+        </li>
+        <li class="t-row">
+          <button class="star" aria-label="Als Ziel markieren" aria-pressed="false">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="none" stroke="#6f958a" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <div class="t-name"><span class="dot" style="background:#86e08a"></span>Algenfilm</div>
+            <div class="t-type mono">310 Tsd. · Ø 3,7 Tsd./s</div>
+            <div class="t-bar"><span style="width:66%"></span></div>
+          </div>
+          <div class="t-meta mono muted"><b>0:29</b>Reise</div>
+        </li>
+        <li class="t-row" style="opacity:.6">
+          <button class="star" aria-label="Als Ziel markieren" aria-pressed="false">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="none" stroke="#6f958a" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <div class="t-name"><span class="dot" style="background:#e9f6ff"></span>Meeresschnee <span class="t-type">Zone 0</span></div>
+            <div class="t-type mono">14 Tsd. · Ø 1,1 Tsd./s</div>
+            <div class="t-bar"><span style="width:20%"></span></div>
+          </div>
+          <div class="t-meta mono muted"><b>0:10</b>Reise</div>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <nav class="tabbar">
+    <button aria-current="page">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="8.5"/><circle cx="11" cy="11" r="4.5"/><path d="M11 11l6-6" stroke-linecap="round"/></svg>
+      Sonar
+    </button>
+    <button>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="16" cy="12" r="2.5"/><circle cx="11" cy="18.5" r="2"/></svg>
+      Kette
+    </button>
+    <button>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M11 19V4M5 10l6-6 6 6"/></svg>
+      Ausbau
+    </button>
+    <button>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="currentColor"><circle cx="5" cy="11" r="1.8"/><circle cx="11" cy="11" r="1.8"/><circle cx="17" cy="11" r="1.8"/></svg>
+      Mehr
+    </button>
+  </nav>
+</div>
+</body>
+</html>
