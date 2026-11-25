@@ -61,7 +61,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Zugangsschwelle | Mindest-Antrieb, ab dem die Stellen einer Zone oder eines Stellentyps erreichbar sind |
 | Zielstelle | Besondere Stelle in der letzten Zone eines Zeitalters; nur an ihr ist der Evolutionssprung möglich. Nicht zu verwechseln mit dem Reiseziel |
 | Kartenpunkt | Längeneinheit der Karte. Abstände werden in der Ebene gemessen, auch zwischen zwei Zonen (`P1-KAR-05`) |
-| Zeitschritt (Δt) | Ein Schritt der Simulation, höchstens 0,25 Sekunden (`TEC-03`) |
+| Zeitschritt (Δt) | Ein Schritt der Simulation, genau 0,25 Sekunden (`TEC-03`) |
 | Nachberechnung | Simulation der Abwesenheit beim nächsten Start (`ALL-OFF-02`) |
 
 ### 2.2 Stellen
@@ -117,13 +117,12 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Masse (M) | Summe der Einzelmassen aller Einheiten und aller Soldaten (Jäger zählen halb); Ausbauten haben keine Masse. Senkt das Reisetempo |
 | Antrieb (T) | Entsteht durch den Ausbau für Antrieb (2.9); bestimmt mit der Masse das Reisetempo und ist Voraussetzung für Zugangsschwellen |
 | Reichweite | Radius um den Schwarm, in dem Stellen der aktuellen und der nächsten Zone bekannt werden |
-| Starre | Zustand, in dem keine Einheiten und keine Brut entstehen |
 
 ### 2.6 Reise
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Reise | Bewegung des Schwarms zu einem Reiseziel; beginnt mit dem Aufbruch, endet mit der Ankunft. Unterwegs ist der Schwarm in Starre |
+| Reise | Bewegung des Schwarms zu einem Reiseziel; beginnt mit dem Aufbruch, endet mit der Ankunft. Unterwegs erntet der Schwarm nicht |
 | Reiseziel | Stelle oder Fundstück, zu dem eine Reise führt |
 | Reisetempo (v) | Kartenpunkte pro Sekunde, abhängig von Antrieb und Masse (`P1-REI-02`) |
 | Reisezeit (t_Reise) | Dauer einer Reise: Strecke durch Reisetempo |
@@ -140,7 +139,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Kampfkraft (K) | Summe der Kampfkraftwerte aller Soldaten |
 | Abwehr (D) | Widerstand einer Stelle gegen die Einnahme; Ausgangsabwehr D₀ |
 | Verteidigte Stelle | Stelle mit Abwehr; sie kann erst nach der Einnahme beerntet werden |
-| Belagerung | Zeitraum nach der Ankunft an einer verteidigten Stelle, in dem die Abwehr sinkt; der Schwarm ist dabei in Starre |
+| Belagerung | Zeitraum nach der Ankunft an einer verteidigten Stelle, in dem die Abwehr sinkt; der Schwarm erntet dabei nicht |
 | Einnahme | Ende der Belagerung; Soldaten erleiden Verluste, danach ist die Stelle beerntbar |
 | Gehaltene Stelle | Eingenommene Stelle, an der der Schwarm erntet; erzeugt Revier |
 | Reiseverlust | Verlust an Sammlern auf Reisen (`P2-REI-01`) |
@@ -210,8 +209,8 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 1. **Ernten:** Die Sammler ernten die verfügbare Nahrung der aktuellen Stelle in den Vorrat.
 2. **Wachsen:** Vorrat, Brut und Einheiten der Stufe darunter kaufen neue Einheiten; höhere Stufen vermehren die niedrigeren von selbst.
 3. **Erschöpfen:** Der Bestand sinkt; ein großer Schwarm leert eine Stelle in Sekunden.
-4. **Entdecken:** Stellen innerhalb der Reichweite werden bekannt.
-5. **Aufbrechen:** Ist die Stelle abzugsreif oder verlässt der Spieler sie, bricht die Wanderautomatik zum markierten Ziel oder zur besten Alternative auf; unterwegs ist der Schwarm in Starre.
+4. **Entdecken:** Stellen innerhalb der Reichweite werden bekannt; neue Stellen entstehen in der Reichweite.
+5. **Aufbrechen:** Ist die Stelle abzugsreif oder verlässt der Spieler sie, bricht die Wanderautomatik zum markierten Ziel oder zur besten Alternative auf; unterwegs erntet der Schwarm nicht, Kette und Brutherd laufen weiter.
 6. **Ankommen:** Ernte am Reiseziel. Ab dem Zeitalter Organismen muss eine verteidigte Stelle zuerst eingenommen werden.
 
 ---
@@ -238,7 +237,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 - **`P1-KET-02` (Muss):** Beim Kauf einer höheren Stufe werden die angegebenen Einheiten der Stufe darunter verbraucht.
 - **`P1-KET-03` (Muss):** Fressling und Brutling sind von Beginn an kaufbar. Jede weitere Stufe wird kaufbar, sobald mindestens eine Einheit der Stufe darunter vorhanden ist.
 - **`P1-KET-04` (Muss):** Der Spieler kann 1 Einheit, 25 % der höchstmöglichen Menge oder die höchstmögliche Menge kaufen. Die höchstmögliche Menge ist durch Vorrat, Eier und Einheiten der Stufe darunter begrenzt.
-- **`P1-KET-05` (Muss):** Jede Stufe ab 2 erzeugt fortlaufend Einheiten der Stufe darunter, außer in Starre (`P1-STR-02`).
+- **`P1-KET-05` (Muss):** Jede Stufe ab 2 erzeugt fortlaufend Einheiten der Stufe darunter, auch ohne Ernte (`P1-STR-01`).
 
 ### 4.3 Ausbauten
 
@@ -258,7 +257,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 ### 4.4 Eier
 
-- **`P1-EIE-01` (Muss):** Eier entstehen fortlaufend mit der Eier-Rate des Brutherds (Rang 0: 1 Ei pro Sekunde), außer in Starre.
+- **`P1-EIE-01` (Muss):** Eier entstehen fortlaufend mit der Eier-Rate des Brutherds (Rang 0: 1 Ei pro Sekunde), auch ohne Ernte (`P1-STR-01`).
 
 ### 4.5 Ernte
 
@@ -273,13 +272,10 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 - **`P1-VOR-03` (Muss):** Es gibt keine harte Obergrenze. Kein Kauf ist durch die Kapazität ausgeschlossen.
 - **`P1-VOR-04` (Muss):** Es gibt keinen Unterhalt. Einheiten verbrauchen keinen Vorrat.
 
-### 4.7 Starre
+### 4.7 Erzeugung ohne Ernte
 
-- **`P1-STR-01` (Muss):** Der Schwarm ist in Starre, wenn mindestens eine Bedingung zutrifft:
-  - Er ist unterwegs.
-  - Er befindet sich an keiner Stelle.
-  - Die verfügbare Nahrung der aktuellen Stelle deckt den Appetit eines Zeitschritts nicht mehr (Stelle leer). Hat der Schwarm keine Sammler, gilt dies nur, wenn keine Nahrung verfügbar ist.
-- **`P1-STR-02` (Muss):** In Starre erzeugt die Kette keine Einheiten und der Brutherd keine Eier. Vorrat, Eier und Einheiten bleiben vollständig erhalten.
+- **`P1-STR-01` (Muss):** Es gibt keine Starre: Kette (`P1-KET-05`) und Brutherd (`P1-EIE-01`) erzeugen immer, auch unterwegs, an keiner Stelle und an einer leeren Stelle. Von der aktuellen Stelle hängt nur die Ernte ab.
+- **`P1-STR-02` (Muss):** Ohne Ernte fließt kein Vorrat zu. Vorrat, Eier und Einheiten bleiben vollständig erhalten; die Erzeugung der Kette kostet nichts (`P1-VOR-04`).
 - **`P1-STR-03` (Muss):** Im Zeitalter Winzlinge gibt es keinen Hunger-Zustand und keinen Verlust von Einheiten.
 
 ### 4.8 Stellen
@@ -298,8 +294,9 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 - **`P1-STE-04` (Muss):** Wuchs ist logistisch und wirkt nur, solange Bestand vorhanden ist: `dS/dt = g · S · (1 − S/S₀)` für S > 0.
 - **`P1-STE-05` (Muss):** Eine Stelle versiegt, wenn ihr Bestand auf 0 fällt oder ihre Eigenheit es vorsieht; ihr Bestand ist dann 0. Eine versiegte Stelle wächst nie mehr nach und ist nicht ansteuerbar. Sie verschwindet 10 Sekunden nach dem Aufbruch des Schwarms von der Karte; befindet sich der Schwarm beim Versiegen nicht an ihr, 10 Sekunden nach dem Versiegen.
-- **`P1-STE-06` (Muss):** Verschwindet das Reiseziel einer laufenden Reise, endet die Reise am aktuellen Ort; der Schwarm befindet sich dann an keiner Stelle (Starre).
-- **`P1-STE-07` (Muss):** Neue Stellen entstehen fortlaufend: in der aktuellen und der nächsten Zone je etwa alle 25 Sekunden eine, solange dort weniger als 10 nicht versiegte Stellen liegen (ohne Zielstelle). Gewichtung der Typen: Algenfilm 3, Planktonwolke 1, Toter Krebs 1, Meeresschnee 1. Neue Stellen sind zunächst unbekannt.
+- **`P1-STE-06` (Muss):** Verschwindet das Reiseziel einer laufenden Reise, endet die Reise am aktuellen Ort; der Schwarm befindet sich dann an keiner Stelle und erntet nicht.
+- **`P1-STE-07` (Muss):** Neue Stellen entstehen fortlaufend in der Reichweite des Schwarms und folgen ihm damit: in der aktuellen und der nächsten Zone je etwa alle 25 Sekunden eine, solange in der Reichweite dort weniger als 10 nicht versiegte Stellen liegen (ohne Zielstelle). Gewichtung der Typen: Algenfilm 3, Planktonwolke 1, Toter Krebs 1, Meeresschnee 1. Weil sie in der Reichweite entstehen, sind neue Stellen sofort bekannt (`P1-KAR-03`).
+- **`P1-STE-08` (Muss):** Liegen in der Reichweite weniger als 3 ansteuerbare Stellen (ohne die aktuelle Stelle), entsteht sofort eine neue Stelle in der Reichweite, bis es wieder 3 sind: in der nächsten Zone, sobald diese erreichbar ist, sonst in der aktuellen. Typen wie in `P1-STE-07`. So hat die Wanderautomatik immer ein Ziel (`P1-AUT-01`); mit größerer Reichweite wächst die Auswahl.
 
 ### 4.9 Karte und Zonen
 
@@ -322,7 +319,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 - **`P1-REI-01` (Muss):** Reisen löst nur die Wanderautomatik aus (`P1-AUT-01`). Reiseziel ist eine ansteuerbare Stelle (bekannt, erreichbar, nicht versiegt) oder ein ansteuerbares Fundstück (`P1-FUN-03`). Eine laufende Reise lässt sich nicht umlenken.
 - **`P1-REI-02` (Muss):** Reisetempo in Kartenpunkten pro Sekunde: `v = 20 · max(0,25; √min(1, T/M))`.
-- **`P1-REI-03` (Muss):** Mit dem Aufbruch endet die Ernte; unterwegs ist der Schwarm in Starre.
+- **`P1-REI-03` (Muss):** Mit dem Aufbruch endet die Ernte; unterwegs erntet der Schwarm nicht.
 - **`P1-REI-04` (Muss):** Im Zeitalter Winzlinge gibt es keine Reiseverluste.
 
 ### 4.11 Abzugsreife, Wanderautomatik und Markierung
@@ -355,11 +352,11 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 | Rückenwind | 2 | Reisetempo ×4 für 60 s |
 | Nahrungsblase | 3 | Sofort Vorrat in Höhe von max(1.000; 180 × Ø-Ernte). Ø-Ernte = Gesamternte der letzten 120 s Spielzeit / 120 s; Reisezeiten und Nachberechnung zählen als Spielzeit, in den ersten 120 s wird über die bisherige Spielzeit gemittelt. Unterliegt nicht der Kapazität |
 | Eierballen | 2 | Sofort Eier in Höhe von max(50; 180 × Eier-Rate) |
-| Wachstumsschub | 2 | Jede Stufe erhält sofort 120 × die aktuelle Erzeugung der Stufe darüber pro Sekunde (linear: ohne Weiterreichen neu entstehender Einheiten, ohne Berücksichtigung von Starre und ohne Boni anderer Fundstücke) |
+| Wachstumsschub | 2 | Jede Stufe erhält sofort 120 × die aktuelle Erzeugung der Stufe darüber pro Sekunde (linear: ohne Weiterreichen neu entstehender Einheiten und ohne Boni anderer Fundstücke) |
 | Keimzelle | 1 | Der nächste Rang eines Ausbaus nach Wahl kostet nichts |
 
 - **`P1-FUN-05` (Muss):** Zeitlich begrenzte Wirkungen desselben Typs addieren ihre Restdauer. Mehrere Keimzellen sammeln sich als Gratis-Ränge an.
-- **`P1-FUN-06` (Muss):** Fressrausch, Legeschub und Vermehrungsrausch wirken nicht in Starre; ihre Restdauer sinkt nur außerhalb der Starre. Die Restdauer von Rückenwind sinkt nur unterwegs. So verfallen Wirkungen nicht ungenutzt auf dem Weg vom Fundstück zur nächsten Stelle.
+- **`P1-FUN-06` (Muss):** Die Restdauer von Fressrausch sinkt nur, solange der Schwarm erntet, die von Rückenwind nur unterwegs. Legeschub und Vermehrungsrausch wirken immer (`P1-STR-01`); ihre Restdauer sinkt fortlaufend. So verfallen Wirkungen nicht ungenutzt auf dem Weg vom Fundstück zur nächsten Stelle.
 
 ### 4.13 Abschluss des Zeitalters
 
@@ -422,7 +419,7 @@ Zonen in dieser Reihenfolge: Gezeitenzone, Lagune, Riff, offenes Meer. Typfaktor
 ### 5.5 Einnehmen
 
 - **`P2-EIN-01` (Muss):** Eine Stelle mit Abwehr kann erst nach ihrer Einnahme beerntet werden. Ausgangsabwehr: `D₀ = 0,05 · S₀^0,8`.
-- **`P2-EIN-02` (Muss):** Nach der Ankunft beginnt die Belagerung automatisch. Die Abwehr sinkt mit `κ · K` pro Sekunde (κ = 0,1); die Einnahme dauert also `D / (κ · K)` Sekunden. Während der Belagerung ist der Schwarm in Starre.
+- **`P2-EIN-02` (Muss):** Nach der Ankunft beginnt die Belagerung automatisch. Die Abwehr sinkt mit `κ · K` pro Sekunde (κ = 0,1); die Einnahme dauert also `D / (κ · K)` Sekunden. Während der Belagerung erntet der Schwarm nicht.
 - **`P2-EIN-03` (Muss):** Bei der Einnahme verlieren alle Soldatenarten den Anteil `q = min(0,5; 0,2 · D/K)` (D = Abwehr zu Beginn der Belagerung). Panzerträger halbieren q.
 - **`P2-EIN-04` (Muss):** Eingenommene Stellen gelten als gehalten, solange der Schwarm an ihnen erntet, und erzeugen dabei Revier. Rate **[offen]**.
 - **`P2-EIN-05` (Muss):** Nach dem Aufbruch des Schwarms wächst die Abwehr zurück: `dD/dt = r_D · (D₀ − D)`. r_D **[offen]**.
@@ -478,8 +475,8 @@ Zonen in dieser Reihenfolge: Gezeitenzone, Lagune, Riff, offenes Meer. Typfaktor
 ### 6.1 Speichern und Abwesenheit
 
 - **`ALL-OFF-01` (Muss):** Der Spielstand wird automatisch lokal gespeichert, mindestens alle 10 Sekunden und beim Beenden.
-- **`ALL-OFF-02` (Muss):** Beim nächsten Start wird die Abwesenheit nachberechnet, ereignisbasiert oder in festen Zeitschritten. Höchstdauer: 24 Stunden *(Prototyp: 4 Stunden)*.
-- **`ALL-OFF-03` (Muss):** Ereignisse während der Nachberechnung werden protokolliert: Ankünfte, Wechsel in die nächste Zone, versiegte Stellen, Dauer der Starre, Gesamternte.
+- **`ALL-OFF-02` (Muss):** Beim nächsten Start wird die Abwesenheit in denselben festen Zeitschritten nachberechnet wie das Spiel (`TEC-03`). Höchstdauer: 24 Stunden *(Prototyp: 4 Stunden)*.
+- **`ALL-OFF-03` (Muss):** Ereignisse während der Nachberechnung werden protokolliert: Ankünfte, Wechsel in die nächste Zone, versiegte Stellen, Dauer ohne Ernte, Gesamternte.
 - **`ALL-OFF-04` (Muss):** Der Spielstand kann exportiert und importiert werden.
 - **`ALL-OFF-05` (Muss):** Spielstände älterer Versionen werden ergänzt oder kontrolliert zurückgesetzt, nie unbemerkt beschädigt.
 
@@ -498,7 +495,7 @@ Zonen in dieser Reihenfolge: Gezeitenzone, Lagune, Riff, offenes Meer. Typfaktor
 
 Zielwerte für das Zeitalter Organismen stehen in 5.10.
 
-Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige Karten): Das Zeitalter Winzlinge dauert mit allen Fundstücken 1,5 bis 2,3 Stunden, ohne Fundstücke 2,3 bis über 6 Stunden. Die Simulation lief noch mit dem früheren Verfahren (Fundstück alle 1,5 bis 2 Minuten in der Reichweite, Einsammeln per Klick ohne Umweg) und enthielt das inzwischen gestrichene Fundstück Frische Strömung. Für ortsfeste Fundstücke (`P1-FUN-01` bis `P1-FUN-03`) steht sie aus; durch die Umwege dürfte ihr Vorteil kleiner ausfallen. Die weiche Obergrenze bringt einem Spieler, der nur alle 30 Minuten eingreift, 1,5- bis 3-mal so viel Ernte wie eine harte Obergrenze. Tests mit Menschen stehen aus.
+Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige Karten): Das Zeitalter Winzlinge dauert mit allen Fundstücken 1,5 bis 2,3 Stunden, ohne Fundstücke 2,3 bis über 6 Stunden. Die Simulation lief noch mit dem früheren Verfahren (Fundstück alle 1,5 bis 2 Minuten in der Reichweite, Einsammeln per Klick ohne Umweg), enthielt das inzwischen gestrichene Fundstück Frische Strömung und rechnete noch mit Starre, also ohne Erzeugung auf Reisen. Für ortsfeste Fundstücke (`P1-FUN-01` bis `P1-FUN-03`) steht sie aus; durch die Umwege dürfte ihr Vorteil kleiner ausfallen. Die weiche Obergrenze bringt einem Spieler, der nur alle 30 Minuten eingreift, 1,5- bis 3-mal so viel Ernte wie eine harte Obergrenze. Tests mit Menschen stehen aus.
 
 ### 6.4 Konfiguration
 
@@ -517,10 +514,10 @@ Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`
 
 - **`TEC-01` (Muss):** Browser-Spiel in TypeScript.
 - **`TEC-02` (Muss):** Zahlenbereich mindestens bis 10³⁰⁸, mit einer Bibliothek für große Zahlen (z. B. break_infinity.js) erweiterbar.
-- **`TEC-03` (Muss):** Die Simulation läuft in festen Zeitschritten von höchstens 0,25 Sekunden oder ereignisbasiert. Geschlossene Formeln reichen nicht aus, weil Stellen erschöpft werden.
+- **`TEC-03` (Muss):** Spiel, Nachberechnung und Simulation des Balancings laufen in festen Zeitschritten von genau 0,25 Sekunden, damit sie bei gleichen Eingaben dasselbe Ergebnis liefern. Geschlossene Formeln reichen nicht aus, weil Stellen erschöpft werden.
 - **`TEC-04` (Muss):** Die Spiellogik ist eigenständig ausführbar, damit sie automatisiert simuliert werden kann (Balancing, Regressionstests).
 - **`TEC-05` (Soll):** Ein Testmodus beschleunigt die Spielzeit (Prototyp: 1×, 5×, 20×, 100×).
-- **`TEC-06` (Soll):** Für Spieltests werden erfasst: Zeitpunkt der ersten Reise, Anzahl der Reisen, versiegte und neu entstandene Stellen, eingesammelte Fundstücke, markierte Ziele und Nutzung von „Stelle verlassen“, Anteil der Zeit in Starre (gesamt und je Zone), Spielzeit bis zur Sprungbedingung der Winzlinge. Für die Simulation des Balancings zusätzlich über die Spielzeit: Anteil der Ausgaben je Ausbau, Verhältnis von Vorrat zu Kapazität, Verhältnis von Antrieb zu Masse (Zeit an der Untergrenze des Reisetempos), Anteil der durch Eier begrenzten Käufe und Eier-Rate im Verhältnis zur Kaufrate. Simuliert wird mit mindestens einem aktiven und einem passiven Spielerprofil.
+- **`TEC-06` (Soll):** Für Spieltests werden erfasst: Zeitpunkt der ersten Reise, Anzahl der Reisen, versiegte und neu entstandene Stellen, eingesammelte Fundstücke, markierte Ziele und Nutzung von „Stelle verlassen“, Anteil der Zeit ohne Ernte (gesamt und je Zone), Spielzeit bis zur Sprungbedingung der Winzlinge. Für die Simulation des Balancings zusätzlich über die Spielzeit: Anteil der Ausgaben je Ausbau, Verhältnis von Vorrat zu Kapazität, Verhältnis von Antrieb zu Masse (Zeit an der Untergrenze des Reisetempos), Anteil der durch Eier begrenzten Käufe und Eier-Rate im Verhältnis zur Kaufrate. Simuliert wird mit mindestens einem aktiven und einem passiven Spielerprofil.
 - **`TEC-07` (Muss):** Die Oberfläche ist mobile first: Sie wird zuerst für Smartphones im Hochformat gestaltet und ist dort vollständig per Touch bedienbar, ohne waagrechtes Scrollen der Seite. Keine Funktion setzt Hover, Rechtsklick oder Tastatur voraus.
 
 ---
@@ -540,25 +537,13 @@ Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`
 
 MVP (Phase 1):
 
-1. **Entdecken** (`P1-KAR-03`, `P1-STE-07`, `P1-AUT-01`): Die Wanderautomatik steuert nur bekannte Stellen an. Ohne bekanntes, ansteuerbares Ziel bleibt der Schwarm stehen, unter Umständen dauerhaft, wenn neue Stellen außerhalb der Reichweite entstehen. Dass die Reichweite nicht in eine neu erreichbare Zone hineinreicht, kommt nicht mehr vor, weil die nächste Zone direkt hinter der aktuellen liegt (`P1-KAR-05`). Kandidaten:
-   - *Neue Stellen in der Reichweite:* Liegen in der Reichweite weniger als k ansteuerbare Stellen (Startwert 3), entsteht dort eine neue, bei erreichbarer nächster Zone bevorzugt in ihr. Mit größerer Reichweite wächst die Auswahl. Die Obergrenze aus `P1-STE-07` bezieht sich dann auf die Reichweite statt auf die Zone; neue Stellen folgen damit dem Schwarm.
-   - *Wissen je Zone:* Alle Stellen der aktuellen und der nächsten Zone sind bekannt; Reichweite, `P1-AUS-03` und `P1-KAR-03` entfallen.
-   - *Erkundungsreise:* Ohne ansteuerbares Ziel zieht der Schwarm in einen noch unbekannten Teil der aktuellen Zone.
-
-   Die Kartenform ist entschieden: Zonen als Tiefenebenen nach Mockup 5d (`P1-KAR-05`, `P1-KAR-06`, `ALL-UI-01`, `ALL-UI-02`). Offen sind Größe und Form der Zonenfläche (9.2). Vorschlag für die Verteilung: Positionen gleichverteilt mit Mindestabstand 20 Kartenpunkte.
-2. **Appetit und Starre** (`P1-STR-01`, `P1-KET-05`, `P1-EIE-01`): Die Kette erzeugt nur, solange gefressen wird. Da die Wanderautomatik eine leere Stelle sofort verlässt, entsteht Starre fast nur auf Reisen. Höherer Appetit (Fressrausch, Verdauung, mehr Fresslinge) leert Stellen schneller, verkürzt so die Fresszeit und bremst die Kette, sobald die Nahrung knapper ist als der Appetit. Offen ist damit auch, wie viel Zeit in Starre noch spannend und nicht frustrierend ist. Kandidaten:
-   - *Starre abschaffen:* Kette und Brutherd laufen immer, auch unterwegs; das Wachstum begrenzt der Vorrat über die Kaufkosten.
-   - *Erzeugung kostet Vorrat:* Jede erzeugte Einheit kostet einen kleinen Teil ihres Kaufpreises; ohne Vorrat steht die Kette. Braucht eine Regel für Rücklage oder Priorität gegenüber Käufen des Spielers.
-   - *Unverändert lassen.*
-
-   Prüfung in einer frühen Simulation.
-3. **Zeitschritt** (`TEC-03`, `P1-STR-01`, `P1-ERN-02`): Starre und Ernte sind über die Dauer eines Zeitschritts definiert, `TEC-03` erlaubt aber auch kürzere oder ereignisbasierte Schritte; Spiel, Nachberechnung und Simulation können dann voneinander abweichen. Kandidaten: feste Schritte von genau 0,25 s für Spiel, Nachberechnung und Simulation; stufenlose Starre (Erzeugung und Brut skalieren mit Ernte / Appetit). Entfällt, falls die Starre abgeschafft wird (Punkt 2). Klärung zusammen mit Punkt 2.
+Keine. Entschieden sind zuletzt: Entdecken (`P1-STE-07`, `P1-STE-08`), keine Starre (`P1-STR-01`) und feste Zeitschritte (`TEC-03`).
 
 Nach dem MVP:
 
-4. Wie stark darf Erbe das nächste Zeitalter beschleunigen, ohne dessen erste Stunden zu entwerten?
-5. Wird die Karte für jeden Durchlauf neu erzeugt, oder gibt es eine feste Welt mit Zufallsstartwert?
-6. Was ist die Kernmechanik des Zeitalters In den Weltraum?
+1. Wie stark darf Erbe das nächste Zeitalter beschleunigen, ohne dessen erste Stunden zu entwerten?
+2. Wird die Karte für jeden Durchlauf neu erzeugt, oder gibt es eine feste Welt mit Zufallsstartwert?
+3. Was ist die Kernmechanik des Zeitalters In den Weltraum?
 
 ### 9.2 Noch festzulegende Werte
 
@@ -567,7 +552,7 @@ MVP (Phase 1):
 | Kennung | Offener Wert |
 | --- | --- |
 | `P1-AUS-04`, `P1-AUS-05` | Wirkung und Kosten von Mehrlingen und Produktions-Ausbau |
-| `P1-KAR-05` | Größe und Form der Zonenfläche; Aufschlag auf die Reisestrecke beim Wechsel in die nächste Zone (Vorschlag: keiner) |
+| `P1-KAR-05` | Größe und Form der Zonenfläche; Verteilung der Positionen (Vorschlag: gleichverteilt mit Mindestabstand 20 Kartenpunkte); Aufschlag auf die Reisestrecke beim Wechsel in die nächste Zone (Vorschlag: keiner) |
 
 Nach dem MVP (Phase 2):
 
@@ -588,9 +573,9 @@ Nach dem MVP (Phase 2):
 - [x] Prototyp des Zeitalters Winzlinge
 - [x] Pacing der Winzlinge per Simulation prüfen
 - [x] UI-Mockups für die Kartenform, mobile first: Zonen als Tiefenebenen nach Mockup 5d (`docs/design/mockups/`)
-- [ ] Frühe Simulation: Appetit und Starre sowie Zeitschritt (9.1, Punkte 2 und 3), Pacing mit ortsfesten Fundstücken und dem Zielwert für die erste Reise, Kennzahlen aus `TEC-06` mit aktivem und passivem Spielerprofil
+- [ ] Frühe Simulation: Pacing ohne Starre (`P1-STR-01`), mit ortsfesten Fundstücken und dem Zielwert für die erste Reise, Kennzahlen aus `TEC-06` mit aktivem und passivem Spielerprofil
 - [ ] Spieltest des Prototyps mit Menschen
-- [ ] Balancing anhand der Simulations- und Testergebnisse anpassen
+- [ ] Balancing anhand der Simulations- und Testergebnisse anpassen, vor allem über die Kosten der Ausbauten und der Kette; Kalibrierungen auch noch während der Implementierung
 - [ ] Offene Werte des MVP aus 9.2 festlegen
 - [ ] Nach dem MVP: Organismen separat ausarbeiten (Werte aus 9.2, beginnend mit der Einnahme), dann mit dem Evolutionssprung in den Prototyp übernehmen
 
