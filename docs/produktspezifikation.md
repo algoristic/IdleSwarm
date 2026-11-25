@@ -57,7 +57,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Durchlauf | Spielverlauf innerhalb eines Zeitalters vom Start bis zum nächsten Schwärmen oder Evolutionssprung |
 | Zone | Tiefenebene der Karte eines Zeitalters. Die Zonen liegen übereinander (`P1-KAR-05`); jede hat eine Basisgröße für ihre Stellen und eine Zugangsschwelle |
 | Aktuelle Zone | Zone, in der sich der Schwarm befindet |
-| Nächste Zone | Zone direkt hinter der aktuellen; ihre bekannten Stellen und ihr Fundstück sind als Vorschau sichtbar |
+| Nächste Zone | Zone direkt hinter der aktuellen; ihre bekannten Stellen und ihr Fundstück erscheinen in der Umgebung, sobald sie erreichbar ist. Vorher zeigt die Umgebung von ihr nur einen atmosphärischen Hintergrund (`ALL-UI-02`) |
 | Zugangsschwelle | Mindest-Antrieb, ab dem die Stellen einer Zone oder eines Stellentyps erreichbar sind |
 | Zielstelle | Besondere Stelle in der letzten Zone eines Zeitalters; nur an ihr ist der Evolutionssprung möglich. Nicht zu verwechseln mit dem Reiseziel |
 | Kartenpunkt | Längeneinheit der Karte. Abstände werden in der Ebene gemessen, auch zwischen zwei Zonen (`P1-KAR-05`) |
@@ -89,7 +89,8 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Verfügbare Nahrung | Teil des Bestands, den der Schwarm fressen kann; im Zeitalter Winzlinge der gesamte Bestand, an der Seegraswiese der Bestand oberhalb von 1 % der Größe (`P1-ERN-03`) |
 | Fressleistung | Nahrung pro Sekunde, die ein Sammler höchstens erntet (Ausbau Verdauung) |
 | Appetit | Höchste Ernte pro Sekunde: Anzahl Sammler × Fressleistung |
-| Ernte (H) | Tatsächlich geerntete Nahrung pro Sekunde, höchstens der Appetit und höchstens die verfügbare Nahrung |
+| Fressrate | Appetit, gedrosselt um den Anteil C/V, sobald der Vorrat V über der Kapazität C liegt (`P1-VOR-02`) |
+| Ernte (H) | Tatsächlich geerntete Nahrung pro Sekunde, höchstens die Fressrate und höchstens die verfügbare Nahrung |
 | Gesamternte | Menge aller Ernte, je nach Zusammenhang eines Durchlaufs oder eines ganzen Zeitalters |
 
 ### 2.4 Ressourcen
@@ -98,7 +99,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | --- | --- |
 | Nahrung | Was Stellen enthalten und Sammler ernten; geerntet wird sie zu Vorrat |
 | Vorrat (V) | Geerntete Nahrung; Hauptwährung für Einheiten, Soldaten und Ausbauten |
-| Kapazität (C) | Weiche Obergrenze des Vorrats: Bis zu ihr kommt die Ernte vollständig an, darüber nur noch der Anteil C/V. Kein Kauf ist durch sie ausgeschlossen |
+| Kapazität (C) | Weiche Obergrenze des Vorrats: Bis zu ihr frisst der Schwarm mit vollem Appetit, darüber nur noch mit dem Anteil C/V. Kein Kauf ist durch sie ausgeschlossen |
 | Brut | Jede neu gekaufte Einheit und jeder Soldat kostet eine Brut |
 | Brutrate | Brut, die pro Sekunde entsteht (Ausbau Brutherd) |
 | Revier | Ab Organismen; entsteht durch gehaltene Stellen |
@@ -262,13 +263,13 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 ### 4.5 Ernte
 
 - **`P1-ERN-01` (Muss):** Der Appetit ist Anzahl Fresslinge × Fressleistung (Ausbau Verdauung). Eine Stelle begrenzt die Ernte pro Sekunde nicht; begrenzt ist nur die Menge.
-- **`P1-ERN-02` (Muss):** Pro Zeitschritt wird höchstens die verfügbare Nahrung geerntet: `H = min(Appetit, verfügbare Nahrung / Δt)`. Der Bestand sinkt um die Ernte.
+- **`P1-ERN-02` (Muss):** Pro Zeitschritt wird höchstens die verfügbare Nahrung geerntet: `H = min(Fressrate, verfügbare Nahrung / Δt)`. Der Bestand sinkt um die Ernte, und die Ernte kommt vollständig im Vorrat an.
 - **`P1-ERN-03` (Muss):** Der Schwarm frisst jede Stelle vollständig leer; eine Fressgrenze gibt es im Zeitalter Winzlinge nicht. Ausnahme ist die Seegraswiese, deren Bestand nie unter 1 % der Größe fällt (`P1-STE-03`). Wer eine Stelle schonen will, verlässt sie vorher (`P1-AUT-04`); der Restbestand wächst dann nach. *(Eine wählbare Fressgrenze kann ab dem Zeitalter Organismen zusammen mit der Mutationsgruppe Hirte wieder aufgenommen werden.)*
 
 ### 4.6 Vorrat und Kapazität
 
-- **`P1-VOR-01` (Muss):** Bis zur Kapazität C kommt die Ernte vollständig im Vorrat an.
-- **`P1-VOR-02` (Muss):** Oberhalb der Kapazität kommt nur der Anteil C/V der Ernte an. Exakt integriert: Der Teil der Ernte oberhalb der Kapazität erhöht V² um 2 · C · Ernte.
+- **`P1-VOR-01` (Muss):** Bis zur Kapazität C frisst der Schwarm mit vollem Appetit.
+- **`P1-VOR-02` (Muss):** Oberhalb der Kapazität frisst der Schwarm langsamer: Die Fressrate ist Appetit · C/V. Es geht keine Nahrung verloren; was nicht gefressen wird, bleibt an der Stelle. Exakt integriert: Der Teil oberhalb der Kapazität erhöht V² um 2 · C · Appetit · Δt, gefressen wird genau der Zuwachs des Vorrats (höchstens die verfügbare Nahrung). Die Oberfläche zeigt die gedrosselte Ernte an und dazu, um wie viel Prozent die Fressrate gedrosselt ist (1 − C/V).
 - **`P1-VOR-03` (Muss):** Es gibt keine harte Obergrenze. Kein Kauf ist durch die Kapazität ausgeschlossen.
 - **`P1-VOR-04` (Muss):** Es gibt keinen Unterhalt. Einheiten verbrauchen keinen Vorrat.
 
@@ -324,13 +325,13 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 ### 4.11 Abzugsreife, Wanderautomatik und Markierung
 
-- **`P1-ABZ-01` (Muss):** Für jede ansteuerbare Stelle j außer der aktuellen wird die erwartete Durchschnittsernte unter Einrechnung der Reise ermittelt: `Ø_j = A_j / (t_Reise,j + A_j / Appetit)`. A_j ist die verfügbare Nahrung an j bei der Ankunft: Verfall und Versiegen während der Reise werden aus den Eigenheiten eingerechnet (eine Planktonwolke, die vor der Ankunft versiegt, ergibt 0; ein toter Krebs wird um seinen Verfall gemindert), Wuchs während der Reise nicht.
+- **`P1-ABZ-01` (Muss):** Für jede ansteuerbare Stelle j außer der aktuellen wird die erwartete Durchschnittsernte unter Einrechnung der Reise ermittelt: `Ø_j = A_j / (t_Reise,j + A_j / Fressrate)`. A_j ist die verfügbare Nahrung an j bei der Ankunft: Verfall und Versiegen während der Reise werden aus den Eigenheiten eingerechnet (eine Planktonwolke, die vor der Ankunft versiegt, ergibt 0; ein toter Krebs wird um seinen Verfall gemindert), Wuchs während der Reise nicht.
 - **`P1-ABZ-02` (Muss):** Die aktuelle Stelle ist abzugsreif, wenn mindestens eine Bedingung zutrifft:
-  - Ihre verfügbare Nahrung deckt den Appetit nicht mehr.
+  - Ihre verfügbare Nahrung ist aufgebraucht. Ein Rest, der kleiner ist als die Ernte eines Zeitschritts, wird noch gefressen; der Schwarm verlässt eine Stelle nie, ohne an ihr geerntet zu haben, solange dort Nahrung liegt und sie die beste Ernte bietet.
   - Der Schwarm befindet sich an keiner Stelle.
   - Die Ernte liegt unter dem höchsten Ø_j.
 
-  Die Stelle mit dem höchsten Ø_j ist die beste Alternative. *Hinweis: Da die Ernte im Zeitalter Winzlinge bis zum Leeren der Stelle dem Appetit entspricht (`P1-ERN-01`), greift die dritte Bedingung praktisch nie; abzugsreif ist eine Stelle hier, wenn sie leer ist. Die Bedingung bleibt für Ernte-Modelle erhalten, bei denen die Ernte mit dem Bestand sinkt.*
+  Die Stelle mit dem höchsten Ø_j ist die beste Alternative. *Hinweis: Da die Ernte im Zeitalter Winzlinge bis zum Leeren der Stelle der Fressrate entspricht (`P1-ERN-01`), greift die dritte Bedingung praktisch nie; abzugsreif ist eine Stelle hier, wenn sie leer ist. Die Bedingung bleibt für Ernte-Modelle erhalten, bei denen die Ernte mit dem Bestand sinkt.*
 - **`P1-AUT-01` (Muss):** Die Wanderautomatik ist immer aktiv und nicht abschaltbar. Ist die aktuelle Stelle abzugsreif oder verlässt der Spieler sie (`P1-AUT-04`), bricht der Schwarm auf: zum markierten Ziel, falls eines besteht, sonst zur besten Alternative. Gibt es kein ansteuerbares Ziel, bleibt der Schwarm.
 - **`P1-AUT-02` (Muss):** Die Wanderautomatik wirkt auch während der Nachberechnung (`ALL-OFF-02`), einschließlich eines markierten Ziels.
 - **`P1-AUT-03` (Muss):** Der Spieler kann genau ein Ziel markieren: eine ansteuerbare Stelle oder ein ansteuerbares Fundstück. Die Markierung löst keinen Aufbruch aus, sondern bestimmt nur das Ziel des nächsten Aufbruchs. Sie ist auch unterwegs möglich, lässt sich aufheben und erlischt mit der Ankunft am Ziel oder sobald das Ziel nicht mehr ansteuerbar ist. Würde eine markierte Stelle vor der Ankunft versiegen (`P1-ABZ-01`), erhält der Spieler einen Hinweis. Ist nach der Ankunft nichts markiert, wählt die Wanderautomatik das nächste Ziel wieder selbst.
@@ -340,8 +341,8 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 - **`P1-FUN-01` (Muss):** Fundstücke liegen an einer festen Position innerhalb einer Zone und bestehen, bis sie eingesammelt werden oder ihre Zone verschwindet (`P1-KAR-06`). Je Zone liegt höchstens ein Fundstück. Bei Spielbeginn liegt in jeder Zone eines.
 - **`P1-FUN-02` (Muss):** Wird ein Fundstück eingesammelt, entsteht nach einer zufälligen Wartezeit (120 bis 240 s, Zielwert 180 s) ein neues an einer zufälligen Position derselben Zone, sofern sie dann noch besteht. Die Wartezeit läuft auch während der Nachberechnung. So liegt dort, wo sich der Schwarm aufhält, regelmäßig ein Fundstück, und es sind höchstens zwei Fundstücke zugleich ansteuerbar: das der aktuellen und das der nächsten Zone.
-- **`P1-FUN-07` (Muss):** Das Fundstück der nächsten Zone ist als Vorschau sichtbar, aber erst ansteuerbar, wenn seine Zone erreichbar wird. Verschwindet eine Zone (`P1-KAR-06`), verschwindet ihr Fundstück mit ihr; eine Markierung darauf erlischt (`P1-AUT-03`).
-- **`P1-FUN-03` (Muss):** Fundstücke der aktuellen und der nächsten Zone sind immer sichtbar, auch außerhalb der Reichweite, und ihr Typ ist erkennbar. Ein Fundstück ist ansteuerbar, wenn der Antrieb die Zugangsschwelle seiner Zone erreicht. Der Schwarm sammelt es ein, sobald er an seiner Position ankommt; danach wirkt es und wird entfernt. Die Wanderautomatik steuert Fundstücke nur an, wenn der Spieler sie markiert hat (`P1-AUT-03`). Nach dem Einsammeln befindet sich der Schwarm an keiner Stelle und zieht sofort weiter (`P1-AUT-01`).
+- **`P1-FUN-07` (Muss):** Das Fundstück der nächsten Zone wird erst sichtbar und ansteuerbar, wenn seine Zone erreichbar wird; vorher gibt es keine Vorschau. Verschwindet eine Zone (`P1-KAR-06`), verschwindet ihr Fundstück mit ihr; eine Markierung darauf erlischt (`P1-AUT-03`).
+- **`P1-FUN-03` (Muss):** Das Fundstück der aktuellen Zone ist immer sichtbar, auch außerhalb der Reichweite, das der nächsten Zone, sobald diese erreichbar ist (`P1-FUN-07`); ihr Typ ist erkennbar. Ein Fundstück ist ansteuerbar, wenn der Antrieb die Zugangsschwelle seiner Zone erreicht. Der Schwarm sammelt es ein, sobald er an seiner Position ankommt; danach wirkt es und wird entfernt. Die Wanderautomatik steuert Fundstücke nur an, wenn der Spieler sie markiert hat (`P1-AUT-03`). Nach dem Einsammeln befindet sich der Schwarm an keiner Stelle und zieht sofort weiter (`P1-AUT-01`).
 - **`P1-FUN-04` (Muss):** Typen, Gewichtung und Wirkung:
 
 | Fundstück | Gewicht | Wirkung |
@@ -505,8 +506,11 @@ Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige K
 
 Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`).
 
-- **`ALL-UI-01` (Muss):** Die Oberfläche hat drei Ansichten, die als Tiefenebenen hintereinanderliegen: Ausbau (die Ausbauten im Inneren des Schwarms), Schwarm (die Kette an der aktuellen Stelle) und Umgebung (die aktuelle Zone um den Schwarm). Der Spieler wechselt per Zoom zur benachbarten Ansicht. In der Schwarm- und der Umgebungsansicht liegen die tieferen Ebenen abgedunkelt und unscharf im Hintergrund. Startansicht ist der Schwarm.
-- **`ALL-UI-02` (Muss):** Die Umgebung zeigt nur die aktuelle Zone, ausgerichtet am Schwarm, mit Reichweite und Ringen in Reisezeit. Sie lässt sich bis zum Rand der Reichweite verschieben und wieder auf den Schwarm zentrieren. Die nächste Zone scheint als unscharfe Ebene durch das Wasser der Umgebung, mit ihren bekannten Stellen und ihrem Fundstück. Eine Tiefenanzeige zeigt die aktuelle Ansicht und die nächste Zone; ist diese noch nicht erreichbar, erscheint sie gesperrt mit ihrer Zugangsschwelle. Verlassene Zonen werden nicht angezeigt (`P1-KAR-06`).
+- **`ALL-UI-01` (Muss):** Die Oberfläche hat drei Ansichten, die als Tiefenebenen hintereinanderliegen: Ausbau (die Ausbauten im Inneren des Schwarms), Schwarm (die Kette an der aktuellen Stelle) und Umgebung (die aktuelle Zone um den Schwarm). Der Spieler wechselt über die Ansichtsschalter (`ALL-UI-04`) direkt zu jeder Ansicht; der Wechsel wird als Zoom durch die Ebenen dargestellt. Die Ausbau-Ansicht lässt sich ein wenig um das Neuron herum verschieben. Startansicht ist der Schwarm.
+- **`ALL-UI-02` (Muss):** Die Umgebung zeigt die aktuelle Zone, ausgerichtet am Schwarm, mit Reichweite und Ringen in Reisezeit. Sie lässt sich bis zum Rand der Reichweite verschieben und wieder auf den Schwarm zentrieren. Hinter dem Wasser der Umgebung liegt ein atmosphärischer Hintergrund mit der Stimmung der nächsten Zone, der beim Verschieben mit Parallaxe mitläuft; er zeigt keine Stellen und wird nicht simuliert. Ist die nächste Zone erreichbar, erscheinen ihre bekannten, ansteuerbaren Stellen und ihr Fundstück als Ziele in der Umgebung, gekennzeichnet als Abstieg in die nächste Zone. Verlassene Zonen werden nicht angezeigt (`P1-KAR-06`). Beschriftet sind in der Umgebung nur die aktuelle Stelle (am Schwarm) und der Abschluss; alle anderen Stellen und Fundstücke stehen ohne Text und unterscheiden sich über ihr Symbol und die Markierung als Ziel oder Auto-Ziel. Einzelheiten zum Ziel zeigt das Blatt.
+- **`ALL-UI-03` (Muss):** Die Schwarmansicht zeigt die Kette an der aktuellen Stelle vor einem atmosphärischen Hintergrund, der zum Typ der Stelle passt, nicht die Umgebung dahinter. Bricht der Schwarm auf, bleibt die Stelle zurück, und eine Wanderanimation zeigt den Schwarm in Reiserichtung schwimmend bis zur Ankunft, mit der die neue Stelle aus Reiserichtung herankommt.
+- **`ALL-UI-04` (Muss):** Am rechten Rand stehen immer alle drei Ansichtsschalter untereinander (von oben: Umgebung, Schwarm, Ausbau), als Symbole ohne Text; der Schalter der aktuellen Ansicht ist hervorgehoben. Oben links unter der Kontextzeile steht die nächste Zone, gesperrt mit ihrer Zugangsschwelle, solange sie nicht erreichbar ist.
+- **`ALL-UI-05` (Muss):** Das Blatt am unteren Rand jeder Ansicht lässt sich ein- und ausklappen (Griff antippen oder wischen). Eingeklappt bleibt nur der Griff sichtbar, damit die Ansicht frei liegt.
 
 ---
 

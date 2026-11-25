@@ -38,7 +38,7 @@
   .num { font-variant-numeric: tabular-nums; }
 
   .app {
-    position: relative; width: 100%; max-width: 430px; height: 100dvh; overflow: hidden;
+    position: relative; width: 100%; max-width: 430px; height: 100dvh; overflow: hidden; overflow: clip; /* clip: Fokus darf die Fläche nicht verschieben */
     background: var(--night); isolation: isolate;
     user-select: none; -webkit-user-select: none;
   }
@@ -62,20 +62,24 @@
   .layer--neuron > svg { left: -500px; top: -560px; }
 
   .app { --px: 0px; --py: 0px; }
-  .app[data-view="main"] .layer--far    { transform: translate(0px, 0px) scale(2.2); filter: blur(5px) brightness(.5); opacity: 1; }
-  .app[data-view="main"] .layer--map    { transform: translate(0px, 0px) scale(2); filter: blur(2.6px) brightness(.7); opacity: 1; }
+  .app[data-view="main"] .layer--far    { transform: translate(0px, 0px) scale(2.2); filter: blur(5px) brightness(.5); opacity: 0; }
+  .app[data-view="main"] .layer--map    { transform: translate(0px, 0px) scale(2); filter: blur(2.6px) brightness(.7); opacity: 0; }
   .app[data-view="main"] .layer--main   { transform: translate(0px, 0px) scale(1); filter: blur(0) brightness(1); opacity: 1; }
   .app[data-view="main"] .layer--neuron { transform: scale(.05); filter: blur(3px) brightness(1); opacity: 0; }
   .app[data-view="map"] .layer--far     { transform: translate(calc(var(--px) * .35), calc(var(--py) * .35)) scale(1.15); filter: blur(4px) brightness(.95); opacity: 1; }
+  .app[data-view="map"] .layer--haze    { transform: translate(calc(var(--px) * .65), calc(var(--py) * .65)) scale(1.05); filter: blur(1.5px); opacity: 1; }
+  .app[data-view="main"] .layer--haze   { transform: scale(2); opacity: 0; }
+  .app[data-view="neuron"] .layer--haze { transform: scale(8); opacity: 0; }
+  .layer--haze > svg { left: -1000px; top: -1000px; }
   .app[data-view="map"] .layer--map     { transform: translate(var(--px), var(--py)) scale(1); filter: blur(0) brightness(1); opacity: 1; pointer-events: auto; }
   .app[data-view="map"] .layer--main    { transform: translate(var(--px), var(--py)) scale(.135); filter: blur(1px) brightness(1); opacity: 0; }
   .app[data-view="map"] .layer--neuron  { transform: scale(.004); opacity: 0; }
   .app[data-view="neuron"] .layer--far    { transform: translate(0px, 0px) scale(9); filter: blur(4px) brightness(1); opacity: 0; }
   .app[data-view="neuron"] .layer--map    { transform: translate(0px, 0px) scale(7.8); filter: blur(3px) brightness(1); opacity: 0; }
   .app[data-view="neuron"] .layer--main   { transform: translate(0px, 0px) scale(5); filter: blur(3px) brightness(1); opacity: 0; }
-  .app[data-view="neuron"] .layer--neuron { transform: scale(1); filter: blur(0) brightness(1); opacity: 1; pointer-events: auto; }
+  .app[data-view="neuron"] .layer--neuron { transform: translate(var(--px), var(--py)) scale(1); filter: blur(0) brightness(1); opacity: 1; pointer-events: auto; }
 
-  .app[data-view="map"] { touch-action: none; cursor: grab; }
+  .app[data-view="map"], .app[data-view="neuron"] { touch-action: none; cursor: grab; }
   .app.panning { cursor: grabbing; }
   .app.panning .layer { transition: none !important; }
 
@@ -83,10 +87,10 @@
   .app[data-view="main"] .map-only, .app[data-view="neuron"] .map-only { opacity: 0; }
   .app[data-view="map"] .map-only { transition-delay: calc(var(--dur) * .45); }
 
-  .app.no-anim .layer, .app.no-anim .sheet, .app.no-anim .ctx > *, .app.no-anim .map-only, .app.no-anim .gauge * { transition: none !important; }
+  .app.no-anim .layer, .app.no-anim .sheet, .app.no-anim .ctx > *, .app.no-anim .map-only, .app.no-anim .views__btn { transition: none !important; }
   @media (prefers-reduced-motion: reduce) {
     .layer { transition: opacity .3s linear; }
-    .swim, .bob, .sig, .node__pulse, .drift, .node__sel, .swirl, .route, .cilia { animation: none !important; }
+    .swim, .bob, .sig, .node__pulse, .drift, .drift--fast, .node__sel, .swirl, .route, .paddle, .roll, .ray, .site-out, .site-in, .bg-in { animation: none !important; }
     .node__pulse { stroke-width: 0; }
   }
 
@@ -94,8 +98,18 @@
   .swim { animation: swim 3.2s ease-in-out infinite alternate; }
   .swim--2 { animation-duration: 2.6s; }
   .swim--3 { animation-duration: 3.8s; }
-  .cilia { animation: cilia .6s linear infinite; }
-  @keyframes cilia { to { stroke-dashoffset: -1.15; } }
+  /* Fresslinge: eigene kleine Kreisbahn je Figur mit kurzem Zurückweichen (Fluchtreaktion), Rollen um die Längsachse */
+  .paddle { animation: paddle 10s infinite; }
+  .paddle--rev { animation-direction: reverse; }
+  @keyframes paddle {
+    0% { transform: rotate(0deg); animation-timing-function: ease-in-out; }
+    64% { transform: rotate(235deg); animation-timing-function: ease-out; }
+    69% { transform: rotate(222deg); animation-timing-function: ease-in-out; }
+    75% { transform: rotate(226deg); animation-timing-function: ease-in-out; }
+    100% { transform: rotate(360deg); }
+  }
+  .roll { animation: roll 1s ease-in-out infinite; }
+  @keyframes roll { 0%, 100% { transform: rotate(-3deg) scaleY(1); } 50% { transform: rotate(3deg) scaleY(.74); } }
   @keyframes swim { from { transform: translate(-2px, 1px) rotate(-6deg); } to { transform: translate(3px, -1px) rotate(7deg); } }
   .bob { animation: bob 5s ease-in-out infinite alternate; }
   .bob--2 { animation-duration: 6.5s; }
@@ -110,6 +124,16 @@
   @keyframes drift { to { transform: translate(14px, -22px); } }
   @keyframes driftFast { from { transform: translate(0, -60px); } to { transform: translate(0, 60px); } }
   .site-scale { transition: transform 1.2s ease; }
+  /* Wanderung: die alte Stelle zieht nach hinten weg, die neue kommt von vorn */
+  .site-out { animation: siteOut 1.6s var(--ease) forwards; }
+  .site-in { animation: siteIn 1.4s var(--ease) both; }
+  @keyframes siteOut { to { transform: translate(var(--ox), var(--oy)) scale(.6); opacity: 0; } }
+  @keyframes siteIn { from { transform: translate(var(--ix), var(--iy)) scale(.5); opacity: 0; } }
+  .bg-in { animation: bgIn 1.2s ease both; }
+  @keyframes bgIn { from { opacity: 0; } }
+  .ray { animation: ray 9s ease-in-out infinite alternate; transform-origin: 0 -900px; }
+  @keyframes ray { from { transform: rotate(-4deg); opacity: .5; } to { transform: rotate(4deg); opacity: 1; } }
+  .trek { transition: transform .8s var(--ease); }
 
   /* ---------- Neuron ---------- */
   .twig { fill: none; stroke: #6d2668; stroke-width: 3; stroke-linecap: round; }
@@ -168,11 +192,12 @@
   @keyframes route { to { stroke-dashoffset: -7.6; } }
 
   /* ---------- Bedienoberfläche ---------- */
-  .hud { position: absolute; z-index: 5; left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top)); display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 6px; }
+  .hud { position: absolute; z-index: 5; left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top)); display: grid; grid-template-columns: 1.4fr 1fr 1.1fr; gap: 6px; }
   .pill { background: #171d58; border-radius: 16px; padding: 7px 11px 8px; box-shadow: 0 4px 0 #080a26; min-width: 0; }
   .pill__k { font-size: 9.5px; font-weight: 800; color: var(--muted); display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: .1em; }
   .pill__k i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
   .pill__k em { margin-left: auto; font-style: normal; letter-spacing: .02em; text-transform: none; font-size: 10.5px; color: #8890d0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .pill__s b { color: var(--orange); font-weight: 900; }
   .pill__v { font-size: 17px; font-weight: 900; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pill__v small { font-size: 11px; font-weight: 700; color: var(--muted); }
   .pill__s { font-size: 10.5px; font-weight: 800; color: #8890d0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; margin-top: 2px; }
@@ -203,29 +228,23 @@
   .tag:empty { display: none; }
 
   /* Zweite Zeile: Menü und aktive Wirkungen der Fundstücke */
-  .chips { position: absolute; z-index: 5; left: 12px; right: 40px; top: calc(130px + env(safe-area-inset-top)); display: flex; flex-wrap: wrap; gap: 5px; pointer-events: none; }
+  .chips { position: absolute; z-index: 5; left: 12px; right: 64px; top: calc(130px + env(safe-area-inset-top)); display: flex; flex-wrap: wrap; gap: 5px; pointer-events: none; }
   .menu-btn { position: absolute; z-index: 5; right: 12px; top: calc(80px + env(safe-area-inset-top)); width: 40px; height: 40px; border-radius: 50%; background: var(--panel); box-shadow: 0 4px 0 #080a26; display: grid; place-items: center; }
   .chip { font-size: 10.5px; font-weight: 900; border-radius: 10px; padding: 4px 8px; background: #0c0f33; color: var(--yellow); white-space: nowrap; }
   .chip--speed { color: var(--pink); }
   .chip--free { color: var(--lime); }
 
-  .gauge { position: absolute; z-index: 4; right: 10px; top: calc(134px + env(safe-area-inset-top)); width: 12px; height: 122px; }
-  .gauge::before { content: ""; position: absolute; left: 5px; top: 4px; height: 76px; width: 2px; border-radius: 1px; background: #4a5199; }
-  .gauge::after { content: ""; position: absolute; left: 5px; top: 84px; height: 30px; border-left: 2px dashed #4a5199; }
-  .gauge.is-last::after { display: none; }
-  .gauge i { position: absolute; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: #3a4290; transition: all .4s var(--ease); }
-  .gauge i:nth-child(1) { top: 0; } .gauge i:nth-child(2) { top: 38px; } .gauge i:nth-child(3) { top: 76px; }
-  .gauge i:nth-child(4) { top: 114px; background: none; border: 1.5px dashed #6a74c8; }
-  .gauge.open i:nth-child(4) { border: 0; background: #6a74c8; }
-  .gauge.is-last i:nth-child(4) { display: none; }
-  .app[data-view="neuron"] .gauge i:nth-child(1) { background: var(--pink); box-shadow: 0 0 0 4px #8f3266; transition-delay: calc(var(--dur) * .5); }
-  .app[data-view="main"] .gauge i:nth-child(2) { background: var(--orange); box-shadow: 0 0 0 4px #8f5232; transition-delay: calc(var(--dur) * .5); }
-  .app[data-view="map"] .gauge i:nth-child(3) { background: var(--cyan); box-shadow: 0 0 0 4px #2a7f8f; transition-delay: calc(var(--dur) * .5); }
-  .gauge span { position: absolute; right: 18px; font-size: 9.5px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; text-align: right; opacity: 0; transition: opacity .3s; background: #0c0f33; border-radius: 8px; padding: 3px 7px; margin-top: -3px; }
-  .gauge span:nth-of-type(1) { top: -3px; color: var(--pink); } .gauge span:nth-of-type(2) { top: 35px; color: var(--orange); } .gauge span:nth-of-type(3) { top: 73px; color: var(--cyan); }
-  .gauge span:nth-of-type(4) { top: 111px; color: #a7aee8; }
-  .gauge.is-last span:nth-of-type(4) { display: none; }
-  .app[data-view="neuron"] .gauge span:nth-of-type(1), .app[data-view="main"] .gauge span:nth-of-type(2), .app[data-view="map"] .gauge span:nth-of-type(3), .app[data-view="map"] .gauge span:nth-of-type(4) { opacity: 1; transition-delay: calc(var(--dur) * .5); }
+  /* Ansichtsschalter rechts am Rand: Umgebung, Schwarm, Ausbau */
+  .views { position: absolute; z-index: 5; right: 12px; top: calc(134px + env(safe-area-inset-top)); display: grid; gap: 10px; }
+  .views__btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; filter: grayscale(.75) brightness(.7); transition: filter .3s, box-shadow .3s, transform .1s; }
+  .views__btn--pink { background: var(--pink); box-shadow: 0 4px 0 #b52a5e; }
+  .views__btn--orange { background: var(--orange); box-shadow: 0 4px 0 #b9561a; }
+  .views__btn--cyan { background: var(--cyan); box-shadow: 0 4px 0 #1a9a96; }
+  .views__btn[aria-pressed="true"] { filter: none; outline: 2px solid currentColor; outline-offset: 3px; }
+  .views__btn--pink[aria-pressed="true"] { color: var(--pink); } .views__btn--orange[aria-pressed="true"] { color: var(--orange); } .views__btn--cyan[aria-pressed="true"] { color: var(--cyan); }
+  .views__btn:active { transform: translateY(3px); }
+  .chip--zone { color: #a7aee8; display: inline-flex; align-items: center; gap: 4px; }
+  .chip--zone.is-open { color: var(--cyan); }
 
   .recenter { opacity: 0; pointer-events: none; transition: opacity .25s; }
   .app.panned .recenter { opacity: 1; pointer-events: auto; }
@@ -244,8 +263,12 @@
     opacity: 1; transform: none; pointer-events: auto;
     transition: opacity .45s ease calc(var(--dur) * .6), transform .45s var(--ease) calc(var(--dur) * .6);
   }
+  .app[data-view] .sheet.is-collapsed { transform: translateY(calc(100% - 30px - env(safe-area-inset-bottom))); }
   .sheet--neuron { background: #24104f; }
-  .sheet__grip { width: 36px; height: 5px; border-radius: 3px; background: #434676; margin: -6px auto 10px; }
+  .sheet__grip { display: block; position: relative; width: 100%; height: 26px; margin: -14px 0 4px; touch-action: none; }
+  .sheet__grip::before { content: ""; position: absolute; left: 50%; top: 10px; width: 36px; height: 5px; margin-left: -18px; border-radius: 3px; background: #434676; transition: background .2s; }
+  .sheet__grip:hover::before, .sheet__grip:focus-visible::before { background: #6a74c8; }
+  .sheet.is-collapsed .sheet__grip::before { background: var(--muted); }
   .sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
   .sheet__head h2 { font-size: 17px; font-weight: 900; white-space: nowrap; }
   .sheet__head h2 small { font-size: 12px; font-weight: 700; color: var(--muted); margin-left: 6px; }
@@ -253,11 +276,7 @@
   .zoom { position: absolute; top: -70px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
   .zoom__label { background: #0c0f33; border-radius: 8px; padding: 2px 7px; }
   .zoom--out { left: 14px; }
-  .zoom--in { right: 14px; }
   .zoom__btn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; }
-  .zoom__btn--cyan { background: var(--cyan); box-shadow: 0 4px 0 #1a9a96; }
-  .zoom__btn--pink { background: var(--pink); box-shadow: 0 4px 0 #b52a5e; }
-  .zoom__btn--orange { background: var(--orange); box-shadow: 0 4px 0 #b9561a; }
   .zoom__btn:active { transform: translateY(3px); box-shadow: none; }
 
   .seg { display: flex; background: #0c0f33; border-radius: 14px; padding: 3px; }
@@ -316,7 +335,8 @@
   .buy--wide span { display: inline; font-size: 12.5px; }
 
   /* Hinweise */
-  .toasts { position: absolute; z-index: 8; left: 24px; right: 24px; top: calc(160px + env(safe-area-inset-top)); display: grid; gap: 6px; justify-items: center; pointer-events: none; }
+  /* unterhalb der Tiefenanzeige, damit deren Beschriftungen frei bleiben */
+  .toasts { position: absolute; z-index: 8; left: 24px; right: 64px; top: calc(268px + env(safe-area-inset-top)); display: grid; gap: 6px; justify-items: center; pointer-events: none; }
   .toast { background: #0c0f33; border-radius: 12px; padding: 6px 11px; font-size: 11.5px; font-weight: 700; box-shadow: 0 4px 0 #05061a; animation: toast 4.2s ease forwards; max-width: 100%; text-align: center; }
   .toast b { color: var(--yellow); }
   @keyframes toast { 0% { opacity: 0; transform: translateY(-8px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
@@ -344,14 +364,19 @@
 <body>
 <div class="app no-anim" data-view="main" id="app">
 
-  <!-- Ebene 3 (am tiefsten): nächste Zone, unscharf -->
+  <!-- Ebene 3 (am tiefsten): Stimmung der nächsten Zone, ohne Stellen -->
   <div class="layer layer--far" aria-hidden="true">
     <svg id="farSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000"></svg>
   </div>
 
+  <!-- Dunst zwischen Ferne und Umgebung, eigene Parallaxe -->
+  <div class="layer layer--haze" aria-hidden="true">
+    <svg id="hazeSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000"></svg>
+  </div>
+
   <!-- Ebene 2: Umgebung, nur die aktuelle Zone -->
   <div class="layer layer--map">
-    <svg id="mapSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000" aria-label="Umgebung: Stellen in Reichweite"></svg>
+    <svg id="mapSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000" aria-label="Umgebung: Stellen in Reichweite"><g id="mapLow"></g><g id="mapSwarm" class="map-only"></g><g id="mapHigh"></g></svg>
   </div>
 
   <!-- Ebene 1: Schwarm an der Stelle -->
@@ -360,17 +385,12 @@
       <defs>
         <clipPath id="cFress"><path id="pFress" d="M9 0C9-3.2 5-4.6 0-4.4C-6-4.2-9.5-3-9.5 0C-9.5 3-6 4.4-1 4.2C1 4.1 2 2.4 3.6 2.6C5.6 2.9 9 3 9 0Z"/></clipPath>
         <clipPath id="cBrut"><circle r="15"/></clipPath>
+        <!-- Fressling flach mit dunklem Rand wie alle höheren Stufen; die Mundbucht bleibt als Erkennungszeichen -->
         <g id="fress">
-          <ellipse class="cilia" rx="10.4" ry="5.4" fill="none" stroke="#ffcf9e" stroke-width="1.1" stroke-dasharray=".35 .8"/>
+          <use href="#pFress" fill="#6e2a12" stroke="#6e2a12" stroke-width="2.8" stroke-linejoin="round"/>
           <use href="#pFress" fill="#ffb27a"/>
-          <g clip-path="url(#cFress)">
-            <use href="#pFress" fill="#ff8a3d" transform="translate(.6 .8)"/>
-            <ellipse cx="-1" cy="5.6" rx="10" ry="2.2" fill="#e5612a"/>
-          </g>
-          <path d="M-1.5 3.3C.8 3.2 1.9 1.7 3.6 1.8" fill="none" stroke="#b9461a" stroke-width=".7" stroke-linecap="round"/>
-          <g fill="#22a86a"><circle cx="-3" cy="-1" r="1.2"/><circle cx="-6" cy="1" r=".95"/><circle cx="-.6" cy="1.2" r=".8"/></g>
-          <g fill="#8cf25a"><circle cx="-3.3" cy="-1.3" r=".4"/><circle cx="-6.2" cy=".7" r=".3"/></g>
-          <path d="M5.2-1.6l.5-1.1.4 1.1 1.1-.3-.8.8.8.8-1.1-.3-.4 1.1-.5-1.1-1.1.3.8-.8-.8-.8z" fill="#ffd0a0"/>
+          <g clip-path="url(#cFress)"><use href="#pFress" fill="#ff8a3d" transform="translate(.7 1)"/></g>
+          <path d="M-1.5 3.3C.8 3.2 1.9 1.7 3.6 1.8" fill="none" stroke="#6e2a12" stroke-width=".9" stroke-linecap="round"/>
         </g>
         <g id="brut">
           <circle r="18.5" fill="#7a2560"/>
@@ -413,8 +433,8 @@
       </defs>
       <g id="mainBg"></g>
       <g id="mainSite"></g>
-      <g id="mainDrift" class="drift"></g>
-      <g id="mainSwarm" class="swirl"></g>
+      <g id="mainFlow"><g id="mainDrift" class="drift"></g></g>
+      <g id="mainTrek" class="trek"><g id="mainSwarm"></g></g>
     </svg>
   </div>
 
@@ -486,23 +506,24 @@
   </button>
   <div class="chips" id="chips"></div>
 
-  <div class="gauge" id="gauge" aria-hidden="true">
-    <i></i><i></i><i></i><i></i>
-    <span>Ausbau</span><span>Schwarm</span><span>Umgebung</span><span id="gaugeNext"></span>
-  </div>
+  <nav class="views" aria-label="Ansicht">
+    <button class="views__btn views__btn--cyan" data-go="map" aria-label="Umgebung" aria-pressed="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0c0f33" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="2.8" fill="#0c0f33" stroke="none"/><circle cx="12" cy="12" r="6.5" stroke-dasharray="2 2.8"/><circle cx="12" cy="12" r="10.2"/></svg>
+    </button>
+    <button class="views__btn views__btn--orange" data-go="main" aria-label="Schwarm" aria-pressed="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#0c0f33" aria-hidden="true"><ellipse cx="9" cy="10" rx="3.4" ry="2.5"/><ellipse cx="15.5" cy="8" rx="3" ry="2.2"/><ellipse cx="14" cy="15" rx="3.4" ry="2.5"/><ellipse cx="7.5" cy="16" rx="2.6" ry="2"/></svg>
+    </button>
+    <button class="views__btn views__btn--pink" data-go="neuron" aria-label="Ausbau" aria-pressed="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="10" r="3.8" fill="#fff" stroke="none"/><path d="M9.5 7.5L5 3M12 6.4V2M14.6 7.6L19 4M12 13.6V19M12 19l-3 3M12 19l3 3M8.5 11.5L3.5 13M15.5 11.5l5 1.5"/></svg>
+    </button>
+  </nav>
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <!-- Blatt: Schwarm / Kette -->
   <section class="sheet sheet--main" aria-label="Kette">
-    <div class="zoom zoom--out"><button class="zoom__btn zoom__btn--cyan" data-go="map" aria-label="Herauszoomen zur Umgebung">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0c0f33" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="2.8" fill="#0c0f33" stroke="none"/><circle cx="12" cy="12" r="6.5" stroke-dasharray="2 2.8"/><circle cx="12" cy="12" r="10.2"/></svg>
-    </button><span class="zoom__label">Umgebung</span></div>
-    <div class="zoom zoom--in"><button class="zoom__btn zoom__btn--pink" data-go="neuron" aria-label="Hineinzoomen zu den Ausbauten">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="10" r="3.8" fill="#fff" stroke="none"/><path d="M9.5 7.5L5 3M12 6.4V2M14.6 7.6L19 4M12 13.6V19M12 19l-3 3M12 19l3 3M8.5 11.5L3.5 13M15.5 11.5l5 1.5"/></svg>
-    </button><span class="zoom__label">Ausbau</span></div>
 
-    <div class="sheet__grip"></div>
+    <button class="sheet__grip" aria-expanded="true" aria-label="Blatt einklappen"></button>
     <div class="sheet__head">
       <h2>Kette <small class="num" id="massLabel"></small></h2>
       <div class="seg" role="group" aria-label="Kaufmenge" id="buyMode">
@@ -517,11 +538,8 @@
     <div class="zoom zoom--out recenter"><button class="zoom__btn zoom__btn--ghost" data-recenter aria-label="Umgebung auf den Schwarm zentrieren">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3ee6e0" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.8" fill="#3ee6e0" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
     </button><span class="zoom__label">Zur Mitte</span></div>
-    <div class="zoom zoom--in"><button class="zoom__btn zoom__btn--orange" data-go="main" aria-label="Hineinzoomen zum Schwarm">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="#0c0f33"><ellipse cx="9" cy="10" rx="3.4" ry="2.5"/><ellipse cx="15.5" cy="8" rx="3" ry="2.2"/><ellipse cx="14" cy="15" rx="3.4" ry="2.5"/><ellipse cx="7.5" cy="16" rx="2.6" ry="2"/></svg>
-    </button><span class="zoom__label">Schwarm</span></div>
 
-    <div class="sheet__grip"></div>
+    <button class="sheet__grip" aria-expanded="true" aria-label="Blatt einklappen"></button>
     <div class="next">
       <div class="next__star" id="nextStar"><svg width="22" height="22" viewBox="0 0 20 20"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8 1.1-5.7-4.2-4 5.7-.7z" fill="#1a1440"/></svg></div>
       <div style="min-width:0">
@@ -540,11 +558,8 @@
 
   <!-- Blatt: Ausbau -->
   <section class="sheet sheet--neuron" aria-label="Ausbau">
-    <div class="zoom zoom--out"><button class="zoom__btn zoom__btn--orange" data-go="main" aria-label="Herauszoomen zum Schwarm">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="#0c0f33"><ellipse cx="9" cy="10" rx="3.4" ry="2.5"/><ellipse cx="15.5" cy="8" rx="3" ry="2.2"/><ellipse cx="14" cy="15" rx="3.4" ry="2.5"/><ellipse cx="7.5" cy="16" rx="2.6" ry="2"/></svg>
-    </button><span class="zoom__label">Schwarm</span></div>
 
-    <div class="sheet__grip"></div>
+    <button class="sheet__grip" aria-expanded="true" aria-label="Blatt einklappen"></button>
     <div class="up__tabs" id="upTabs"></div>
     <div class="up">
       <h2 id="upName"></h2>
@@ -723,7 +738,9 @@ function derive(s) {
   const eatingSchnee = site && !site.dead && CFG.siteTypes[site.type].eggMult && s.lastH > 0;
   const eggRate = upEff('herd', r.herd) * (eatingSchnee ? CFG.siteTypes.schnee.eggMult : 1) * (b.lege > 0 ? F.lege : 1);
   const chainMult = b.verm > 0 ? F.verm : 1;
-  return { thrust, mass, speed, baseSpeed, digest, appetite, capacity, eggRate, chainMult, reach: reachFor(r.geis), atFloor: ratio < CFG.travel.minFactor ** 2 };
+  // Über der Kapazität frisst der Schwarm langsamer: Fressrate = Appetit · C/V (P1-VOR-02)
+  const eat = appetite * Math.min(1, capacity / Math.max(s.vorrat, 1e-9));
+  return { thrust, mass, speed, baseSpeed, digest, appetite, eat, capacity, eggRate, chainMult, reach: reachFor(r.geis), atFloor: ratio < CFG.travel.minFactor ** 2 };
 }
 const getSite = (s, id) => s.sites.find((x) => x.id === id) || null;
 const getFind = (s, id) => s.finds.find((x) => x.id === id) || null;
@@ -755,7 +772,7 @@ function availAtArrival(s, site, tt) {
 function rate(s, site, d) {
   const tt = dist(s.pos, site) / d.speed;
   const A = availAtArrival(s, site, tt);
-  const avg = d.appetite > 0 && A > 0 ? A / (tt + A / d.appetite) : 0;
+  const avg = d.eat > 0 && A > 0 ? A / (tt + A / d.eat) : 0;
   return { tt, A, avg };
 }
 function bestAlternative(s, d) {
@@ -854,9 +871,13 @@ function step(s, log) {
   let H = 0;
   const site = currentSite(s);
   if (site && !site.dead) {
-    H = Math.min(d.appetite, avail(site) / dt);
-    site.stock -= H * dt;
-    addVorrat(s, H * dt, d.capacity);
+    // Exakt integriert: gefressen wird, was im Vorrat ankommt; begrenzt durch die verfügbare Nahrung
+    const before = s.vorrat;
+    addVorrat(s, d.appetite * dt, d.capacity);
+    let eaten = s.vorrat - before;
+    if (eaten > avail(site)) { eaten = avail(site); s.vorrat = before + eaten; }
+    site.stock -= eaten;
+    H = eaten / dt;
   }
   s.lastH = H;
   s.histSum += H * dt - s.hist[s.histI];
@@ -955,9 +976,10 @@ function step(s, log) {
     const cur = currentSite(s);
     let ripe = s.leave || !cur || cur.dead;
     const best = bestAlternative(s, d2);
-    if (cur && !cur.dead && d2.appetite > 0 && avail(cur) < d2.appetite * dt) ripe = true;
-    // Ernte, die an der aktuellen Stelle jetzt möglich ist (im Ankunftsschritt war H noch 0)
-    if (cur && !cur.dead && best && Math.min(d2.appetite, avail(cur) / dt) < best.avg) ripe = true;
+    if (cur && !cur.dead && avail(cur) <= 0) ripe = true;
+    // Ernte, die an der aktuellen Stelle jetzt möglich ist (im Ankunftsschritt war H noch 0).
+    // Ein Rest kleiner als eine Schrittration wird noch gefressen, statt ihn liegen zu lassen.
+    if (cur && !cur.dead && best && Math.min(d2.eat, avail(cur) / dt) < best.avg) ripe = true;
     if (ripe) {
       const target = markTarget(s, d2) || (best ? { kind: 'site', obj: best.site } : null);
       if (target) {
@@ -1131,6 +1153,8 @@ const ICON_R = { algen: 15, plankton: 15, krebs: 14, schnee: 14, seegras: 30 };
 
 /* ---------- Umgebung ---------- */
 const REACH_PX = 252;
+// Ausbau: nur ein wenig um das Neuron herum verschieben
+const NEURON_REACH_PX = 170;
 let pan = { x: 0, y: 0 };
 let drag = null;
 let mapScale = 1;
@@ -1146,30 +1170,28 @@ function renderMap(d) {
   const auto = !s.travel ? bestAlternative(s, d) : null;
   const mt = markTarget(s, d);
   let h = '';
-  // Wasser: einzige Transparenz, dahinter scheint die nächste Zone durch
+  // Wasser: einzige Transparenz, dahinter liegt die Stimmung der nächsten Zone
   h += `<circle r="${REACH_PX}" fill="#22308a" fill-opacity=".4"/><circle r="${REACH_PX * .68}" fill="#26359a" fill-opacity=".22"/><circle r="${REACH_PX * .34}" fill="#2a3aa6" fill-opacity=".22"/>`;
 
-  // Nächste Zone: Geister der bekannten Stellen, antippbar
+  // Nächste Zone: keine Vorschau. Ihre Stellen und ihr Fundstück erscheinen erst, wenn sie erreichbar ist.
   const nz = s.zone + 1 < CFG.zones.length ? s.zone + 1 : null;
   let labels = '';
-  if (nz != null) {
-    const open = d.thrust >= CFG.zones[nz].threshold;
+  if (nz != null && d.thrust >= CFG.zones[nz].threshold) {
     for (const x of s.sites) {
-      if (x.zone !== nz || !x.known || x.dead) continue;
-      const p = P(x), r = ICON_R[x.type] * (x.type === 'seegras' ? 1 : 1.1);
+      if (x.zone !== nz || !x.known || x.dead || !targetable(s, x, d)) continue;
+      const p = P(x), r = ICON_R[x.type];
       const isMark = s.mark && s.mark.kind === 'site' && s.mark.id === x.id;
-      const ok = targetable(s, x, d);
-      h += `<g class="m-site" data-mark="site:${x.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="${r + 10}" fill="transparent"/><circle r="${r}" fill="none" stroke="${isMark ? '#ffd23f' : '#8f97d8'}" stroke-width="1.6" stroke-dasharray="3 4" opacity=".85"/></g>`;
-      if (!ok && !isMark) continue;
-      const meta = fmtTime(dist(s.pos, x) / d.speed) + (isMark ? ' · markiert' : '');
-      labels += `<text class="m-label m-deep${isMark ? ' m-gold' : ''}" x="${p.x.toFixed(1)}" y="${(p.y + r + 15).toFixed(1)}">${CFG.siteTypes[x.type].name} ↓</text><text class="m-meta" x="${p.x.toFixed(1)}" y="${(p.y + r + 27).toFixed(1)}">${meta}</text>`;
+      const isTravel = s.travel && s.travel.kind === 'site' && s.travel.id === x.id;
+      const isAuto = !s.mark && auto && auto.site.id === x.id;
+      const ring = isMark || isTravel ? '#ffd23f' : isAuto ? '#3ee6e0' : '#8f97d8';
+      h += `<g class="m-site" data-mark="site:${x.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="${r + 10}" fill="transparent"/><g opacity=".7">${siteIcon(x, r * .85)}</g><circle r="${r + 6}" fill="none" stroke="${ring}" stroke-width="1.6" stroke-dasharray="3 4"/></g>`;
     }
     for (const f of s.finds) {
       if (f.zone !== nz) continue;
       const p = P(f);
       const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
-      h += `<g class="m-site" data-mark="find:${f.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="26" fill="transparent"/><circle r="18" fill="none" stroke="${isMark ? '#ffd23f' : '#c9b260'}" stroke-width="1.6" stroke-dasharray="3 4"/><use href="#sparkle" transform="scale(.6)" opacity=".7"/></g>`;
-      labels += `<text class="m-label m-gold" x="${p.x.toFixed(1)}" y="${(p.y + 33).toFixed(1)}" opacity=".8">${CFG.finds.types[f.type].name} ★ ↓</text><text class="m-meta" x="${p.x.toFixed(1)}" y="${(p.y + 45).toFixed(1)}">${open ? fmtTime(dist(s.pos, f) / d.speed) + (isMark ? ' · markiert' : '') : `Zone ${nz} ab Antrieb ${fmt(CFG.zones[nz].threshold)}`}</text>`;
+      const isTravel = s.travel && s.travel.kind === 'find' && s.travel.id === f.id;
+      h += `<g class="m-site" data-mark="find:${f.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="26" fill="transparent"/><circle r="18" fill="none" stroke="${isMark || isTravel ? '#ffd23f' : '#c9b260'}" stroke-width="1.6" stroke-dasharray="3 4"/><use href="#sparkle" transform="scale(.6)" opacity=".8"/></g>`;
     }
   }
 
@@ -1184,8 +1206,9 @@ function renderMap(d) {
     const isAuto = !s.mark && auto && auto.site.id === x.id;
     const isTravel = s.travel && s.travel.kind === 'site' && s.travel.id === x.id;
     h += `<g class="m-site${x.dead ? ' m-site--dead' : ''}" data-mark="site:${x.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="${ICON_R[x.type] + 10}" fill="transparent"/>${isCur ? '' : siteIcon(x, r)}${isMark || isTravel ? `<circle r="${ICON_R[x.type] + 7}" fill="none" stroke="#ffd23f" stroke-width="1.8" stroke-dasharray="4 3"/>` : isAuto ? `<circle r="${ICON_R[x.type] + 7}" fill="none" stroke="#3ee6e0" stroke-width="1.8" stroke-dasharray="4 3"/>` : ''}</g>`;
-    if (isCur) continue;
     const T = CFG.siteTypes[x.type];
+    // Beschriftet sind nur die aktuelle Stelle (am Schwarm) und der Abschluss
+    if (isCur || !T.goal) continue;
     let meta, cls = '';
     if (x.dead) meta = 'versiegt';
     else if (!reachable(x, d)) meta = `ab Antrieb ${fmt(siteThreshold(x))}`;
@@ -1204,7 +1227,6 @@ function renderMap(d) {
     const isMark = s.mark && s.mark.kind === 'find' && s.mark.id === f.id;
     const isTravel = s.travel && s.travel.kind === 'find' && s.travel.id === f.id;
     h += `<g class="m-site" data-mark="find:${f.id}" transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><circle r="30" fill="transparent"/><circle r="24" fill="#3b407a"/><circle r="15.6" fill="#6c646b"/><use href="#sparkle" transform="scale(.88)"/>${isMark || isTravel ? '<circle r="30" fill="none" stroke="#ffd23f" stroke-width="1.8" stroke-dasharray="4 3"/>' : ''}</g>`;
-    labels += `<text class="m-label m-gold" x="${p.x.toFixed(1)}" y="${(p.y + 39).toFixed(1)}">${CFG.finds.types[f.type].name} ★</text><text class="m-meta${isMark || isTravel ? ' m-gold' : ''}" x="${p.x.toFixed(1)}" y="${(p.y + 51).toFixed(1)}">${fmtTime(dist(s.pos, f) / d.speed)}${isTravel ? ' · Ziel' : isMark ? ' · markiert' : ''}</text>`;
   }
 
   // Nur in der Umgebungsansicht: Abdunklung außerhalb der Reichweite, Ringe, Route, Schwarm
@@ -1239,57 +1261,106 @@ function renderMap(d) {
     const frac = Math.max(0, cur.stock / cur.size);
     only += `<g transform="scale(${(1.25 * (0.55 + 0.45 * Math.sqrt(frac))).toFixed(2)})">${siteIcon(cur, ICON_R[cur.type])}</g>`;
   }
-  only += `<g class="swirl swirl--map">${swarmMini()}</g>`;
-  if (cur) only += `<text class="m-label" y="${ICON_R[cur.type] * 1.3 + 17}">${CFG.siteTypes[cur.type].name}</text><text class="m-meta" y="${ICON_R[cur.type] * 1.3 + 29}">hier · ${fmt(avail(cur))} Bestand</text>`;
+  const curLabel = cur ? `<text class="m-label" y="${ICON_R[cur.type] * 1.3 + 17}">${CFG.siteTypes[cur.type].name}</text><text class="m-meta" y="${ICON_R[cur.type] * 1.3 + 29}">hier · ${fmt(avail(cur))} Bestand</text>` : '';
 
-  $('mapSvg').innerHTML = h + `<g class="map-only">${only}</g>` + labels;
+  // Der Schwarm liegt in einer eigenen Ebene, die nur bei neuer Figurenzahl neu gezeichnet wird, damit seine Animationen weiterlaufen
+  $('mapLow').innerHTML = h + `<g class="map-only">${only}</g>`;
+  const mini = swarmMini();
+  if (mini !== mapSwarmHtml) $('mapSwarm').innerHTML = mapSwarmHtml = mini;
+  $('mapHigh').innerHTML = `<g class="map-only">${curLabel}</g>` + labels;
 }
-let miniCache = { key: '', html: '' };
+let miniCache = { key: '', html: '' }, mapSwarmHtml = null;
 function swarmMini() {
-  const nf = Math.min(14, Math.max(S.units[0] >= 1 ? 3 : 0, Math.ceil(2.2 * Math.log2(S.units[0] + 1))));
+  // bis 14 Figuren, früh je Fressling eine
+  const nf = Math.min(14, Math.floor(S.units[0]), Math.max(S.units[0] >= 1 ? 3 : 0, Math.ceil(2.2 * Math.log2(S.units[0] + 1))));
   const nb = S.units[1] >= 1 ? Math.min(3, 1 + Math.floor(Math.log10(S.units[1]))) : 0;
   const key = nf + '/' + nb;
   if (miniCache.key === key) return miniCache.html;
-  let h = '';
-  for (let i = 0; i < nb; i++) { const a = i * 2.4; h += `<g transform="translate(${(Math.cos(a) * 7).toFixed(1)} ${(Math.sin(a) * 7).toFixed(1)}) rotate(${i * 130}) scale(.42)"><use href="#brut"/></g>`; }
-  for (let i = 0; i < nf; i++) { const a = i * 2.39996, r = 6 + 4.6 * Math.sqrt(i + 1); h += `<g transform="translate(${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}) rotate(${Math.round(a * 57 + 100)}) scale(.55)"><use href="#fress"/></g>`; }
-  miniCache = { key, html: h };
-  return h;
+  let b = '', h = '';
+  for (let i = 0; i < nb; i++) { const a = i * 2.4; b += `<g transform="translate(${(Math.cos(a) * 7).toFixed(1)} ${(Math.sin(a) * 7).toFixed(1)}) rotate(${i * 130}) scale(.42)"><use href="#brut"/></g>`; }
+  for (let i = 0; i < nf; i++) { const a = i * 2.39996, r = 6 + 4.6 * Math.sqrt(i + 1); h += paddler(Math.cos(a) * r, Math.sin(a) * r, .55, i, 2.5, 3); }
+  miniCache = { key, html: `<g class="swirl swirl--map">${b}</g>${h}` };
+  return miniCache.html;
+}
+// Ein Fressling, der vorwärts auf einer eigenen kleinen Kreisbahn um (x, y) schwimmt. Die Bahn dreht eine Gruppe,
+// in der die Figur quer zum Radius steht; so zeigt der Kopf immer in Schwimmrichtung. Radius, Tempo, Drehsinn und
+// Rolltakt folgen fest aus dem Index, damit das Bild beim Neuzeichnen nicht springt.
+function paddler(x, y, sc, i, rMin, rVar) {
+  const R = lcg(i * 7919 + 13);
+  const rr = rMin + R() * rVar, dur = 8 + R() * 8, rev = R() < .4, start = R() * 360, roll = .8 + R() * .6;
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(start)})">`
+    + `<g class="paddle${rev ? ' paddle--rev' : ''}" style="animation-duration:${dur.toFixed(1)}s;animation-delay:-${(R() * dur).toFixed(1)}s">`
+    + `<g transform="translate(${rr.toFixed(1)} 0) rotate(${rev ? -90 : 90}) scale(${sc})"><use href="#fress" class="roll" style="animation-duration:${roll.toFixed(1)}s;animation-delay:-${R().toFixed(1)}s"/></g></g></g>`;
 }
 
-/* ---------- Tiefste Ebene: nächste Zone ---------- */
-let farKey = '';
-function renderFar(d) {
-  const s = S;
-  const nz = s.zone + 1 < CFG.zones.length ? s.zone + 1 : null;
-  const k = REACH_PX / d.reach;
-  const key = [s.zone, nz, Math.round(s.pos.x), Math.round(s.pos.y), d.reach, s.sites.filter((x) => x.zone === nz && x.known).length, s.finds.length].join('|');
-  if (key === farKey) return;
-  farKey = key;
-  const R = lcg(1000 + s.zone * 77);
-  let h = `<rect x="-1000" y="-1000" width="2000" height="2000" fill="#0a0d2e"/><circle r="900" fill="#0e1240"/><circle r="640" fill="#12174e"/><circle r="400" fill="#161c5c"/>`;
-  h += '<g fill="#0b3a44">';
-  for (let i = 0; i < 4; i++) { const x = (R() - .5) * 1400, w = 40 + R() * 60; h += `<path d="M${x.toFixed(0)} 1000C${(x - 30).toFixed(0)} 600 ${(x + 60).toFixed(0)} 300 ${(x + (R() - .5) * 120).toFixed(0)} ${(-100 - R() * 300).toFixed(0)}c${(w * .6).toFixed(0)} 300 ${w.toFixed(0)} 560 ${(w * .9).toFixed(0)} ${(1100 + R() * 200).toFixed(0)}z"/>`; }
-  h += '</g>';
-  h += `<g class="drift" fill="#070923"><path d="M-560-560c90-70 260-80 360-10 30 20 60 20 90-10l30 60-30 60c-30-30-60-30-90-10-100 70-270 60-360-10-20-20-20-60 0-80z"/></g>`;
-  h += '<g fill="#26307e">';
-  for (let i = 0; i < 26; i++) h += `<circle cx="${((R() - .5) * 760).toFixed(0)}" cy="${((R() - .5) * 760).toFixed(0)}" r="${(4 + R() * 5).toFixed(1)}"/>`;
-  h += '</g>';
-  if (nz != null) {
-    for (const x of s.sites) {
-      if (x.zone !== nz || !x.known || x.dead) continue;
-      const px = (x.x - s.pos.x) * k, py = (x.y - s.pos.y) * k, r = ICON_R[x.type] * 2.4;
-      const col = { algen: '#1e7e66', plankton: '#2a5aa0', krebs: '#a0482a', schnee: '#4654b4', seegras: '#1e7e66' }[x.type];
-      const p = blobPath(r, x.shape);
-      h += `<g transform="translate(${px.toFixed(0)} ${py.toFixed(0)})"><path d="${p}" fill="#1a2166" transform="translate(4 6)"/><path d="${p}" fill="${col}"/></g>`;
-    }
-    for (const f of s.finds) {
-      if (f.zone !== nz) continue;
-      const px = (f.x - s.pos.x) * k, py = (f.y - s.pos.y) * k;
-      h += `<g transform="translate(${px.toFixed(0)} ${py.toFixed(0)})"><circle r="44" fill="#2f2f62"/><circle r="26" fill="#5e5462"/><use href="#sparkle"/></g>`;
-    }
+/* ---------- Tiefste Ebene: Stimmung der nächsten Zone ---------- */
+// Nur Atmosphäre: die Stellen der nächsten Zone erscheinen erst auf der Umgebungskarte, wenn sie erreichbar ist
+const ZONE_MOOD = [
+  { deep: '#0a0d2e', mid: '#12174e', light: '#1c2470', shape: '#070923', glow: '#3ee6e0', kind: 'drops' },
+  { deep: '#06222e', mid: '#0b3442', light: '#135260', shape: '#04161f', glow: '#3ee6e0', kind: 'rocks' },
+  { deep: '#140d36', mid: '#1f164f', light: '#2d216c', shape: '#0c0824', glow: '#9b6bff', kind: 'cliffs' },
+  { deep: '#0a2a48', mid: '#11406a', light: '#1b5d8c', shape: '#0a3a34', glow: '#ffd23f', kind: 'grass' },
+  { deep: '#04051a', mid: '#080a26', light: '#0d1036', shape: '#020312', glow: '#5a64b8', kind: 'abyss' },
+];
+function moodDefs(id, M) {
+  return `<defs><radialGradient id="${id}" cy="35%" r="75%"><stop offset="0" stop-color="${M.light}"/><stop offset=".55" stop-color="${M.mid}"/><stop offset="1" stop-color="${M.deep}"/></radialGradient>
+    <linearGradient id="${id}Ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${M.glow}" stop-opacity=".22"/><stop offset="1" stop-color="${M.glow}" stop-opacity="0"/></linearGradient></defs>`;
+}
+function moodRays(id, R, n, spread, len) {
+  let h = '';
+  for (let i = 0; i < n; i++) {
+    const x = (R() - .5) * spread, w = 30 + R() * 70;
+    h += `<path class="ray" style="animation-delay:-${(R() * 9).toFixed(1)}s" d="M${(x - w * .3).toFixed(0)} -1000L${(x + w * .3).toFixed(0)} -1000L${(x + w + R() * 120).toFixed(0)} ${len}L${(x - w - R() * 120).toFixed(0)} ${len}Z" fill="url(#${id}Ray)"/>`;
   }
+  return h;
+}
+function moodShapes(M, R) {
+  let h = `<g fill="${M.shape}">`;
+  if (M.kind === 'rocks' || M.kind === 'cliffs') {
+    const n = M.kind === 'rocks' ? 7 : 5;
+    for (let i = 0; i < n; i++) {
+      const x = (R() - .5) * 1700, y = 380 + R() * 500, r = (M.kind === 'rocks' ? 110 : 220) + R() * 160;
+      h += `<path d="${blobPath(r, 300 + i * 17, 8, .3, x, y)}"/>`;
+    }
+    if (M.kind === 'cliffs') h += `<path d="M-1000-200C-820-260-760-60-700 120S-640 620-540 1000H-1000Z"/><path d="M1000-320C820-240 790-20 720 180S660 700 600 1000H1000Z"/>`;
+  } else if (M.kind === 'grass') {
+    for (let i = 0; i < 26; i++) {
+      const x = -1000 + i * 80 + R() * 40, hh = 380 + R() * 520, bend = (R() - .5) * 260;
+      h += `<path d="M${(x - 16).toFixed(0)} 1000Q${(x + bend).toFixed(0)} ${(1000 - hh * .6).toFixed(0)} ${(x + bend * 1.3).toFixed(0)} ${(1000 - hh).toFixed(0)}Q${(x + bend * .5 + 14).toFixed(0)} ${(1000 - hh * .5).toFixed(0)} ${(x + 16).toFixed(0)} 1000Z"/>`;
+    }
+  } else if (M.kind === 'abyss') {
+    h += `<path d="M-1000 700Q-500 560 0 660T1000 620V1000H-1000Z"/>`;
+  } else {
+    for (let i = 0; i < 5; i++) h += `<circle cx="${((R() - .5) * 1600).toFixed(0)}" cy="${((R() - .5) * 1600).toFixed(0)}" r="${(80 + R() * 160).toFixed(0)}" opacity=".6"/>`;
+  }
+  return h + '</g>';
+}
+function moodSpecks(R, n, area, col, rMin, rMax) {
+  let h = `<g fill="${col}">`;
+  for (let i = 0; i < n; i++) h += `<circle cx="${((R() - .5) * area).toFixed(0)}" cy="${((R() - .5) * area).toFixed(0)}" r="${(rMin + R() * (rMax - rMin)).toFixed(1)}"/>`;
+  return h + '</g>';
+}
+let farKey = '';
+function renderFar() {
+  const s = S;
+  const nz = Math.min(s.zone + 1, ZONE_MOOD.length - 1);
+  const mood = s.zone + 1 < CFG.zones.length ? nz : ZONE_MOOD.length - 1;
+  if (farKey === String(mood)) return;
+  farKey = String(mood);
+  const M = ZONE_MOOD[mood], R = lcg(1000 + mood * 77);
+  let h = moodDefs('farG', M);
+  h += `<rect x="-1000" y="-1000" width="2000" height="2000" fill="url(#farG)"/>`;
+  h += moodRays('farG', R, 7, 1500, 700);
+  h += moodShapes(M, R);
+  h += `<g class="drift">${moodSpecks(R, 40, 1800, M.light, 3, 8)}</g>`;
   $('farSvg').innerHTML = h;
+  // Dunst der aktuellen Zone zwischen Ferne und Umgebung: zweite Parallaxe-Tiefe
+  const C = ZONE_MOOD[Math.min(s.zone, ZONE_MOOD.length - 1)], R2 = lcg(2000 + s.zone * 31);
+  let z = `<g fill="${C.light}" opacity=".35">`;
+  for (let i = 0; i < 6; i++) z += `<path d="${blobPath(160 + R2() * 200, 500 + i * 13, 9, .35, (R2() - .5) * 1700, (R2() - .5) * 1700)}"/>`;
+  z += '</g>';
+  z += `<g class="drift" style="animation-duration:26s">${moodSpecks(R2, 60, 1900, '#8ea6dc', 1, 2.6)}</g>`;
+  $('hazeSvg').innerHTML = z;
 }
 
 /* ---------- Schwarm an der Stelle ---------- */
@@ -1300,75 +1371,135 @@ const SITE_COLORS = {
   schnee:   { base: '#2f3a7d', shade: '#1f275c', mid: '#374287', top: '#43509b', dot: ['#f6f4ff', '#c6e6f5'] },
   seegras:  { base: '#136b53', shade: '#0b4038', mid: '#1e7e66', top: '#22a86a', dot: ['#8cf25a', '#4cc070'] },
 };
-let mainSiteKey = '';
+// Atmosphärischer Hintergrund je Stelle; unterwegs offenes Wasser der aktuellen Zone
+const SITE_MOOD = {
+  algen:    { light: '#1d6a5c', mid: '#0f3f44', deep: '#08202c', glow: '#8cf25a' },
+  plankton: { light: '#22489a', mid: '#152c66', deep: '#0a1438', glow: '#8ffcff' },
+  krebs:    { light: '#5a2a4a', mid: '#341a3c', deep: '#170c24', glow: '#ff8a52' },
+  schnee:   { light: '#2e3a86', mid: '#1b2258', deep: '#0b0f30', glow: '#f6f4ff' },
+  seegras:  { light: '#1f7060', mid: '#0f4440', deep: '#06221e', glow: '#ffd23f' },
+};
+function mainBgHtml(kind, zone) {
+  const travel = kind === 'travel' || kind === 'none';
+  const Z = ZONE_MOOD[Math.min(zone, ZONE_MOOD.length - 1)];
+  const M = travel ? { light: Z.mid, mid: Z.deep, deep: '#05061a', glow: Z.glow } : SITE_MOOD[kind];
+  const R = lcg(700 + zone * 13 + (travel ? 1 : kind.length * 7));
+  let h = `<defs><radialGradient id="mbG" cy="30%" r="70%"><stop offset="0" stop-color="${M.light}"/><stop offset=".5" stop-color="${M.mid}"/><stop offset="1" stop-color="${M.deep}"/></radialGradient>
+    <linearGradient id="mbGRay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${M.glow}" stop-opacity="${travel ? .1 : .16}"/><stop offset="1" stop-color="${M.glow}" stop-opacity="0"/></linearGradient></defs>`;
+  h += `<rect x="-1000" y="-1000" width="2000" height="2000" fill="url(#mbG)"/>`;
+  h += moodRays('mbG', R, travel ? 4 : 6, 900, 500);
+  h += `<g class="drift" style="animation-duration:24s">${moodSpecks(R, 26, 1100, M.light, 6, 16)}</g>`;
+  return `<g class="bg-in">${h}</g>`;
+}
+function siteHtml(site) {
+  const C = SITE_COLORS[site.type], R = lcg(site.shape);
+  let h = '';
+  const blobs = [[0, 0, 190]];
+  for (let i = 0; i < 6; i++) { const a = i * 1.05 + R(), r = 240 + R() * 90; blobs.push([Math.cos(a) * r, Math.sin(a) * r, 70 + R() * 50]); }
+  const paths = blobs.map(([x, y, r], i) => blobPath(r, site.shape + i * 31, 10, .22, x, y));
+  h += `<g fill="${C.shade}" transform="translate(6 8)">${paths.map((p) => `<path d="${p}"/>`).join('')}</g>`;
+  h += `<g fill="${C.base}">${paths.map((p) => `<path d="${p}"/>`).join('')}</g>`;
+  h += `<g fill="${C.mid}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .72, site.shape + i * 53, 9, .25, x, y)}"/>`).join('')}</g>`;
+  h += `<g fill="${C.top}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .38, site.shape + i * 71, 8, .3, x + r * .15, y - r * .1)}"/>`).join('')}</g>`;
+  let dots = '';
+  for (let i = 0; i < 160; i++) { const [bx, by, br] = blobs[Math.floor(R() * blobs.length)]; const a = R() * 6.28, rr = Math.sqrt(R()) * br * .9; dots += `<circle cx="${(bx + Math.cos(a) * rr).toFixed(1)}" cy="${(by + Math.sin(a) * rr).toFixed(1)}" r="${(1 + R() * 1.8).toFixed(1)}" fill="${C.dot[i % 3 === 0 ? 1 : 0]}"/>`; }
+  h += `<g>${dots}</g>`;
+  if (site.type === 'krebs') h += `<g stroke="#ff6a3d" stroke-width="16" stroke-linecap="round" fill="none" opacity=".9"><path d="M-120 60l-90 90M-60 110l-30 120M60 110l40 120M120 60l90 90M-120-60l-90-90M120-60l90-90"/></g>`;
+  if (site.type === 'seegras') { for (let i = 0; i < 14; i++) { const x = -260 + i * 40 + R() * 20, hh = 200 + R() * 200; h += `<path d="M${x} 300Q${x + (R() - .5) * 160} ${300 - hh * .6} ${x + (R() - .5) * 200} ${300 - hh}Q${x + 20} ${300 - hh * .4} ${x + 22} 300Z" fill="${i % 2 ? '#22a86a' : '#8cf25a'}" opacity=".85"/>`; } }
+  return h;
+}
+const STREAK_TILE = 120; // Kachelhöhe = Weg der Animation driftFast, damit der Strom nahtlos läuft
+function driftHtml(travel) {
+  const R = lcg(42), cols = ['#8ea6dc', '#5a6fb8', '#c6e6f5'];
+  let h = '';
+  if (!travel) {
+    for (let i = 0; i < 70; i++) h += `<circle cx="${((R() - .5) * 900).toFixed(0)}" cy="${((R() - .5) * 1000).toFixed(0)}" r="${(0.8 + R() * 1.8).toFixed(1)}" fill="${cols[i % 3]}"/>`;
+    return h;
+  }
+  let tile = '';
+  for (let i = 0; i < 16; i++) tile += `<path d="M${((R() - .5) * 2000).toFixed(0)} ${(R() * STREAK_TILE).toFixed(0)}v${(10 + R() * 26).toFixed(0)}" stroke="${cols[i % 3]}" stroke-width="${(1 + R() * 1.6).toFixed(1)}" stroke-linecap="round" opacity="${(.4 + R() * .5).toFixed(2)}"/>`;
+  h += `<defs><g id="streakTile">${tile}</g></defs>`;
+  for (let k = -9; k <= 9; k++) h += `<use href="#streakTile" y="${k * STREAK_TILE}"/>`;
+  return h;
+}
+const travelAngle = (tr) => (Math.atan2(tr.ty - tr.y0, tr.tx - tr.x0) * 180) / Math.PI;
+let mainSiteKey = '', lastAngle = 0;
 function renderMainSite() {
   const s = S;
-  const site = currentSite(s);
-  const key = site ? site.id : s.travel ? 'travel' : 'none';
+  const site = currentSite(s), tr = s.travel;
+  const key = site ? 'site' + site.id : tr ? `travel${tr.kind}${tr.id}` : 'none';
   if (key !== mainSiteKey) {
+    const prev = mainSiteKey;
     mainSiteKey = key;
-    let h = '';
+    const animate = prev !== '' && !app.classList.contains('no-anim');
+    $('mainBg').innerHTML = mainBgHtml(site ? site.type : tr ? 'travel' : 'none', s.zone);
+    if (!animate) $('mainBg').firstElementChild.classList.remove('bg-in');
+    const rad = (lastAngle * Math.PI) / 180;
     if (site) {
-      const C = SITE_COLORS[site.type], R = lcg(site.shape);
-      const blobs = [[0, 0, 190]];
-      for (let i = 0; i < 6; i++) { const a = i * 1.05 + R(), r = 240 + R() * 90; blobs.push([Math.cos(a) * r, Math.sin(a) * r, 70 + R() * 50]); }
-      const paths = blobs.map(([x, y, r], i) => blobPath(r, site.shape + i * 31, 10, .22, x, y));
-      h += `<g fill="${C.shade}" transform="translate(6 8)">${paths.map((p) => `<path d="${p}"/>`).join('')}</g>`;
-      h += `<g fill="${C.base}">${paths.map((p) => `<path d="${p}"/>`).join('')}</g>`;
-      h += `<g fill="${C.mid}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .72, site.shape + i * 53, 9, .25, x, y)}"/>`).join('')}</g>`;
-      h += `<g fill="${C.top}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .38, site.shape + i * 71, 8, .3, x + r * .15, y - r * .1)}"/>`).join('')}</g>`;
-      let dots = '';
-      for (let i = 0; i < 160; i++) { const [bx, by, br] = blobs[Math.floor(R() * blobs.length)]; const a = R() * 6.28, rr = Math.sqrt(R()) * br * .9; dots += `<circle cx="${(bx + Math.cos(a) * rr).toFixed(1)}" cy="${(by + Math.sin(a) * rr).toFixed(1)}" r="${(1 + R() * 1.8).toFixed(1)}" fill="${C.dot[i % 3 === 0 ? 1 : 0]}"/>`; }
-      h += `<g>${dots}</g>`;
-      if (site.type === 'krebs') h += `<g stroke="#ff6a3d" stroke-width="16" stroke-linecap="round" fill="none" opacity=".9"><path d="M-120 60l-90 90M-60 110l-30 120M60 110l40 120M120 60l90 90M-120-60l-90-90M120-60l90-90"/></g>`;
-      if (site.type === 'seegras') { let b = ''; for (let i = 0; i < 14; i++) { const x = -260 + i * 40 + R() * 20, hh = 200 + R() * 200; b += `<path d="M${x} 300Q${x + (R() - .5) * 160} ${300 - hh * .6} ${x + (R() - .5) * 200} ${300 - hh}Q${x + 20} ${300 - hh * .4} ${x + 22} 300Z" fill="${i % 2 ? '#22a86a' : '#8cf25a'}" opacity=".85"/>`; } h += b; }
+      // Ankunft: die neue Stelle kommt aus Reiserichtung heran
+      const cls = animate && prev.startsWith('travel') ? 'site-in' : '';
+      $('mainSite').innerHTML = `<g class="${cls}" style="--ix:${(Math.cos(rad) * 700).toFixed(0)}px;--iy:${(Math.sin(rad) * 700).toFixed(0)}px"><g class="site-scale" id="siteScale">${siteHtml(site)}</g></g>`;
+    } else if (tr) {
+      // Aufbruch: die alte Stelle bleibt zurück
+      lastAngle = travelAngle(tr);
+      const r2 = (lastAngle * Math.PI) / 180;
+      const old = $('siteScale');
+      $('mainSite').innerHTML = animate && old && prev.startsWith('site') ? `<g class="site-out" style="--ox:${(-Math.cos(r2) * 800).toFixed(0)}px;--oy:${(-Math.sin(r2) * 800).toFixed(0)}px">${old.outerHTML.replace('id="siteScale"', '')}</g>` : '';
+    } else {
+      $('mainSite').innerHTML = '';
     }
-    $('mainSite').innerHTML = `<g class="site-scale" id="siteScale">${h}</g>`;
-    let drift = '';
-    const R2 = lcg(42);
-    const cols = ['#8ea6dc', '#5a6fb8', '#c6e6f5'];
-    for (let i = 0; i < 70; i++) drift += `<circle cx="${((R2() - .5) * 900).toFixed(0)}" cy="${((R2() - .5) * 1000).toFixed(0)}" r="${(0.8 + R2() * 1.8).toFixed(1)}" fill="${cols[i % 3]}"/>`;
-    $('mainDrift').innerHTML = drift;
-    $('mainDrift').setAttribute('class', s.travel ? 'drift--fast' : 'drift');
+    $('mainDrift').innerHTML = driftHtml(!!tr);
+    $('mainDrift').setAttribute('class', tr ? 'drift--fast' : 'drift');
+    $('mainFlow').setAttribute('transform', tr ? `rotate(${(lastAngle + 90).toFixed(1)})` : '');
   }
   const sc = $('siteScale');
   if (sc && site) sc.setAttribute('transform', `scale(${(0.35 + 0.65 * Math.sqrt(Math.max(0, site.stock / site.size))).toFixed(3)})`);
 }
 let swarmKey = '';
 function renderSwarm() {
-  const u = S.units;
+  const u = S.units, tr = S.travel;
   const counts = [
-    u[0] >= 1 ? Math.min(48, Math.max(3, Math.ceil(3.2 * Math.log2(u[0] + 1)))) : 0,
+    // bis 12 je Fressling eine Figur, danach logarithmisch bis 48
+    u[0] < 1 ? 0 : u[0] <= 12 ? Math.floor(u[0]) : Math.min(48, Math.round(12 + 6 * Math.log2(u[0] / 12))),
     u[1] >= 1 ? Math.min(8, 1 + Math.floor(2 * Math.log10(u[1]))) : 0,
     ...[2, 3, 4, 5].map((k) => (u[k] >= 1 ? Math.min(4, 1 + Math.floor(Math.log10(u[k]))) : 0)),
   ];
-  const key = counts.join('/') + (S.travel ? 't' : '');
+  const ang = tr ? travelAngle(tr) : 0;
+  const key = counts.join('/') + (tr ? 't' + Math.round(ang) : '');
   if (key === swarmKey) return;
   swarmKey = key;
+  // Unterwegs: gestreckte Formation, alle schwimmen in Reiserichtung (+x, gedreht über mainTrek)
+  const fx = tr ? 1.25 : 1, fy = tr ? 0.62 : 1;
   let h = '', slot = 0;
   // Höhere Stufen in der Mitte, Fresslinge außen
   for (let k = 5; k >= 1; k--) {
     for (let i = 0; i < counts[k]; i++, slot++) {
       const a = slot * 2.39996, r = 18 + 22 * Math.sqrt(slot);
       const sc = [0, 1, 1, 1, .9, .8][k];
-      h += `<g transform="translate(${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}) rotate(${Math.round(a * 57)}) scale(${sc})"><use href="#${CFG.units[k].icon}" class="bob bob--${1 + (slot % 3)}" style="animation-delay:-${(slot * .7) % 5}s"/></g>`;
+      h += `<g transform="translate(${(Math.cos(a) * r * fx).toFixed(1)} ${(Math.sin(a) * r * fy).toFixed(1)}) rotate(${tr ? 0 : Math.round(a * 57)}) scale(${sc})"><use href="#${CFG.units[k].icon}" class="bob bob--${1 + (slot % 3)}" style="animation-delay:-${(slot * .7) % 5}s"/></g>`;
     }
   }
   const r0 = 30 + 22 * Math.sqrt(slot);
+  // An der Stelle dreht sich nur die Mitte; jeder Fressling schwimmt auf seiner eigenen Bahn (paddler).
+  // Unterwegs schwimmen alle in Reiserichtung und rollen dabei um die Längsachse.
+  let f = '';
   for (let i = 0; i < counts[0]; i++) {
-    const a = i * 2.39996, r = r0 + 17 * Math.sqrt(i + 1);
-    h += `<g transform="translate(${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}) rotate(${Math.round(a * 57 + 90)}) scale(${(0.95 + ((i * 37) % 25) / 100).toFixed(2)})"><use href="#fress" class="swim swim--${1 + (i % 3)}" style="animation-delay:-${((i * 1.3) % 5).toFixed(1)}s"/></g>`;
+    const a = i * 2.39996, r = r0 + 17 * Math.sqrt(i + 1), x = Math.cos(a) * r * fx, y = Math.sin(a) * r * fy;
+    const sc = (0.95 + ((i * 37) % 25) / 100).toFixed(2);
+    if (!tr) { f += paddler(x, y, sc, i, 5, 8); continue; }
+    f += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(((i * 37) % 21) - 10)}) scale(${sc})"><g class="swim swim--${1 + (i % 3)}" style="animation-delay:-${((i * 1.3) % 5).toFixed(1)}s"><use href="#fress" class="roll" style="animation-delay:-${((i * .37) % 1).toFixed(2)}s"/></g></g>`;
   }
   const g = $('mainSwarm');
-  g.innerHTML = h;
-  g.setAttribute('class', S.travel ? 'swirl swirl--fast' : 'swirl');
+  g.innerHTML = (tr ? h : `<g class="swirl">${h}</g>`) + f;
+  g.removeAttribute('class');
+  $('mainTrek').style.transform = `rotate(${tr ? ang.toFixed(1) : 0}deg)`;
 }
 
 /* ---------- Neuron: Ausbauten ---------- */
 const DENDS = {
   herd:  { p0: [-26, -40], c: [-96, -62], p1: [-118, -138], label: [-118, -182] },
   verd:  { p0: [4, -54], c: [-14, -100], p1: [12, -150], label: [12, -194] },
-  kropf: { p0: [30, -34], c: [104, -50], p1: [126, -128], label: [126, -172] },
+  kropf: { p0: [32, -20], c: [84, -6], p1: [118, -44], label: [118, 0] }, // unterhalb der Tiefenanzeige
 };
 const qb = (p0, c, p1, t) => [(1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * c[0] + t * t * p1[0], (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * c[1] + t * t * p1[1]];
 let neuronKey = '';
@@ -1564,7 +1695,8 @@ function renderHud(d) {
   $('hudE').textContent = fmtInt(s.eier);
   $('hudERate').textContent = `+${fmt(d.eggRate)} pro s`;
   $('hudH').textContent = s.travel ? '0' : fmt(s.lastH);
-  $('hudHUnit').textContent = s.travel ? 'unterwegs' : 'pro Sekunde';
+  // Drosselung der Fressrate über der Kapazität (P1-VOR-02)
+  $('hudHUnit').innerHTML = s.travel ? 'unterwegs' : s.vorrat > d.capacity ? `Drossel <b>−${Math.max(1, Math.round(100 * (1 - d.capacity / s.vorrat)))} %</b>` : 'pro Sekunde';
 
   // Schwarm-Kontext
   const cur = currentSite(s), ring = $('ctxRing');
@@ -1598,21 +1730,17 @@ function renderHud(d) {
   const nAff = UP_KEYS.filter(canAfford).length;
   $('ctxNeuronText').innerHTML = `<b>Ausbau</b> <span class="sub num">· ${nAff}/4 bezahlbar</span>`;
 
-  // Tiefenanzeige: nächste Zone, gesperrt mit Zugangsschwelle
-  const g = $('gauge'), gn = $('gaugeNext');
-  const nz = s.zone + 1;
-  const lock = '<svg width="8" height="9" viewBox="0 0 8 9" aria-hidden="true"><rect x=".5" y="4" width="7" height="5" rx="1.2" fill="#a7aee8"/><path d="M2 4.2V3a2 2 0 0 1 4 0v1.2" fill="none" stroke="#a7aee8" stroke-width="1.3"/></svg>';
-  if (nz < CFG.zones.length) {
-    const open = d.thrust >= CFG.zones[nz].threshold;
-    g.classList.toggle('open', open);
-    g.classList.remove('is-last');
-    gn.innerHTML = open ? `Zone ${nz} offen` : `${lock} Zone ${nz} · ${fmt(CFG.zones[nz].threshold)}`;
-  } else {
-    g.classList.add('is-last');
-  }
-
   // Wirkungen und Testmodus
   let chips = '';
+  // Nächste Zone mit Zugangsschwelle, unterhalb der Kopfzeile
+  const nz = s.zone + 1;
+  if (nz < CFG.zones.length) {
+    const open = d.thrust >= CFG.zones[nz].threshold;
+    const lock = '<svg width="8" height="9" viewBox="0 0 8 9" aria-hidden="true"><rect x=".5" y="4" width="7" height="5" rx="1.2" fill="currentColor"/><path d="M2 4.2V3a2 2 0 0 1 4 0v1.2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>';
+    chips += open
+      ? `<span class="chip chip--zone is-open num">↓ Zone ${nz} offen</span>`
+      : `<span class="chip chip--zone num">↓ Zone ${nz} · ${lock} Antrieb ${fmt(CFG.zones[nz].threshold)}</span>`;
+  }
   for (const [k, v] of Object.entries(s.buffs)) if (v > 0) chips += `<span class="chip num">${CFG.finds.types[k].name} ${fmtTime(v)}</span>`;
   if (s.free > 0) chips += `<span class="chip chip--free">Keimzelle ×${s.free}</span>`;
   if (speed !== 1) chips += `<span class="chip chip--speed">Test ${speed}×</span>`;
@@ -1637,7 +1765,7 @@ function render(force) {
   if (force || now - lastMap > (view === 'map' ? 250 : 1000)) {
     lastMap = now;
     renderMap(d);
-    renderFar(d);
+    renderFar();
     setPan(pan.x, pan.y);
   }
 }
@@ -1648,12 +1776,13 @@ const fromHash = { '#umgebung': 'map', '#ausbau': 'neuron' };
 function setView(v) {
   setPan(0, 0);
   app.dataset.view = v;
+  document.querySelectorAll('.views__btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.go === v)));
   history.replaceState(null, '', location.pathname + location.search + hashOf[v]);
   render(true);
 }
 function setPan(x, y) {
-  const len = Math.hypot(x, y);
-  if (len > REACH_PX) { x *= REACH_PX / len; y *= REACH_PX / len; }
+  const len = Math.hypot(x, y), reach = app.dataset.view === 'neuron' ? NEURON_REACH_PX : REACH_PX;
+  if (len > reach) { x *= reach / len; y *= reach / len; }
   pan = { x, y };
   app.style.setProperty('--px', x + 'px');
   app.style.setProperty('--py', y + 'px');
@@ -1662,8 +1791,34 @@ function setPan(x, y) {
 document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.go)));
 document.querySelector('[data-recenter]').addEventListener('click', () => setPan(0, 0));
 
+// Blätter: Antippen des Griffs klappt um, Wischen nach unten/oben klappt ein/aus
+function setCollapsed(sheet, on) {
+  // Ohne die Verzögerung des Ansichtswechsels umklappen
+  sheet.style.transition = 'transform .35s var(--ease)';
+  clearTimeout(sheet._t);
+  sheet._t = setTimeout(() => { sheet.style.transition = ''; }, 400);
+  sheet.classList.toggle('is-collapsed', on);
+  const g = sheet.querySelector('.sheet__grip');
+  g.setAttribute('aria-expanded', String(!on));
+  g.setAttribute('aria-label', on ? 'Blatt ausklappen' : 'Blatt einklappen');
+}
+document.querySelectorAll('.sheet__grip').forEach((g) => {
+  const sheet = g.closest('.sheet');
+  let start = null;
+  g.addEventListener('pointerdown', (e) => { start = { id: e.pointerId, y: e.clientY }; g.setPointerCapture(e.pointerId); });
+  g.addEventListener('pointerup', (e) => {
+    if (!start || e.pointerId !== start.id) return;
+    const dy = e.clientY - start.y;
+    start = null;
+    if (Math.abs(dy) < 12) setCollapsed(sheet, !sheet.classList.contains('is-collapsed'));
+    else setCollapsed(sheet, dy > 0);
+  });
+  g.addEventListener('pointercancel', () => { start = null; });
+  g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed(sheet, !sheet.classList.contains('is-collapsed')); } });
+});
+
 app.addEventListener('pointerdown', (e) => {
-  if (app.dataset.view !== 'map' || e.target.closest('.sheet, .hud, .ctx, .menu-btn, .modal')) return;
+  if (app.dataset.view === 'main' || e.target.closest('.sheet, .hud, .ctx, .menu-btn, .views, .modal')) return;
   drag = { id: e.pointerId, x: e.clientX - pan.x, y: e.clientY - pan.y, sx: e.clientX, sy: e.clientY, moved: false };
   app.setPointerCapture(e.pointerId);
 });
@@ -1679,14 +1834,15 @@ const endDrag = (e) => {
   app.classList.remove('panning');
   if (wasTap && e.type === 'pointerup') {
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    const t = el && el.closest('[data-mark]');
-    if (t) onMark(t.dataset.mark);
+    const t = el && el.closest('[data-mark], [data-up]');
+    if (t && t.dataset.mark) onMark(t.dataset.mark);
+    else if (t && app.dataset.view === 'neuron') { selUp = t.dataset.up; render(true); }
   }
 };
 app.addEventListener('pointerup', endDrag);
 app.addEventListener('pointercancel', endDrag);
 app.addEventListener('wheel', (e) => {
-  if (app.dataset.view !== 'map' || e.target.closest('.sheet, .modal')) return;
+  if (app.dataset.view === 'main' || e.target.closest('.sheet, .modal')) return;
   e.preventDefault();
   app.classList.add('panning');
   setPan(pan.x - e.deltaX, pan.y - e.deltaY);
@@ -1924,6 +2080,7 @@ window.addEventListener('pagehide', save);
   const res = load();
   S = res.s;
   app.dataset.view = fromHash[location.hash] || 'main';
+  document.querySelectorAll('.views__btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.go === app.dataset.view)));
   render(true);
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('no-anim')));
   if (!res.fresh) {
