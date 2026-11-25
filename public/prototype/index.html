@@ -322,7 +322,9 @@
   .up { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
   .up h2 { font-size: 19px; font-weight: 900; }
   .up__rank { font-size: 11.5px; font-weight: 900; background: var(--pink); color: #fff; border-radius: 12px; padding: 4px 10px; }
-  .up__fx { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: 10px 0 12px; font-size: 13.5px; }
+  /* feste Höhe für vier Zeilen (Geißeln), damit das Blatt beim Wechsel der Bereiche nicht springt */
+  .up__fx { display: grid; grid-template-columns: auto 1fr; align-content: start; gap: 5px 12px; margin: 10px 0 12px; font-size: 13.5px; height: calc(4 * 1.35em + 3 * 5px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .up__fx::-webkit-scrollbar { display: none; }
   .up__fx dt { color: #c0a8ee; font-weight: 600; }
   .up__fx dd { font-weight: 800; }
   .up__fx dd em { font-style: normal; color: var(--yellow); }
@@ -1156,6 +1158,7 @@ const REACH_PX = 252;
 // Ausbau: nur ein wenig um das Neuron herum verschieben
 const NEURON_REACH_PX = 170;
 let pan = { x: 0, y: 0 };
+let panHome = { x: 0, y: 0 };
 let drag = null;
 let mapScale = 1;
 
@@ -1501,6 +1504,8 @@ const DENDS = {
   verd:  { p0: [4, -54], c: [-14, -100], p1: [12, -150], label: [12, -194] },
   kropf: { p0: [32, -20], c: [84, -6], p1: [118, -44], label: [118, 0] }, // unterhalb der Tiefenanzeige
 };
+const GEIS_AT = [0, 218];
+const upPos = (k) => (k === 'geis' ? GEIS_AT : DENDS[k].p1);
 const qb = (p0, c, p1, t) => [(1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * c[0] + t * t * p1[0], (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * c[1] + t * t * p1[1]];
 let neuronKey = '';
 function nodeSvg(key, x, y, rank, afford, sel) {
@@ -1540,7 +1545,7 @@ function renderNeuron() {
     h += `<text class="n-mile${on ? ' n-mile--on' : ''}" x="-18" y="${y - 2.5}">${on ? 'Reichweite ' : ''}${fmt(reachFor(m))} KP</text><text class="n-mile n-mile--sub" x="-18" y="${y + 10.5}">${on ? 'erreicht mit' : 'ab'} Rang ${m}</text>`;
   });
   h += '<path class="twig twig--term" d="M0 196Q-18 214-34 222M0 196Q18 216 30 230"/>';
-  h += nodeSvg('geis', 0, 218, l, canAfford('geis'), selUp === 'geis');
+  h += nodeSvg('geis', GEIS_AT[0], GEIS_AT[1], l, canAfford('geis'), selUp === 'geis');
   h += `<text class="n-name n-name--l" x="34" y="214">${CFG.upgrades.geis.name}</text><text class="n-cost n-cost--l${canAfford('geis') ? '' : ' n-cost--poor'}" x="34" y="229">${costLabel('geis')}</text>`;
   $('neuronG').innerHTML = h;
 }
@@ -1774,19 +1779,38 @@ function render(force) {
 const hashOf = { main: '', map: '#umgebung', neuron: '#ausbau' };
 const fromHash = { '#umgebung': 'map', '#ausbau': 'neuron' };
 function setView(v) {
-  setPan(0, 0);
   app.dataset.view = v;
+  panHome = { x: 0, y: 0 };
+  setPan(0, 0);
   document.querySelectorAll('.views__btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.go === v)));
   history.replaceState(null, '', location.pathname + location.search + hashOf[v]);
   render(true);
+  if (v === 'neuron') focusUp();
 }
 function setPan(x, y) {
-  const len = Math.hypot(x, y), reach = app.dataset.view === 'neuron' ? NEURON_REACH_PX : REACH_PX;
-  if (len > reach) { x *= reach / len; y *= reach / len; }
-  pan = { x, y };
-  app.style.setProperty('--px', x + 'px');
-  app.style.setProperty('--py', y + 'px');
-  app.classList.toggle('panned', Math.hypot(x, y) > 6);
+  const h = app.dataset.view === 'neuron' ? panHome : { x: 0, y: 0 }, reach = app.dataset.view === 'neuron' ? NEURON_REACH_PX : REACH_PX;
+  let dx = x - h.x, dy = y - h.y;
+  const len = Math.hypot(dx, dy);
+  if (len > reach) { dx *= reach / len; dy *= reach / len; }
+  pan = { x: h.x + dx, y: h.y + dy };
+  app.style.setProperty('--px', pan.x + 'px');
+  app.style.setProperty('--py', pan.y + 'px');
+  app.classList.toggle('panned', Math.hypot(dx, dy) > 6);
+}
+// Ausbau: das gewählte Feld in die Mitte der freien Fläche zwischen Kontextzeile und Blatt schieben.
+// Das Feld wird zugleich Mittelpunkt des Verschiebens.
+function focusUp() {
+  const sheet = document.querySelector('.sheet--neuron'), H = app.clientHeight;
+  const top = document.querySelector('.ctx').offsetTop + document.querySelector('.ctx').offsetHeight;
+  const bottom = sheet.classList.contains('is-collapsed') ? H - 30 : sheet.offsetTop;
+  const [nx, ny] = upPos(selUp);
+  panHome = { x: -nx, y: (top + bottom) / 2 - H * 0.4 - ny }; // Ebenen-Ursprung: 50 % / 40 %
+  setPan(panHome.x, panHome.y);
+}
+function selectUp(k) {
+  selUp = k;
+  render(true);
+  focusUp();
 }
 document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.go)));
 document.querySelector('[data-recenter]').addEventListener('click', () => setPan(0, 0));
@@ -1801,6 +1825,7 @@ function setCollapsed(sheet, on) {
   const g = sheet.querySelector('.sheet__grip');
   g.setAttribute('aria-expanded', String(!on));
   g.setAttribute('aria-label', on ? 'Blatt ausklappen' : 'Blatt einklappen');
+  if (sheet.classList.contains('sheet--neuron') && app.dataset.view === 'neuron') focusUp();
 }
 document.querySelectorAll('.sheet__grip').forEach((g) => {
   const sheet = g.closest('.sheet');
@@ -1836,7 +1861,7 @@ const endDrag = (e) => {
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const t = el && el.closest('[data-mark], [data-up]');
     if (t && t.dataset.mark) onMark(t.dataset.mark);
-    else if (t && app.dataset.view === 'neuron') { selUp = t.dataset.up; render(true); }
+    else if (t && app.dataset.view === 'neuron') selectUp(t.dataset.up);
   }
 };
 app.addEventListener('pointerup', endDrag);
@@ -1892,14 +1917,12 @@ $('units').addEventListener('click', (e) => {
 $('neuronSvg').addEventListener('click', (e) => {
   const n = e.target.closest('[data-up]');
   if (!n) return;
-  selUp = n.dataset.up;
-  render(true);
+  selectUp(n.dataset.up);
 });
 $('upTabs').addEventListener('click', (e) => {
   const b = e.target.closest('[data-sel]');
   if (!b) return;
-  selUp = b.dataset.sel;
-  render(true);
+  selectUp(b.dataset.sel);
 });
 $('upBuy').addEventListener('click', () => { if (buyUpgrade(S, selUp)) render(true); });
 
@@ -2082,6 +2105,7 @@ window.addEventListener('pagehide', save);
   app.dataset.view = fromHash[location.hash] || 'main';
   document.querySelectorAll('.views__btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.go === app.dataset.view)));
   render(true);
+  if (app.dataset.view === 'neuron') focusUp();
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('no-anim')));
   if (!res.fresh) {
     paused = true;
