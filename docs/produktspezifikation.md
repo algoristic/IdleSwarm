@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Arbeitstitel | IdleSwarm |
-| Dokumentstand | 25. November 2026, Version 6 |
+| Dokumentstand | 26. November 2026, Version 7 |
 | Grundlage | Konzept „IdleSwarm – Konzept für ein Idle Game“ und Prototyp des Zeitalters Winzlinge (Version 5) |
 | Umfang | MVP: Zeitalter Winzlinge (Phase 1). Organismen (Phase 2) als Konzeptstand, nicht Teil des MVP |
 | Gegenstand | Spielmechaniken und Funktionen |
@@ -526,6 +526,7 @@ Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`
 - **`TEC-06` (Soll):** Für Spieltests werden erfasst: Zeitpunkt der ersten Reise, Anzahl der Reisen, versiegte und neu entstandene Stellen, eingesammelte Fundstücke, markierte Ziele und Nutzung von „Stelle verlassen“, Anteil der Zeit ohne Ernte (gesamt und je Zone), Spielzeit bis zur Sprungbedingung der Winzlinge. Für die Simulation des Balancings zusätzlich über die Spielzeit: Anteil der Ausgaben je Ausbau, Verhältnis von Vorrat zu Kapazität, Verhältnis von Antrieb zu Masse (Zeit an der Untergrenze des Reisetempos), Anteil der durch Eier begrenzten Käufe und Eier-Rate im Verhältnis zur Kaufrate. Simuliert wird mit mindestens einem aktiven und einem passiven Spielerprofil.
 - **`TEC-07` (Muss):** Die Oberfläche ist mobile first: Sie wird zuerst für Smartphones im Hochformat gestaltet und ist dort vollständig per Touch bedienbar, ohne waagrechtes Scrollen der Seite. Keine Funktion setzt Hover, Rechtsklick oder Tastatur voraus.
 - **`TEC-08` (Muss):** Das Spiel ist als Web-App installierbar (Manifest, Symbol, Vollbild) und startet nach dem ersten Besuch auch ohne Netz (Service Worker). Steht eine neue Version bereit, erhält der Spieler einen Hinweis und lädt selbst neu; der Spielstand bleibt dabei erhalten. *(Grund: Safari unter iOS löscht den lokalen Speicher einer Website nach 7 Tagen ohne Besuch, nicht aber den einer Web-App auf dem Home-Bildschirm.)*
+- **`TEC-09` (Muss):** Die Darstellung läuft unter Chrome für Android flüssig: Die Schwarm-Ansicht hält auch beim höchsten Figurenstand die Bildrate des Geräts (mindestens 60 Bilder pro Sekunde), und Zoom, Verschieben und Wanderung ruckeln nicht sichtbar. Unter Firefox für Android ist dasselbe erwünscht, aber nicht verpflichtend.
 
 ### 7.2 Umsetzung
 
@@ -543,6 +544,13 @@ Konventionen, Schichten und Domänen stehen in `CLAUDE.md`; hier stehen die tech
 - **Spielwerte (`ALL-CFG-01`):** Die Spielwerte liegen in einer TypeScript-Datei `game/domain/data/balancing.data.ts`, typisiert über ein Interface. Spiel, Nachberechnung, Simulation und Tests importieren dieselbe Datei. Fehlende oder falsch geschriebene Werte fallen beim Build auf; eine Änderung der Werte braucht einen neuen Build, aber keine Änderung der Spiellogik.
 - **Balancing-Simulation (`TEC-04`, `TEC-06`):** Ein Node-Skript unter `tools/simulate/` (gestartet mit `npm run simulate`, ausgeführt mit `tsx` als devDependency) importiert `game/domain` direkt. Es spielt mit mindestens einem aktiven und einem passiven Spielerprofil über mehrere Startwerte und wertet die Kennzahlen aus `TEC-06` aus. Die Spielerprofile gehören zum Werkzeug, nicht zu den Spielregeln. Zusätzlich sichert ein Vitest-Regressionstest mit festem Startwert die Zielwerte des Pacings (6.3) grob ab.
 - **Übernahme aus dem Prototyp:** Die Spiellogik des Prototyps (`public/prototype/`, Stand Spezifikation v6: Spielwerte, Zeitschritt, Kaufen) wird nach `game/domain` portiert, typisiert und nach Thema aufgeteilt. Vorher werden mit dem Prototyp Referenzläufe aufgezeichnet: Startwert, Eingaben und Zustand nach einer festen Zahl von Schritten. Vitest prüft, dass die Portierung dieselben Zustände liefert. Ab der Portierung ändern sich Regeln und Spielwerte nur noch in der Angular-Version. Eine bewusste Änderung zeichnet die betroffenen Referenzläufe mit der Angular-Version neu auf. Der Prototyp bleibt unter `/prototype/` erreichbar, bis die Angular-Version den Umfang des MVP abdeckt, und wird dann entfernt.
+- **Darstellung (`TEC-09`):**
+  - Was sich dauernd bewegt (Schwarm, Schwebeteilchen, Strömung), wird in jedem Frame in ein Canvas gezeichnet. Ferne, Dunst und Hintergrund der Stelle werden nur bei Änderungen zu Bildern gerastert.
+  - Grafiken entstehen als SVG und werden beim Start einmal in Bilder gerastert; Rastergrafiken als Dateien gibt es nicht.
+  - Jede Tiefenebene ist ein eigenes Element. Zoom, Unschärfe und Überblendung laufen per CSS (`transform`, `filter`, `opacity`) auf den Ebenen. Die Verschiebung wird je Ebene direkt als `transform` gesetzt, nicht über vererbte CSS-Variablen.
+  - Umgebung und Ausbau bleiben SVG, weil sie bedient werden; dort gibt es keine Daueranimationen vieler einzelner Elemente. HUD und Blätter sind normales DOM.
+  - Grundlage ist ein Messlauf mit dem Prototyp (`/prototype/?messung`) auf einem Android-Smartphone mit 8 Kernen. Mit SVG verlor Chrome schon beim Dreifachen der heutigen Figurenzahl 10–67 % der Frames und bei der zehnfachen 79–90 %; ohne Bewegung lief die zehnfache Zahl in Ruhe flüssig. Die Kosten entstehen also durch die einzelnen SVG-Animationen. Mit Canvas hielt Chrome beim Dreifachen fast überall 60 Bilder pro Sekunde, nur das Verschieben verlor 32 %, weil der Prototyp es über vererbte CSS-Variablen löst. Unschärfe kostete nichts Messbares. Firefox zoomte mit SVG-Ebenen mit 15–20 Bildern pro Sekunde, mit gerasterten Ebenen mit 36–45.
+  - Die Optik kann sich in der Umsetzung noch ändern; die Entscheidung betrifft die Technik. Der Messlauf wird als Teil des Testmodus (`TEC-05`) übernommen, damit die Angular-Version gegen dieselben Werte geprüft wird. Organismen mit mehr Figuren werden neu gemessen.
 - **Web-App (`TEC-08`):** Manifest und Service Worker über `@angular/service-worker`; als neue Laufzeitabhängigkeit bekommt er mit der Umsetzung eine ADR. Der Service Worker muss unter beiden Base-Hrefs (`/IdleSwarm/` auf GitHub Pages und auf dem eigenen Server) funktionieren.
 
 ---
