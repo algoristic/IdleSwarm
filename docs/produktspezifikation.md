@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Arbeitstitel | IdleSwarm |
-| Dokumentstand | 26. November 2026, Version 7 |
+| Dokumentstand | 26. November 2026, Version 8 |
 | Grundlage | Konzept „IdleSwarm – Konzept für ein Idle Game“ und Prototyp des Zeitalters Winzlinge (Version 5) |
 | Umfang | MVP: Zeitalter Winzlinge (Phase 1). Organismen (Phase 2) als Konzeptstand, nicht Teil des MVP |
 | Gegenstand | Spielmechaniken und Funktionen |
@@ -115,8 +115,8 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | Einheit | Mitglied einer Stufe der Kette. Soldaten zählen nicht als Einheiten |
 | Sammler | Unterste Stufe der Kette; nur Sammler ernten |
 | Erzeugung | Einheiten, die eine Stufe der Kette pro Sekunde in der Stufe darunter hervorbringt |
-| Masse (M) | Summe der Einzelmassen aller Einheiten und aller Soldaten (Jäger zählen halb); Ausbauten haben keine Masse. Senkt das Reisetempo |
-| Antrieb (T) | Entsteht durch den Ausbau für Antrieb (2.9); bestimmt mit der Masse das Reisetempo und ist Voraussetzung für Zugangsschwellen |
+| Masse (M) | Nur ab Organismen und nur, falls sie eingeführt wird (`P2-MAS-01`): Summe der Einzelmassen der Einheiten und Soldaten, senkt das Reisetempo. Im Zeitalter Winzlinge gibt es keine Masse |
+| Antrieb (T) | Entsteht durch den Ausbau für Antrieb (2.9); bestimmt das Reisetempo und ist Voraussetzung für Zugangsschwellen |
 | Reichweite | Radius um den Schwarm, in dem Stellen der aktuellen und der nächsten Zone bekannt werden |
 
 ### 2.6 Reise
@@ -125,7 +125,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 | --- | --- |
 | Reise | Bewegung des Schwarms zu einem Reiseziel; beginnt mit dem Aufbruch, endet mit der Ankunft. Unterwegs erntet der Schwarm nicht |
 | Reiseziel | Stelle oder Fundstück, zu dem eine Reise führt |
-| Reisetempo (v) | Kartenpunkte pro Sekunde, abhängig von Antrieb und Masse (`P1-REI-02`) |
+| Reisetempo (v) | Kartenpunkte pro Sekunde, im Zeitalter Winzlinge nur abhängig vom Antrieb (`P1-REI-02`) |
 | Reisezeit (t_Reise) | Dauer einer Reise: Strecke durch Reisetempo |
 | Abzugsreife | Bewertung, ob eine andere ansteuerbare Stelle unter Einrechnung der Reisezeit mehr Ernte bringt als die aktuelle |
 | Beste Alternative | Ansteuerbare Stelle mit der höchsten erwarteten Durchschnittsernte unter Einrechnung der Reisezeit (`P1-ABZ-02`) |
@@ -136,7 +136,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Soldat | Einzeln gekauftes Mitglied des Schwarms außerhalb der Kette; vermehrt sich nicht, bringt Kampfkraft und Masse |
+| Soldat | Einzeln gekauftes Mitglied des Schwarms außerhalb der Kette; vermehrt sich nicht, bringt Kampfkraft und gegebenenfalls Masse (`P2-MAS-01`) |
 | Kampfkraft (K) | Summe der Kampfkraftwerte aller Soldaten |
 | Abwehr (D) | Widerstand einer Stelle gegen die Einnahme; Ausgangsabwehr D₀ |
 | Verteidigte Stelle | Stelle mit Abwehr; sie kann erst nach der Einnahme beerntet werden |
@@ -151,7 +151,7 @@ Die Begriffe gelten für alle Zeitalter. Wo ein Zeitalter eigene Namen verwendet
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Ausbau | Verbesserung in Rängen, gekauft mit Vorrat oder Revier; gilt für den laufenden Durchlauf |
+| Ausbau | Verbesserung in Rängen, gekauft mit Vorrat, mit Einheiten der Kette (`P1-AUS-05`) oder mit Revier; gilt für den laufenden Durchlauf |
 | Rang (l) | Ausbaustand eines Ausbaus, beginnend bei 0 |
 | Fundstück | Objekt an einer festen Position einer Zone; der Schwarm sammelt es ein, wenn er dorthin reist, und erhält einen einmaligen Bonus (`P1-FUN-01`) |
 | Fähigkeit | Ab Organismen; mit Instinkt ausgelöster Effekt |
@@ -208,7 +208,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 ### 3.3 Spielablauf
 
 1. **Ernten:** Die Sammler ernten die verfügbare Nahrung der aktuellen Stelle in den Vorrat.
-2. **Wachsen:** Vorrat, Brut und Einheiten der Stufe darunter kaufen neue Einheiten; höhere Stufen vermehren die niedrigeren von selbst.
+2. **Wachsen:** Vorrat, Brut und Einheiten der Stufe darunter kaufen neue Einheiten; höhere Stufen vermehren die niedrigeren von selbst. Einheiten einer Stufe lassen sich opfern, um deren Erzeugung zu steigern (`P1-AUS-05`).
 3. **Erschöpfen:** Der Bestand sinkt; ein großer Schwarm leert eine Stelle in Sekunden.
 4. **Entdecken:** Stellen innerhalb der Reichweite werden bekannt; neue Stellen entstehen in der Reichweite.
 5. **Aufbrechen:** Ist die Stelle abzugsreif oder verlässt der Spieler sie, bricht die Wanderautomatik zum markierten Ziel oder zur besten Alternative auf; unterwegs erntet der Schwarm nicht, Kette und Brutherd laufen weiter.
@@ -226,14 +226,16 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 - **`P1-KET-01` (Muss):** Die Kette hat sechs Stufen:
 
-| Stufe | Einheit | Erzeugt pro Sekunde | Kosten | Masse |
-| --- | --- | --- | --- | --- |
-| 1 | Fressling (Sammler) | – (erntet 1 Nahrung/s) | 10 Vorrat, 1 Ei | 1 |
-| 2 | Brutling | 2 Fresslinge | 500 Vorrat, 1 Ei, 100 Fresslinge | 5 |
-| 3 | Eiträgerin | 3 Brutlinge | 20.000 Vorrat, 1 Ei, 1.000 Brutlinge | 30 |
-| 4 | Gelege | 4 Eiträgerinnen | 1 Mio. Vorrat, 1 Ei, 1.000 Eiträgerinnen | 200 |
-| 5 | Brutklumpen | 5 Gelege | 50 Mio. Vorrat, 1 Ei, 1.000 Gelege | 1.200 |
-| 6 | Urnest | 6 Brutklumpen | 2 Mrd. Vorrat, 1 Ei, 1.000 Brutklumpen | 8.000 |
+| Stufe | Einheit | Erzeugt pro Sekunde | Kosten |
+| --- | --- | --- | --- |
+| 1 | Fressling (Sammler) | – (erntet 1 Nahrung/s) | 10 Vorrat, 1 Ei |
+| 2 | Brutling | 2 Fresslinge | 500 Vorrat, 1 Ei, 10 Fresslinge |
+| 3 | Eiträgerin | 3 Brutlinge | 20.000 Vorrat, 1 Ei, 100 Brutlinge |
+| 4 | Gelege | 4 Eiträgerinnen | 1 Mio. Vorrat, 1 Ei, 1.000 Eiträgerinnen |
+| 5 | Brutklumpen | 5 Gelege | 50 Mio. Vorrat, 1 Ei, 10.000 Gelege |
+| 6 | Urnest | 6 Brutklumpen | 2 Mrd. Vorrat, 1 Ei, 100.000 Brutklumpen |
+
+  Die Kosten in Einheiten der Stufe darunter wachsen je Stufe um den Faktor 10. Die Erzeugung ist der Grundwert; der Erzeugungs-Ausbau (`P1-AUS-05`) steigert sie. Beide gehören zusammen: Ohne den Ausbau dauert das Zeitalter bei aktivem Spiel mehr als dreimal so lang wie mit den Kosten des Prototyps (6.3). *(Prototyp: 100 Fresslinge, danach je 1.000 Einheiten der Stufe darunter, mit Masse je Einheit.)*
 
 - **`P1-KET-02` (Muss):** Beim Kauf einer höheren Stufe werden die angegebenen Einheiten der Stufe darunter verbraucht.
 - **`P1-KET-03` (Muss):** Fressling und Brutling sind von Beginn an kaufbar. Jede weitere Stufe wird kaufbar, sobald mindestens eine Einheit der Stufe darunter vorhanden ist.
@@ -242,7 +244,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 ### 4.3 Ausbauten
 
-- **`P1-AUS-01` (Muss):** Das Zeitalter Winzlinge hat vier Ausbauten, jeweils mit beliebig vielen Rängen l (beginnend bei 0) und bezahlt mit Vorrat:
+- **`P1-AUS-01` (Muss):** Das Zeitalter Winzlinge hat vier Ausbauten des Schwarms, jeweils mit beliebig vielen Rängen l (beginnend bei 0) und bezahlt mit Vorrat. Dazu kommen die Ausbauten der Kette (`P1-AUS-04`, `P1-AUS-05`).
 
 | Ausbau | Wirkung bei Rang l | Kosten für den nächsten Rang |
 | --- | --- | --- |
@@ -251,10 +253,16 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 | Geißeln | Antrieb 50 · 1,8^l | 125 · 2,2^l |
 | Kropf | Kapazität 2.000 · 1,5^l | 80 · 1,55^l |
 
-- **`P1-AUS-02` (Muss):** Ausbauten sind keine Einheiten der Kette. Sie haben keine Masse und kosten keine Eier.
+- **`P1-AUS-02` (Muss):** Ausbauten sind keine Einheiten der Kette. Sie kosten keine Eier.
 - **`P1-AUS-03` (Muss):** Die Reichweite ist kein eigener Ausbau. Sie beträgt 140 Kartenpunkte und wächst je 3 Ränge Geißeln um 70 Kartenpunkte: `Reichweite = 140 + 70 · ⌊l_Geißeln / 3⌋`.
-- **`P1-AUS-04` (Soll):** Mehrlinge je Stufe der Kette: Jeder Kauf dieser Stufe bringt zusätzliche Einheiten ohne Kosten mit. Wirkung und Kosten **[offen]**. *(Im Konzept vorgesehen, im Prototyp nicht umgesetzt.)*
-- **`P1-AUS-05` (Soll):** Produktion je Stufe der Kette: höhere Erzeugung dieser Stufe. Wirkung und Kosten **[offen]**. *(Im Konzept vorgesehen, im Prototyp nicht umgesetzt.)*
+- **`P1-AUS-04` (Soll):** Mehrlinge je Stufe der Kette: Jeder Kauf dieser Stufe bringt zusätzliche Einheiten ohne Kosten mit. Wirkung und Kosten **[offen]**; sie werden erst nach der Kalibrierung von `P1-AUS-05` festgelegt, weil beide die Kette verstärken und ihr Zusammenspiel nicht simuliert ist. *(Im Konzept vorgesehen, im Prototyp nicht umgesetzt.)*
+- **`P1-AUS-05` (Muss):** Erzeugungs-Ausbau: Für jede Einheit von Fressling bis Gelege gibt es einen Ausbau „Erzeugung von …“. Er steigert die Erzeugung der Stufe darüber, die diese Einheiten hervorbringt, und wird mit Einheiten genau dieser erzeugenden Stufe bezahlt, nicht mit Vorrat. Beispiel: „Erzeugung von Fresslingen“ steigert die Erzeugung der Brutlinge und kostet Brutlinge.
+  - Wirkung, additiv: Bei Rang l erzeugt die Stufe das `(1 + w · l)`-Fache ihres Grundwerts aus `P1-KET-01`. Startwert w = 1, also +100 % des Grundwerts je Rang.
+  - Kosten für den nächsten Rang: `a · k^l` Einheiten der erzeugenden Stufe, aufgerundet. Startwerte a = 1, k = 2, also 1, 2, 4, 8, … Einheiten. Die Einheiten werden beim Kauf verbraucht (wie `P1-KET-02`).
+  - Die Ränge haben keine Obergrenze. w, a und k werden in der Umsetzung kalibriert **[offen]**.
+  - Einen Ausbau für die Erzeugung von Brutklumpen gibt es nicht: Er würde mit Urnestern bezahlt, und ein Urnest ist bereits Sprungbedingung (`P1-END-01`).
+
+  *Begründung: Die Wirkung ist bewusst additiv. Mit Verdopplung je Rang wuchs die Kette in der Simulation schneller als exponentiell: Das Zeitalter endete aktiv nach 0,3 Stunden, die Stückzahlen erreichten 10⁶⁷ bis 10¹¹⁰, und auch Kosten ×3 oder ×4 je Rang bremsten das kaum (6.3). Additiv bleibt die Kette eine Bremse.* *(Im Prototyp nicht umgesetzt.)*
 
 ### 4.4 Eier
 
@@ -319,7 +327,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 ### 4.10 Reise
 
 - **`P1-REI-01` (Muss):** Reisen löst nur die Wanderautomatik aus (`P1-AUT-01`). Reiseziel ist eine ansteuerbare Stelle (bekannt, erreichbar, nicht versiegt) oder ein ansteuerbares Fundstück (`P1-FUN-03`). Eine laufende Reise lässt sich nicht umlenken.
-- **`P1-REI-02` (Muss):** Reisetempo in Kartenpunkten pro Sekunde: `v = 20 · max(0,25; √min(1, T/M))`.
+- **`P1-REI-02` (Muss):** Die Reisezeit hängt nur von der Strecke und vom Antrieb ab: `t_Reise = Strecke / v`. Das Reisetempo v in Kartenpunkten pro Sekunde wächst mit dem Antrieb T, also mit dem Rang der Geißeln. Die Größe des Schwarms spielt keine Rolle; im Zeitalter Winzlinge gibt es keine Masse (`P2-MAS-01`). Die Formel ist **[offen]**. *(Prototyp: `v = 20 · max(0,25; √min(1, T/M))` mit der Masse M der Einheiten.)*
 - **`P1-REI-03` (Muss):** Mit dem Aufbruch endet die Ernte; unterwegs erntet der Schwarm nicht.
 - **`P1-REI-04` (Muss):** Im Zeitalter Winzlinge gibt es keine Reiseverluste.
 
@@ -354,7 +362,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 | Nahrungsblase | 3 | Sofort Vorrat in Höhe von max(1.000; 180 × Ø-Ernte). Ø-Ernte = Gesamternte der letzten 120 s Spielzeit / 120 s; Reisezeiten und Nachberechnung zählen als Spielzeit, in den ersten 120 s wird über die bisherige Spielzeit gemittelt. Unterliegt nicht der Kapazität |
 | Eierballen | 2 | Sofort Eier in Höhe von max(50; 180 × Eier-Rate) |
 | Wachstumsschub | 2 | Jede Stufe erhält sofort 120 × die aktuelle Erzeugung der Stufe darüber pro Sekunde (linear: ohne Weiterreichen neu entstehender Einheiten und ohne Boni anderer Fundstücke) |
-| Keimzelle | 1 | Der nächste Rang eines Ausbaus nach Wahl kostet nichts |
+| Keimzelle | 1 | Der nächste Rang eines Ausbaus nach Wahl aus `P1-AUS-01` kostet nichts |
 
 - **`P1-FUN-05` (Muss):** Zeitlich begrenzte Wirkungen desselben Typs addieren ihre Restdauer. Mehrere Keimzellen sammeln sich als Gratis-Ränge an.
 - **`P1-FUN-06` (Muss):** Die Restdauer von Fressrausch sinkt nur, solange der Schwarm erntet, die von Rückenwind nur unterwegs. Legeschub und Vermehrungsrausch wirken immer (`P1-STR-01`); ihre Restdauer sinkt fortlaufend. So verfallen Wirkungen nicht ungenutzt auf dem Weg vom Fundstück zur nächsten Stelle.
@@ -371,7 +379,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 
 Das Zeitalter Organismen ist nicht Teil des MVP (1.4) und im Prototyp nicht umgesetzt. Dieser Abschnitt hält den Konzeptstand fest; er wird separat ausgearbeitet, sobald der MVP mit Phase 1 Spaß macht.
 
-Designziel: Im Zeitalter Organismen trifft der Spieler zum ersten Mal eine strategische Abwägung. Soldaten erschließen größere und ertragreichere Stellen, kosten aber Vorrat und Larven und erhöhen die Masse, bremsen also das Wachstum des Schwarms. Unterschiedliche Spielstile sollen daran erkennbar werden, wie stark ein Spieler aufrüstet. Phase 1 bleibt bewusst schlank und führt keine solche Abwägung ein.
+Designziel: Im Zeitalter Organismen trifft der Spieler zum ersten Mal eine strategische Abwägung. Soldaten erschließen größere und ertragreichere Stellen, kosten aber Vorrat und Larven, die dem Wachstum des Schwarms fehlen. Ob sie zusätzlich über eine Masse das Reisen bremsen, wird mit der Ausarbeitung entschieden (`P2-MAS-01`). Unterschiedliche Spielstile sollen daran erkennbar werden, wie stark ein Spieler aufrüstet. Phase 1 bleibt bewusst schlank und führt keine solche Abwägung ein.
 
 Alle Mechaniken des Zeitalters Winzlinge gelten weiter, sofern hier nichts anderes steht.
 
@@ -388,13 +396,17 @@ Alle Mechaniken des Zeitalters Winzlinge gelten weiter, sofern hier nichts ander
 
 ### 5.2 Kette und Ausbauten
 
-- **`P2-KET-01` (Muss):** Die Kette hat sechs Stufen: Weider (Sammler) → Brüter → Brutmutter → Nest → Großnest → Schwarmkönigin. Erzeugung, Kosten und Masse folgen dem Muster der Winzlinge auf höherer Skala **[offen]**. Höhere Stufen kosten Einheiten der Stufe darunter.
+- **`P2-KET-01` (Muss):** Die Kette hat sechs Stufen: Weider (Sammler) → Brüter → Brutmutter → Nest → Großnest → Schwarmkönigin. Erzeugung, Kosten und Erzeugungs-Ausbau folgen dem Muster der Winzlinge (`P1-KET-01`, `P1-AUS-05`) auf höherer Skala **[offen]**. Höhere Stufen kosten Einheiten der Stufe darunter.
 - **`P2-AUS-01` (Muss):** Ausbauten wie im Zeitalter Winzlinge; der Ausbau für Antrieb heißt Flossen, der für Kapazität Fettkörper.
 - **`P2-AUS-02` (Muss):** Zusätzlich: Ausbreitung (kostet Revier, erhöht die Larven-Rate) und Schwarmgeist (erzeugt Instinkt). Werte **[offen]**.
+- **`P2-MAS-01` (Muss):** Ob es im Zeitalter Organismen eine Masse gibt, wird mit seiner Ausarbeitung entschieden **[offen]**. Bis dahin gilt `P1-REI-02`. Falls ja, ist sie die Summe der Einzelmassen der Einheiten und Soldaten und senkt das Reisetempo. Ausgangspunkt ist der Prototyp der Winzlinge:
+  - Formel: `v = 20 · max(0,25; √min(1, T/M))`.
+  - Einzelmassen Fressling bis Urnest: 1, 5, 30, 200, 1.200, 8.000.
+  - In der Simulation der Kette aus `P1-KET-01` (6.3) reiste der Schwarm damit etwa ein Viertel der Zeit an der Untergrenze des Tempos; dort hat zusätzliche Masse keine Wirkung mehr. Einzelmassen und Formel müssen deshalb zur Skala der Kette passen.
 
 ### 5.3 Soldaten
 
-- **`P2-SOL-01` (Muss):** Soldaten werden einzeln gekauft, gehören nicht zur Kette und vermehren sich nicht. Sie zählen zur Masse.
+- **`P2-SOL-01` (Muss):** Soldaten werden einzeln gekauft, gehören nicht zur Kette und vermehren sich nicht. Gibt es eine Masse (`P2-MAS-01`), zählen sie zu ihr; die Spalte Masse und die Eigenheit des Jägers gelten nur dann.
 
 | Soldat | Kampfkraft | Masse | Kosten | Eigenheit |
 | --- | --- | --- | --- | --- |
@@ -496,7 +508,35 @@ Zonen in dieser Reihenfolge: Gezeitenzone, Lagune, Riff, offenes Meer. Typfaktor
 
 Zielwerte für das Zeitalter Organismen stehen in 5.10.
 
-Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige Karten): Das Zeitalter Winzlinge dauert mit allen Fundstücken 1,5 bis 2,3 Stunden, ohne Fundstücke 2,3 bis über 6 Stunden. Die Simulation lief noch mit dem früheren Verfahren (Fundstück alle 1,5 bis 2 Minuten in der Reichweite, Einsammeln per Klick ohne Umweg), enthielt das inzwischen gestrichene Fundstück Frische Strömung und rechnete noch mit Starre, also ohne Erzeugung auf Reisen. Für ortsfeste Fundstücke (`P1-FUN-01` bis `P1-FUN-03`) steht sie aus; durch die Umwege dürfte ihr Vorteil kleiner ausfallen. Die weiche Obergrenze bringt einem Spieler, der nur alle 30 Minuten eingreift, 1,5- bis 3-mal so viel Ernte wie eine harte Obergrenze. Tests mit Menschen stehen aus.
+Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige Karten): Das Zeitalter Winzlinge dauert mit allen Fundstücken 1,5 bis 2,3 Stunden, ohne Fundstücke 2,3 bis über 6 Stunden. Die Simulation lief noch mit dem früheren Verfahren (Fundstück alle 1,5 bis 2 Minuten in der Reichweite, Einsammeln per Klick ohne Umweg), enthielt das inzwischen gestrichene Fundstück Frische Strömung und rechnete noch mit Starre, also ohne Erzeugung auf Reisen. Die weiche Obergrenze bringt einem Spieler, der nur alle 30 Minuten eingreift, 1,5- bis 3-mal so viel Ernte wie eine harte Obergrenze. Tests mit Menschen stehen aus.
+
+Simulation der Kette (Version 8):
+
+- **Aufbau:**
+  - Spiellogik des Prototyps ohne Starre, mit ortsfesten Fundstücken und noch mit Masse.
+  - Automatische Spieler mit 36 bis 144 Einstellungen je Variante, je 5 Startwerte, höchstens 12 Stunden.
+  - Profile: aktiv (Eingriff jede Sekunde, ohne und mit Fundstücken), alle 10 Minuten, alle 30 Minuten.
+  - Die Zeiten sind die des besten automatischen Spielers, also eine obere Schranke für gutes Spiel; in Klammern der Median über die Einstellungen.
+
+| Variante | aktiv | aktiv mit Fundstücken | alle 10 min | alle 30 min |
+| --- | --- | --- | --- | --- |
+| Kettenkosten des Prototyps, ohne Erzeugungs-Ausbau | 1,3 h (1,5 h) | 1,2 h | 3,3 h | 7,5 h |
+| Kettenkosten aus `P1-KET-01`, ohne Erzeugungs-Ausbau | 4,3 h (5,5 h) | 4,3 h | 5,0 h | 9,5 h |
+| `P1-KET-01` mit Erzeugungs-Ausbau, multiplikativ ×2 je Rang | 0,3 h (0,8 h) | 0,4 h | 2,3 h | 5,5 h |
+| `P1-KET-01` mit Erzeugungs-Ausbau nach `P1-AUS-05` | 0,9 h (1,5 h) | 0,9 h | 2,8 h | 6,5 h |
+
+- **Erzeugungs-Ausbau nach `P1-AUS-05`:**
+  - Die Kette bremst wieder: Zwischen der ersten Ernte an der Seegraswiese und dem Urnest liegen bei aktivem Spiel 36 Minuten, multiplikativ unter einer Minute.
+  - Der beste aktive Spieler steigert die Erzeugung der Brutlinge, Eiträgerinnen, Gelege und Brutklumpen auf das 61-, 46-, 30- und 15-Fache.
+  - Aktives Spiel ist etwa 7-mal so schnell wie ein Eingriff alle 30 Minuten (Kosten des Prototyps: 6-mal, multiplikativ: 19-mal).
+  - Kostenwachstum ×1,5 oder ×3 statt ×2 je Rang ändert die Spielzeit nur um etwa 10 %.
+  - Mit den Kettenkosten des Prototyps ist auch der additive Ausbau zu stark (aktiv 0,4 Stunden).
+- **Für alle Varianten:**
+  - Eier begrenzen die Käufe in keiner Variante.
+  - Mit den Kettenkosten aus `P1-KET-01` reicht der Vorrat vor der Seegraswiese nicht für 100.000 Brutklumpen; der Spieler muss zuerst dorthin. Automatische Spieler, die das nicht tun, erreichen das Ende in 12 Stunden nicht.
+  - Die erste Reise beginnt bei aktivem Spiel nach 0,8 bis 0,9 Minuten.
+  - Ein automatischer Spieler, der jedes ansteuerbare Fundstück markiert, ist mit den Kosten des Prototyps nur etwa 7 % schneller als einer ohne Fundstücke.
+- **Offen:** Den Zielwert von 2 bis 3 Stunden erreicht nur das Profil „alle 10 Minuten“; für welches Profil er gilt, ist offen (9.1). Die Simulation rechnete noch mit Masse; mit dem Reisetempo nach `P1-REI-02` ändern sich die Reisezeiten.
 
 ### 6.4 Konfiguration
 
@@ -523,7 +563,7 @@ Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`
 - **`TEC-03` (Muss):** Spiel, Nachberechnung und Simulation des Balancings laufen in festen Zeitschritten von genau 0,25 Sekunden, damit sie bei gleichen Eingaben dasselbe Ergebnis liefern. Geschlossene Formeln reichen nicht aus, weil Stellen erschöpft werden.
 - **`TEC-04` (Muss):** Die Spiellogik ist eigenständig ausführbar, damit sie automatisiert simuliert werden kann (Balancing, Regressionstests).
 - **`TEC-05` (Soll):** Ein Testmodus beschleunigt die Spielzeit (Prototyp: 1×, 5×, 20×, 100×).
-- **`TEC-06` (Soll):** Für Spieltests werden erfasst: Zeitpunkt der ersten Reise, Anzahl der Reisen, versiegte und neu entstandene Stellen, eingesammelte Fundstücke, markierte Ziele und Nutzung von „Stelle verlassen“, Anteil der Zeit ohne Ernte (gesamt und je Zone), Spielzeit bis zur Sprungbedingung der Winzlinge. Für die Simulation des Balancings zusätzlich über die Spielzeit: Anteil der Ausgaben je Ausbau, Verhältnis von Vorrat zu Kapazität, Verhältnis von Antrieb zu Masse (Zeit an der Untergrenze des Reisetempos), Anteil der durch Eier begrenzten Käufe und Eier-Rate im Verhältnis zur Kaufrate. Simuliert wird mit mindestens einem aktiven und einem passiven Spielerprofil.
+- **`TEC-06` (Soll):** Für Spieltests werden erfasst: Zeitpunkt der ersten Reise, Anzahl der Reisen, versiegte und neu entstandene Stellen, eingesammelte Fundstücke, markierte Ziele und Nutzung von „Stelle verlassen“, Anteil der Zeit ohne Ernte (gesamt und je Zone), Spielzeit bis zur Sprungbedingung der Winzlinge. Für die Simulation des Balancings zusätzlich über die Spielzeit: Anteil der Ausgaben je Ausbau, Ränge der Erzeugungs-Ausbauten und die dafür verbrauchten Einheiten, Verhältnis von Vorrat zu Kapazität, Anteil der Reisezeit an der Spielzeit, Anteil der Zeit, in der Vorrat, Eier oder Einheiten der Stufe darunter den Kauf der höchsten Stufe begrenzen, und Eier-Rate im Verhältnis zur Kaufrate. Simuliert wird mit mindestens einem aktiven und einem passiven Spielerprofil.
 - **`TEC-07` (Muss):** Die Oberfläche ist mobile first: Sie wird zuerst für Smartphones im Hochformat gestaltet und ist dort vollständig per Touch bedienbar, ohne waagrechtes Scrollen der Seite. Keine Funktion setzt Hover, Rechtsklick oder Tastatur voraus.
 - **`TEC-08` (Muss):** Das Spiel ist als Web-App installierbar (Manifest, Symbol, Vollbild) und startet nach dem ersten Besuch auch ohne Netz (Service Worker). Steht eine neue Version bereit, erhält der Spieler einen Hinweis und lädt selbst neu; der Spielstand bleibt dabei erhalten. *(Grund: Safari unter iOS löscht den lokalen Speicher einer Website nach 7 Tagen ohne Besuch, nicht aber den einer Web-App auf dem Home-Bildschirm.)*
 - **`TEC-09` (Muss):** Die Darstellung läuft unter Chrome für Android flüssig: Die Schwarm-Ansicht hält auch beim höchsten Figurenstand die Bildrate des Geräts (mindestens 60 Bilder pro Sekunde), und Zoom, Verschieben und Wanderung ruckeln nicht sichtbar. Unter Firefox für Android ist dasselbe erwünscht, aber nicht verpflichtend.
@@ -534,7 +574,7 @@ Konventionen, Schichten und Domänen stehen in `CLAUDE.md`; hier stehen die tech
 
 - **Domänen:** Der MVP hat eine Spieldomäne `game` und die Domäne `shared` (Domänentabelle in `CLAUDE.md`). Ein Zeitschritt verändert fast den ganzen Spielzustand (Ernte, Kette, Stellen, Reise, Fundstücke), und Spiel, Nachberechnung und Simulation teilen ihn (`TEC-03`, `TEC-04`). Deshalb liegen Zustand und Regeln in einer Domäne, die Regeln in `game/domain` aufgeteilt nach Thema. Eine Aufteilung wird spätestens mit dem Zeitalter Organismen neu bewertet.
 - **Simulation im Haupt-Thread:** Spiel und Nachberechnung laufen im Haupt-Thread, ohne Web Worker. Die Nachberechnung rechnet in Blöcken, gibt dazwischen den Thread frei und zeigt ihren Fortschritt. Grundlage ist eine Messung mit dem Zeitschritt des Prototyps unter Node: 24 Stunden (345.600 Schritte) dauern 0,4 bis 1 Sekunde, auf Smartphones geschätzt wenige Sekunden; das laufende Spiel braucht 4 Schritte pro Sekunde (Testmodus 100×: 400). Der Zeitschritt bleibt eine reine Funktion in `game/domain`, damit die Nachberechnung bei Bedarf in einen Worker wandern kann. Ein Worker kommt erst, wenn die Nachberechnung auf einem Smartphone der Mittelklasse spürbar zu lange dauert.
-- **Zahlen (`TEC-02`):** Der MVP rechnet mit `number` (bis etwa 1,8 · 10³⁰⁸), ohne Abstraktion und ohne Bibliothek; die Formeln im Code sehen aus wie in dieser Spezifikation. Ein Lauf mit automatischem Spieler über 6 Stunden Spielzeit erreichte höchstens 2,9 · 10²³ Einheiten, 1,2 · 10¹² Vorrat und Stellen bis 1,1 · 10¹⁴. Oberhalb von 2⁵³ (etwa 9 · 10¹⁵) sind Mengen nicht mehr auf die Einheit genau; für die Anzeige spielt das keine Rolle. Die Zahlenformatierung in `shared/util` deckt den ganzen Bereich von `number` ab. Braucht ein späteres Zeitalter mehr, kommt eine Bibliothek für große Zahlen per ADR; der Umbau betrifft dann vor allem `game/domain`.
+- **Zahlen (`TEC-02`):** Der MVP rechnet mit `number` (bis etwa 1,8 · 10³⁰⁸), ohne Abstraktion und ohne Bibliothek; die Formeln im Code sehen aus wie in dieser Spezifikation. Ein Lauf mit automatischem Spieler über 6 Stunden Spielzeit erreichte höchstens 2,9 · 10²³ Einheiten, 1,2 · 10¹² Vorrat und Stellen bis 1,1 · 10¹⁴. Mit Kette und Erzeugungs-Ausbau aus Version 8 (`P1-KET-01`, `P1-AUS-05`) erreichte die Simulation in 12 Stunden höchstens etwa 2 · 10²⁹ Einheiten und 9 · 10¹² Vorrat. Oberhalb von 2⁵³ (etwa 9 · 10¹⁵) sind Mengen nicht mehr auf die Einheit genau; für die Anzeige spielt das keine Rolle. Die Zahlenformatierung in `shared/util` deckt den ganzen Bereich von `number` ab. Braucht ein späteres Zeitalter mehr, kommt eine Bibliothek für große Zahlen per ADR; der Umbau betrifft dann vor allem `game/domain`.
 - **Spielstand (`ALL-OFF-01` bis `ALL-OFF-05`):**
   - Der ganze Spielzustand liegt als ein JSON unter einem Schlüssel in localStorage, einschließlich Startwert und Zustand des Zufallsgenerators (`TEC-03`) und des Speicherzeitpunkts. Abgeleitete Werte und Spielwerte (`ALL-CFG-01`) werden nicht gespeichert; geänderte Spielwerte wirken also auch auf laufende Spiele.
   - Gespeichert wird alle 10 Sekunden, beim Verbergen der Seite und bei `pagehide`.
@@ -543,7 +583,7 @@ Konventionen, Schichten und Domänen stehen in `CLAUDE.md`; hier stehen die tech
   - Der Export ist der Spielstand als Base64-Text zum Kopieren und Einfügen. Ein Import durchläuft dieselbe Migration und Prüfung wie das Laden.
 - **Spielwerte (`ALL-CFG-01`):** Die Spielwerte liegen in einer TypeScript-Datei `game/domain/data/balancing.data.ts`, typisiert über ein Interface. Spiel, Nachberechnung, Simulation und Tests importieren dieselbe Datei. Fehlende oder falsch geschriebene Werte fallen beim Build auf; eine Änderung der Werte braucht einen neuen Build, aber keine Änderung der Spiellogik.
 - **Balancing-Simulation (`TEC-04`, `TEC-06`):** Ein Node-Skript unter `tools/simulate/` (gestartet mit `npm run simulate`, ausgeführt mit `tsx` als devDependency) importiert `game/domain` direkt. Es spielt mit mindestens einem aktiven und einem passiven Spielerprofil über mehrere Startwerte und wertet die Kennzahlen aus `TEC-06` aus. Die Spielerprofile gehören zum Werkzeug, nicht zu den Spielregeln. Zusätzlich sichert ein Vitest-Regressionstest mit festem Startwert die Zielwerte des Pacings (6.3) grob ab.
-- **Übernahme aus dem Prototyp:** Die Spiellogik des Prototyps (`public/prototype/`, Stand Spezifikation v6: Spielwerte, Zeitschritt, Kaufen) wird nach `game/domain` portiert, typisiert und nach Thema aufgeteilt. Vorher werden mit dem Prototyp Referenzläufe aufgezeichnet: Startwert, Eingaben und Zustand nach einer festen Zahl von Schritten. Vitest prüft, dass die Portierung dieselben Zustände liefert. Ab der Portierung ändern sich Regeln und Spielwerte nur noch in der Angular-Version. Eine bewusste Änderung zeichnet die betroffenen Referenzläufe mit der Angular-Version neu auf. Der Prototyp bleibt unter `/prototype/` erreichbar, bis die Angular-Version den Umfang des MVP abdeckt, und wird dann entfernt.
+- **Übernahme aus dem Prototyp:** Die Spiellogik des Prototyps (`public/prototype/`, Stand Spezifikation v6: Spielwerte, Zeitschritt, Kaufen) wird nach `game/domain` portiert, typisiert und nach Thema aufgeteilt. Vorher werden mit dem Prototyp Referenzläufe aufgezeichnet: Startwert, Eingaben und Zustand nach einer festen Zahl von Schritten. Vitest prüft, dass die Portierung dieselben Zustände liefert. Ab der Portierung ändern sich Regeln und Spielwerte nur noch in der Angular-Version. Die Neuerungen aus Version 8 (Kettenkosten nach `P1-KET-01`, Erzeugungs-Ausbau nach `P1-AUS-05`, Reisetempo ohne Masse nach `P1-REI-02`) kommen nach der Portierung als bewusste Änderungen hinzu. Eine bewusste Änderung zeichnet die betroffenen Referenzläufe mit der Angular-Version neu auf. Der Prototyp bleibt unter `/prototype/` erreichbar, bis die Angular-Version den Umfang des MVP abdeckt, und wird dann entfernt.
 - **Darstellung (`TEC-09`):**
   - Was sich dauernd bewegt (Schwarm, Schwebeteilchen, Strömung), wird in jedem Frame in ein Canvas gezeichnet. Ferne, Dunst und Hintergrund der Stelle werden nur bei Änderungen zu Bildern gerastert.
   - Grafiken entstehen als SVG und werden beim Start einmal in Bilder gerastert; Rastergrafiken als Dateien gibt es nicht.
@@ -570,7 +610,11 @@ Konventionen, Schichten und Domänen stehen in `CLAUDE.md`; hier stehen die tech
 
 MVP (Phase 1):
 
-Keine. Entschieden sind zuletzt: Entdecken (`P1-STE-07`, `P1-STE-08`), keine Starre (`P1-STR-01`) und feste Zeitschritte (`TEC-03`).
+1. Für welches Spielerprofil gilt der Zielwert von 2 bis 3 Stunden (6.3)? In der Simulation erreicht ihn nur ein Eingriff alle 10 Minuten; aktives Spiel ist schneller, ein Eingriff alle 30 Minuten langsamer.
+2. Soll der Spieler zuerst die Seegraswiese erreichen müssen, bevor er die 100.000 Brutklumpen für ein Urnest bezahlen kann (6.3)? Falls nicht, müssen die Vorratspreise der oberen Stufen (`P1-KET-01`) sinken.
+3. Ist das Opfern von Einheiten für den Erzeugungs-Ausbau (`P1-AUS-05`) für Menschen eine interessante Entscheidung? Das klärt der Spieltest, nicht die Simulation.
+
+Entschieden sind zuletzt: Kettenkosten in Zehnerpotenzen (`P1-KET-01`), additiver Erzeugungs-Ausbau (`P1-AUS-05`), Reisetempo ohne Masse (`P1-REI-02`), Entdecken (`P1-STE-07`, `P1-STE-08`), keine Starre (`P1-STR-01`) und feste Zeitschritte (`TEC-03`).
 
 Nach dem MVP:
 
@@ -584,7 +628,9 @@ MVP (Phase 1):
 
 | Kennung | Offener Wert |
 | --- | --- |
-| `P1-AUS-04`, `P1-AUS-05` | Wirkung und Kosten von Mehrlingen und Produktions-Ausbau |
+| `P1-AUS-04` | Wirkung und Kosten der Mehrlinge; erst nach der Kalibrierung von `P1-AUS-05` |
+| `P1-AUS-05` | Wirkung je Rang w, Einstiegspreis a und Kostenwachstum k des Erzeugungs-Ausbaus (Startwerte 1, 1, 2) |
+| `P1-REI-02` | Formel des Reisetempos aus dem Antrieb (Vorschlag: bei Rang 0 der Geißeln wie im Prototyp 20 Kartenpunkte pro Sekunde) |
 | `P1-KAR-05` | Größe und Form der Zonenfläche; Verteilung der Positionen (Vorschlag: gleichverteilt mit Mindestabstand 20 Kartenpunkte); Aufschlag auf die Reisestrecke beim Wechsel in die nächste Zone (Vorschlag: keiner) |
 
 Nach dem MVP (Phase 2):
@@ -593,7 +639,8 @@ Nach dem MVP (Phase 2):
 | --- | --- |
 | `STR-01` | Bedingung für das Schwärmen (Vorschlag: Erreichen der Zone Riff) |
 | `STR-02` | Sprungbedingung der Organismen (Vorschlag: mindestens eine Schwarmkönigin an der Zielstelle) |
-| `P2-KET-01` | Erzeugung, Kosten und Masse der Kette der Organismen |
+| `P2-KET-01` | Erzeugung, Kosten und Erzeugungs-Ausbau der Kette der Organismen |
+| `P2-MAS-01` | Ob es eine Masse gibt; falls ja, Einzelmassen und Formel des Reisetempos |
 | `P2-AUS-02` | Werte von Ausbreitung und Schwarmgeist; Instinkt-Rate und -Höchstmenge |
 | 5.4 | Typfaktoren, Basisgrößen, Wuchs und Zugangsschwellen der Stellen und Zonen der Organismen |
 | `P2-EIN-04`, `P2-EIN-05`, `P2-EIN-07` | Revier-Rate, r_D, Grenze für ansteuerbare Abwehr |
@@ -606,9 +653,9 @@ Nach dem MVP (Phase 2):
 - [x] Prototyp des Zeitalters Winzlinge
 - [x] Pacing der Winzlinge per Simulation prüfen
 - [x] UI-Mockups für die Kartenform, mobile first: Zonen als Tiefenebenen nach Mockup 5d (`docs/design/mockups/`)
-- [ ] Frühe Simulation: Pacing ohne Starre (`P1-STR-01`), mit ortsfesten Fundstücken und dem Zielwert für die erste Reise, Kennzahlen aus `TEC-06` mit aktivem und passivem Spielerprofil
+- [x] Frühe Simulation: Pacing ohne Starre (`P1-STR-01`), mit ortsfesten Fundstücken und dem Zielwert für die erste Reise, mit aktivem und passivem Spielerprofil; dazu Kettenkosten und Erzeugungs-Ausbau (Ergebnisse in 6.3)
 - [ ] Spieltest des Prototyps mit Menschen
-- [ ] Balancing anhand der Simulations- und Testergebnisse anpassen, vor allem über die Kosten der Ausbauten und der Kette; Kalibrierungen auch noch während der Implementierung
+- [ ] Balancing anhand der Simulations- und Testergebnisse anpassen, vor allem über die Kosten der Ausbauten und der Kette; Kalibrierungen auch noch während der Implementierung, darunter Erzeugungs-Ausbau (`P1-AUS-05`) und Reisetempo (`P1-REI-02`) mit der Simulation unter `tools/simulate/`
 - [ ] Offene Werte des MVP aus 9.2 festlegen
 - [ ] Nach dem MVP: Organismen separat ausarbeiten (Werte aus 9.2, beginnend mit der Einnahme), dann mit dem Evolutionssprung in den Prototyp übernehmen
 
