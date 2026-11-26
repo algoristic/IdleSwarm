@@ -68,6 +68,8 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 
 | Domäne | Inhalt |
 | --- | --- |
+| `game` | Das ganze Spiel: Regeln, Spielwerte und Zeitschritt (`domain`, eine `*-logic.ts` je Thema: Kette, Ernte, Stellen, Reise, Fundstücke), Zustand, Spielschleife und Spielstand (`data-access`), Facade und Spielseite mit den Ansichten Umgebung, Schwarm und Ausbau (`feature`, `ui`) |
+| `shared` | Domänenübergreifendes ohne Fachwissen: Zahlenformatierung de-DE (`util`), Pipes (`ui/pipes`) |
 
 Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln selbst.
 

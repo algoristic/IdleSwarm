@@ -500,7 +500,7 @@ Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige K
 
 ### 6.4 Konfiguration
 
-- **`ALL-CFG-01` (Muss):** Alle Spielwerte (Einheiten, Stellen, Zonen, Ausbauten, Fundstücke, Fähigkeiten, Formelparameter) liegen in einer Datendatei, sodass das Balancing ohne Codeänderung angepasst werden kann.
+- **`ALL-CFG-01` (Muss):** Alle Spielwerte (Einheiten, Stellen, Zonen, Ausbauten, Fundstücke, Fähigkeiten, Formelparameter) liegen in einer Datendatei, sodass das Balancing ohne Änderung der Spiellogik angepasst werden kann (7.2).
 
 ### 6.5 Oberfläche
 
@@ -516,6 +516,8 @@ Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`
 
 ## 7. Technische Anforderungen
 
+### 7.1 Anforderungen
+
 - **`TEC-01` (Muss):** Browser-Spiel in TypeScript.
 - **`TEC-02` (Muss):** Zahlenbereich mindestens bis 10³⁰⁸, mit einer Bibliothek für große Zahlen (z. B. break_infinity.js) erweiterbar.
 - **`TEC-03` (Muss):** Spiel, Nachberechnung und Simulation des Balancings laufen in festen Zeitschritten von genau 0,25 Sekunden, damit sie bei gleichen Eingaben dasselbe Ergebnis liefern. Geschlossene Formeln reichen nicht aus, weil Stellen erschöpft werden.
@@ -523,6 +525,25 @@ Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`
 - **`TEC-05` (Soll):** Ein Testmodus beschleunigt die Spielzeit (Prototyp: 1×, 5×, 20×, 100×).
 - **`TEC-06` (Soll):** Für Spieltests werden erfasst: Zeitpunkt der ersten Reise, Anzahl der Reisen, versiegte und neu entstandene Stellen, eingesammelte Fundstücke, markierte Ziele und Nutzung von „Stelle verlassen“, Anteil der Zeit ohne Ernte (gesamt und je Zone), Spielzeit bis zur Sprungbedingung der Winzlinge. Für die Simulation des Balancings zusätzlich über die Spielzeit: Anteil der Ausgaben je Ausbau, Verhältnis von Vorrat zu Kapazität, Verhältnis von Antrieb zu Masse (Zeit an der Untergrenze des Reisetempos), Anteil der durch Eier begrenzten Käufe und Eier-Rate im Verhältnis zur Kaufrate. Simuliert wird mit mindestens einem aktiven und einem passiven Spielerprofil.
 - **`TEC-07` (Muss):** Die Oberfläche ist mobile first: Sie wird zuerst für Smartphones im Hochformat gestaltet und ist dort vollständig per Touch bedienbar, ohne waagrechtes Scrollen der Seite. Keine Funktion setzt Hover, Rechtsklick oder Tastatur voraus.
+- **`TEC-08` (Muss):** Das Spiel ist als Web-App installierbar (Manifest, Symbol, Vollbild) und startet nach dem ersten Besuch auch ohne Netz (Service Worker). Steht eine neue Version bereit, erhält der Spieler einen Hinweis und lädt selbst neu; der Spielstand bleibt dabei erhalten. *(Grund: Safari unter iOS löscht den lokalen Speicher einer Website nach 7 Tagen ohne Besuch, nicht aber den einer Web-App auf dem Home-Bildschirm.)*
+
+### 7.2 Umsetzung
+
+Konventionen, Schichten und Domänen stehen in `CLAUDE.md`; hier stehen die technischen Entscheidungen, die sich aus den Anforderungen ergeben.
+
+- **Domänen:** Der MVP hat eine Spieldomäne `game` und die Domäne `shared` (Domänentabelle in `CLAUDE.md`). Ein Zeitschritt verändert fast den ganzen Spielzustand (Ernte, Kette, Stellen, Reise, Fundstücke), und Spiel, Nachberechnung und Simulation teilen ihn (`TEC-03`, `TEC-04`). Deshalb liegen Zustand und Regeln in einer Domäne, die Regeln in `game/domain` aufgeteilt nach Thema. Eine Aufteilung wird spätestens mit dem Zeitalter Organismen neu bewertet.
+- **Simulation im Haupt-Thread:** Spiel und Nachberechnung laufen im Haupt-Thread, ohne Web Worker. Die Nachberechnung rechnet in Blöcken, gibt dazwischen den Thread frei und zeigt ihren Fortschritt. Grundlage ist eine Messung mit dem Zeitschritt des Prototyps unter Node: 24 Stunden (345.600 Schritte) dauern 0,4 bis 1 Sekunde, auf Smartphones geschätzt wenige Sekunden; das laufende Spiel braucht 4 Schritte pro Sekunde (Testmodus 100×: 400). Der Zeitschritt bleibt eine reine Funktion in `game/domain`, damit die Nachberechnung bei Bedarf in einen Worker wandern kann. Ein Worker kommt erst, wenn die Nachberechnung auf einem Smartphone der Mittelklasse spürbar zu lange dauert.
+- **Zahlen (`TEC-02`):** Der MVP rechnet mit `number` (bis etwa 1,8 · 10³⁰⁸), ohne Abstraktion und ohne Bibliothek; die Formeln im Code sehen aus wie in dieser Spezifikation. Ein Lauf mit automatischem Spieler über 6 Stunden Spielzeit erreichte höchstens 2,9 · 10²³ Einheiten, 1,2 · 10¹² Vorrat und Stellen bis 1,1 · 10¹⁴. Oberhalb von 2⁵³ (etwa 9 · 10¹⁵) sind Mengen nicht mehr auf die Einheit genau; für die Anzeige spielt das keine Rolle. Die Zahlenformatierung in `shared/util` deckt den ganzen Bereich von `number` ab. Braucht ein späteres Zeitalter mehr, kommt eine Bibliothek für große Zahlen per ADR; der Umbau betrifft dann vor allem `game/domain`.
+- **Spielstand (`ALL-OFF-01` bis `ALL-OFF-05`):**
+  - Der ganze Spielzustand liegt als ein JSON unter einem Schlüssel in localStorage, einschließlich Startwert und Zustand des Zufallsgenerators (`TEC-03`) und des Speicherzeitpunkts. Abgeleitete Werte und Spielwerte (`ALL-CFG-01`) werden nicht gespeichert; geänderte Spielwerte wirken also auch auf laufende Spiele.
+  - Gespeichert wird alle 10 Sekunden, beim Verbergen der Seite und bei `pagehide`.
+  - Die Abwesenheit ist die Zeit seit dem Speicherzeitpunkt, begrenzt auf 0 bis 24 Stunden (`ALL-OFF-02`); eine zurückgestellte Uhr ergibt keine negative Abwesenheit.
+  - Der Spielstand trägt eine ganzzahlige Schemaversion. Für jeden Versionssprung gibt es eine reine Migrationsfunktion in `game/domain` (v1 → v2 → …); danach wird die Struktur geprüft. Ist ein Spielstand neuer als das Spiel, beschädigt oder nicht migrierbar, beginnt ein neues Spiel mit Hinweis; der alte Text bleibt unter einem Sicherungsschlüssel erhalten und lässt sich exportieren.
+  - Der Export ist der Spielstand als Base64-Text zum Kopieren und Einfügen. Ein Import durchläuft dieselbe Migration und Prüfung wie das Laden.
+- **Spielwerte (`ALL-CFG-01`):** Die Spielwerte liegen in einer TypeScript-Datei `game/domain/data/balancing.data.ts`, typisiert über ein Interface. Spiel, Nachberechnung, Simulation und Tests importieren dieselbe Datei. Fehlende oder falsch geschriebene Werte fallen beim Build auf; eine Änderung der Werte braucht einen neuen Build, aber keine Änderung der Spiellogik.
+- **Balancing-Simulation (`TEC-04`, `TEC-06`):** Ein Node-Skript unter `tools/simulate/` (gestartet mit `npm run simulate`, ausgeführt mit `tsx` als devDependency) importiert `game/domain` direkt. Es spielt mit mindestens einem aktiven und einem passiven Spielerprofil über mehrere Startwerte und wertet die Kennzahlen aus `TEC-06` aus. Die Spielerprofile gehören zum Werkzeug, nicht zu den Spielregeln. Zusätzlich sichert ein Vitest-Regressionstest mit festem Startwert die Zielwerte des Pacings (6.3) grob ab.
+- **Übernahme aus dem Prototyp:** Die Spiellogik des Prototyps (`public/prototype/`, Stand Spezifikation v6: Spielwerte, Zeitschritt, Kaufen) wird nach `game/domain` portiert, typisiert und nach Thema aufgeteilt. Vorher werden mit dem Prototyp Referenzläufe aufgezeichnet: Startwert, Eingaben und Zustand nach einer festen Zahl von Schritten. Vitest prüft, dass die Portierung dieselben Zustände liefert. Ab der Portierung ändern sich Regeln und Spielwerte nur noch in der Angular-Version. Eine bewusste Änderung zeichnet die betroffenen Referenzläufe mit der Angular-Version neu auf. Der Prototyp bleibt unter `/prototype/` erreichbar, bis die Angular-Version den Umfang des MVP abdeckt, und wird dann entfernt.
+- **Web-App (`TEC-08`):** Manifest und Service Worker über `@angular/service-worker`; als neue Laufzeitabhängigkeit bekommt er mit der Umsetzung eine ADR. Der Service Worker muss unter beiden Base-Hrefs (`/IdleSwarm/` auf GitHub Pages und auf dem eigenen Server) funktionieren.
 
 ---
 
