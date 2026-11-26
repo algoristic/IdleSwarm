@@ -7,7 +7,8 @@
 <title>IdleSwarm – Prototyp Winzlinge</title>
 <style>
   /* Prototyp des Zeitalters Winzlinge nach Produktspezifikation v6 und Mockup 5d (deckend).
-     Eine Datei ohne Framework und ohne externe Abhängigkeiten. */
+     Eine Datei ohne Framework und ohne externe Abhängigkeiten.
+     Mit ?messung in der Adresse: Messanzeige, Belastungsstufen und Messlauf für die Darstellung. */
   :root {
     --night: #0c0f33;
     --ink: #f6f4ff;
@@ -361,6 +362,21 @@
   .loglist b { color: var(--ink); }
   .busy { position: absolute; inset: 0; z-index: 12; display: none; place-items: center; background: rgb(5 6 26 / .85); font-weight: 900; }
   .busy.open { display: grid; }
+
+  /* Messung der Darstellung (nur mit ?messung) */
+  .perf { position: absolute; z-index: 9; left: 12px; top: calc(172px + env(safe-area-inset-top)); background: rgb(5 6 26 / .85); border-radius: 10px; padding: 5px 8px; font: 700 10.5px/1.4 ui-monospace, monospace; color: var(--ink); white-space: pre; pointer-events: none; }
+  .perf-block { position: absolute; inset: 0; z-index: 15; }
+  .perf-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .app.no-blur .layer { filter: none !important; }
+  .app.no-blur #neuronOrg { filter: none; }
+  .ptable { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .ptable th, .ptable td { padding: 3px 4px; text-align: right; font-weight: 800; }
+  .ptable th:first-child, .ptable td:first-child { text-align: left; color: var(--muted); font-weight: 600; }
+  .ptable td:not(:first-child) { white-space: nowrap; }
+  .ptable thead th { color: var(--muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .06em; }
+  .ptable .p-ok { color: var(--lime); }
+  .ptable .p-mid { color: var(--yellow); }
+  .ptable .p-bad { color: #ffa3c2; }
 </style>
 </head>
 <body>
@@ -573,6 +589,8 @@
 
   <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal__card" id="modalCard"></div></div>
   <div class="busy" id="busy"><span id="busyText">Nachberechnung …</span></div>
+  <div class="perf-block" id="perfBlock" hidden></div>
+  <div class="perf" id="perf" hidden></div>
 </div>
 
 <script>
@@ -1078,6 +1096,9 @@ const app = $('app');
 const NS = 'http://www.w3.org/2000/svg';
 let S = null;
 let speed = 1;
+// Messung (?messung): Belastungsstufe vervielfacht Schwarmfiguren und Partikel, nicht die Spiellogik
+const PERF = new URLSearchParams(location.search).has('messung');
+let STRESS = 1;
 let buyMode = '1';
 let selUp = 'geis';
 const UP_KEYS = ['herd', 'verd', 'geis', 'kropf'];
@@ -1275,13 +1296,13 @@ function renderMap(d) {
 let miniCache = { key: '', html: '' }, mapSwarmHtml = null;
 function swarmMini() {
   // bis 14 Figuren, früh je Fressling eine
-  const nf = Math.min(14, Math.floor(S.units[0]), Math.max(S.units[0] >= 1 ? 3 : 0, Math.ceil(2.2 * Math.log2(S.units[0] + 1))));
-  const nb = S.units[1] >= 1 ? Math.min(3, 1 + Math.floor(Math.log10(S.units[1]))) : 0;
+  const nf = Math.min(14, Math.floor(S.units[0]), Math.max(S.units[0] >= 1 ? 3 : 0, Math.ceil(2.2 * Math.log2(S.units[0] + 1)))) * STRESS;
+  const nb = (S.units[1] >= 1 ? Math.min(3, 1 + Math.floor(Math.log10(S.units[1]))) : 0) * STRESS;
   const key = nf + '/' + nb;
   if (miniCache.key === key) return miniCache.html;
   let b = '', h = '';
   for (let i = 0; i < nb; i++) { const a = i * 2.4; b += `<g transform="translate(${(Math.cos(a) * 7).toFixed(1)} ${(Math.sin(a) * 7).toFixed(1)}) rotate(${i * 130}) scale(.42)"><use href="#brut"/></g>`; }
-  for (let i = 0; i < nf; i++) { const a = i * 2.39996, r = 6 + 4.6 * Math.sqrt(i + 1); h += paddler(Math.cos(a) * r, Math.sin(a) * r, .55, i, 2.5, 3); }
+  for (let i = 0; i < nf; i++) { const a = i * 2.39996, r = 6 + 4.6 * Math.sqrt((i + 1) / STRESS); h += paddler(Math.cos(a) * r, Math.sin(a) * r, .55, i, 2.5, 3); }
   miniCache = { key, html: `<g class="swirl swirl--map">${b}</g>${h}` };
   return miniCache.html;
 }
@@ -1355,14 +1376,14 @@ function renderFar() {
   h += `<rect x="-1000" y="-1000" width="2000" height="2000" fill="url(#farG)"/>`;
   h += moodRays('farG', R, 7, 1500, 700);
   h += moodShapes(M, R);
-  h += `<g class="drift">${moodSpecks(R, 40, 1800, M.light, 3, 8)}</g>`;
+  h += `<g class="drift">${moodSpecks(R, 40 * STRESS, 1800, M.light, 3, 8)}</g>`;
   $('farSvg').innerHTML = h;
   // Dunst der aktuellen Zone zwischen Ferne und Umgebung: zweite Parallaxe-Tiefe
   const C = ZONE_MOOD[Math.min(s.zone, ZONE_MOOD.length - 1)], R2 = lcg(2000 + s.zone * 31);
   let z = `<g fill="${C.light}" opacity=".35">`;
   for (let i = 0; i < 6; i++) z += `<path d="${blobPath(160 + R2() * 200, 500 + i * 13, 9, .35, (R2() - .5) * 1700, (R2() - .5) * 1700)}"/>`;
   z += '</g>';
-  z += `<g class="drift" style="animation-duration:26s">${moodSpecks(R2, 60, 1900, '#8ea6dc', 1, 2.6)}</g>`;
+  z += `<g class="drift" style="animation-duration:26s">${moodSpecks(R2, 60 * STRESS, 1900, '#8ea6dc', 1, 2.6)}</g>`;
   $('hazeSvg').innerHTML = z;
 }
 
@@ -1391,7 +1412,7 @@ function mainBgHtml(kind, zone) {
     <linearGradient id="mbGRay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${M.glow}" stop-opacity="${travel ? .1 : .16}"/><stop offset="1" stop-color="${M.glow}" stop-opacity="0"/></linearGradient></defs>`;
   h += `<rect x="-1000" y="-1000" width="2000" height="2000" fill="url(#mbG)"/>`;
   h += moodRays('mbG', R, travel ? 4 : 6, 900, 500);
-  h += `<g class="drift" style="animation-duration:24s">${moodSpecks(R, 26, 1100, M.light, 6, 16)}</g>`;
+  h += `<g class="drift" style="animation-duration:24s">${moodSpecks(R, 26 * STRESS, 1100, M.light, 6, 16)}</g>`;
   return `<g class="bg-in">${h}</g>`;
 }
 function siteHtml(site) {
@@ -1405,7 +1426,7 @@ function siteHtml(site) {
   h += `<g fill="${C.mid}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .72, site.shape + i * 53, 9, .25, x, y)}"/>`).join('')}</g>`;
   h += `<g fill="${C.top}">${blobs.map(([x, y, r], i) => `<path d="${blobPath(r * .38, site.shape + i * 71, 8, .3, x + r * .15, y - r * .1)}"/>`).join('')}</g>`;
   let dots = '';
-  for (let i = 0; i < 160; i++) { const [bx, by, br] = blobs[Math.floor(R() * blobs.length)]; const a = R() * 6.28, rr = Math.sqrt(R()) * br * .9; dots += `<circle cx="${(bx + Math.cos(a) * rr).toFixed(1)}" cy="${(by + Math.sin(a) * rr).toFixed(1)}" r="${(1 + R() * 1.8).toFixed(1)}" fill="${C.dot[i % 3 === 0 ? 1 : 0]}"/>`; }
+  for (let i = 0; i < 160 * STRESS; i++) { const [bx, by, br] = blobs[Math.floor(R() * blobs.length)]; const a = R() * 6.28, rr = Math.sqrt(R()) * br * .9; dots += `<circle cx="${(bx + Math.cos(a) * rr).toFixed(1)}" cy="${(by + Math.sin(a) * rr).toFixed(1)}" r="${(1 + R() * 1.8).toFixed(1)}" fill="${C.dot[i % 3 === 0 ? 1 : 0]}"/>`; }
   h += `<g>${dots}</g>`;
   if (site.type === 'krebs') h += `<g stroke="#ff6a3d" stroke-width="16" stroke-linecap="round" fill="none" opacity=".9"><path d="M-120 60l-90 90M-60 110l-30 120M60 110l40 120M120 60l90 90M-120-60l-90-90M120-60l90-90"/></g>`;
   if (site.type === 'seegras') { for (let i = 0; i < 14; i++) { const x = -260 + i * 40 + R() * 20, hh = 200 + R() * 200; h += `<path d="M${x} 300Q${x + (R() - .5) * 160} ${300 - hh * .6} ${x + (R() - .5) * 200} ${300 - hh}Q${x + 20} ${300 - hh * .4} ${x + 22} 300Z" fill="${i % 2 ? '#22a86a' : '#8cf25a'}" opacity=".85"/>`; } }
@@ -1416,11 +1437,11 @@ function driftHtml(travel) {
   const R = lcg(42), cols = ['#8ea6dc', '#5a6fb8', '#c6e6f5'];
   let h = '';
   if (!travel) {
-    for (let i = 0; i < 70; i++) h += `<circle cx="${((R() - .5) * 900).toFixed(0)}" cy="${((R() - .5) * 1000).toFixed(0)}" r="${(0.8 + R() * 1.8).toFixed(1)}" fill="${cols[i % 3]}"/>`;
+    for (let i = 0; i < 70 * STRESS; i++) h += `<circle cx="${((R() - .5) * 900).toFixed(0)}" cy="${((R() - .5) * 1000).toFixed(0)}" r="${(0.8 + R() * 1.8).toFixed(1)}" fill="${cols[i % 3]}"/>`;
     return h;
   }
   let tile = '';
-  for (let i = 0; i < 16; i++) tile += `<path d="M${((R() - .5) * 2000).toFixed(0)} ${(R() * STREAK_TILE).toFixed(0)}v${(10 + R() * 26).toFixed(0)}" stroke="${cols[i % 3]}" stroke-width="${(1 + R() * 1.6).toFixed(1)}" stroke-linecap="round" opacity="${(.4 + R() * .5).toFixed(2)}"/>`;
+  for (let i = 0; i < 16 * STRESS; i++) tile += `<path d="M${((R() - .5) * 2000).toFixed(0)} ${(R() * STREAK_TILE).toFixed(0)}v${(10 + R() * 26).toFixed(0)}" stroke="${cols[i % 3]}" stroke-width="${(1 + R() * 1.6).toFixed(1)}" stroke-linecap="round" opacity="${(.4 + R() * .5).toFixed(2)}"/>`;
   h += `<defs><g id="streakTile">${tile}</g></defs>`;
   for (let k = -9; k <= 9; k++) h += `<use href="#streakTile" y="${k * STREAK_TILE}"/>`;
   return h;
@@ -1466,7 +1487,7 @@ function renderSwarm() {
     u[0] < 1 ? 0 : u[0] <= 12 ? Math.floor(u[0]) : Math.min(48, Math.round(12 + 6 * Math.log2(u[0] / 12))),
     u[1] >= 1 ? Math.min(8, 1 + Math.floor(2 * Math.log10(u[1]))) : 0,
     ...[2, 3, 4, 5].map((k) => (u[k] >= 1 ? Math.min(4, 1 + Math.floor(Math.log10(u[k]))) : 0)),
-  ];
+  ].map((c) => c * STRESS);
   const ang = tr ? travelAngle(tr) : 0;
   const key = counts.join('/') + (tr ? 't' + Math.round(ang) : '');
   if (key === swarmKey) return;
@@ -1477,17 +1498,17 @@ function renderSwarm() {
   // Höhere Stufen in der Mitte, Fresslinge außen
   for (let k = 5; k >= 1; k--) {
     for (let i = 0; i < counts[k]; i++, slot++) {
-      const a = slot * 2.39996, r = 18 + 22 * Math.sqrt(slot);
+      const a = slot * 2.39996, r = 18 + 22 * Math.sqrt(slot / STRESS);
       const sc = [0, 1, 1, 1, .9, .8][k];
       h += `<g transform="translate(${(Math.cos(a) * r * fx).toFixed(1)} ${(Math.sin(a) * r * fy).toFixed(1)}) rotate(${tr ? 0 : Math.round(a * 57)}) scale(${sc})"><use href="#${CFG.units[k].icon}" class="bob bob--${1 + (slot % 3)}" style="animation-delay:-${(slot * .7) % 5}s"/></g>`;
     }
   }
-  const r0 = 30 + 22 * Math.sqrt(slot);
+  const r0 = 30 + 22 * Math.sqrt(slot / STRESS);
   // An der Stelle dreht sich nur die Mitte; jeder Fressling schwimmt auf seiner eigenen Bahn (paddler).
   // Unterwegs schwimmen alle in Reiserichtung und rollen dabei um die Längsachse.
   let f = '';
   for (let i = 0; i < counts[0]; i++) {
-    const a = i * 2.39996, r = r0 + 17 * Math.sqrt(i + 1), x = Math.cos(a) * r * fx, y = Math.sin(a) * r * fy;
+    const a = i * 2.39996, r = r0 + 17 * Math.sqrt((i + 1) / STRESS), x = Math.cos(a) * r * fx, y = Math.sin(a) * r * fy;
     const sc = (0.95 + ((i * 37) % 25) / 100).toFixed(2);
     if (!tr) { f += paddler(x, y, sc, i, 5, 8); continue; }
     f += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(((i * 37) % 21) - 10)}) scale(${sc})"><g class="swim swim--${1 + (i % 3)}" style="animation-delay:-${((i * 1.3) % 5).toFixed(1)}s"><use href="#fress" class="roll" style="animation-delay:-${((i * .37) % 1).toFixed(2)}s"/></g></g>`;
@@ -1956,6 +1977,7 @@ function showMenu() {
     <p>Zeitalter Winzlinge, Zone ${S.zone} ${CFG.zones[S.zone].name}. Gespeichert wird automatisch im Browser.</p>
     <h3>Testmodus</h3>
     <div class="seg" id="speedSeg">${[1, 5, 20, 100].map((x) => `<button data-act="speed" data-v="${x}" aria-pressed="${x === speed}">${x}×</button>`).join('')}</div>
+    ${PERF ? perfMenuHtml() : ''}
     <h3>Statistik</h3>${statsHtml()}
     <h3>Spielstand</h3>
     <div class="modal__actions modal__actions--2">
@@ -1994,7 +2016,14 @@ const ACTIONS = {
     toast('Neues Spiel – die Karte ist neu ausgewürfelt.');
   },
   endContinue: () => { S.endSeen = true; closeModal(); },
+  perfMeter: (b) => { perf.meter = b.dataset.v === '1'; pressOnly(b); renderPerfMeter(); },
+  perfStress: (b) => { STRESS = +b.dataset.v; pressOnly(b); resetRenderCaches(); render(true); },
+  perfBlur: (b) => { app.classList.toggle('no-blur', b.dataset.v === '0'); pressOnly(b); },
+  perfRun: perfStart,
+  perfLast: () => { const r = perfLoad(); if (r) showPerfResult(r); },
+  perfCopy: (b) => { const ta = $('perfTa'); ta.select(); (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject()).then(() => { b.textContent = 'Kopiert'; }, () => { document.execCommand('copy'); b.textContent = 'Kopiert'; }); },
 };
+const pressOnly = (b) => b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
 $('menuBtn').addEventListener('click', showMenu);
 function showEnd() {
   S.endSeen = true;
@@ -2006,7 +2035,7 @@ function showEnd() {
 
 /* ---------- Speichern, Laden, Nachberechnung ---------- */
 function save() {
-  if (!S) return;
+  if (!S || perf.run) return; // der Messlauf spielt mit einem eigenen Testzustand
   S.savedAt = Date.now();
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch { /* Speicher voll oder gesperrt */ }
 }
@@ -2068,6 +2097,191 @@ async function catchUp(seconds) {
 }
 function resetRenderCaches() { mainSiteKey = ''; swarmKey = ''; neuronKey = ''; farKey = ''; miniCache.key = ''; }
 
+/* ---------- Messung der Darstellung (nur mit ?messung) ---------- */
+// Gemessen wird der Abstand der requestAnimationFrame-Aufrufe. Verlorene Frames werden gegen die
+// Bildwiederholrate gezählt: geschätzt aus den schnellsten 10 % der Frames, gemerkt wird die schnellste Schätzung.
+const PERF_KEY = 'idleswarm-prototyp-messung';
+const PERF_SETTLE = 1500;
+const PERF_RUNS = [{ stress: 1, blur: true }, { stress: 3, blur: true }, { stress: 10, blur: true }, { stress: 10, blur: false }];
+const PERF_PHASES = [
+  { name: 'Schwarm (Ruhe)', ms: 3000 },
+  { name: 'Zoom → Umgebung', ms: 2000, start: () => setView('map') },
+  {
+    name: 'Umgebung verschieben', ms: 3000,
+    start: () => app.classList.add('panning'),
+    tick: (t) => { const r = 120 * Math.min(1, t / 300), a = (t / 3000) * Math.PI * 2; setPan(Math.cos(a) * r, Math.sin(a) * r); },
+    end: () => app.classList.remove('panning'),
+  },
+  { name: 'Zoom → Schwarm', ms: 2000, start: () => setView('main') },
+  { name: 'Zoom → Ausbau', ms: 2000, start: () => setView('neuron') },
+  { name: 'Zoom → Schwarm', ms: 2000, start: () => setView('main') },
+  { name: 'Aufbruch, Wanderung', ms: 4000, start: () => { S.leave = true; } },
+];
+const perf = { meter: PERF, frames: [], last: 0, shownAt: 0, refresh: Infinity, run: null };
+
+// Fester Testzustand: großer Schwarm (alle Stufen mit voller Figurenzahl) an der Seegraswiese,
+// die nie versiegt; so bleibt der Schwarm bis zum Aufbruch an der Stelle.
+function perfScenario() {
+  const s = newGame(4242);
+  const goal = s.sites.find((x) => CFG.siteTypes[x.type].goal);
+  s.zone = goal.zone;
+  s.sites = s.sites.filter((x) => x.zone >= s.zone);
+  s.finds = s.finds.filter((x) => x.zone >= s.zone);
+  s.pos = { x: goal.x, y: goal.y };
+  s.at = goal.id;
+  s.units = [1e6, 1e4, 1e3, 1e3, 1e3, 1e3];
+  s.unlocked = s.units.map(() => true);
+  s.ranks = { herd: 12, verd: 10, geis: 25, kropf: 20 };
+  s.vorrat = 1e9;
+  s.eier = 1e6;
+  s.ended = true;
+  s.endSeen = true;
+  discover(s, derive(s));
+  return s;
+}
+function perfBase(a) {
+  if (a.length < 20) return Math.min(perf.refresh, 1000 / 60);
+  const s = a.slice().sort((x, y) => x - y);
+  perf.refresh = Math.min(perf.refresh, Math.max(4, s[Math.floor(s.length * 0.1)]));
+  return perf.refresh;
+}
+function perfStats(a, base) {
+  if (!a.length) return { fps: 0, lost: 0, p95: 0, max: 0 };
+  const sorted = a.slice().sort((x, y) => x - y);
+  const sum = a.reduce((x, y) => x + y, 0);
+  const dropped = a.reduce((n, dt) => n + Math.max(0, Math.round(dt / base) - 1), 0);
+  return {
+    fps: (a.length * 1000) / sum,
+    lost: (dropped / (a.length + dropped)) * 100,
+    p95: sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))],
+    max: sorted[sorted.length - 1],
+  };
+}
+function perfFrame(now) {
+  const dt = perf.last ? now - perf.last : 0;
+  perf.last = now;
+  if (dt > 0 && dt < 1000) {
+    perf.frames.push(dt);
+    if (perf.frames.length > 600) perf.frames.shift();
+    if (perf.run) perfRunFrame(now, dt);
+  }
+  if (now - perf.shownAt > 500) { perf.shownAt = now; renderPerfMeter(); }
+  requestAnimationFrame(perfFrame);
+}
+function renderPerfMeter() {
+  const el = $('perf');
+  el.hidden = !perf.meter && !perf.run;
+  if (el.hidden) return;
+  const recent = [];
+  for (let i = perf.frames.length - 1, sum = 0; i >= 0 && sum < 1000; i--) { recent.push(perf.frames[i]); sum += perf.frames[i]; }
+  const base = perfBase(perf.frames), st = perfStats(recent, base);
+  let t = `${Math.round(st.fps)} fps · p95 ${Math.round(st.p95)} ms · verloren ${dec(st.lost, 0)} %\n~${Math.round(1000 / base)} Hz · ×${STRESS} · Blur ${app.classList.contains('no-blur') ? 'aus' : 'an'}`;
+  const r = perf.run;
+  if (r) t += `\nMesslauf ${r.i + 1}/${PERF_RUNS.length} · ${r.phase < 0 ? 'Vorbereitung' : PERF_PHASES[r.phase].name}\nBitte nicht berühren`;
+  el.textContent = t;
+}
+function perfStart() {
+  if (perf.run) return;
+  closeModal();
+  perf.run = {
+    saved: JSON.stringify(S), view: app.dataset.view, stress: STRESS, blur: !app.classList.contains('no-blur'), speed,
+    i: -1, phase: -1, t0: 0, samples: [], all: [], result: null, results: [],
+  };
+  speed = 1;
+  $('perfBlock').hidden = false;
+  perfNextRun(performance.now());
+}
+function perfNextRun(now) {
+  const r = perf.run;
+  r.i++;
+  if (r.i >= PERF_RUNS.length) { perfFinish(false); return; }
+  const cfg = PERF_RUNS[r.i];
+  STRESS = cfg.stress;
+  app.classList.toggle('no-blur', !cfg.blur);
+  S = perfScenario();
+  resetRenderCaches();
+  setView('main');
+  r.phase = -1;
+  r.t0 = now;
+  r.result = { stress: cfg.stress, blur: cfg.blur, phases: [] };
+  renderPerfMeter();
+}
+// Aktionen eines Abschnitts laufen am Anfang eines Frames; ihre Kosten fallen in den nächsten gemessenen Abstand
+function perfRunFrame(now, dt) {
+  const r = perf.run, P = PERF_PHASES[r.phase];
+  if (P) { r.samples.push(dt); r.all.push(dt); if (P.tick) P.tick(now - r.t0); }
+  if (now - r.t0 < (P ? P.ms : PERF_SETTLE)) return;
+  if (P) { if (P.end) P.end(); r.result.phases.push({ name: P.name, samples: r.samples }); }
+  r.samples = [];
+  r.phase++;
+  r.t0 = now;
+  if (r.phase >= PERF_PHASES.length) { r.results.push(r.result); perfNextRun(now); return; }
+  const next = PERF_PHASES[r.phase];
+  if (next.start) next.start();
+  renderPerfMeter();
+}
+function perfFinish(aborted) {
+  const r = perf.run;
+  if (!r) return;
+  perf.run = null;
+  app.classList.remove('panning');
+  S = JSON.parse(r.saved);
+  STRESS = r.stress;
+  app.classList.toggle('no-blur', !r.blur);
+  speed = r.speed;
+  resetRenderCaches();
+  setView(r.view);
+  $('perfBlock').hidden = true;
+  renderPerfMeter();
+  if (aborted) { toast('Messlauf abgebrochen.'); return; }
+  const base = perfBase(r.all);
+  const res = {
+    at: new Date().toLocaleString('de-DE'),
+    device: { ua: navigator.userAgent, dpr: Math.round(devicePixelRatio * 100) / 100, w: innerWidth, h: innerHeight, cores: navigator.hardwareConcurrency || null, mem: navigator.deviceMemory || null, hz: Math.round(1000 / base) },
+    runs: r.results.map((x) => ({ stress: x.stress, blur: x.blur, phases: x.phases.map((p) => ({ name: p.name, ...perfStats(p.samples, base) })) })),
+  };
+  try { localStorage.setItem(PERF_KEY, JSON.stringify(res)); } catch { /* Speicher voll oder gesperrt */ }
+  showPerfResult(res);
+}
+function perfLoad() {
+  try { return JSON.parse(localStorage.getItem(PERF_KEY)); } catch { return null; }
+}
+function perfText(res) {
+  const d = res.device, n = (v, w) => String(Math.round(v)).padStart(w);
+  let t = `IdleSwarm Messlauf ${res.at}\n${d.ua}\nDPR ${String(d.dpr).replace(".", ",")} · ${d.w}×${d.h} · Kerne ${d.cores ?? '?'} · RAM ${d.mem ?? '?'} GB · ~${d.hz} Hz\n`;
+  for (const r of res.runs) {
+    t += `\n×${r.stress} · Blur ${r.blur ? 'an' : 'aus'}\n`;
+    for (const p of r.phases) t += `${p.name.padEnd(21)} ${n(p.fps, 3)} fps ${dec(p.lost, 1).padStart(5)} % verloren  p95 ${n(p.p95, 3)} ms  max ${n(p.max, 4)} ms\n`;
+  }
+  return t;
+}
+function showPerfResult(res) {
+  const d = res.device;
+  const cls = (lost) => (lost < 5 ? 'p-ok' : lost < 15 ? 'p-mid' : 'p-bad');
+  const tables = res.runs.map((r) => `<h3>×${r.stress} · Blur ${r.blur ? 'an' : 'aus'}</h3>
+    <table class="ptable"><thead><tr><th>Abschnitt</th><th>fps</th><th>verloren</th><th>p95</th><th>max</th></tr></thead><tbody>
+    ${r.phases.map((p) => `<tr><td>${p.name}</td><td>${Math.round(p.fps)}</td><td class="${cls(p.lost)}">${dec(p.lost, 1)} %</td><td>${Math.round(p.p95)} ms</td><td>${Math.round(p.max)} ms</td></tr>`).join('')}
+    </tbody></table>`).join('');
+  openModal(`<h2>Messlauf</h2>
+    <p>${res.at} · ~${d.hz} Hz · DPR ${String(d.dpr).replace(".", ",")} · ${d.w}×${d.h}. Verlorene Frames: grün unter 5 %, gelb unter 15 %, rot darüber.</p>
+    ${tables}
+    <h3>Als Text</h3>
+    <textarea readonly id="perfTa">${perfText(res)}</textarea>
+    <div class="modal__actions modal__actions--2"><button class="btn" data-act="perfCopy">Kopieren</button><button class="btn btn--gold" data-act="close">Fertig</button></div>`);
+}
+function perfMenuHtml() {
+  const blurOn = !app.classList.contains('no-blur');
+  return `<h3>Messung</h3>
+    <p>Der Messlauf spielt einen festen Ablauf mit großem Schwarm in vier Stufen ab (×1, ×3, ×10, ×10 ohne Weichzeichner) und dauert etwa 80 Sekunden. Dabei das Smartphone nicht berühren und den Bildschirm anlassen. Der Spielstand bleibt unverändert.</p>
+    <div class="perf-row"><span>Anzeige</span><div class="seg">${[['1', 'an'], ['0', 'aus']].map(([v, l]) => `<button data-act="perfMeter" data-v="${v}" aria-pressed="${(v === '1') === perf.meter}">${l}</button>`).join('')}</div></div>
+    <div class="perf-row"><span>Belastung</span><div class="seg">${[1, 3, 10].map((x) => `<button data-act="perfStress" data-v="${x}" aria-pressed="${x === STRESS}">×${x}</button>`).join('')}</div></div>
+    <div class="perf-row"><span>Weichzeichner</span><div class="seg">${[['1', 'an'], ['0', 'aus']].map(([v, l]) => `<button data-act="perfBlur" data-v="${v}" aria-pressed="${(v === '1') === blurOn}">${l}</button>`).join('')}</div></div>
+    <div class="modal__actions modal__actions--2">
+      <button class="btn" data-act="perfLast"${perfLoad() ? '' : ' aria-disabled="true"'}>Letztes Ergebnis</button>
+      <button class="btn btn--gold" data-act="perfRun">Messlauf starten</button>
+    </div>`;
+}
+
 /* ---------- Spielschleife ---------- */
 let last = performance.now(), acc = 0, sinceSave = 0, paused = false;
 function frame(now) {
@@ -2087,7 +2301,7 @@ function frame(now) {
 }
 let hiddenAt = null;
 document.addEventListener('visibilitychange', async () => {
-  if (document.hidden) { hiddenAt = Date.now(); save(); return; }
+  if (document.hidden) { if (perf.run) perfFinish(true); hiddenAt = Date.now(); save(); return; }
   if (hiddenAt != null) {
     const gap = (Date.now() - hiddenAt) / 1000;
     hiddenAt = null;
@@ -2119,6 +2333,7 @@ window.addEventListener('pagehide', save);
     save();
   }
   requestAnimationFrame(frame);
+  if (PERF) requestAnimationFrame(perfFrame);
 })();
 </script>
 </body>
