@@ -235,7 +235,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 | 5 | Brutklumpen | 5 Gelege | 50 Mio. Vorrat, 1 Ei, 10.000 Gelege |
 | 6 | Urnest | 6 Brutklumpen | 2 Mrd. Vorrat, 1 Ei, 100.000 Brutklumpen |
 
-  Die Kosten in Einheiten der Stufe darunter wachsen je Stufe um den Faktor 10. Die Erzeugung ist der Grundwert; der Erzeugungs-Ausbau (`P1-AUS-05`) steigert sie. Beide gehören zusammen: Ohne den Ausbau dauert das Zeitalter bei aktivem Spiel mehr als dreimal so lang wie mit den Kosten des Prototyps (6.3). *(Prototyp: 100 Fresslinge, danach je 1.000 Einheiten der Stufe darunter, mit Masse je Einheit.)*
+  Die Kosten in Einheiten der Stufe darunter wachsen je Stufe um den Faktor 10. Die Erzeugung ist der Grundwert; der Erzeugungs-Ausbau (`P1-AUS-05`) steigert sie. Beide gehören zusammen: Ohne den Ausbau dauert das Zeitalter bei aktivem Spiel mehr als dreimal so lang wie mit den Kosten des Prototyps (6.3). *(Prototyp bis Spezifikation v7: 100 Fresslinge, danach je 1.000 Einheiten der Stufe darunter, mit Masse je Einheit.)*
 
 - **`P1-KET-02` (Muss):** Beim Kauf einer höheren Stufe werden die angegebenen Einheiten der Stufe darunter verbraucht.
 - **`P1-KET-03` (Muss):** Fressling und Brutling sind von Beginn an kaufbar. Jede weitere Stufe wird kaufbar, sobald mindestens eine Einheit der Stufe darunter vorhanden ist.
@@ -262,7 +262,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
   - Die Ränge haben keine Obergrenze. w, a und k werden in der Umsetzung kalibriert **[offen]**.
   - Einen Ausbau für die Erzeugung von Brutklumpen gibt es nicht: Er würde mit Urnestern bezahlt, und ein Urnest ist bereits Sprungbedingung (`P1-END-01`).
 
-  *Begründung: Die Wirkung ist bewusst additiv. Mit Verdopplung je Rang wuchs die Kette in der Simulation schneller als exponentiell: Das Zeitalter endete aktiv nach 0,3 Stunden, die Stückzahlen erreichten 10⁶⁷ bis 10¹¹⁰, und auch Kosten ×3 oder ×4 je Rang bremsten das kaum (6.3). Additiv bleibt die Kette eine Bremse.* *(Im Prototyp nicht umgesetzt.)*
+  *Begründung: Die Wirkung ist bewusst additiv. Mit Verdopplung je Rang wuchs die Kette in der Simulation schneller als exponentiell: Das Zeitalter endete aktiv nach 0,3 Stunden, die Stückzahlen erreichten 10⁶⁷ bis 10¹¹⁰, und auch Kosten ×3 oder ×4 je Rang bremsten das kaum (6.3). Additiv bleibt die Kette eine Bremse.* *(Im Prototyp mit den Startwerten umgesetzt; Darstellung nach `ALL-UI-01`.)*
 
 ### 4.4 Eier
 
@@ -327,7 +327,7 @@ Prestige ist nicht Teil des MVP. `STR-01` bis `STR-05` beschreiben den Konzeptst
 ### 4.10 Reise
 
 - **`P1-REI-01` (Muss):** Reisen löst nur die Wanderautomatik aus (`P1-AUT-01`). Reiseziel ist eine ansteuerbare Stelle (bekannt, erreichbar, nicht versiegt) oder ein ansteuerbares Fundstück (`P1-FUN-03`). Eine laufende Reise lässt sich nicht umlenken.
-- **`P1-REI-02` (Muss):** Die Reisezeit hängt nur von der Strecke und vom Antrieb ab: `t_Reise = Strecke / v`. Das Reisetempo v in Kartenpunkten pro Sekunde wächst mit dem Antrieb T, also mit dem Rang der Geißeln. Die Größe des Schwarms spielt keine Rolle; im Zeitalter Winzlinge gibt es keine Masse (`P2-MAS-01`). Die Formel ist **[offen]**. *(Prototyp: `v = 20 · max(0,25; √min(1, T/M))` mit der Masse M der Einheiten.)*
+- **`P1-REI-02` (Muss):** Die Reisezeit hängt nur von der Strecke und vom Antrieb ab: `t_Reise = Strecke / v`. Das Reisetempo v in Kartenpunkten pro Sekunde wächst mit dem Antrieb T, also mit dem Rang der Geißeln. Die Größe des Schwarms spielt keine Rolle; im Zeitalter Winzlinge gibt es keine Masse (`P2-MAS-01`). Startformel: `v = 20 · (1 + log₁₀(T / 50))`. Bei Rang 0 der Geißeln (T = 50) sind das 20 Kartenpunkte pro Sekunde, bei Rang 25 (Seegraswiese) etwa 148; die Reichweite zu durchqueren dauert bei Rang 0 7 Sekunden und danach durchgehend etwa 5 Sekunden. Die Kalibrierung ist **[offen]**. *(Prototyp bis Spezifikation v7: `v = 20 · max(0,25; √min(1, T/M))` mit der Masse M der Einheiten.)*
 - **`P1-REI-03` (Muss):** Mit dem Aufbruch endet die Ernte; unterwegs erntet der Schwarm nicht.
 - **`P1-REI-04` (Muss):** Im Zeitalter Winzlinge gibt es keine Reiseverluste.
 
@@ -513,14 +513,14 @@ Simulationsergebnisse des Prototyps (automatischer Spieler, mehrere zufällige K
 Simulation der Kette (Version 8):
 
 - **Aufbau:**
-  - Spiellogik des Prototyps ohne Starre, mit ortsfesten Fundstücken und noch mit Masse.
+  - Spiellogik des Prototyps (Stand v7) ohne Starre, mit ortsfesten Fundstücken und noch mit Masse.
   - Automatische Spieler mit 36 bis 144 Einstellungen je Variante, je 5 Startwerte, höchstens 12 Stunden.
   - Profile: aktiv (Eingriff jede Sekunde, ohne und mit Fundstücken), alle 10 Minuten, alle 30 Minuten.
   - Die Zeiten sind die des besten automatischen Spielers, also eine obere Schranke für gutes Spiel; in Klammern der Median über die Einstellungen.
 
 | Variante | aktiv | aktiv mit Fundstücken | alle 10 min | alle 30 min |
 | --- | --- | --- | --- | --- |
-| Kettenkosten des Prototyps, ohne Erzeugungs-Ausbau | 1,3 h (1,5 h) | 1,2 h | 3,3 h | 7,5 h |
+| Kettenkosten bis v7, ohne Erzeugungs-Ausbau | 1,3 h (1,5 h) | 1,2 h | 3,3 h | 7,5 h |
 | Kettenkosten aus `P1-KET-01`, ohne Erzeugungs-Ausbau | 4,3 h (5,5 h) | 4,3 h | 5,0 h | 9,5 h |
 | `P1-KET-01` mit Erzeugungs-Ausbau, multiplikativ ×2 je Rang | 0,3 h (0,8 h) | 0,4 h | 2,3 h | 5,5 h |
 | `P1-KET-01` mit Erzeugungs-Ausbau nach `P1-AUS-05` | 0,9 h (1,5 h) | 0,9 h | 2,8 h | 6,5 h |
@@ -528,14 +528,14 @@ Simulation der Kette (Version 8):
 - **Erzeugungs-Ausbau nach `P1-AUS-05`:**
   - Die Kette bremst wieder: Zwischen der ersten Ernte an der Seegraswiese und dem Urnest liegen bei aktivem Spiel 36 Minuten, multiplikativ unter einer Minute.
   - Der beste aktive Spieler steigert die Erzeugung der Brutlinge, Eiträgerinnen, Gelege und Brutklumpen auf das 61-, 46-, 30- und 15-Fache.
-  - Aktives Spiel ist etwa 7-mal so schnell wie ein Eingriff alle 30 Minuten (Kosten des Prototyps: 6-mal, multiplikativ: 19-mal).
+  - Aktives Spiel ist etwa 7-mal so schnell wie ein Eingriff alle 30 Minuten (Kettenkosten bis v7: 6-mal, multiplikativ: 19-mal).
   - Kostenwachstum ×1,5 oder ×3 statt ×2 je Rang ändert die Spielzeit nur um etwa 10 %.
-  - Mit den Kettenkosten des Prototyps ist auch der additive Ausbau zu stark (aktiv 0,4 Stunden).
+  - Mit den Kettenkosten bis v7 ist auch der additive Ausbau zu stark (aktiv 0,4 Stunden).
 - **Für alle Varianten:**
   - Eier begrenzen die Käufe in keiner Variante.
   - Mit den Kettenkosten aus `P1-KET-01` reicht der Vorrat vor der Seegraswiese nicht für 100.000 Brutklumpen; der Spieler muss zuerst dorthin. Automatische Spieler, die das nicht tun, erreichen das Ende in 12 Stunden nicht.
   - Die erste Reise beginnt bei aktivem Spiel nach 0,8 bis 0,9 Minuten.
-  - Ein automatischer Spieler, der jedes ansteuerbare Fundstück markiert, ist mit den Kosten des Prototyps nur etwa 7 % schneller als einer ohne Fundstücke.
+  - Ein automatischer Spieler, der jedes ansteuerbare Fundstück markiert, ist mit den Kettenkosten bis v7 nur etwa 7 % schneller als einer ohne Fundstücke.
 - **Offen:** Den Zielwert von 2 bis 3 Stunden erreicht nur das Profil „alle 10 Minuten“; für welches Profil er gilt, ist offen (9.1). Die Simulation rechnete noch mit Masse; mit dem Reisetempo nach `P1-REI-02` ändern sich die Reisezeiten.
 
 ### 6.4 Konfiguration
@@ -546,7 +546,10 @@ Simulation der Kette (Version 8):
 
 Gestaltung und Bedienung folgen Mockup 5d (`docs/design/mockups/5d-deckend.html`).
 
-- **`ALL-UI-01` (Muss):** Die Oberfläche hat drei Ansichten, die als Tiefenebenen hintereinanderliegen: Ausbau (die Ausbauten im Inneren des Schwarms), Schwarm (die Kette an der aktuellen Stelle) und Umgebung (die aktuelle Zone um den Schwarm). Der Spieler wechselt über die Ansichtsschalter (`ALL-UI-04`) direkt zu jeder Ansicht; der Wechsel wird als Zoom durch die Ebenen dargestellt. Die Ausbau-Ansicht lässt sich ein wenig um das Neuron herum verschieben. Startansicht ist der Schwarm.
+- **`ALL-UI-01` (Muss):** Die Oberfläche hat drei Ansichten, die als Tiefenebenen hintereinanderliegen: Ausbau (die Ausbauten im Inneren des Schwarms), Schwarm (die Kette an der aktuellen Stelle) und Umgebung (die aktuelle Zone um den Schwarm). Der Spieler wechselt über die Ansichtsschalter (`ALL-UI-04`) direkt zu jeder Ansicht; der Wechsel wird als Zoom durch die Ebenen dargestellt. Startansicht ist der Schwarm.
+  - Die Ausbau-Ansicht zeigt zwei Neuronen nebeneinander (Mockup `docs/design/mockups/ausbau-kette-c-zwei-neuronen.html`): das Schwarm-Neuron mit den Ausbauten aus `P1-AUS-01` und das orange Ketten-Neuron mit den Erzeugungs-Ausbauten aus `P1-AUS-05`, dessen Axon in einer Synapse am Schwarm-Neuron endet. Ein Schalter in der Kontextzeile oder ein Tipp auf einen Zellkörper wechselt zwischen beiden.
+  - Die Ansicht lässt sich unabhängig von der Auswahl frei über beide Neuronen verschieben, bis jeder Punkt beider Neuronen samt Beschriftung in der Mitte der freien Fläche stehen kann. Die Auswahl eines Ausbaus rückt waagrecht sein Neuron zur Mitte und zeigt es senkrecht ganz zwischen Kontextzeile und Blatt; passt es nicht hinein, rückt der gewählte Ausbau ins Bild.
+  - Das Blatt eines Erzeugungs-Ausbaus stellt Behalten und Opfern gegenüber: was die Einheiten, die der nächste Rang kostet, erzeugen würden, und was der Rang allen übrigen bringt, mit dem Ergebnis „lohnt sich sofort“ oder „erst ab N Einheiten“.
 - **`ALL-UI-02` (Muss):** Die Umgebung zeigt die aktuelle Zone, ausgerichtet am Schwarm, mit Reichweite und Ringen in Reisezeit. Sie lässt sich bis zum Rand der Reichweite verschieben und wieder auf den Schwarm zentrieren. Hinter dem Wasser der Umgebung liegt ein atmosphärischer Hintergrund mit der Stimmung der nächsten Zone, der beim Verschieben mit Parallaxe mitläuft; er zeigt keine Stellen und wird nicht simuliert. Ist die nächste Zone erreichbar, erscheinen ihre bekannten, ansteuerbaren Stellen und ihr Fundstück als Ziele in der Umgebung, gekennzeichnet als Abstieg in die nächste Zone. Verlassene Zonen werden nicht angezeigt (`P1-KAR-06`). Beschriftet sind in der Umgebung nur die aktuelle Stelle (am Schwarm) und der Abschluss; alle anderen Stellen und Fundstücke stehen ohne Text und unterscheiden sich über ihr Symbol und die Markierung als Ziel oder Auto-Ziel. Einzelheiten zum Ziel zeigt das Blatt.
 - **`ALL-UI-03` (Muss):** Die Schwarmansicht zeigt die Kette an der aktuellen Stelle vor einem atmosphärischen Hintergrund, der zum Typ der Stelle passt, nicht die Umgebung dahinter. Bricht der Schwarm auf, bleibt die Stelle zurück, und eine Wanderanimation zeigt den Schwarm in Reiserichtung schwimmend bis zur Ankunft, mit der die neue Stelle aus Reiserichtung herankommt.
 - **`ALL-UI-04` (Muss):** Am rechten Rand stehen immer alle drei Ansichtsschalter untereinander (von oben: Umgebung, Schwarm, Ausbau), als Symbole ohne Text; der Schalter der aktuellen Ansicht ist hervorgehoben. Oben links unter der Kontextzeile steht die nächste Zone, gesperrt mit ihrer Zugangsschwelle, solange sie nicht erreichbar ist.
@@ -583,7 +586,7 @@ Konventionen, Schichten und Domänen stehen in `CLAUDE.md`; hier stehen die tech
   - Der Export ist der Spielstand als Base64-Text zum Kopieren und Einfügen. Ein Import durchläuft dieselbe Migration und Prüfung wie das Laden.
 - **Spielwerte (`ALL-CFG-01`):** Die Spielwerte liegen in einer TypeScript-Datei `game/domain/data/balancing.data.ts`, typisiert über ein Interface. Spiel, Nachberechnung, Simulation und Tests importieren dieselbe Datei. Fehlende oder falsch geschriebene Werte fallen beim Build auf; eine Änderung der Werte braucht einen neuen Build, aber keine Änderung der Spiellogik.
 - **Balancing-Simulation (`TEC-04`, `TEC-06`):** Ein Node-Skript unter `tools/simulate/` (gestartet mit `npm run simulate`, ausgeführt mit `tsx` als devDependency) importiert `game/domain` direkt. Es spielt mit mindestens einem aktiven und einem passiven Spielerprofil über mehrere Startwerte und wertet die Kennzahlen aus `TEC-06` aus. Die Spielerprofile gehören zum Werkzeug, nicht zu den Spielregeln. Zusätzlich sichert ein Vitest-Regressionstest mit festem Startwert die Zielwerte des Pacings (6.3) grob ab.
-- **Übernahme aus dem Prototyp:** Die Spiellogik des Prototyps (`public/prototype/`, Stand Spezifikation v6: Spielwerte, Zeitschritt, Kaufen) wird nach `game/domain` portiert, typisiert und nach Thema aufgeteilt. Vorher werden mit dem Prototyp Referenzläufe aufgezeichnet: Startwert, Eingaben und Zustand nach einer festen Zahl von Schritten. Vitest prüft, dass die Portierung dieselben Zustände liefert. Ab der Portierung ändern sich Regeln und Spielwerte nur noch in der Angular-Version. Die Neuerungen aus Version 8 (Kettenkosten nach `P1-KET-01`, Erzeugungs-Ausbau nach `P1-AUS-05`, Reisetempo ohne Masse nach `P1-REI-02`) kommen nach der Portierung als bewusste Änderungen hinzu. Eine bewusste Änderung zeichnet die betroffenen Referenzläufe mit der Angular-Version neu auf. Der Prototyp bleibt unter `/prototype/` erreichbar, bis die Angular-Version den Umfang des MVP abdeckt, und wird dann entfernt.
+- **Übernahme aus dem Prototyp:** Die Spiellogik des Prototyps (`public/prototype/`, Stand Spezifikation v8: Spielwerte, Zeitschritt, Kaufen) wird nach `game/domain` portiert, typisiert und nach Thema aufgeteilt. Vorher werden mit dem Prototyp Referenzläufe aufgezeichnet: Startwert, Eingaben und Zustand nach einer festen Zahl von Schritten. Vitest prüft, dass die Portierung dieselben Zustände liefert. Der Prototyp enthält die Neuerungen aus Version 8 (Kettenkosten nach `P1-KET-01`, Erzeugungs-Ausbau nach `P1-AUS-05`, Reisetempo ohne Masse nach `P1-REI-02`) und zeichnet wie hier entschieden mit Canvas. Ab der Portierung ändern sich Regeln und Spielwerte nur noch in der Angular-Version. Eine bewusste Änderung zeichnet die betroffenen Referenzläufe mit der Angular-Version neu auf. Der Prototyp bleibt unter `/prototype/` erreichbar, bis die Angular-Version den Umfang des MVP abdeckt, und wird dann entfernt.
 - **Darstellung (`TEC-09`):**
   - Was sich dauernd bewegt (Schwarm, Schwebeteilchen, Strömung), wird in jedem Frame in ein Canvas gezeichnet. Ferne, Dunst und Hintergrund der Stelle werden nur bei Änderungen zu Bildern gerastert.
   - Grafiken entstehen als SVG und werden beim Start einmal in Bilder gerastert; Rastergrafiken als Dateien gibt es nicht.
@@ -630,7 +633,7 @@ MVP (Phase 1):
 | --- | --- |
 | `P1-AUS-04` | Wirkung und Kosten der Mehrlinge; erst nach der Kalibrierung von `P1-AUS-05` |
 | `P1-AUS-05` | Wirkung je Rang w, Einstiegspreis a und Kostenwachstum k des Erzeugungs-Ausbaus (Startwerte 1, 1, 2) |
-| `P1-REI-02` | Formel des Reisetempos aus dem Antrieb (Vorschlag: bei Rang 0 der Geißeln wie im Prototyp 20 Kartenpunkte pro Sekunde) |
+| `P1-REI-02` | Kalibrierung des Reisetempos aus dem Antrieb (Startformel `v = 20 · (1 + log₁₀(T / 50))`) |
 | `P1-KAR-05` | Größe und Form der Zonenfläche; Verteilung der Positionen (Vorschlag: gleichverteilt mit Mindestabstand 20 Kartenpunkte); Aufschlag auf die Reisestrecke beim Wechsel in die nächste Zone (Vorschlag: keiner) |
 
 Nach dem MVP (Phase 2):
@@ -651,6 +654,7 @@ Nach dem MVP (Phase 2):
 ### 9.3 Nächste Schritte
 
 - [x] Prototyp des Zeitalters Winzlinge
+- [x] Prototyp auf Stand Version 8: Kettenkosten, Erzeugungs-Ausbau, Reisetempo ohne Masse, zwei Neuronen in der Ausbau-Ansicht, Canvas als Standard
 - [x] Pacing der Winzlinge per Simulation prüfen
 - [x] UI-Mockups für die Kartenform, mobile first: Zonen als Tiefenebenen nach Mockup 5d (`docs/design/mockups/`)
 - [x] Frühe Simulation: Pacing ohne Starre (`P1-STR-01`), mit ortsfesten Fundstücken und dem Zielwert für die erste Reise, mit aktivem und passivem Spielerprofil; dazu Kettenkosten und Erzeugungs-Ausbau (Ergebnisse in 6.3)

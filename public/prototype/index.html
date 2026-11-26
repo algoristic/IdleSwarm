@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#0c0f33">
 <title>IdleSwarm – Prototyp Winzlinge</title>
 <style>
-  /* Prototyp des Zeitalters Winzlinge nach Produktspezifikation v6 und Mockup 5d (deckend).
-     Eine Datei ohne Framework und ohne externe Abhängigkeiten.
-     Mit ?messung in der Adresse: Messanzeige, Belastungsstufen, Messlauf und eine Canvas-Variante
-     der Darstellung zum Vergleich. */
+  /* Prototyp des Zeitalters Winzlinge nach Produktspezifikation v8 und Mockup 5d (deckend),
+     Ausbau-Ansicht nach Mockup „Ausbau der Kette“, Variante C (zwei Neuronen).
+     Eine Datei ohne Framework und ohne externe Abhängigkeiten. Schwarm und Partikel zeichnet ein Canvas (7.2).
+     Mit ?messung in der Adresse: Messanzeige, Belastungsstufen, Messlauf und die SVG-Darstellung zum Vergleich. */
   :root {
     --night: #0c0f33;
     --ink: #f6f4ff;
@@ -79,7 +79,7 @@
   .app[data-view="neuron"] .layer--far    { transform: translate(0px, 0px) scale(9); filter: blur(4px) brightness(1); opacity: 0; }
   .app[data-view="neuron"] .layer--map    { transform: translate(0px, 0px) scale(7.8); filter: blur(3px) brightness(1); opacity: 0; }
   .app[data-view="neuron"] .layer--main   { transform: translate(0px, 0px) scale(5); filter: blur(3px) brightness(1); opacity: 0; }
-  .app[data-view="neuron"] .layer--neuron { transform: translate(var(--px), var(--py)) scale(1); filter: blur(0) brightness(1); opacity: 1; pointer-events: auto; }
+  .app[data-view="neuron"] .layer--neuron { transform: translate(var(--px), var(--py)) scale(var(--nsc, 1)); filter: blur(0) brightness(1); opacity: 1; pointer-events: auto; }
 
   .app[data-view="map"], .app[data-view="neuron"] { touch-action: none; cursor: grab; }
   .app.panning { cursor: grabbing; }
@@ -92,7 +92,7 @@
   .app.no-anim .layer, .app.no-anim .sheet, .app.no-anim .ctx > *, .app.no-anim .map-only, .app.no-anim .views__btn { transition: none !important; }
   @media (prefers-reduced-motion: reduce) {
     .layer { transition: opacity .3s linear; }
-    .swim, .bob, .sig, .node__pulse, .drift, .drift--fast, .node__sel, .swirl, .route, .paddle, .roll, .ray, .site-out, .site-in, .bg-in { animation: none !important; }
+    .swim, .bob, .sig, .node__pulse, .cnode__pulse, .drift, .drift--fast, .node__sel, .swirl, .route, .paddle, .roll, .ray, .site-out, .site-in, .bg-in { animation: none !important; }
     .node__pulse { stroke-width: 0; }
   }
 
@@ -177,6 +177,26 @@
   .org { fill: #542b53; }
   .org__mid { fill: #733c4f; }
   .org__in { fill: none; stroke: #a4655e; stroke-width: 3; stroke-linecap: round; }
+  /* Ketten-Neuron (P1-AUS-05): Orange für Ausbauten, die mit Einheiten bezahlt werden */
+  .soma-hit, .cnode { cursor: pointer; }
+  .cdend { fill: none; stroke: var(--orange); stroke-width: 11; stroke-linecap: round; }
+  .cdend--glow { stroke: #4f2147; stroke-width: 30; }
+  .cdend--core { stroke: #ffd0a8; stroke-width: 3.5; }
+  .cdend--locked { stroke: #5d3f8f; stroke-dasharray: 2 9; }
+  .kaxon { stroke-width: 8; }
+  .syn { fill: var(--orange); stroke: #4f2147; stroke-width: 6; }
+  .syn__in { fill: #ffd0a8; }
+  .syn__lab { text-anchor: middle; }
+  .kn__title { fill: #ffb27a; }
+  .cnode__body { fill: #2a1462; }
+  .cnode__ring { fill: none; stroke: var(--orange); stroke-width: 3.5; }
+  .cnode__pulse { fill: none; stroke: var(--orange); stroke-width: 3; transform-origin: 0 0; animation: pulse 2.2s ease-out infinite; }
+  .cnode__badge { fill: var(--yellow); stroke: #1a0b3d; stroke-width: 2.5; }
+  .cnode__rank { fill: #1a1440; font: 900 11px var(--font); text-anchor: middle; font-variant-numeric: tabular-nums; }
+  .cnode--locked .cnode__ring { stroke: #8a6cc8; stroke-dasharray: 4 4; }
+  .cnode--locked .cnode__icon { opacity: .35; }
+  .cnode--locked .cnode__badge { fill: #5d4a95; }
+  .c-cost { fill: #ffb27a; }
 
   /* ---------- Umgebung (Koordinaten in Pixeln, Ursprung am Schwarm) ---------- */
   .m-label { fill: var(--ink); font: 800 12px var(--font); paint-order: stroke; stroke: #0c0f33; stroke-width: 3.6px; stroke-linejoin: round; text-anchor: middle; }
@@ -337,6 +357,34 @@
   .buy--wide { display: flex; width: 100%; justify-content: center; align-items: baseline; gap: 8px; padding: 12px 11px 11px; border-radius: 16px; }
   .buy--wide b { display: inline; font-size: 16px; }
   .buy--wide span { display: inline; font-size: 12.5px; }
+  .ctx .seg { padding: 2px; }
+  .ctx .seg button { padding: 4px 10px; font-size: 11.5px; white-space: nowrap; }
+  .seg--grp button[aria-pressed="true"][data-grp="kette"] { background: var(--orange); }
+  .seg--grp button[aria-pressed="true"][data-grp="schwarm"] { background: var(--pink); color: #fff; }
+  .up__kick { grid-column: 1 / -1; font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: #ffb27a; margin-bottom: -4px; }
+  .up__rank--chain { background: var(--orange); color: #1a1440; white-space: nowrap; }
+  .up__tabs button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .up__tabs button.is-chain[aria-pressed="true"] { background: var(--orange); color: #1a1440; }
+  .up__tabs button.is-locked { opacity: .5; }
+  .up__tabs--chain button { flex-direction: column; gap: 1px; padding: 5px 2px 4px; font-size: 10.5px; }
+  .ico { display: inline-block; vertical-align: -3px; }
+  .buy--chain { background: var(--orange); box-shadow: 0 3px 0 #b9561a; }
+  .buy--chain:active:not([aria-disabled="true"]) { box-shadow: 0 1px 0 #b9561a; }
+  .buy--chain span { color: #4a2108; }
+  /* feste Höhe, damit das Blatt beim Wechsel zwischen den Erzeugungs-Ausbauten nicht springt */
+  .cu__body { height: 100px; font-size: 14px; }
+  .cu__body .up__fx { margin-bottom: 0; }
+  .cu__body .up__fx { height: auto; }
+  .trade { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 6px; }
+  .trade > div { background: #170a36; border-radius: 14px; padding: 7px 10px 8px; min-width: 0; }
+  .trade h3 { font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: #c0a8ee; }
+  .trade p { font-size: 14.5px; font-weight: 900; margin: 1px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trade small { display: block; font-size: 11.5px; font-weight: 600; color: #c0a8ee; }
+  .trade > div:last-child h3 { color: #ffb27a; }
+  .verdict { font-size: 12.5px; font-weight: 700; margin: 0 2px; }
+  .verdict b { font-weight: 900; }
+  .verdict--good { color: var(--lime); }
+  .verdict--bad { color: #ffa3c2; }
 
   /* Hinweise */
   /* unterhalb der Tiefenanzeige, damit deren Beschriftungen frei bleiben */
@@ -370,7 +418,7 @@
   .perf-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
   .app.no-blur .layer { filter: none !important; }
   .app.no-blur #neuronOrg { filter: none; }
-  .app.no-motion :is(.swim, .bob, .sig, .node__pulse, .drift, .drift--fast, .node__sel, .swirl, .route, .paddle, .roll, .ray) { animation: none !important; }
+  .app.no-motion :is(.swim, .bob, .sig, .node__pulse, .cnode__pulse, .drift, .drift--fast, .node__sel, .swirl, .route, .paddle, .roll, .ray) { animation: none !important; }
   /* Canvas-Variante: Schwarm und Partikel zeichnet JS je Frame, Ferne, Dunst und Hintergrund der Stelle sind fertige Bilder */
   .cv-el { position: absolute; display: none; }
   .app.cv .cv-el { display: block; }
@@ -469,29 +517,28 @@
 
   <!-- Ebene 0 (am nächsten): Ausbauten als Neuron im Inneren des Schwarms -->
   <div class="layer layer--neuron">
-    <svg id="neuronSvg" width="1000" height="1400" viewBox="-500 -560 1000 1400" aria-label="Ausbauten als Nervenzelle">
+    <svg id="neuronSvg" width="1700" height="1400" viewBox="-500 -560 1700 1400" aria-label="Ausbauten als zwei Nervenzellen: Schwarm und Kette">
       <defs>
         <clipPath id="cNode"><circle r="20"/></clipPath>
         <clipPath id="cSoma"><path d="M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z"/></clipPath>
         <filter id="nBlur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
       </defs>
-      <rect x="-500" y="-560" width="1000" height="1400" fill="#14082f"/>
+      <rect x="-500" y="-560" width="1700" height="1400" fill="#14082f"/>
       <g transform="translate(0 -8)">
         <circle r="640" fill="#1a0b3d"/>
         <circle r="470" fill="#210f4a"/>
         <circle r="320" fill="#291358"/>
         <circle r="190" fill="#311766"/>
       </g>
+      <g transform="translate(380 -8)">
+        <circle r="640" fill="#1a0b3d"/>
+        <circle r="470" fill="#210f4a"/>
+        <circle r="320" fill="#291358"/>
+        <circle r="190" fill="#311766"/>
+      </g>
       <g id="neuronOrg" filter="url(#nBlur)"></g>
-      <path class="twig" d="M-70 -78Q-150 -70 -200 -40"/><path class="twig" d="M-110 -118Q-170 -150 -190 -205"/><path class="twig" d="M8 -120Q60 -170 70 -230"/><path class="twig" d="M96 -78Q170 -80 210 -40"/><path class="twig" d="M120 -110Q170 -150 205 -190"/><path class="twig" d="M-36 10Q-120 20 -210 70"/><path class="twig" d="M36 14Q110 40 210 110"/><path class="twig" d="M-150 -70Q-175 -20 -215 0"/>
+      <path class="twig" d="M-70 -78Q-150 -70 -200 -40"/><path class="twig" d="M-110 -118Q-170 -150 -190 -205"/><path class="twig" d="M8 -120Q60 -170 70 -230"/><path class="twig" d="M120 -110Q170 -150 205 -190"/>
       <g id="neuronG"></g>
-      <circle cx="0" cy="-8" r="84" fill="#461d6a"/>
-      <circle cx="0" cy="-8" r="62" fill="#64256f"/>
-      <path d="M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z" fill="#ff9cc4"/>
-      <path d="M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z" fill="#ff4f8b" transform="translate(4.5 6)" clip-path="url(#cSoma)"/>
-      <circle cx="4" cy="-6" r="17" fill="#6a1a6b"/>
-      <circle cx="6" cy="-4" r="17" fill="#4b0f55" clip-path="circle(17px at -2px -2px)"/>
-      <circle cx="9" cy="-11" r="5" fill="#ff9cc4"/>
     </svg>
   </div>
 
@@ -526,7 +573,7 @@
     </div>
     <div class="ctx__neuron">
       <span class="grow" id="ctxNeuronText"></span>
-      <span class="tag tag--pink">Impuls = bezahlbar</span>
+      <div class="seg seg--grp" role="group" aria-label="Neuron" id="grpSeg"><button data-grp="schwarm" aria-pressed="true">Schwarm</button><button data-grp="kette" aria-pressed="false">Kette</button></div>
     </div>
   </div>
 
@@ -554,7 +601,7 @@
 
     <button class="sheet__grip" aria-expanded="true" aria-label="Blatt einklappen"></button>
     <div class="sheet__head">
-      <h2>Kette <small class="num" id="massLabel"></small></h2>
+      <h2>Kette</h2>
       <div class="seg" role="group" aria-label="Kaufmenge" id="buyMode">
         <button aria-pressed="true" data-mode="1">1</button><button aria-pressed="false" data-mode="q">25 %</button><button aria-pressed="false" data-mode="max">Max</button>
       </div>
@@ -590,12 +637,23 @@
 
     <button class="sheet__grip" aria-expanded="true" aria-label="Blatt einklappen"></button>
     <div class="up__tabs" id="upTabs"></div>
-    <div class="up">
-      <h2 id="upName"></h2>
-      <div class="up__rank num" id="upRank"></div>
+    <div id="upSwarm">
+      <div class="up">
+        <h2 id="upName"></h2>
+        <div class="up__rank num" id="upRank"></div>
+      </div>
+      <dl class="up__fx num" id="upFx"></dl>
+      <button class="buy buy--wide num" id="upBuy"><b>Ausbauen</b><span></span></button>
     </div>
-    <dl class="up__fx num" id="upFx"></dl>
-    <button class="buy buy--wide num" id="upBuy"><b>Ausbauen</b><span></span></button>
+    <div id="upChain" hidden>
+      <div class="up">
+        <div class="up__kick">Erzeugung von</div>
+        <h2 id="cuName"></h2>
+        <div class="up__rank up__rank--chain num" id="cuRank"></div>
+      </div>
+      <div class="cu__body num" id="cuBody"></div>
+      <button class="buy buy--wide buy--chain num" id="cuBuy"><b>Ausbauen</b><span></span></button>
+    </div>
   </section>
 
   <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal__card" id="modalCard"></div></div>
@@ -613,13 +671,13 @@
 const CFG = {
   dt: 0.25,                                   // TEC-03
   start: { vorrat: 50, eier: 10, fress: 5 },  // P1-STA-01
-  units: [                                    // P1-KET-01
-    { name: 'Fressling',   plural: 'Fresslinge',    short: 'F.',  icon: 'fress', cost: 10,  req: 0,    prod: 0, mass: 1 },
-    { name: 'Brutling',    plural: 'Brutlinge',     short: 'B.',  icon: 'brut',  cost: 500, req: 100,  prod: 2, mass: 5 },
-    { name: 'Eiträgerin',  plural: 'Eiträgerinnen', short: 'Et.', icon: 'etr',   cost: 2e4, req: 1000, prod: 3, mass: 30 },
-    { name: 'Gelege',      plural: 'Gelege',        short: 'G.',  icon: 'gel',   cost: 1e6, req: 1000, prod: 4, mass: 200 },
-    { name: 'Brutklumpen', plural: 'Brutklumpen',   short: 'Bk.', icon: 'bkl',   cost: 5e7, req: 1000, prod: 5, mass: 1200 },
-    { name: 'Urnest',      plural: 'Urnester',      short: 'U.',  icon: 'urn',   cost: 2e9, req: 1000, prod: 6, mass: 8000 },
+  units: [                                    // P1-KET-01; dat: Dativ Plural
+    { name: 'Fressling',   plural: 'Fresslinge',    dat: 'Fresslingen',    short: 'F.',  icon: 'fress', cost: 10,  req: 0,   prod: 0 },
+    { name: 'Brutling',    plural: 'Brutlinge',     dat: 'Brutlingen',     short: 'B.',  icon: 'brut',  cost: 500, req: 10,  prod: 2 },
+    { name: 'Eiträgerin',  plural: 'Eiträgerinnen', dat: 'Eiträgerinnen',  short: 'Et.', icon: 'etr',   cost: 2e4, req: 100, prod: 3 },
+    { name: 'Gelege',      plural: 'Gelege',        dat: 'Gelegen',        short: 'G.',  icon: 'gel',   cost: 1e6, req: 1e3, prod: 4 },
+    { name: 'Brutklumpen', plural: 'Brutklumpen',   dat: 'Brutklumpen',    short: 'Bk.', icon: 'bkl',   cost: 5e7, req: 1e4, prod: 5 },
+    { name: 'Urnest',      plural: 'Urnester',      dat: 'Urnestern',      short: 'U.',  icon: 'urn',   cost: 2e9, req: 1e5, prod: 6 },
   ],
   upgrades: {                                 // P1-AUS-01: Wirkung base·factor^l, Kosten cost·growth^l
     herd:  { name: 'Brutherd',  base: 1,    factor: 1.7, cost: 30,  growth: 3 },
@@ -627,8 +685,11 @@ const CFG = {
     geis:  { name: 'Geißeln',   base: 50,   factor: 1.8, cost: 125, growth: 2.2 },
     kropf: { name: 'Kropf',     base: 2000, factor: 1.5, cost: 80,  growth: 1.55 },
   },
+  // P1-AUS-05: Erzeugungs-Ausbau für Fresslinge bis Gelege, bezahlt mit der erzeugenden Stufe.
+  // Wirkung (1 + w·l) × Grundwert, Kosten ⌈a·k^l⌉ Einheiten
+  chainUp: { w: 1, a: 1, k: 2 },
   reach: { base: 140, step: 70, every: 3 },   // P1-AUS-03
-  travel: { base: 20, minFactor: 0.25 },      // P1-REI-02
+  travel: { base: 20, ref: 50 },              // P1-REI-02: v = base · (1 + log10(T / ref))
   zones: [                                    // P1-KAR-01
     { name: 'Wassertropfen',  threshold: 0 },
     { name: 'Gezeitentümpel', threshold: 500 },
@@ -661,7 +722,7 @@ const CFG = {
       blase: { name: 'Nahrungsblase',     weight: 3, text: 'Sofort Vorrat: 180 s Ø-Ernte' },
       ballen:{ name: 'Eierballen',        weight: 2, text: 'Sofort Eier: 180 s Eier-Rate' },
       schub: { name: 'Wachstumsschub',    weight: 2, text: 'Sofort 120 s Erzeugung je Stufe' },
-      keim:  { name: 'Keimzelle',         weight: 1, text: 'Nächster Rang eines Ausbaus gratis' },
+      keim:  { name: 'Keimzelle',         weight: 1, text: 'Nächster Rang eines Schwarm-Ausbaus gratis' },
     },
     buffDuration: 60, mult: { fress: 3, lege: 5, verm: 3, wind: 4 },
     blaseMin: 1000, blaseSec: 180, avgWindow: 120, ballenMin: 50, ballenSec: 180, schubSec: 120,
@@ -670,7 +731,7 @@ const CFG = {
   saveEvery: 10,                              // ALL-OFF-01
 };
 const SAVE_KEY = 'idleswarm-prototyp';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 const HIST_LEN = Math.round(CFG.finds.avgWindow / CFG.dt);
 
 /* =====================================================================
@@ -691,6 +752,14 @@ function pickWeighted(s, weights) {
 const upEff = (k, l) => CFG.upgrades[k].base * CFG.upgrades[k].factor ** l;
 const upCost = (k, l) => CFG.upgrades[k].cost * CFG.upgrades[k].growth ** l;
 const reachFor = (l) => CFG.reach.base + CFG.reach.step * Math.floor(l / CFG.reach.every);
+const speedFor = (thrust) => CFG.travel.base * (1 + Math.log10(Math.max(1, thrust / CFG.travel.ref)));
+// Erzeugungs-Ausbau i steigert die Erzeugung von Einheit i durch Stufe i + 1 und kostet Einheiten der Stufe i + 1
+const CHAIN_UPS = 4;
+const chainCost = (l) => Math.ceil(CFG.chainUp.a * CFG.chainUp.k ** l - 1e-9);
+const chainFactor = (l) => 1 + CFG.chainUp.w * l;
+// Erzeugung je Einheit der Stufe k (k ≥ 1) mit Erzeugungs-Ausbau, ohne Boni
+const prodOf = (s, k) => CFG.units[k].prod * (k - 1 < CHAIN_UPS ? chainFactor(s.chainRanks[k - 1]) : 1);
+const chainLocked = (s, i) => s.chainRanks[i] === 0 && s.units[i + 1] < 1;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 function newGame(seed) {
@@ -698,7 +767,7 @@ function newGame(seed) {
     v: SAVE_VERSION, seed, rng: seed, t: 0,
     vorrat: CFG.start.vorrat, eier: CFG.start.eier,
     units: [CFG.start.fress, 0, 0, 0, 0, 0], unlocked: [true, true, false, false, false, false],
-    ranks: { herd: 0, verd: 0, geis: 0, kropf: 0 }, free: 0,
+    ranks: { herd: 0, verd: 0, geis: 0, kropf: 0 }, chainRanks: [0, 0, 0, 0], free: 0,
     zone: 0, pos: { x: 0, y: 0 }, at: null, travel: null,
     sites: [], finds: [], findTimers: {}, spawnTimers: [0, 0, 0, 0],
     buffs: { fress: 0, lege: 0, verm: 0, wind: 0 },
@@ -757,10 +826,8 @@ function placeInDisc(s, zone, cx, cy, r) {
 function derive(s) {
   const r = s.ranks, b = s.buffs, F = CFG.finds.mult;
   const thrust = upEff('geis', r.geis);
-  let mass = 0;
-  for (let k = 0; k < 6; k++) mass += s.units[k] * CFG.units[k].mass;
-  const ratio = mass > 0 ? Math.min(1, thrust / mass) : 1;
-  const baseSpeed = CFG.travel.base * Math.max(CFG.travel.minFactor, Math.sqrt(ratio));
+  // P1-REI-02: Das Reisetempo hängt nur vom Antrieb ab, im Zeitalter Winzlinge gibt es keine Masse
+  const baseSpeed = speedFor(thrust);
   const speed = baseSpeed * (b.wind > 0 ? F.wind : 1);
   const digest = upEff('verd', r.verd);
   const appetite = s.units[0] * digest * (b.fress > 0 ? F.fress : 1);
@@ -771,7 +838,7 @@ function derive(s) {
   const chainMult = b.verm > 0 ? F.verm : 1;
   // Über der Kapazität frisst der Schwarm langsamer: Fressrate = Appetit · C/V (P1-VOR-02)
   const eat = appetite * Math.min(1, capacity / Math.max(s.vorrat, 1e-9));
-  return { thrust, mass, speed, baseSpeed, digest, appetite, eat, capacity, eggRate, chainMult, reach: reachFor(r.geis), atFloor: ratio < CFG.travel.minFactor ** 2 };
+  return { thrust, speed, baseSpeed, digest, appetite, eat, capacity, eggRate, chainMult, reach: reachFor(r.geis) };
 }
 const getSite = (s, id) => s.sites.find((x) => x.id === id) || null;
 const getFind = (s, id) => s.finds.find((x) => x.id === id) || null;
@@ -878,7 +945,7 @@ function applyFind(s, f, d, log) {
     case 'ballen': s.eier += Math.max(F.ballenMin, F.ballenSec * d.eggRate); break;
     case 'schub': {
       const u = s.units.slice();
-      for (let k = 0; k < 5; k++) s.units[k] += F.schubSec * u[k + 1] * CFG.units[k + 1].prod;
+      for (let k = 0; k < 5; k++) s.units[k] += F.schubSec * u[k + 1] * prodOf(s, k + 1);
       break;
     }
     case 'keim': s.free++; break;
@@ -895,7 +962,7 @@ function step(s, log) {
   // Eier und Kette erzeugen immer (P1-STR-01)
   s.eier += d.eggRate * dt;
   const u = s.units.slice();
-  for (let k = 1; k < 6; k++) s.units[k - 1] += u[k] * CFG.units[k].prod * d.chainMult * dt;
+  for (let k = 1; k < 6; k++) s.units[k - 1] += u[k] * prodOf(s, k) * d.chainMult * dt;
   for (let k = 2; k < 6; k++) if (s.units[k - 1] >= 1) s.unlocked[k] = true;
 
   // Ernte (P1-ERN-01/02)
@@ -1064,6 +1131,14 @@ function buyUpgrade(s, key) {
   s.ranks[key]++;
   return true;
 }
+// P1-AUS-05: verbraucht Einheiten der erzeugenden Stufe; Keimzellen gelten nur für P1-AUS-01
+function buyChainUp(s, i) {
+  const c = chainCost(s.chainRanks[i]);
+  if (s.units[i + 1] < c) return false;
+  s.units[i + 1] -= c;
+  s.chainRanks[i]++;
+  return true;
+}
 
 /* =====================================================================
    Formatierung (de-DE)
@@ -1188,10 +1263,8 @@ const ICON_R = { algen: 15, plankton: 15, krebs: 14, schnee: 14, seegras: 30 };
 
 /* ---------- Umgebung ---------- */
 const REACH_PX = 252;
-// Ausbau: nur ein wenig um das Neuron herum verschieben
-const NEURON_REACH_PX = 170;
 let pan = { x: 0, y: 0 };
-let panHome = { x: 0, y: 0 };
+let neuronMid = 0, neuronH = 0; // Mitte der freien Fläche in der Ausbau-Ansicht und Höhe der App dazu
 let drag = null;
 let mapScale = 1;
 
@@ -1563,34 +1636,86 @@ function renderSwarm() {
 }
 
 /* ---------- Neuron: Ausbauten ---------- */
+// Zwei Neuronen: links der Schwarm (P1-AUS-01), rechts die Kette (P1-AUS-05), deren Axon in einer Synapse am
+// Schwarm-Neuron endet. Die Ansicht lässt sich unabhängig von der Auswahl frei über beide verschieben.
+const KX = 380;                                  // Lage des Ketten-Neurons
+const NEURON_SCALE = .85;
+const NEURON_TOP = -210, NEURON_BOTTOM = 236;     // senkrechte Ausdehnung beider Neuronen mit Beschriftungen
+const NEURON_AREA = [-110, KX + 110, NEURON_TOP - 20, NEURON_BOTTOM + 20]; // Bereich, dessen Punkte sich in die Mitte holen lassen
+const SOMA = 'M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z';
 const DENDS = {
   herd:  { p0: [-26, -40], c: [-96, -62], p1: [-118, -138], label: [-118, -182] },
   verd:  { p0: [4, -54], c: [-14, -100], p1: [12, -150], label: [12, -194] },
   kropf: { p0: [32, -20], c: [84, -6], p1: [118, -44], label: [118, 0] }, // unterhalb der Tiefenanzeige
 };
+// Erzeugungs-Ausbauten in der Reihenfolge der Kette; der Index ist die erzeugte Einheit
+const CHAIN_KEYS = ['fress', 'brut', 'etr', 'gel'];
+const CDENDS = {
+  fress: { p0: [KX - 22, -44], c: [KX - 70, -84], p1: [KX - 104, -150], label: [KX - 104, -194] },
+  brut:  { p0: [KX + 22, -44], c: [KX + 70, -84], p1: [KX + 104, -150], label: [KX + 104, -194] },
+  etr:   { p0: [KX - 22, 28], c: [KX - 70, 76], p1: [KX - 104, 140], label: [KX - 104, 184] },
+  gel:   { p0: [KX + 22, 28], c: [KX + 70, 76], p1: [KX + 104, 140], label: [KX + 104, 184] },
+};
+const ICON_SCALE = { fress: 1.15, brut: .66, etr: .58, gel: .46 };
 const GEIS_AT = [0, 218];
-const upPos = (k) => (k === 'geis' ? GEIS_AT : DENDS[k].p1);
+const chainIdx = (k) => CHAIN_KEYS.indexOf(k);
+const groupOf = (k) => (chainIdx(k) >= 0 ? 'kette' : 'schwarm');
+const lastUp = { schwarm: 'geis', kette: 'fress' };
+const upPoint = (k) => (k === 'geis' ? GEIS_AT : (DENDS[k] || CDENDS[k]).p1);
+// Waagrechter Punkt, der beim Auswählen in die Mitte rückt: nur ein Teil des Wegs zum Knoten,
+// damit viel vom Neuron sichtbar bleibt
+function upFocusX(k) {
+  const x = upPoint(k)[0];
+  return groupOf(k) === 'kette' ? KX + 20 + (x - KX) * .3 : x * .35;
+}
 const qb = (p0, c, p1, t) => [(1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * c[0] + t * t * p1[0], (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * c[1] + t * t * p1[1]];
+const unitsLabel = (U, n) => `${fmt(n)} ${n === 1 ? U.name : U.plural}`;
 let neuronKey = '';
 function nodeSvg(key, x, y, rank, afford, sel) {
   return `<g class="node${afford ? '' : ' node--poor'}" data-up="${key}" transform="translate(${x} ${y})"><circle class="node__hit" r="34"/>${sel ? '<circle class="node__sel" r="28"/>' : ''}${afford ? '<circle class="node__pulse" r="21"/>' : ''}<circle class="node__body" r="20"/><g clip-path="url(#cNode)"><circle class="node__shade" cx="3.5" cy="4.5" r="20"/></g><text class="node__rank" y="5.5">${rank}</text></g>`;
 }
-const canAfford = (key) => S.free > 0 || S.vorrat >= upCost(key, S.ranks[key]);
-const costLabel = (key) => (S.free > 0 ? 'Gratis' : fmt(upCost(key, S.ranks[key])) + ' Vorrat');
+// Knoten eines Erzeugungs-Ausbaus: die erzeugte Einheit im Kreis, der Rang als Marke unten rechts
+function cnodeSvg(key, x, y, rank, afford, sel, off) {
+  return `<g class="cnode${off ? ' cnode--locked' : ''}" data-up="${key}" transform="translate(${x} ${y})"><circle class="node__hit" r="34"/>${sel ? '<circle class="node__sel" r="28"/>' : ''}${afford ? '<circle class="cnode__pulse" r="21"/>' : ''}<circle class="cnode__body" r="20"/><circle class="cnode__ring" r="20"/><use class="cnode__icon" href="#${key}" transform="scale(${ICON_SCALE[key]})"/><g transform="translate(14.4 14.4)"><rect class="cnode__badge" x="-11" y="-8.5" width="22" height="17" rx="8.5"/><text class="cnode__rank" y="4">${off ? '–' : rank}</text></g></g>`;
+}
+function somaSvg(x, tone, group) {
+  const P = tone === 'pink'
+    ? ['#461d6a', '#64256f', '#ff9cc4', '#ff4f8b', '#6a1a6b', '#4b0f55', '#ff9cc4']
+    : ['#4a1f4a', '#6e2f52', '#ffd0a8', '#ff8a3d', '#7a2e1c', '#561a10', '#ffd0a8'];
+  return `<g class="soma-hit" data-soma="${group}" transform="translate(${x} 0)"><circle cx="0" cy="-8" r="84" fill="${P[0]}"/><circle cx="0" cy="-8" r="62" fill="${P[1]}"/><path d="${SOMA}" fill="${P[2]}"/><path d="${SOMA}" fill="${P[3]}" transform="translate(4.5 6)" clip-path="url(#cSoma)"/><circle cx="4" cy="-6" r="17" fill="${P[4]}"/><circle cx="6" cy="-4" r="17" fill="${P[5]}" clip-path="circle(17px at -2px -2px)"/><circle cx="9" cy="-11" r="5" fill="${P[6]}"/></g>`;
+}
+function beadsSvg(D, rank) {
+  let h = '';
+  const shown = Math.min(rank, 5);
+  for (let i = 0; i <= shown; i++) {
+    const [x, y] = qb(D.p0, D.c, D.p1, 0.22 + (i / 6) * 0.66);
+    h += `<circle class="bead${i === shown ? ' bead--next' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.6"/>`;
+  }
+  return h;
+}
+const upRank = (key) => (chainIdx(key) >= 0 ? S.chainRanks[chainIdx(key)] : S.ranks[key]);
+function canAfford(key) {
+  const i = chainIdx(key);
+  if (i < 0) return S.free > 0 || S.vorrat >= upCost(key, S.ranks[key]);
+  return !chainLocked(S, i) && S.units[i + 1] >= chainCost(S.chainRanks[i]);
+}
+function costLabel(key) {
+  const i = chainIdx(key);
+  if (i < 0) return S.free > 0 ? 'Gratis' : fmt(upCost(key, S.ranks[key])) + ' Vorrat';
+  const P = CFG.units[i + 1];
+  return chainLocked(S, i) ? `ab 1 ${P.name}` : unitsLabel(P, chainCost(S.chainRanks[i]));
+}
+const ALL_UPS = [...UP_KEYS, ...CHAIN_KEYS];
 function renderNeuron() {
   const r = S.ranks;
-  const key = UP_KEYS.map((k) => r[k] + (canAfford(k) ? 'y' : 'n') + costLabel(k)).join('|') + selUp;
+  const key = ALL_UPS.map((k) => upRank(k) + (canAfford(k) ? 'y' : 'n') + costLabel(k)).join('|') + selUp;
   if (key === neuronKey) return;
   neuronKey = key;
   let h = '';
   for (const k of ['herd', 'verd', 'kropf']) {
     const D = DENDS[k], path = `M${D.p0}Q${D.c} ${D.p1}`;
     h += `<path class="dend dend--glow" d="${path}"/><path class="dend" d="${path}"/><path class="dend dend--core" d="${path}"/><path class="sig sig--in" d="${path}"/>`;
-    const shown = Math.min(r[k], 5);
-    for (let i = 0; i <= shown; i++) {
-      const [x, y] = qb(D.p0, D.c, D.p1, 0.22 + (i / 6) * 0.66);
-      h += `<circle class="bead${i === shown ? ' bead--next' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.6"/>`;
-    }
+    h += beadsSvg(D, r[k]);
     h += nodeSvg(k, D.p1[0], D.p1[1], r[k], canAfford(k), selUp === k);
     h += `<text class="n-name" x="${D.label[0]}" y="${D.label[1]}">${CFG.upgrades[k].name}</text><text class="n-cost${canAfford(k) ? '' : ' n-cost--poor'}" x="${D.label[0]}" y="${D.label[1] + 15}">${costLabel(k)}</text>`;
   }
@@ -1611,20 +1736,34 @@ function renderNeuron() {
   h += '<path class="twig twig--term" d="M0 196Q-18 214-34 222M0 196Q18 216 30 230"/>';
   h += nodeSvg('geis', GEIS_AT[0], GEIS_AT[1], l, canAfford('geis'), selUp === 'geis');
   h += `<text class="n-name n-name--l" x="34" y="214">${CFG.upgrades.geis.name}</text><text class="n-cost n-cost--l${canAfford('geis') ? '' : ' n-cost--poor'}" x="34" y="229">${costLabel('geis')}</text>`;
+  h += somaSvg(0, 'pink', 'schwarm');
+  // Ketten-Neuron mit Axon und Synapse am Schwarm-Neuron
+  const ax = `M${KX - 56} 2Q200 62 82 42`;
+  h += `<path class="cdend cdend--glow" d="${ax}"/><path class="cdend kaxon" d="${ax}"/><path class="sig sig--out" d="${ax}"/><circle cx="78" cy="40" r="11" class="syn"/><circle cx="78" cy="40" r="5" class="syn__in"/>`;
+  h += '<text class="n-mile n-mile--sub syn__lab" x="196" y="74">Synapse</text>';
+  CHAIN_KEYS.forEach((k, i) => {
+    const D = CDENDS[k], path = `M${D.p0}Q${D.c} ${D.p1}`, off = chainLocked(S, i), rank = S.chainRanks[i], ok = canAfford(k);
+    h += `<path class="cdend cdend--glow" d="${path}"/><path class="cdend${off ? ' cdend--locked' : ''}" d="${path}"/>`;
+    if (!off) h += `<path class="cdend cdend--core" d="${path}"/><path class="sig sig--in" d="${path}"/>` + beadsSvg(D, rank);
+    h += cnodeSvg(k, D.p1[0], D.p1[1], rank, ok, selUp === k, off);
+    h += `<text class="n-name" x="${D.label[0]}" y="${D.label[1]}">${CFG.units[i].plural}</text><text class="n-cost c-cost${ok ? '' : ' n-cost--poor'}" x="${D.label[0]}" y="${D.label[1] + 15}">${costLabel(k)}</text>`;
+  });
+  h += somaSvg(KX, 'orange', 'kette');
+  h += `<text class="n-name kn__title" x="${KX}" y="-112">Kette</text>`;
   $('neuronG').innerHTML = h;
 }
 function renderNeuronOrganelles() {
-  const R = lcg(99);
+  const R = lcg(99), dx = KX / 2;
   let h = '';
-  const spots = [[-150, -260, 46], [170, -300, 34], [-180, 200, 52], [160, 140, 40], [-60, 330, 60], [200, 330, 30], [-210, -60, 26], [210, -40, 28]];
+  const spots = [[-150, -260, 46], [170, -300, 34], [-180, 200, 52], [160, 140, 40], [-60, 330, 60], [200, 330, 30], [-210, -60, 26], [210, -40, 28], [40, 560, 44], [-190, 520, 34], [190, 640, 50]];
   for (const [x, y, w] of spots) {
     const hh = w / 2, a = Math.round(R() * 180 - 90);
     let wave = `M${-w * .7} 0`;
     for (let i = 0; i < 4; i++) wave += `q${(w * .17).toFixed(1)} ${(-w * .3).toFixed(1)} ${(w * .35).toFixed(1)} 0`;
-    h += `<g transform="translate(${x} ${y}) rotate(${a})"><rect x="${-w}" y="${-hh}" width="${w * 2}" height="${w}" rx="${hh}" class="org"/><rect x="${-w + 5}" y="${-hh + 5}" width="${w * 2 - 10}" height="${w - 10}" rx="${hh - 5}" class="org__mid"/><path d="${wave}" class="org__in"/></g>`;
+    h += `<g transform="translate(${x + dx} ${y}) rotate(${a})"><rect x="${-w}" y="${-hh}" width="${w * 2}" height="${w}" rx="${hh}" class="org"/><rect x="${-w + 5}" y="${-hh + 5}" width="${w * 2 - 10}" height="${w - 10}" rx="${hh - 5}" class="org__mid"/><path d="${wave}" class="org__in"/></g>`;
   }
   h += '<g fill="#3a1f54">';
-  for (let i = 0; i < 40; i++) h += `<circle cx="${((R() - .5) * 1000).toFixed(0)}" cy="${((R() - .5) * 1200).toFixed(0)}" r="${(2.4 + R() * 5.5).toFixed(1)}"/>`;
+  for (let i = 0; i < 60; i++) h += `<circle cx="${((R() - .5) * 1400 + dx).toFixed(0)}" cy="${((R() - .5) * 1200).toFixed(0)}" r="${(2.4 + R() * 5.5).toFixed(1)}"/>`;
   $('neuronOrg').innerHTML = h + '</g>';
 }
 
@@ -1644,7 +1783,6 @@ function buildUnits() {
 }
 function renderUnits(d) {
   const s = S;
-  $('massLabel').textContent = `Masse ${fmtInt(d.mass)}`;
   let firstLocked = -1;
   CFG.units.forEach((U, k) => {
     const row = $('unit' + k);
@@ -1655,7 +1793,8 @@ function renderUnits(d) {
     if (k === 0) meta = `erntet je ${fmt(d.digest * (s.buffs.fress > 0 ? CFG.finds.mult.fress : 1))}/s`;
     else {
       const below = CFG.units[k - 1].plural;
-      meta = s.units[k] >= 1 ? `+${fmt(s.units[k] * U.prod * d.chainMult)} ${below}/s` : `je +${fmt(U.prod * d.chainMult)} ${below}/s`;
+      const per = prodOf(s, k) * d.chainMult;
+      meta = s.units[k] >= 1 ? `+${fmt(s.units[k] * per)} ${below}/s` : `je +${fmt(per)} ${below}/s`;
     }
     $('unitM' + k).textContent = meta;
     const n = buyAmount(s, k, buyMode);
@@ -1720,9 +1859,24 @@ function renderMapSheet(d) {
   $('btnUnmark').setAttribute('aria-disabled', s.mark ? 'false' : 'true');
   $('btnLeave').setAttribute('aria-disabled', currentSite(s) ? 'false' : 'true');
 }
+const tabIcon = (id) => `<svg class="ico" width="16" height="16" viewBox="-20 -20 40 40" aria-hidden="true"><use href="#${id}" transform="scale(${(ICON_SCALE[id] * 1.45).toFixed(2)})"/></svg>`;
+let upTabsHtml = '';
 function renderUpSheet(d) {
-  const s = S, k = selUp, l = s.ranks[k];
-  $('upTabs').innerHTML = UP_KEYS.map((x) => `<button data-sel="${x}" aria-pressed="${x === k}">${CFG.upgrades[x].name}</button>`).join('');
+  const s = S, k = selUp, g = groupOf(k);
+  // Reiter nur bei Änderung neu aufbauen, damit ein laufender Tipp nicht ins Leere geht
+  const tabs = g === 'kette'
+    ? CHAIN_KEYS.map((x, i) => `<button data-sel="${x}" aria-pressed="${x === k}" class="is-chain${chainLocked(s, i) ? ' is-locked' : ''}">${tabIcon(x)}${CFG.units[i].plural}</button>`).join('')
+    : UP_KEYS.map((x) => `<button data-sel="${x}" aria-pressed="${x === k}">${CFG.upgrades[x].name}</button>`).join('');
+  if (tabs !== upTabsHtml) {
+    upTabsHtml = tabs;
+    $('upTabs').innerHTML = tabs;
+    $('upTabs').classList.toggle('up__tabs--chain', g === 'kette');
+  }
+  $('grpSeg').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.grp === g)));
+  $('upSwarm').hidden = g !== 'schwarm';
+  $('upChain').hidden = g !== 'kette';
+  if (g === 'kette') { renderChainSheet(d); return; }
+  const l = s.ranks[k];
   $('upName').textContent = CFG.upgrades[k].name;
   $('upRank').textContent = `Rang ${l} → ${l + 1}`;
   const a = upEff(k, l), b = upEff(k, l + 1);
@@ -1735,7 +1889,7 @@ function renderUpSheet(d) {
     fx = `<dt>Kapazität</dt><dd>${fmt(a)} → <em>${fmt(b)}</em></dd><dt>Vorrat</dt><dd>${fmt(s.vorrat)} <small>· darüber kommt nur der Anteil C/V an</small></dd>`;
   } else {
     const ev = CFG.reach.every, nextM = (Math.floor(l / ev) + 1) * ev;
-    fx = `<dt>Antrieb</dt><dd>${fmt(a)} → <em>${fmt(b)}</em></dd><dt>Reichweite</dt><dd>${fmt(d.reach)} KP <small>· ${fmt(reachFor(nextM))} KP ab Rang ${nextM}</small></dd><dt>Tempo</dt><dd>${fmt(d.baseSpeed)} KP/s <small>· Masse ${fmt(d.mass)}${d.atFloor ? ' · Untergrenze' : ''}</small></dd>`;
+    fx = `<dt>Antrieb</dt><dd>${fmt(a)} → <em>${fmt(b)}</em></dd><dt>Reichweite</dt><dd>${fmt(d.reach)} KP <small>· ${fmt(reachFor(nextM))} KP ab Rang ${nextM}</small></dd><dt>Reisetempo</dt><dd>${fmt(d.baseSpeed)} → <em>${fmt(speedFor(b))}</em> KP/s</dd>`;
     const nz = s.zone + 1;
     if (nz < CFG.zones.length) {
       const th = CFG.zones[nz].threshold;
@@ -1751,6 +1905,34 @@ function renderUpSheet(d) {
   const btn = $('upBuy');
   btn.setAttribute('aria-disabled', canAfford(k) ? 'false' : 'true');
   btn.querySelector('span').textContent = s.free > 0 ? `Gratis · Keimzelle (${s.free})` : `${fmt(upCost(k, l))} Vorrat`;
+}
+// Erzeugungs-Ausbau (P1-AUS-05): Abwägung, was die geopferten Einheiten erzeugt hätten, gegen das, was der
+// nächste Rang allen übrigen bringt. Vereinfacht: Der Wert der Einheiten für Käufe der Stufe darüber fehlt.
+function renderChainSheet(d) {
+  const s = S, i = chainIdx(selUp), l = s.chainRanks[i], U = CFG.units[i], P = CFG.units[i + 1];
+  const btn = $('cuBuy'), w = CFG.chainUp.w;
+  $('cuName').textContent = U.dat;
+  if (chainLocked(s, i)) {
+    $('cuRank').textContent = 'gesperrt';
+    $('cuBody').innerHTML = `<dl class="up__fx"><dt>Erzeugt von</dt><dd>${P.plural} <small>· je ${fmt(P.prod)} /s</small></dd><dt>Freischaltung</dt><dd>ab 1 ${P.name}</dd><dt>Erster Rang</dt><dd>1 ${P.name} <small>· +${Math.round(w * 100)} % Erzeugung</small></dd></dl>`;
+    btn.setAttribute('aria-disabled', 'true');
+    btn.querySelector('span').textContent = `ab 1 ${P.name}`;
+    return;
+  }
+  const cost = chainCost(l), stock = s.units[i + 1], m = d.chainMult;
+  const perNow = P.prod * chainFactor(l) * m, step = P.prod * w * m;
+  const keep = cost * perNow, rest = Math.max(0, stock - cost), gain = rest * step, net = gain - keep;
+  $('cuRank').textContent = `Rang ${l} → ${l + 1}`;
+  let verdict;
+  if (stock < cost) verdict = `<p class="verdict verdict--bad">Kostet ${unitsLabel(P, cost)}, vorhanden ${fmtInt(stock)}</p>`;
+  else if (net > 0) verdict = `<p class="verdict verdict--good">Lohnt sich sofort: <b>+${fmt(net)} ${U.plural}/s</b></p>`;
+  else verdict = `<p class="verdict verdict--bad">Lohnt sich erst ab ${fmt(Math.floor(cost * (l + 1 + 1 / w)) + 1)} ${P.dat}, jetzt ${fmtInt(stock)}: <b>${fmt(net)} ${U.plural}/s</b></p>`;
+  $('cuBody').innerHTML = `<div class="trade">
+      <div><h3>Behalten</h3><p>${unitsLabel(P, cost)}</p><small>erzeugen ${fmt(keep)} /s</small></div>
+      <div><h3>Opfern</h3><p>+${fmt(step)} /s je ${P.name}</p><small>übrige ${fmt(rest)}: +${fmt(gain)} /s</small></div>
+    </div>${verdict}`;
+  btn.setAttribute('aria-disabled', canAfford(selUp) ? 'false' : 'true');
+  btn.querySelector('span').textContent = `${unitsLabel(P, cost)} · Rang ${l + 1}`;
 }
 
 /* ---------- Kopfzeile, Kontext, Tiefenanzeige ---------- */
@@ -1796,8 +1978,8 @@ function renderHud(d) {
 
   $('ctxMapText').innerHTML = `<b>${CFG.zones[s.zone].name}</b> <span class="sub num">· Tempo ${fmt(d.speed)} KP/s</span>`;
   $('ctxMapTag').textContent = `Zone ${s.zone}`;
-  const nAff = UP_KEYS.filter(canAfford).length;
-  $('ctxNeuronText').innerHTML = `<b>Ausbau</b> <span class="sub num">· ${nAff}/4 bezahlbar</span>`;
+  const nAff = ALL_UPS.filter(canAfford).length;
+  $('ctxNeuronText').innerHTML = `<b class="num">${nAff}/${ALL_UPS.length}</b> <span class="sub">bezahlbar</span>`;
 
   // Wirkungen und Testmodus
   let chips = '';
@@ -1844,7 +2026,6 @@ const hashOf = { main: '', map: '#umgebung', neuron: '#ausbau' };
 const fromHash = { '#umgebung': 'map', '#ausbau': 'neuron' };
 function setView(v) {
   app.dataset.view = v;
-  panHome = { x: 0, y: 0 };
   setPan(0, 0);
   document.querySelectorAll('.views__btn').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.go === v)));
   history.replaceState(null, '', location.pathname + location.search + hashOf[v]);
@@ -1852,27 +2033,51 @@ function setView(v) {
   if (v === 'neuron') focusUp();
 }
 function setPan(x, y) {
-  const h = app.dataset.view === 'neuron' ? panHome : { x: 0, y: 0 }, reach = app.dataset.view === 'neuron' ? NEURON_REACH_PX : REACH_PX;
-  let dx = x - h.x, dy = y - h.y;
-  const len = Math.hypot(dx, dy);
-  if (len > reach) { dx *= reach / len; dy *= reach / len; }
-  pan = { x: h.x + dx, y: h.y + dy };
+  if (app.dataset.view === 'neuron') {
+    // Frei verschiebbar, unabhängig von der Auswahl: Jeder Punkt beider Neuronen lässt sich in die Mitte holen
+    const [x0, x1, y0, y1] = NEURON_AREA, sc = NEURON_SCALE, cy = neuronMid - app.clientHeight * 0.4;
+    pan = { x: Math.min(-x0 * sc, Math.max(-x1 * sc, x)), y: Math.min(cy - y0 * sc, Math.max(cy - y1 * sc, y)) };
+  } else {
+    let dx = x, dy = y;
+    const len = Math.hypot(dx, dy);
+    if (len > REACH_PX) { dx *= REACH_PX / len; dy *= REACH_PX / len; }
+    pan = { x: dx, y: dy };
+  }
   app.style.setProperty('--px', pan.x + 'px');
   app.style.setProperty('--py', pan.y + 'px');
-  app.classList.toggle('panned', Math.hypot(dx, dy) > 6);
+  app.classList.toggle('panned', Math.hypot(pan.x, pan.y) > 6);
 }
-// Ausbau: das gewählte Feld in die Mitte der freien Fläche zwischen Kontextzeile und Blatt schieben.
-// Das Feld wird zugleich Mittelpunkt des Verschiebens.
-function focusUp() {
-  const sheet = document.querySelector('.sheet--neuron'), H = app.clientHeight;
-  const top = document.querySelector('.ctx').offsetTop + document.querySelector('.ctx').offsetHeight;
+// Freie Fläche der Ausbau-Ansicht zwischen Kontextzeile mit Hinweisen und Blatt
+function neuronFree() {
+  const sheet = document.querySelector('.sheet--neuron'), H = app.clientHeight, ctx = document.querySelector('.ctx'), chips = $('chips');
+  const top = Math.max(ctx.offsetTop + ctx.offsetHeight, chips.offsetTop + chips.offsetHeight) + 8;
   const bottom = sheet.classList.contains('is-collapsed') ? H - 30 : sheet.offsetTop;
-  const [nx, ny] = upPos(selUp);
-  panHome = { x: -nx, y: (top + bottom) / 2 - H * 0.4 - ny }; // Ebenen-Ursprung: 50 % / 40 %
-  setPan(panHome.x, panHome.y);
+  return { H, top, bottom };
 }
+// Ausbau: Waagrecht rückt das gewählte Feld zur Mitte; senkrecht steht das ganze Neuron in der freien Fläche.
+// Passt es nicht hinein, rückt das gewählte Feld so weit, dass es sichtbar ist.
+function focusUp() {
+  const { H, top, bottom } = neuronFree(), sc = NEURON_SCALE;
+  neuronMid = (top + bottom) / 2;
+  neuronH = H;
+  const half = Math.max(0, (bottom - top) / 2 / sc - 40), y = upPoint(selUp)[1];
+  let fy = (NEURON_TOP + NEURON_BOTTOM) / 2;
+  if (y < fy - half) fy = y + half;
+  else if (y > fy + half) fy = y - half;
+  setPan(-upFocusX(selUp) * sc, neuronMid - H * 0.4 - fy * sc); // Ebenen-Ursprung: 50 % / 40 %
+}
+// Ändert sich die Höhe, bleibt das Neuron an seinem Platz in der freien Fläche, statt an der alten Grenze zu hängen
+addEventListener('resize', () => {
+  if (app.dataset.view !== 'neuron' || !neuronH) return;
+  const { H, top, bottom } = neuronFree(), mid = (top + bottom) / 2;
+  const y = pan.y + (mid - neuronMid) - 0.4 * (H - neuronH);
+  neuronMid = mid;
+  neuronH = H;
+  setPan(pan.x, y);
+});
 function selectUp(k) {
   selUp = k;
+  lastUp[groupOf(k)] = k;
   render(true);
   focusUp();
 }
@@ -1923,9 +2128,9 @@ const endDrag = (e) => {
   app.classList.remove('panning');
   if (wasTap && e.type === 'pointerup') {
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    const t = el && el.closest('[data-mark], [data-up]');
+    const t = el && el.closest('[data-mark], [data-up], [data-soma]');
     if (t && t.dataset.mark) onMark(t.dataset.mark);
-    else if (t && app.dataset.view === 'neuron') selectUp(t.dataset.up);
+    else if (t && app.dataset.view === 'neuron') selectUp(t.dataset.up || lastUp[t.dataset.soma]); // Zellkörper: zuletzt gewählter Ausbau dieses Neurons
   }
 };
 app.addEventListener('pointerup', endDrag);
@@ -1989,6 +2194,11 @@ $('upTabs').addEventListener('click', (e) => {
   selectUp(b.dataset.sel);
 });
 $('upBuy').addEventListener('click', () => { if (buyUpgrade(S, selUp)) render(true); });
+$('cuBuy').addEventListener('click', () => { const i = chainIdx(selUp); if (i >= 0 && buyChainUp(S, i)) render(true); });
+$('grpSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-grp]');
+  if (b) selectUp(lastUp[b.dataset.grp]);
+});
 
 /* ---------- Dialoge ---------- */
 function openModal(html) { $('modalCard').innerHTML = html; $('modal').classList.add('open'); }
@@ -2092,6 +2302,7 @@ function migrate(obj) {
   s.stats = { ...base.stats, ...obj.stats };
   s.buffs = { ...base.buffs, ...obj.buffs };
   s.ranks = { ...base.ranks, ...obj.ranks };
+  if (!Array.isArray(s.chainRanks) || s.chainRanks.length !== CHAIN_UPS) s.chainRanks = base.chainRanks;
   if (!Array.isArray(s.hist) || s.hist.length !== HIST_LEN) { s.hist = new Array(HIST_LEN).fill(0); s.histI = 0; s.histSum = 0; }
   return s;
 }
@@ -2142,7 +2353,7 @@ async function catchUp(seconds) {
 }
 function resetRenderCaches() { mainSiteKey = ''; swarmKey = ''; neuronKey = ''; farKey = ''; miniCache.key = ''; cv.mainKey = ''; }
 
-/* ---------- Canvas-Variante der Darstellung (nur für die Messung) ---------- */
+/* ---------- Canvas: Standard der Darstellung (Spezifikation 7.2), SVG nur noch zum Vergleich in der Messung ---------- */
 // Gleiche Figuren und Bewegungen wie im SVG, aber je Frame per JS in ein Canvas gezeichnet; die Figuren sind
 // einmal gerasterte Bilder aus den SVG-Definitionen. Ferne, Dunst und Hintergrund der Stelle werden bei jeder
 // Änderung einmal zu Bildern gerastert (ohne ihre Strahlen und Schwebeteilchen zu bewegen).
@@ -2504,7 +2715,7 @@ function showPerfResult(res) {
 function perfMenuHtml() {
   const blurOn = !app.classList.contains('no-blur');
   return `<h3>Messung</h3>
-    <p>Der Messlauf spielt einen festen Ablauf mit großem Schwarm in sieben Stufen ab: SVG mit ×1, ×3, ×10 und ×10 ohne Bewegung, dann Canvas mit ×1, ×3 und ×10. Er dauert etwa zweieinhalb Minuten. Dabei das Smartphone nicht berühren und den Bildschirm anlassen. Der Spielstand bleibt unverändert.</p>
+    <p>Ohne Messung zeichnet der Prototyp mit Canvas. Der Messlauf spielt einen festen Ablauf mit großem Schwarm in sieben Stufen ab: SVG mit ×1, ×3, ×10 und ×10 ohne Bewegung, dann Canvas mit ×1, ×3 und ×10. Er dauert etwa zweieinhalb Minuten. Dabei das Smartphone nicht berühren und den Bildschirm anlassen. Der Spielstand bleibt unverändert.</p>
     <div class="perf-row"><span>Anzeige</span><div class="seg">${[['1', 'an'], ['0', 'aus']].map(([v, l]) => `<button data-act="perfMeter" data-v="${v}" aria-pressed="${(v === '1') === perf.meter}">${l}</button>`).join('')}</div></div>
     <div class="perf-row"><span>Belastung</span><div class="seg">${[1, 3, 10].map((x) => `<button data-act="perfStress" data-v="${x}" aria-pressed="${x === STRESS}">×${x}</button>`).join('')}</div></div>
     <div class="perf-row"><span>Zeichenfläche</span><div class="seg">${[['0', 'SVG'], ['1', 'Canvas']].map(([v, l]) => `<button data-act="perfCanvas" data-v="${v}" aria-pressed="${(v === '1') === CANVAS}">${l}</button>`).join('')}</div></div>
@@ -2549,6 +2760,8 @@ window.addEventListener('pagehide', save);
 (async function init() {
   buildUnits();
   renderNeuronOrganelles();
+  app.style.setProperty('--nsc', NEURON_SCALE);
+  applyCanvas(true);
   const res = load();
   S = res.s;
   app.dataset.view = fromHash[location.hash] || 'main';
