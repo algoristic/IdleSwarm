@@ -322,7 +322,9 @@ export function provideItemsState(): (Provider | EnvironmentProviders)[] {
 - Importe sortiert ESLint (`import-x/order`, alphabetisch, Gruppen durch Leerzeilen getrennt). `npm run lint -- --fix` statt von Hand sortieren.
 - Formatieren macht Prettier (`.prettierrc`), nicht die Hand.
 - **Bezeichner sind Englisch, Kommentare Deutsch.** Texte für Nutzer sind deutsche i18n-Quelltexte.
-- Sparsam kommentieren: kein JSDoc an offensichtlichen Membern, keine Abschnittsbanner. Nur nicht offensichtliche Entscheidungen kommentieren.
+- **Möglichst keine Kommentare.** Was der Code tut und warum, zeigen Namen, Typen und kleine Funktionen. Kein JSDoc, keine Abschnittsbanner, kein auskommentierter Code, keine Kommentare, die den Code nacherzählen.
+  - Erlaubt sind vor allem Verweise auf die Produktspezifikation (`docs/produktspezifikation.md`), wo Regeln oder Spielwerte aus ihr umgesetzt werden: `// Spezifikation 4.6 Vorrat und Kapazität`. Abschnittsnummer und Überschrift, damit der Verweis nach Umnummerierungen auffindbar bleibt.
+  - Sonst nur in Ausnahmen, die sich im Code nicht ausdrücken lassen (z. B. Umgehung eines Framework-Fehlers), dann knapp und mit Verweis auf Issue oder ADR.
 
 ## 10. Testing
 

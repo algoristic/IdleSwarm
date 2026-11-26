@@ -1,5 +1,3 @@
-// Statischer Server für den Produktions-Build (E2E): liefert `dist/idle-swarm/browser` unter dem
-// Pfad aus `--base` aus, unbekannte Pfade ohne Dateiendung bekommen `index.html` (SPA-Fallback).
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -35,13 +33,9 @@ async function fileFor(pathname) {
   if (!candidate.startsWith(root)) {
     return null;
   }
-  try {
-    const info = await stat(candidate);
-    if (info.isFile()) {
-      return candidate;
-    }
-  } catch {
-    // fällt auf index.html zurück
+  const info = await stat(candidate).catch(() => null);
+  if (info?.isFile()) {
+    return candidate;
   }
   return extname(relative) === '' ? join(root, 'index.html') : null;
 }
