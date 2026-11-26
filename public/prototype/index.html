@@ -8,7 +8,8 @@
 <style>
   /* Prototyp des Zeitalters Winzlinge nach Produktspezifikation v6 und Mockup 5d (deckend).
      Eine Datei ohne Framework und ohne externe Abhängigkeiten.
-     Mit ?messung in der Adresse: Messanzeige, Belastungsstufen und Messlauf für die Darstellung. */
+     Mit ?messung in der Adresse: Messanzeige, Belastungsstufen, Messlauf und eine Canvas-Variante
+     der Darstellung zum Vergleich. */
   :root {
     --night: #0c0f33;
     --ink: #f6f4ff;
@@ -369,6 +370,12 @@
   .perf-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
   .app.no-blur .layer { filter: none !important; }
   .app.no-blur #neuronOrg { filter: none; }
+  .app.no-motion :is(.swim, .bob, .sig, .node__pulse, .drift, .drift--fast, .node__sel, .swirl, .route, .paddle, .roll, .ray) { animation: none !important; }
+  /* Canvas-Variante: Schwarm und Partikel zeichnet JS je Frame, Ferne, Dunst und Hintergrund der Stelle sind fertige Bilder */
+  .cv-el { position: absolute; display: none; }
+  .app.cv .cv-el { display: block; }
+  .app.cv #farSvg, .app.cv #hazeSvg, .app.cv #mainBg, .app.cv #mainSite { visibility: hidden; }
+  .app.cv #farSvg *, .app.cv #hazeSvg *, .app.cv #mainBg *, .app.cv #mainSite * { animation: none !important; }
   .ptable { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
   .ptable th, .ptable td { padding: 3px 4px; text-align: right; font-weight: 800; }
   .ptable th:first-child, .ptable td:first-child { text-align: left; color: var(--muted); font-weight: 600; }
@@ -385,11 +392,13 @@
   <!-- Ebene 3 (am tiefsten): Stimmung der nächsten Zone, ohne Stellen -->
   <div class="layer layer--far" aria-hidden="true">
     <svg id="farSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000"></svg>
+    <canvas class="cv-el" id="cvFar" style="left:-1000px;top:-1000px;width:2000px;height:2000px"></canvas>
   </div>
 
   <!-- Dunst zwischen Ferne und Umgebung, eigene Parallaxe -->
   <div class="layer layer--haze" aria-hidden="true">
     <svg id="hazeSvg" width="2000" height="2000" viewBox="-1000 -1000 2000 2000"></svg>
+    <canvas class="cv-el" id="cvHaze" style="left:-1000px;top:-1000px;width:2000px;height:2000px"></canvas>
   </div>
 
   <!-- Ebene 2: Umgebung, nur die aktuelle Zone -->
@@ -454,6 +463,8 @@
       <g id="mainFlow"><g id="mainDrift" class="drift"></g></g>
       <g id="mainTrek" class="trek"><g id="mainSwarm"></g></g>
     </svg>
+    <canvas class="cv-el" id="cvMain" style="left:-550px;top:-550px;width:1100px;height:1100px"></canvas>
+    <canvas class="cv-el" id="cvLive" style="left:-340px;top:-340px;width:680px;height:800px"></canvas>
   </div>
 
   <!-- Ebene 0 (am nächsten): Ausbauten als Neuron im Inneren des Schwarms -->
@@ -1098,7 +1109,8 @@ let S = null;
 let speed = 1;
 // Messung (?messung): Belastungsstufe vervielfacht Schwarmfiguren und Partikel, nicht die Spiellogik
 const PERF = new URLSearchParams(location.search).has('messung');
-let STRESS = 1;
+let STRESS = 1, CANVAS = false, MOTION = true;
+const cv = { ctx: null, k: 1, sprites: {}, figs: [], swirl: true, trek: { from: 0, to: 0, at: 0 }, flowRot: 0, drift: null, mainKey: '', lastView: 'main', viewAt: 0 };
 let buyMode = '1';
 let selUp = 'geis';
 const UP_KEYS = ['herd', 'verd', 'geis', 'kropf'];
@@ -1309,12 +1321,16 @@ function swarmMini() {
 // Ein Fressling, der vorwärts auf einer eigenen kleinen Kreisbahn um (x, y) schwimmt. Die Bahn dreht eine Gruppe,
 // in der die Figur quer zum Radius steht; so zeigt der Kopf immer in Schwimmrichtung. Radius, Tempo, Drehsinn und
 // Rolltakt folgen fest aus dem Index, damit das Bild beim Neuzeichnen nicht springt.
-function paddler(x, y, sc, i, rMin, rVar) {
+function paddlerParams(i, rMin, rVar) {
   const R = lcg(i * 7919 + 13);
   const rr = rMin + R() * rVar, dur = 8 + R() * 8, rev = R() < .4, start = R() * 360, roll = .8 + R() * .6;
-  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(start)})">`
-    + `<g class="paddle${rev ? ' paddle--rev' : ''}" style="animation-duration:${dur.toFixed(1)}s;animation-delay:-${(R() * dur).toFixed(1)}s">`
-    + `<g transform="translate(${rr.toFixed(1)} 0) rotate(${rev ? -90 : 90}) scale(${sc})"><use href="#fress" class="roll" style="animation-duration:${roll.toFixed(1)}s;animation-delay:-${R().toFixed(1)}s"/></g></g></g>`;
+  return { rr, dur, rev, start, roll, padDelay: R() * dur, rollDelay: R() };
+}
+function paddler(x, y, sc, i, rMin, rVar) {
+  const p = paddlerParams(i, rMin, rVar);
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(p.start)})">`
+    + `<g class="paddle${p.rev ? ' paddle--rev' : ''}" style="animation-duration:${p.dur.toFixed(1)}s;animation-delay:-${p.padDelay.toFixed(1)}s">`
+    + `<g transform="translate(${p.rr.toFixed(1)} 0) rotate(${p.rev ? -90 : 90}) scale(${sc})"><use href="#fress" class="roll" style="animation-duration:${p.roll.toFixed(1)}s;animation-delay:-${p.rollDelay.toFixed(1)}s"/></g></g></g>`;
 }
 
 /* ---------- Tiefste Ebene: Stimmung der nächsten Zone ---------- */
@@ -1385,6 +1401,7 @@ function renderFar() {
   z += '</g>';
   z += `<g class="drift" style="animation-duration:26s">${moodSpecks(R2, 60 * STRESS, 1900, '#8ea6dc', 1, 2.6)}</g>`;
   $('hazeSvg').innerHTML = z;
+  if (CANVAS) { cvRaster($('cvFar'), $('farSvg'), CV_FAR, 1); cvRaster($('cvHaze'), $('hazeSvg'), CV_FAR, 1); }
 }
 
 /* ---------- Schwarm an der Stelle ---------- */
@@ -1433,15 +1450,25 @@ function siteHtml(site) {
   return h;
 }
 const STREAK_TILE = 120; // Kachelhöhe = Weg der Animation driftFast, damit der Strom nahtlos läuft
+// Schwebeteilchen an der Stelle bzw. Strömungsstriche unterwegs, als Zahlen für SVG und Canvas
+function driftItems(travel) {
+  const R = lcg(42), cols = ['#8ea6dc', '#5a6fb8', '#c6e6f5'], a = [];
+  if (!travel) {
+    for (let i = 0; i < 70 * STRESS; i++) a.push({ x: +((R() - .5) * 900).toFixed(0), y: +((R() - .5) * 1000).toFixed(0), r: +(0.8 + R() * 1.8).toFixed(1), c: cols[i % 3] });
+  } else {
+    for (let i = 0; i < 16 * STRESS; i++) a.push({ x: +((R() - .5) * 2000).toFixed(0), y: +(R() * STREAK_TILE).toFixed(0), len: +(10 + R() * 26).toFixed(0), c: cols[i % 3], w: +(1 + R() * 1.6).toFixed(1), o: (.4 + R() * .5).toFixed(2) });
+  }
+  return a;
+}
 function driftHtml(travel) {
-  const R = lcg(42), cols = ['#8ea6dc', '#5a6fb8', '#c6e6f5'];
+  const items = driftItems(travel);
   let h = '';
   if (!travel) {
-    for (let i = 0; i < 70 * STRESS; i++) h += `<circle cx="${((R() - .5) * 900).toFixed(0)}" cy="${((R() - .5) * 1000).toFixed(0)}" r="${(0.8 + R() * 1.8).toFixed(1)}" fill="${cols[i % 3]}"/>`;
+    for (const d of items) h += `<circle cx="${d.x}" cy="${d.y}" r="${d.r.toFixed(1)}" fill="${d.c}"/>`;
     return h;
   }
   let tile = '';
-  for (let i = 0; i < 16 * STRESS; i++) tile += `<path d="M${((R() - .5) * 2000).toFixed(0)} ${(R() * STREAK_TILE).toFixed(0)}v${(10 + R() * 26).toFixed(0)}" stroke="${cols[i % 3]}" stroke-width="${(1 + R() * 1.6).toFixed(1)}" stroke-linecap="round" opacity="${(.4 + R() * .5).toFixed(2)}"/>`;
+  for (const d of items) tile += `<path d="M${d.x} ${d.y}v${d.len}" stroke="${d.c}" stroke-width="${d.w.toFixed(1)}" stroke-linecap="round" opacity="${d.o}"/>`;
   h += `<defs><g id="streakTile">${tile}</g></defs>`;
   for (let k = -9; k <= 9; k++) h += `<use href="#streakTile" y="${k * STREAK_TILE}"/>`;
   return h;
@@ -1468,16 +1495,19 @@ function renderMainSite() {
       lastAngle = travelAngle(tr);
       const r2 = (lastAngle * Math.PI) / 180;
       const old = $('siteScale');
-      $('mainSite').innerHTML = animate && old && prev.startsWith('site') ? `<g class="site-out" style="--ox:${(-Math.cos(r2) * 800).toFixed(0)}px;--oy:${(-Math.sin(r2) * 800).toFixed(0)}px">${old.outerHTML.replace('id="siteScale"', '')}</g>` : '';
+      $('mainSite').innerHTML = animate && !CANVAS && old && prev.startsWith('site') ? `<g class="site-out" style="--ox:${(-Math.cos(r2) * 800).toFixed(0)}px;--oy:${(-Math.sin(r2) * 800).toFixed(0)}px">${old.outerHTML.replace('id="siteScale"', '')}</g>` : '';
     } else {
       $('mainSite').innerHTML = '';
     }
-    $('mainDrift').innerHTML = driftHtml(!!tr);
+    $('mainDrift').innerHTML = CANVAS ? '' : driftHtml(!!tr);
+    if (CANVAS) cvBuildDrift(!!tr);
     $('mainDrift').setAttribute('class', tr ? 'drift--fast' : 'drift');
     $('mainFlow').setAttribute('transform', tr ? `rotate(${(lastAngle + 90).toFixed(1)})` : '');
+    cv.flowRot = tr ? lastAngle + 90 : 0;
   }
   const sc = $('siteScale');
   if (sc && site) sc.setAttribute('transform', `scale(${(0.35 + 0.65 * Math.sqrt(Math.max(0, site.stock / site.size))).toFixed(3)})`);
+  if (CANVAS) cvRasterMain(key + (sc && site ? '|' + Math.round(100 * Math.sqrt(Math.max(0, site.stock / site.size))) : ''));
 }
 let swarmKey = '';
 function renderSwarm() {
@@ -1494,26 +1524,39 @@ function renderSwarm() {
   swarmKey = key;
   // Unterwegs: gestreckte Formation, alle schwimmen in Reiserichtung (+x, gedreht über mainTrek)
   const fx = tr ? 1.25 : 1, fy = tr ? 0.62 : 1;
-  let h = '', slot = 0;
+  const figs = [];
+  let slot = 0;
   // Höhere Stufen in der Mitte, Fresslinge außen
   for (let k = 5; k >= 1; k--) {
     for (let i = 0; i < counts[k]; i++, slot++) {
       const a = slot * 2.39996, r = 18 + 22 * Math.sqrt(slot / STRESS);
-      const sc = [0, 1, 1, 1, .9, .8][k];
-      h += `<g transform="translate(${(Math.cos(a) * r * fx).toFixed(1)} ${(Math.sin(a) * r * fy).toFixed(1)}) rotate(${tr ? 0 : Math.round(a * 57)}) scale(${sc})"><use href="#${CFG.units[k].icon}" class="bob bob--${1 + (slot % 3)}" style="animation-delay:-${(slot * .7) % 5}s"/></g>`;
+      figs.push({ t: 'bob', icon: CFG.units[k].icon, x: Math.cos(a) * r * fx, y: Math.sin(a) * r * fy, rot: tr ? 0 : Math.round(a * 57), sc: [0, 1, 1, 1, .9, .8][k], n: 1 + (slot % 3), delay: (slot * .7) % 5 });
     }
   }
   const r0 = 30 + 22 * Math.sqrt(slot / STRESS);
   // An der Stelle dreht sich nur die Mitte; jeder Fressling schwimmt auf seiner eigenen Bahn (paddler).
   // Unterwegs schwimmen alle in Reiserichtung und rollen dabei um die Längsachse.
-  let f = '';
   for (let i = 0; i < counts[0]; i++) {
     const a = i * 2.39996, r = r0 + 17 * Math.sqrt((i + 1) / STRESS), x = Math.cos(a) * r * fx, y = Math.sin(a) * r * fy;
     const sc = (0.95 + ((i * 37) % 25) / 100).toFixed(2);
-    if (!tr) { f += paddler(x, y, sc, i, 5, 8); continue; }
-    f += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(((i * 37) % 21) - 10)}) scale(${sc})"><g class="swim swim--${1 + (i % 3)}" style="animation-delay:-${((i * 1.3) % 5).toFixed(1)}s"><use href="#fress" class="roll" style="animation-delay:-${((i * .37) % 1).toFixed(2)}s"/></g></g>`;
+    if (!tr) figs.push({ t: 'pad', icon: 'fress', x, y, sc, i, ...paddlerParams(i, 5, 8) });
+    else figs.push({ t: 'swim', icon: 'fress', x, y, rot: Math.round(((i * 37) % 21) - 10), sc, n: 1 + (i % 3), delay: +((i * 1.3) % 5).toFixed(1), rollDelay: +((i * .37) % 1).toFixed(2) });
   }
   const g = $('mainSwarm');
+  if (CANVAS) {
+    cv.figs = figs;
+    cv.swirl = !tr;
+    const to = tr ? +ang.toFixed(1) : 0, now = performance.now();
+    if (to !== cv.trek.to) cv.trek = { from: cvTrekAngle(now), to, at: now };
+    g.innerHTML = '';
+    return;
+  }
+  let h = '', f = '';
+  for (const q of figs) {
+    if (q.t === 'bob') h += `<g transform="translate(${q.x.toFixed(1)} ${q.y.toFixed(1)}) rotate(${q.rot}) scale(${q.sc})"><use href="#${q.icon}" class="bob bob--${q.n}" style="animation-delay:-${q.delay}s"/></g>`;
+    else if (q.t === 'pad') f += paddler(q.x, q.y, q.sc, q.i, 5, 8);
+    else f += `<g transform="translate(${q.x.toFixed(1)} ${q.y.toFixed(1)}) rotate(${q.rot}) scale(${q.sc})"><g class="swim swim--${q.n}" style="animation-delay:-${q.delay.toFixed(1)}s"><use href="#fress" class="roll" style="animation-delay:-${q.rollDelay.toFixed(2)}s"/></g></g>`;
+  }
   g.innerHTML = (tr ? h : `<g class="swirl">${h}</g>`) + f;
   g.removeAttribute('class');
   $('mainTrek').style.transform = `rotate(${tr ? ang.toFixed(1) : 0}deg)`;
@@ -2019,6 +2062,8 @@ const ACTIONS = {
   perfMeter: (b) => { perf.meter = b.dataset.v === '1'; pressOnly(b); renderPerfMeter(); },
   perfStress: (b) => { STRESS = +b.dataset.v; pressOnly(b); resetRenderCaches(); render(true); },
   perfBlur: (b) => { app.classList.toggle('no-blur', b.dataset.v === '0'); pressOnly(b); },
+  perfCanvas: (b) => { setCanvas(b.dataset.v === '1'); pressOnly(b); },
+  perfMotion: (b) => { setMotion(b.dataset.v === '1'); pressOnly(b); },
   perfRun: perfStart,
   perfLast: () => { const r = perfLoad(); if (r) showPerfResult(r); },
   perfCopy: (b) => { const ta = $('perfTa'); ta.select(); (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject()).then(() => { b.textContent = 'Kopiert'; }, () => { document.execCommand('copy'); b.textContent = 'Kopiert'; }); },
@@ -2095,14 +2140,197 @@ async function catchUp(seconds) {
     </div>
     <div class="modal__actions"><button class="btn btn--gold" data-act="close">Weiter</button></div>`);
 }
-function resetRenderCaches() { mainSiteKey = ''; swarmKey = ''; neuronKey = ''; farKey = ''; miniCache.key = ''; }
+function resetRenderCaches() { mainSiteKey = ''; swarmKey = ''; neuronKey = ''; farKey = ''; miniCache.key = ''; cv.mainKey = ''; }
+
+/* ---------- Canvas-Variante der Darstellung (nur für die Messung) ---------- */
+// Gleiche Figuren und Bewegungen wie im SVG, aber je Frame per JS in ein Canvas gezeichnet; die Figuren sind
+// einmal gerasterte Bilder aus den SVG-Definitionen. Ferne, Dunst und Hintergrund der Stelle werden bei jeder
+// Änderung einmal zu Bildern gerastert (ohne ihre Strahlen und Schwebeteilchen zu bewegen).
+// Umgebung und Ausbau bleiben SVG, weil sie bedient werden.
+const CV_FAR = [-1000, -1000, 2000, 2000], CV_MAIN = [-550, -550, 1100, 1100], CV_LIVE = [-340, -340, 680, 800];
+const CV_SPRITES = { fress: 12, brut: 20, etr: 24, gel: 28, bkl: 37, urn: 49 };
+const CV_DEG = Math.PI / 180, BOB_DUR = [0, 5, 6.5, 4.2], SWIM_DUR = [0, 3.2, 2.6, 3.8];
+function cubicBezier(x1, y1, x2, y2) {
+  const f = (t, a, b) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  return (x) => {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; if (f(m, x1, x2) < x) lo = m; else hi = m; }
+    return f((lo + hi) / 2, y1, y2);
+  };
+}
+const EASE_IO = cubicBezier(.42, 0, .58, 1), EASE_OUT = cubicBezier(0, 0, .58, 1);
+const cvFrac = (x) => x - Math.floor(x);
+// Fortschritt einer Animation mit alternate und ease-in-out
+function cvAlt(T, dur, delay) {
+  const p = (T + delay) / dur, n = Math.floor(p);
+  return EASE_IO(n % 2 ? 1 - (p - n) : p - n);
+}
+// Keyframes paddle aus dem CSS
+function cvPaddle(p) {
+  if (p < .64) return 235 * EASE_IO(p / .64);
+  if (p < .69) return 235 - 13 * EASE_OUT((p - .64) / .05);
+  if (p < .75) return 222 + 4 * EASE_IO((p - .69) / .06);
+  return 226 + 134 * EASE_IO((p - .75) / .25);
+}
+function cvRoll(ctx, T, dur, delay) {
+  const p = cvFrac((T + delay) / dur), u = EASE_IO(p < .5 ? p / .5 : (p - .5) / .5);
+  ctx.rotate((p < .5 ? -3 + 6 * u : 3 - 6 * u) * CV_DEG);
+  ctx.scale(1, p < .5 ? 1 - .26 * u : .74 + .26 * u);
+}
+function cvTrekAngle(now) {
+  const t = cv.trek;
+  return t.from + (t.to - t.from) * EASE_IO(Math.min(1, (now - t.at) / 800));
+}
+function cvSvgImage(markup) {
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup);
+  return img.decode().then(() => img);
+}
+// Rastert den Inhalt eines SVG im Ausschnitt vb mit k Pixeln je Einheit in ein sichtbares Canvas
+let cvTok = 0;
+function cvRaster(canvas, svg, vb, k) {
+  const tok = String(++cvTok), w = Math.round(vb[2] * k), h = Math.round(vb[3] * k);
+  canvas.dataset.tok = tok;
+  const c = svg.cloneNode(true);
+  c.setAttribute('viewBox', vb.join(' '));
+  c.setAttribute('width', String(w));
+  c.setAttribute('height', String(h));
+  cvSvgImage(new XMLSerializer().serializeToString(c)).then((img) => {
+    if (canvas.dataset.tok !== tok || !CANVAS) return;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+  }).catch(() => { /* Rastern fehlgeschlagen: Ebene bleibt leer */ });
+}
+function cvRasterMain(key) {
+  if (key === cv.mainKey) return;
+  cv.mainKey = key;
+  cvRaster($('cvMain'), document.querySelector('.layer--main > svg'), CV_MAIN, Math.min(devicePixelRatio || 1, 2.5));
+}
+function cvBuildDrift(travel) {
+  const groups = new Map();
+  if (!travel) {
+    for (const d of driftItems(false)) {
+      if (!groups.has(d.c)) groups.set(d.c, { c: d.c, path: new Path2D() });
+      const p = groups.get(d.c).path;
+      p.moveTo(d.x + d.r, d.y);
+      p.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    }
+    cv.drift = { travel, groups: [...groups.values()] };
+    return;
+  }
+  // Ein Pfad je Strich über alle Kacheln, wie die 19 <use> im SVG
+  cv.drift = {
+    travel,
+    groups: driftItems(true).map((d) => {
+      const path = new Path2D();
+      for (let k = -9; k <= 9; k++) { path.moveTo(d.x, d.y + k * STREAK_TILE); path.lineTo(d.x, d.y + k * STREAK_TILE + d.len); }
+      return { c: d.c, w: d.w, o: +d.o, path };
+    }),
+  };
+}
+function cvInit() {
+  if (cv.ctx) return;
+  const el = $('cvLive'), k = Math.min(devicePixelRatio || 1, 3);
+  cv.k = k;
+  el.width = Math.round(CV_LIVE[2] * k);
+  el.height = Math.round(CV_LIVE[3] * k);
+  cv.ctx = el.getContext('2d');
+  const defs = new XMLSerializer().serializeToString(document.querySelector('.layer--main defs'));
+  const sk = Math.min(4, k * 1.25);
+  for (const [id, h] of Object.entries(CV_SPRITES)) {
+    const px = Math.ceil(2 * h * sk);
+    cvSvgImage(`<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="${-h} ${-h} ${2 * h} ${2 * h}">${defs}<use href="#${id}"/></svg>`).then((img) => {
+      const c = document.createElement('canvas');
+      c.width = c.height = px;
+      c.getContext('2d').drawImage(img, 0, 0, px, px);
+      cv.sprites[id] = { c, h };
+    }).catch(() => { /* Figur fehlt in der Canvas-Variante */ });
+  }
+}
+function applyCanvas(on) {
+  CANVAS = on;
+  app.classList.toggle('cv', on);
+  if (on) cvInit();
+}
+function setCanvas(on) { applyCanvas(on); resetRenderCaches(); render(true); }
+function setMotion(on) { MOTION = on; app.classList.toggle('no-motion', !on); }
+function cvDraw(now) {
+  const ctx = cv.ctx, view = app.dataset.view;
+  if (!ctx) return;
+  if (view !== cv.lastView) { cv.lastView = view; cv.viewAt = now; }
+  // Außerhalb der Schwarm-Ansicht ist die Ebene nach dem Zoom unsichtbar
+  if (view !== 'main' && now - cv.viewAt > 1500) return;
+  const k = cv.k, T = MOTION ? now / 1000 : 0;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.setTransform(k, 0, 0, k, -CV_LIVE[0] * k, -CV_LIVE[1] * k);
+  const base = ctx.getTransform(), d = cv.drift;
+  if (d) {
+    ctx.rotate(cv.flowRot * CV_DEG);
+    if (d.travel) {
+      ctx.translate(0, -60 + 120 * cvFrac(T / 2.4));
+      ctx.lineCap = 'round';
+      for (const q of d.groups) { ctx.globalAlpha = q.o; ctx.strokeStyle = q.c; ctx.lineWidth = q.w; ctx.stroke(q.path); }
+      ctx.globalAlpha = 1;
+    } else {
+      const u = cvAlt(T, 18, 0);
+      ctx.translate(14 * u, -22 * u);
+      for (const q of d.groups) { ctx.fillStyle = q.c; ctx.fill(q.path); }
+    }
+  }
+  ctx.setTransform(base);
+  ctx.rotate(cvTrekAngle(now) * CV_DEG);
+  const trek = ctx.getTransform(), swirl = cv.swirl ? cvFrac(T / 140) * 360 * CV_DEG : 0;
+  for (const f of cv.figs) {
+    const sp = cv.sprites[f.icon];
+    if (!sp) continue;
+    ctx.setTransform(trek);
+    if (f.t === 'bob') {
+      ctx.rotate(swirl);
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rot * CV_DEG);
+      ctx.scale(f.sc, f.sc);
+      const u = cvAlt(T, BOB_DUR[f.n], f.delay), b = .97 + .06 * u;
+      ctx.translate(-3 + 6 * u, -2 + 4 * u);
+      ctx.scale(b, b);
+    } else if (f.t === 'pad') {
+      const p = cvFrac((T + f.padDelay) / f.dur);
+      ctx.translate(f.x, f.y);
+      ctx.rotate((f.start + cvPaddle(f.rev ? 1 - p : p)) * CV_DEG);
+      ctx.translate(f.rr, 0);
+      ctx.rotate((f.rev ? -90 : 90) * CV_DEG);
+      ctx.scale(+f.sc, +f.sc);
+      cvRoll(ctx, T, f.roll, f.rollDelay);
+    } else {
+      const u = cvAlt(T, SWIM_DUR[f.n], f.delay);
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rot * CV_DEG);
+      ctx.scale(+f.sc, +f.sc);
+      ctx.translate(-2 + 5 * u, 1 - 2 * u);
+      ctx.rotate((-6 + 13 * u) * CV_DEG);
+      cvRoll(ctx, T, 1, f.rollDelay);
+    }
+    ctx.drawImage(sp.c, -sp.h, -sp.h, 2 * sp.h, 2 * sp.h);
+  }
+}
 
 /* ---------- Messung der Darstellung (nur mit ?messung) ---------- */
 // Gemessen wird der Abstand der requestAnimationFrame-Aufrufe. Verlorene Frames werden gegen die
 // Bildwiederholrate gezählt: geschätzt aus den schnellsten 10 % der Frames, gemerkt wird die schnellste Schätzung.
 const PERF_KEY = 'idleswarm-prototyp-messung';
 const PERF_SETTLE = 1500;
-const PERF_RUNS = [{ stress: 1, blur: true }, { stress: 3, blur: true }, { stress: 10, blur: true }, { stress: 10, blur: false }];
+const PERF_RUNS = [
+  { stress: 1, canvas: false, motion: true },
+  { stress: 3, canvas: false, motion: true },
+  { stress: 10, canvas: false, motion: true },
+  { stress: 10, canvas: false, motion: false },
+  { stress: 1, canvas: true, motion: true },
+  { stress: 3, canvas: true, motion: true },
+  { stress: 10, canvas: true, motion: true },
+];
+const perfLabel = (r) => `×${r.stress} · ${r.canvas ? 'Canvas' : 'SVG'}${r.motion === false ? ' · ohne Bewegung' : ''}${r.blur === false ? ' · Blur aus' : ''}`;
 const PERF_PHASES = [
   { name: 'Schwarm (Ruhe)', ms: 3000 },
   { name: 'Zoom → Umgebung', ms: 2000, start: () => setView('map') },
@@ -2175,7 +2403,7 @@ function renderPerfMeter() {
   const recent = [];
   for (let i = perf.frames.length - 1, sum = 0; i >= 0 && sum < 1000; i--) { recent.push(perf.frames[i]); sum += perf.frames[i]; }
   const base = perfBase(perf.frames), st = perfStats(recent, base);
-  let t = `${Math.round(st.fps)} fps · p95 ${Math.round(st.p95)} ms · verloren ${dec(st.lost, 0)} %\n~${Math.round(1000 / base)} Hz · ×${STRESS} · Blur ${app.classList.contains('no-blur') ? 'aus' : 'an'}`;
+  let t = `${Math.round(st.fps)} fps · p95 ${Math.round(st.p95)} ms · verloren ${dec(st.lost, 0)} %\n~${Math.round(1000 / base)} Hz · ×${STRESS} · ${CANVAS ? 'Canvas' : 'SVG'} · Blur ${app.classList.contains('no-blur') ? 'aus' : 'an'}${MOTION ? '' : ' · ruhig'}`;
   const r = perf.run;
   if (r) t += `\nMesslauf ${r.i + 1}/${PERF_RUNS.length} · ${r.phase < 0 ? 'Vorbereitung' : PERF_PHASES[r.phase].name}\nBitte nicht berühren`;
   el.textContent = t;
@@ -2184,7 +2412,7 @@ function perfStart() {
   if (perf.run) return;
   closeModal();
   perf.run = {
-    saved: JSON.stringify(S), view: app.dataset.view, stress: STRESS, blur: !app.classList.contains('no-blur'), speed,
+    saved: JSON.stringify(S), view: app.dataset.view, stress: STRESS, blur: !app.classList.contains('no-blur'), canvas: CANVAS, motion: MOTION, speed,
     i: -1, phase: -1, t0: 0, samples: [], all: [], result: null, results: [],
   };
   speed = 1;
@@ -2197,13 +2425,15 @@ function perfNextRun(now) {
   if (r.i >= PERF_RUNS.length) { perfFinish(false); return; }
   const cfg = PERF_RUNS[r.i];
   STRESS = cfg.stress;
-  app.classList.toggle('no-blur', !cfg.blur);
+  app.classList.remove('no-blur');
+  applyCanvas(cfg.canvas);
+  setMotion(cfg.motion);
   S = perfScenario();
   resetRenderCaches();
   setView('main');
   r.phase = -1;
   r.t0 = now;
-  r.result = { stress: cfg.stress, blur: cfg.blur, phases: [] };
+  r.result = { stress: cfg.stress, canvas: cfg.canvas, motion: cfg.motion, phases: [] };
   renderPerfMeter();
 }
 // Aktionen eines Abschnitts laufen am Anfang eines Frames; ihre Kosten fallen in den nächsten gemessenen Abstand
@@ -2228,6 +2458,8 @@ function perfFinish(aborted) {
   S = JSON.parse(r.saved);
   STRESS = r.stress;
   app.classList.toggle('no-blur', !r.blur);
+  applyCanvas(r.canvas);
+  setMotion(r.motion);
   speed = r.speed;
   resetRenderCaches();
   setView(r.view);
@@ -2238,7 +2470,7 @@ function perfFinish(aborted) {
   const res = {
     at: new Date().toLocaleString('de-DE'),
     device: { ua: navigator.userAgent, dpr: Math.round(devicePixelRatio * 100) / 100, w: innerWidth, h: innerHeight, cores: navigator.hardwareConcurrency || null, mem: navigator.deviceMemory || null, hz: Math.round(1000 / base) },
-    runs: r.results.map((x) => ({ stress: x.stress, blur: x.blur, phases: x.phases.map((p) => ({ name: p.name, ...perfStats(p.samples, base) })) })),
+    runs: r.results.map((x) => ({ stress: x.stress, canvas: x.canvas, motion: x.motion, phases: x.phases.map((p) => ({ name: p.name, ...perfStats(p.samples, base) })) })),
   };
   try { localStorage.setItem(PERF_KEY, JSON.stringify(res)); } catch { /* Speicher voll oder gesperrt */ }
   showPerfResult(res);
@@ -2250,7 +2482,7 @@ function perfText(res) {
   const d = res.device, n = (v, w) => String(Math.round(v)).padStart(w);
   let t = `IdleSwarm Messlauf ${res.at}\n${d.ua}\nDPR ${String(d.dpr).replace(".", ",")} · ${d.w}×${d.h} · Kerne ${d.cores ?? '?'} · RAM ${d.mem ?? '?'} GB · ~${d.hz} Hz\n`;
   for (const r of res.runs) {
-    t += `\n×${r.stress} · Blur ${r.blur ? 'an' : 'aus'}\n`;
+    t += `\n${perfLabel(r)}\n`;
     for (const p of r.phases) t += `${p.name.padEnd(21)} ${n(p.fps, 3)} fps ${dec(p.lost, 1).padStart(5)} % verloren  p95 ${n(p.p95, 3)} ms  max ${n(p.max, 4)} ms\n`;
   }
   return t;
@@ -2258,7 +2490,7 @@ function perfText(res) {
 function showPerfResult(res) {
   const d = res.device;
   const cls = (lost) => (lost < 5 ? 'p-ok' : lost < 15 ? 'p-mid' : 'p-bad');
-  const tables = res.runs.map((r) => `<h3>×${r.stress} · Blur ${r.blur ? 'an' : 'aus'}</h3>
+  const tables = res.runs.map((r) => `<h3>${perfLabel(r)}</h3>
     <table class="ptable"><thead><tr><th>Abschnitt</th><th>fps</th><th>verloren</th><th>p95</th><th>max</th></tr></thead><tbody>
     ${r.phases.map((p) => `<tr><td>${p.name}</td><td>${Math.round(p.fps)}</td><td class="${cls(p.lost)}">${dec(p.lost, 1)} %</td><td>${Math.round(p.p95)} ms</td><td>${Math.round(p.max)} ms</td></tr>`).join('')}
     </tbody></table>`).join('');
@@ -2272,9 +2504,11 @@ function showPerfResult(res) {
 function perfMenuHtml() {
   const blurOn = !app.classList.contains('no-blur');
   return `<h3>Messung</h3>
-    <p>Der Messlauf spielt einen festen Ablauf mit großem Schwarm in vier Stufen ab (×1, ×3, ×10, ×10 ohne Weichzeichner) und dauert etwa 80 Sekunden. Dabei das Smartphone nicht berühren und den Bildschirm anlassen. Der Spielstand bleibt unverändert.</p>
+    <p>Der Messlauf spielt einen festen Ablauf mit großem Schwarm in sieben Stufen ab: SVG mit ×1, ×3, ×10 und ×10 ohne Bewegung, dann Canvas mit ×1, ×3 und ×10. Er dauert etwa zweieinhalb Minuten. Dabei das Smartphone nicht berühren und den Bildschirm anlassen. Der Spielstand bleibt unverändert.</p>
     <div class="perf-row"><span>Anzeige</span><div class="seg">${[['1', 'an'], ['0', 'aus']].map(([v, l]) => `<button data-act="perfMeter" data-v="${v}" aria-pressed="${(v === '1') === perf.meter}">${l}</button>`).join('')}</div></div>
     <div class="perf-row"><span>Belastung</span><div class="seg">${[1, 3, 10].map((x) => `<button data-act="perfStress" data-v="${x}" aria-pressed="${x === STRESS}">×${x}</button>`).join('')}</div></div>
+    <div class="perf-row"><span>Zeichenfläche</span><div class="seg">${[['0', 'SVG'], ['1', 'Canvas']].map(([v, l]) => `<button data-act="perfCanvas" data-v="${v}" aria-pressed="${(v === '1') === CANVAS}">${l}</button>`).join('')}</div></div>
+    <div class="perf-row"><span>Bewegung</span><div class="seg">${[['1', 'an'], ['0', 'aus']].map(([v, l]) => `<button data-act="perfMotion" data-v="${v}" aria-pressed="${(v === '1') === MOTION}">${l}</button>`).join('')}</div></div>
     <div class="perf-row"><span>Weichzeichner</span><div class="seg">${[['1', 'an'], ['0', 'aus']].map(([v, l]) => `<button data-act="perfBlur" data-v="${v}" aria-pressed="${(v === '1') === blurOn}">${l}</button>`).join('')}</div></div>
     <div class="modal__actions modal__actions--2">
       <button class="btn" data-act="perfLast"${perfLoad() ? '' : ' aria-disabled="true"'}>Letztes Ergebnis</button>
@@ -2296,6 +2530,7 @@ function frame(now) {
     if (sinceSave >= CFG.saveEvery) { sinceSave = 0; save(); }
     render(false);
   }
+  if (CANVAS) cvDraw(now);
   last = now;
   requestAnimationFrame(frame);
 }
