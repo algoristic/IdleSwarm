@@ -8,6 +8,7 @@ import {
 } from '../../domain/catch-up-logic';
 import { advanceClock, isSaveDue } from '../../domain/loop-logic';
 import { CatchUpSummary } from '../../domain/models/catch-up.model';
+import { CatchUpResult } from '../catch-up/catch-up-service.model';
 import { CatchUpService } from '../catch-up/catch-up.service';
 import { WALL_CLOCK_NOW } from '../game-save/game-save-service.tokens';
 import { GAME_CONFIG } from '../game-store/game-store-service.tokens';
@@ -23,9 +24,11 @@ export class GameLoopService {
   readonly #wallNow = inject(WALL_CLOCK_NOW);
   readonly #visibility = inject(PAGE_VISIBILITY);
   readonly #catchUpService = inject(CatchUpService);
+  readonly #destroyRef = inject(DestroyRef);
 
   readonly #tempo = signal(1);
   readonly #catchUpSummary = signal<CatchUpSummary | null>(null);
+  readonly #catchUpFailed = signal(false);
   #running = false;
   #booted = false;
   #paused = false;
@@ -41,10 +44,11 @@ export class GameLoopService {
 
   tempo = this.#tempo.asReadonly();
   catchUpSummary = this.#catchUpSummary.asReadonly();
+  catchUpFailed = this.#catchUpFailed.asReadonly();
   catchUpProgress = this.#catchUpService.progress;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.stop());
+    this.#destroyRef.onDestroy(() => this.stop());
   }
 
   setTempo(tempo: number): void {
@@ -53,6 +57,10 @@ export class GameLoopService {
 
   dismissCatchUpSummary(): void {
     this.#catchUpSummary.set(null);
+  }
+
+  dismissCatchUpFailure(): void {
+    this.#catchUpFailed.set(false);
   }
 
   start(): void {
@@ -152,7 +160,11 @@ export class GameLoopService {
         const session = this.#session;
         const requestedAt = this.#wallNow();
         this.#pendingCatchUpSeconds = 0;
-        const result = await this.#catchUpService.run(this.#config, this.#store.state(), seconds);
+        const result = await this.#runCatchUp(seconds);
+        if (result === 'failed') {
+          if (session === this.#session) this.#catchUpFailed.set(true);
+          break;
+        }
         if (!result || session !== this.#session) continue;
         this.#store.applyCatchUp({ ...result.state, savedAt: requestedAt });
         if (result.summary) this.#showSummary(result.summary);
@@ -162,6 +174,14 @@ export class GameLoopService {
       this.#store.endCatchUp();
       this.#catchingUp = false;
       this.#last = this.#monotonicNow();
+    }
+  }
+
+  async #runCatchUp(seconds: number): Promise<CatchUpResult | null | 'failed'> {
+    try {
+      return await this.#catchUpService.run(this.#config, this.#store.state(), seconds);
+    } catch {
+      return 'failed';
     }
   }
 

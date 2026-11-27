@@ -25,7 +25,7 @@ export class GameSaveService {
     try {
       this.#storage?.setItem(GAME_SAVE_KEY, serializeGame(state));
     } catch {
-      // Speicher voll oder gesperrt: wie im Prototyp ohne Rückmeldung weiterspielen
+      // Schreibfehler ohne Rückmeldung (ADR 0001)
     }
   }
 

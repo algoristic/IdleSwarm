@@ -5,7 +5,7 @@ import { isCatchUpRequest, isCatchUpResponse } from './catch-up-service.utils';
 const state = newGame(PROTOTYPE_GAME_CONFIG, 13, 1_000_000);
 
 describe('isCatchUpRequest', () => {
-  it('erkennt eine Anfrage', () => {
+  it('accepts a request', () => {
     expect(
       isCatchUpRequest({ type: 'catchUp', config: PROTOTYPE_GAME_CONFIG, state, seconds: 10 }),
     ).toBe(true);
@@ -18,7 +18,7 @@ describe('isCatchUpRequest', () => {
     { type: 'catchUp', config: null, state, seconds: 10 },
     { type: 'catchUp', config: PROTOTYPE_GAME_CONFIG, state: 1, seconds: 10 },
     { type: 'catchUp', config: PROTOTYPE_GAME_CONFIG, state, seconds: '10' },
-  ])('verwirft %j', (value) => {
+  ])('rejects %j', (value) => {
     expect(isCatchUpRequest(value)).toBe(false);
   });
 });
@@ -28,7 +28,7 @@ describe('isCatchUpResponse', () => {
     { type: 'progress', done: 20000, total: 40000 },
     { type: 'done', state, summary: null },
     { type: 'done', state, summary: { seconds: 10 } },
-  ])('erkennt %j', (value) => {
+  ])('accepts %j', (value) => {
     expect(isCatchUpResponse(value)).toBe(true);
   });
 
@@ -38,7 +38,7 @@ describe('isCatchUpResponse', () => {
     { type: 'done', summary: null },
     { type: 'done', state, summary: 3 },
     { type: 'catchUp', state, summary: null },
-  ])('verwirft %j', (value) => {
+  ])('rejects %j', (value) => {
     expect(isCatchUpResponse(value)).toBe(false);
   });
 });

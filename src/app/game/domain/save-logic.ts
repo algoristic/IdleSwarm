@@ -45,7 +45,7 @@ export function parseSave(
     const state = migrate(config, JSON.parse(raw), now);
     if (state) return { state, outcome: 'loaded' };
   } catch {
-    // beschädigter Spielstand: wie im Prototyp neu beginnen
+    // beschädigter Spielstand → reset (ADR 0001)
   }
   return { state: newGame(config, seed, now), outcome: 'reset' };
 }

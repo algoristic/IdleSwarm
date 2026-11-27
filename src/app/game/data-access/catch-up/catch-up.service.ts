@@ -18,6 +18,7 @@ type WorkerOutcome = CatchUpResult | 'failed' | 'cancelled';
 @Injectable()
 export class CatchUpService {
   readonly #createWorker = inject(CATCH_UP_WORKER_FACTORY);
+  readonly #destroyRef = inject(DestroyRef);
 
   readonly #progress = signal<CatchUpProgress | null>(null);
   #cancelRunning: (() => void) | null = null;
@@ -26,7 +27,7 @@ export class CatchUpService {
   progress = this.#progress.asReadonly();
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => {
+    this.#destroyRef.onDestroy(() => {
       this.#destroyed = true;
       this.cancel();
     });

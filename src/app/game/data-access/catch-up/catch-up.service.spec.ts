@@ -61,7 +61,7 @@ function expectedAfter(seconds: number): CatchUpResult {
 }
 
 describe('CatchUpService', () => {
-  it('rechnet im Worker nach, liefert das Ergebnis und beendet den Worker', async () => {
+  it('catches up in the worker, returns the result and terminates the worker', async () => {
     const worker = new FakeWorker();
     const service = createService(() => worker);
     const state = newGame(config, 13, 1_000_000);
@@ -76,7 +76,7 @@ describe('CatchUpService', () => {
     expect(service.progress()).toBeNull();
   });
 
-  it('zeigt Fortschritt nur bei mehr als 20000 Schritten', async () => {
+  it('reports progress only for more than 20000 steps', async () => {
     const worker = new FakeWorker();
     const service = createService(() => worker);
     const state = newGame(config, 13, 1_000_000);
@@ -95,7 +95,7 @@ describe('CatchUpService', () => {
     await short;
   });
 
-  it('rechnet ohne Worker auf einer Kopie im Hauptthread nach', async () => {
+  it('catches up on a copy in the main thread without a worker', async () => {
     const service = createService(() => null);
     const state = newGame(config, 13, 1_000_000);
 
@@ -103,7 +103,7 @@ describe('CatchUpService', () => {
     expect(state).toEqual(newGame(config, 13, 1_000_000));
   });
 
-  it('rechnet bei einem Worker-Fehler im Hauptthread nach', async () => {
+  it('falls back to the main thread on a worker error', async () => {
     const worker = new FakeWorker();
     const service = createService(() => worker);
 
@@ -114,7 +114,7 @@ describe('CatchUpService', () => {
     expect(worker.terminated).toBe(true);
   });
 
-  it('rechnet bei einer ungültigen Antwort im Hauptthread nach', async () => {
+  it('falls back to the main thread on an invalid response', async () => {
     const worker = new FakeWorker();
     const service = createService(() => worker);
 
@@ -124,7 +124,7 @@ describe('CatchUpService', () => {
     expect(await result).toEqual(expectedAfter(10));
   });
 
-  it('beendet beim Abbrechen und Zerstören den Worker und liefert null', async () => {
+  it('terminates the worker and returns null when cancelled or destroyed', async () => {
     const worker = new FakeWorker();
     const service = createService(() => worker);
 

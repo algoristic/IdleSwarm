@@ -85,8 +85,8 @@ Zustand, Schleife, Spielstand und Nachberechnung (ADR `docs/adr/0001-spielzustan
   - Aktionen mit Ergebnis oder `null` bei Sperre: `buyUnit(unit, mode)`, `buyUpgrade(id)`, `buyChainUpgrade(index)`, `toggleMark(kind, targetId)`, `clearMark()`, `requestLeave()`; dazu `markEndSeen()`.
   - Für die Schleife: `beginCatchUp()`, `applyCatchUp(state)`, `endCatchUp()`.
   - Token `GAME_CONFIG` (Root-Default `DEFAULT_GAME_CONFIG`).
-- `game-save/` `GameSaveService`: `load(): LoadResult` (`parseSave`), `save(state)` (setzt `savedAt`, schreibt `serializeGame` unter `GAME_SAVE_KEY` = `idleswarm-save`; Fehler beim Schreiben oder Lesen werden wie im Prototyp verschluckt), `createGame()`. Tokens `SAVE_STORAGE` (`localStorage` oder `null`), `WALL_CLOCK_NOW` (`Date.now`), `NEW_GAME_SEED` (Zufalls-Seed); Typ `SaveStorage`.
-- `game-loop/` `GameLoopService`: Signale `tempo`, `catchUpSummary`, `catchUpProgress`; `setTempo`, `dismissCatchUpSummary`, `start`, `stop`, `pause`, `resume`. Tokens `FRAME_SCHEDULER` (`requestAnimationFrame`), `MONOTONIC_NOW` (`performance.now`), `PAGE_VISIBILITY` (`hidden`, `visibilitychange`, `pagehide`); Typen `FrameScheduler`, `PageVisibility`.
+- `game-save/` `GameSaveService`: `load(): LoadResult` (`parseSave`), `save(state)` (setzt `savedAt`, schreibt `serializeGame` unter `GAME_SAVE_KEY` = `idleswarm-save`; Fehler beim Schreiben oder Lesen werden wie im Prototyp verschluckt, die leeren `catch`-Blöcke verweisen auf ADR 0001), `createGame()`. Tokens `SAVE_STORAGE` (`localStorage` oder `null`), `WALL_CLOCK_NOW` (`Date.now`), `NEW_GAME_SEED` (Zufalls-Seed); Typ `SaveStorage`.
+- `game-loop/` `GameLoopService`: Signale `tempo`, `catchUpSummary`, `catchUpProgress`, `catchUpFailed`; `setTempo`, `dismissCatchUpSummary`, `dismissCatchUpFailure`, `start`, `stop`, `pause`, `resume`. Tokens `FRAME_SCHEDULER` (`requestAnimationFrame`), `MONOTONIC_NOW` (`performance.now`), `PAGE_VISIBILITY` (`hidden`, `visibilitychange`, `pagehide`); Typen `FrameScheduler`, `PageVisibility`.
 - `catch-up/` `CatchUpService`: `run(config, state, seconds): Promise<CatchUpResult | null>`, `cancel()`, Signal `progress` (nur bei mehr als einem Block). Token `CATCH_UP_WORKER_FACTORY` (Modul-Worker `catch-up.worker.ts` oder `null` ohne `Worker`). Protokoll in `catch-up-service.model.ts` (`CatchUpRequest`, `CatchUpResponse` mit `progress`/`done`, `CatchUpWorker`), Type Guards `isCatchUpRequest`, `isCatchUpResponse` in `catch-up-service.utils.ts`.
 
 Schnappschuss und Ereignisse:
@@ -107,6 +107,8 @@ Nachberechnung:
 - Es läuft höchstens ein Lauf; Lücken, die währenddessen anfallen, werden gesammelt und danach nachgereicht. Ergebnisse nach `stop()` werden verworfen.
 - Beim Übernehmen setzt die Schleife `savedAt` im Speicher auf den Zeitpunkt der Anfrage.
 - Zusammenfassungen werden mit der noch angezeigten zu einer zusammengeführt (`mergeCatchUpSummaries`) und erst ab 60 s gezeigt; `dismissCatchUpSummary` verwirft sie.
+- Wirft die Nachberechnung (auch der Fallback), endet der Lauf ohne Übernahme, die Sperre löst sich, offene Lücken werden verworfen und `catchUpFailed` wird `true` (nur im laufenden Durchgang, nicht nach `stop()`); `dismissCatchUpFailure` setzt es zurück. Keine unbehandelte Promise-Ablehnung.
+- Hinweis für die Facade (AP 5): `catchUpSummary` und `catchUpFailed` gehören zum Lauf, nicht zum Spiel. `store.newGame()` und `replace()` verwerfen sie nicht; bei Neues Spiel und Import ruft die Facade `dismissCatchUpSummary()` und `dismissCatchUpFailure()`. `pause()` bleibt über `stop()`/`start()` hinweg bestehen.
 - `CatchUpService` schickt Config, Schnappschuss und Sekunden an den Worker und beendet ihn nach dem Ergebnis. Ohne Worker, bei Fehler oder ungültiger Antwort rechnet er `catchUp` auf einer Kopie im Hauptthread.
 
 Worker-Build:
@@ -119,6 +121,7 @@ Bewusste Abweichungen und Einschränkungen gegenüber dem Prototyp:
 - Während der Nachberechnung wird nicht gespeichert und es gibt keine Aktionen.
 - Der Fallback ohne Worker rechnet ohne Zwischenpausen und blockiert die Seite (der Prototyp wartete je Block).
 - Ein Worker, der nie antwortet, hat keine Zeitgrenze; die Sperre bleibt bis `stop()`.
+- Scheitert die Nachberechnung, geht die Offline-Zeit verloren, sobald wieder gespeichert wird; die UI kann es über `catchUpFailed` melden.
 
 ## Texte (`ui/texts/game-texts.ts`)
 
@@ -138,5 +141,5 @@ Bewusste Abweichungen und Einschränkungen gegenüber dem Prototyp:
 - `loop-logic.spec.ts`: Akkumulator, Deckel je Frame (1 s, 2000 Schritte), Tempo, `isSaveDue`.
 - `catch-up-logic.spec.ts`: Schritte und Deckel `offlineMax`, gleiche Schritte wie `step`, gezählte Ereignisse, `mergeCatchUpSummaries`, Schwellen (2 s, ein Block, 60 s).
 - `game-store.service.spec.ts`: Laden (gespeichert, kaputt, gesperrter oder fehlender Speicher), neues Spiel über die Tokens, Kopien, Ereignisprotokoll, Sperre und `applyCatchUp`. `GameSaveService` hat keinen eigenen Spec und wird hier mitgetestet.
-- `game-loop.service.spec.ts`: Schleife über ersetzte Tokens (Frames, Uhren, Sichtbarkeit, Worker-Fabrik): Speichern beim Start, feste Schritte und Tempo, Speicherintervall, `pagehide`/Verstecken, `stop`/`start`, Pause, Nachberechnung mit Sperre, Lücken, Verwerfen und Zusammenführen.
+- `game-loop.service.spec.ts`: Schleife über ersetzte Tokens (Frames, Uhren, Sichtbarkeit, Worker-Fabrik): Speichern beim Start, feste Schritte und Tempo, Speicherintervall, `pagehide`/Verstecken, `stop`/`start`, Pause, Nachberechnung mit Sperre, Lücken, Verwerfen, Zusammenführen und Fehler (Fake-Worker meldet `onerror`, der Fallback wirft über eine Config mit werfendem Getter `finds`).
 - `catch-up.service.spec.ts` und `catch-up-service.utils.spec.ts`: Worker-Protokoll, Fortschritt, Fallback im Hauptthread (kein Worker, Fehler, ungültige Antwort), Abbrechen; Type Guards.

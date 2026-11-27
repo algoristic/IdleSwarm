@@ -34,7 +34,7 @@ function createStore(
 }
 
 describe('GameStoreService', () => {
-  it('lädt einen gespeicherten Spielstand', () => {
+  it('loads a saved game', () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 13, 1_000_000);
     saved.food = 123;
 
@@ -44,14 +44,14 @@ describe('GameStoreService', () => {
     expect(store.state()).toEqual(saved);
   });
 
-  it('beginnt bei einem kaputten Spielstand neu', () => {
+  it('starts over with a corrupt save', () => {
     const store = createStore('{kaputt');
 
     expect(store.loadOutcome()).toBe('reset');
     expect(store.state()).toEqual(newGame(PROTOTYPE_GAME_CONFIG, 4242, 2_000_000));
   });
 
-  it('beginnt bei gesperrtem Speicher ohne Fehler frisch', () => {
+  it('starts fresh without errors when storage is blocked', () => {
     const blocked: SaveStorage = {
       getItem: () => {
         throw new Error('gesperrt');
@@ -67,14 +67,14 @@ describe('GameStoreService', () => {
     expect(store.loadOutcome()).toBe('fresh');
   });
 
-  it('beginnt ohne Speicher frisch', () => {
+  it('starts fresh without storage', () => {
     const store = createStore(null, null);
     store.save();
 
     expect(store.loadOutcome()).toBe('fresh');
   });
 
-  it('speichert ein neues Spiel mit Seed und Zeit aus den Tokens und leert das Protokoll', () => {
+  it('saves a new game with seed and time from the tokens and clears the log', () => {
     const written: string[] = [];
     const store = createStore(null, {
       getItem: () => null,
@@ -96,7 +96,7 @@ describe('GameStoreService', () => {
     expect(store.events()[0].id).toBe(lastId + 1);
   });
 
-  it('zeigt nach dem Speichern den gespeicherten Zeitpunkt', () => {
+  it('shows the saved time after saving', () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 13, 1_000_000);
     const store = createStore(serializeGame(saved));
 
@@ -105,7 +105,7 @@ describe('GameStoreService', () => {
     expect(store.state().savedAt).toBe(2_000_000);
   });
 
-  it('gibt Kopien aus, deren Änderung das Spiel nicht berührt', () => {
+  it('emits copies whose changes do not affect the game', () => {
     const store = createStore(null);
 
     store.state().food = 1e9;
@@ -115,7 +115,7 @@ describe('GameStoreService', () => {
     expect(store.state().endSeen).toBe(true);
   });
 
-  it('führt das Ereignisprotokoll mit steigenden IDs und höchstens 50 Einträgen', () => {
+  it('keeps the event log with increasing IDs and at most 50 entries', () => {
     const store = createStore(null);
 
     addEmptySites(store, 1000, 60);
@@ -135,7 +135,7 @@ describe('GameStoreService', () => {
     expect(store.events()[0].id).toBe(lastId + 1);
   });
 
-  it('sperrt während der Nachberechnung Aktionen und Speichern', () => {
+  it('locks actions and saving during the catch-up', () => {
     const written: string[] = [];
     const store = createStore(null, {
       getItem: () => null,
@@ -163,7 +163,7 @@ describe('GameStoreService', () => {
     expect(written.length).toBe(1);
   });
 
-  it('übernimmt das Ergebnis der Nachberechnung, ohne das Protokoll zu leeren', () => {
+  it('applies the catch-up result without clearing the log', () => {
     const store = createStore(null);
     addEmptySites(store, 1000, 2);
     store.advance(1);

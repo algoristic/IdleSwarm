@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { catchUp } from '../../domain/catch-up-logic';
+import { GameConfig } from '../../domain/models/game-config.model';
 import { newGame } from '../../domain/new-game-logic';
 import { PROTOTYPE_GAME_CONFIG } from '../../domain/prototype-game-config.fixture';
 import { serializeGame } from '../../domain/save-logic';
@@ -87,6 +88,10 @@ class FakeCatchUpWorker implements CatchUpWorker {
     const summary = catchUp(config, state, seconds);
     this.onmessage?.(new MessageEvent('message', { data: { type: 'done', state, summary } }));
   }
+
+  fail(): void {
+    this.onerror?.(new ErrorEvent('error'));
+  }
 }
 
 function settle(): Promise<void> {
@@ -116,10 +121,12 @@ describe('GameLoopService', () => {
   let store: GameStoreService;
   let workers: FakeCatchUpWorker[];
   let useWorker: boolean;
+  let config: GameConfig;
 
   beforeEach(() => {
     workers = [];
     useWorker = false;
+    config = PROTOTYPE_GAME_CONFIG;
     frames = new FakeFrames();
     visibility = new FakeVisibility();
     storage = new MemoryStorage();
@@ -133,7 +140,7 @@ describe('GameLoopService', () => {
     TestBed.configureTestingModule({
       providers: [
         provideGameLoopService(),
-        { provide: GAME_CONFIG, useValue: PROTOTYPE_GAME_CONFIG },
+        { provide: GAME_CONFIG, useValue: config },
         { provide: FRAME_SCHEDULER, useValue: frames },
         { provide: MONOTONIC_NOW, useValue: () => 1000 },
         { provide: WALL_CLOCK_NOW, useValue: () => wallNow },
@@ -166,7 +173,7 @@ describe('GameLoopService', () => {
     return raw ? (JSON.parse(raw) as { savedAt: number }).savedAt : Number.NaN;
   }
 
-  it('speichert direkt nach einem frischen Start', () => {
+  it('saves right after a fresh start', () => {
     loop.start();
 
     expect(store.loadOutcome()).toBe('fresh');
@@ -174,7 +181,7 @@ describe('GameLoopService', () => {
     expect(savedAt()).toBe(1_000_000);
   });
 
-  it('speichert nach dem Laden eines Spielstands nicht sofort', () => {
+  it('does not save right after loading a saved game', () => {
     restartWith(serializeGame(newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000)));
 
     loop.start();
@@ -183,7 +190,7 @@ describe('GameLoopService', () => {
     expect(storage.writes).toBe(0);
   });
 
-  it('speichert direkt nach einem Start mit kaputtem Spielstand', () => {
+  it('saves right after a start with a corrupt save', () => {
     restartWith('{kaputt');
 
     loop.start();
@@ -192,7 +199,7 @@ describe('GameLoopService', () => {
     expect(storage.writes).toBe(1);
   });
 
-  it('läuft nach stop() und start() mit genau einer Frame-Kette weiter', () => {
+  it('continues with exactly one frame chain after stop() and start()', () => {
     loop.start();
     const startTime = store.state().time;
     loop.stop();
@@ -204,7 +211,7 @@ describe('GameLoopService', () => {
     expect(store.state().time).toBe(startTime + 0.25);
   });
 
-  it('bricht beim Zerstören die Frames ab und speichert', () => {
+  it('cancels the frames and saves when destroyed', () => {
     loop.start();
 
     TestBed.resetTestingModule();
@@ -213,7 +220,7 @@ describe('GameLoopService', () => {
     expect(storage.writes).toBe(2);
   });
 
-  it('führt je verstrichener Zeit und Tempo feste Schritte von 0,25 s aus', () => {
+  it('runs fixed steps of 0.25 s per elapsed time and tempo', () => {
     loop.start();
     const startTime = store.state().time;
 
@@ -232,7 +239,7 @@ describe('GameLoopService', () => {
     expect(store.state().time).toBe(startTime + 2.25);
   });
 
-  it('gibt ohne Schritt keinen neuen Schnappschuss aus', () => {
+  it('emits no new snapshot without a step', () => {
     loop.start();
     const before = store.state();
 
@@ -243,7 +250,7 @@ describe('GameLoopService', () => {
     expect(store.state()).not.toBe(before);
   });
 
-  it('speichert alle 10 s Echtzeit unabhängig vom Tempo', () => {
+  it('saves every 10 s of real time regardless of the tempo', () => {
     loop.start();
     loop.setTempo(5);
     for (let i = 1; i <= 9; i++) frames.run(1000 + i * 1000);
@@ -255,7 +262,7 @@ describe('GameLoopService', () => {
     expect(savedAt()).toBe(1_010_000);
   });
 
-  it('speichert bei pagehide und beim Verstecken', () => {
+  it('saves on pagehide and when hidden', () => {
     loop.start();
 
     visibility.hidePage();
@@ -268,7 +275,7 @@ describe('GameLoopService', () => {
     expect(storage.writes).toBe(3);
   });
 
-  it('beendet mit stop() die Frames und die Listener und speichert', () => {
+  it('stops the frames and the listeners and saves on stop()', () => {
     loop.start();
     loop.start();
     expect(frames.queue.size).toBe(1);
@@ -282,7 +289,7 @@ describe('GameLoopService', () => {
     expect(storage.writes).toBe(2);
   });
 
-  it('rechnet in der Pause nicht weiter', () => {
+  it('does not advance while paused', () => {
     loop.start();
     const startTime = store.state().time;
 
@@ -293,7 +300,7 @@ describe('GameLoopService', () => {
 
     expect(store.state().time).toBe(startTime + 0.25);
   });
-  it('rechnet beim Start die Zeit seit dem Speichern nach und zeigt die Zusammenfassung', async () => {
+  it('catches up the time since saving on start and shows the summary', async () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
     restartWith(serializeGame(saved));
 
@@ -310,7 +317,7 @@ describe('GameLoopService', () => {
     expect(loop.catchUpSummary()).toBeNull();
   });
 
-  it('zeigt nach einer kurzen Nachberechnung keine Zusammenfassung', async () => {
+  it('shows no summary after a short catch-up', async () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 990_000);
     restartWith(serializeGame(saved));
 
@@ -321,7 +328,7 @@ describe('GameLoopService', () => {
     expect(loop.catchUpSummary()).toBeNull();
   });
 
-  it('sperrt während der Nachberechnung Aktionen, Speichern und Frames', async () => {
+  it('locks actions, saving and frames during the catch-up', async () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
     useWorker = true;
     restartWith(serializeGame(saved));
@@ -344,7 +351,7 @@ describe('GameLoopService', () => {
     expect(store.clearMark()).not.toBeNull();
   });
 
-  it('rechnet beim Sichtbarwerden erst nach mehr als 2 s nach', async () => {
+  it('catches up on becoming visible only after more than 2 s', async () => {
     useWorker = true;
     loop.start();
     const startTime = store.state().time;
@@ -365,7 +372,7 @@ describe('GameLoopService', () => {
     expect(store.state().time).toBe(startTime + 3);
   });
 
-  it('arbeitet Lücken während einer Nachberechnung danach ab', async () => {
+  it('processes gaps that arise during a catch-up afterwards', async () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
     useWorker = true;
     restartWith(serializeGame(saved));
@@ -390,7 +397,7 @@ describe('GameLoopService', () => {
     expect(storage.writes).toBe(0);
   });
 
-  it('verwirft nach stop() die laufende Nachberechnung und rechnet beim nächsten Start neu', async () => {
+  it('discards the running catch-up on stop() and recalculates on the next start', async () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
     useWorker = true;
     restartWith(serializeGame(saved));
@@ -407,7 +414,7 @@ describe('GameLoopService', () => {
     expect(workers.length).toBe(2);
     expect(workers[1].request?.seconds).toBe(100);
   });
-  it('rechnet nach stop() und start() zwischen zwei Läufen nur die offene Zeit nach', async () => {
+  it('catches up only the open time after stop() and start() between two runs', async () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
     useWorker = true;
     restartWith(serializeGame(saved));
@@ -432,7 +439,7 @@ describe('GameLoopService', () => {
     expect(store.state().time).toBe(saved.time + 103);
   });
 
-  it('fasst die Nachberechnungen bis zum Verwerfen zusammen', async () => {
+  it('merges the catch-ups until dismissed', async () => {
     const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 1_000_000 - 3_600_000);
     useWorker = true;
     restartWith(serializeGame(saved));
@@ -455,5 +462,39 @@ describe('GameLoopService', () => {
     workers[2].respond();
     await settle();
     expect(loop.catchUpSummary()).toBeNull();
+  });
+
+  it('reports a failed catch-up, keeps the state and releases the lock', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
+    let fallbackFails = false;
+    config = {
+      ...PROTOTYPE_GAME_CONFIG,
+      get finds(): GameConfig['finds'] {
+        if (fallbackFails) throw new Error('fallback failed');
+        return PROTOTYPE_GAME_CONFIG.finds;
+      },
+    };
+    useWorker = true;
+    restartWith(serializeGame(saved));
+    loop.start();
+
+    fallbackFails = true;
+    workers[0].fail();
+    await settle();
+    fallbackFails = false;
+
+    expect(workers[0].terminated).toBe(true);
+    expect(store.catchingUp()).toBe(false);
+    expect(store.state().time).toBe(saved.time);
+    expect(loop.catchUpFailed()).toBe(true);
+    expect(loop.catchUpSummary()).toBeNull();
+    expect(loop.catchUpProgress()).toBeNull();
+    expect(storage.writes).toBe(0);
+
+    frames.run(1250);
+    expect(store.state().time).toBe(saved.time + 0.25);
+
+    loop.dismissCatchUpFailure();
+    expect(loop.catchUpFailed()).toBe(false);
   });
 });

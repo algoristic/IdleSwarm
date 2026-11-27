@@ -15,6 +15,7 @@ Die Regeln in `game/domain` mutieren einen `GameState` (Golden Master, exakte Re
 - Ereignisse aus `step` landen in einem Protokoll (Signal `events`) mit fortlaufender ID je Ereignis (`{ id, event }`), höchstens die letzten 50. Ein neues Array entsteht nur bei neuen Ereignissen. Verbraucher merken sich die zuletzt gesehene ID; so geht bei zusammengefassten Frames nichts verloren. Ein neues Spiel oder ein Import leert das Protokoll, die IDs zählen weiter.
 - `GameLoopService` (`game/data-access/game-loop`) treibt die Schleife über `requestAnimationFrame` mit dem festen `dt`-Akkumulator aus der Domäne (`advanceClock`, `isSaveDue`) und einem Tempo-Signal.
 - `GameSaveService` (`game/data-access/game-save`) liest und schreibt den Spielstand unter `idleswarm-save` (`parseSave`, `serializeGame`).
+- Lese- und Schreibfehler des Speichers und beschädigte Stände werden wie im Prototyp ohne Rückmeldung behandelt (beschädigt → `reset`).
 - Plattformzugriffe liegen hinter Tokens mit Root-Default: `GAME_CONFIG`, `SAVE_STORAGE`, `WALL_CLOCK_NOW`, `NEW_GAME_SEED`, `FRAME_SCHEDULER`, `MONOTONIC_NOW`, `PAGE_VISIBILITY`, `CATCH_UP_WORKER_FACTORY`.
 
 ### Nachberechnung
@@ -25,7 +26,9 @@ Die Regeln in `game/domain` mutieren einen `GameState` (Golden Master, exakte Re
 - Das Ergebnis übernimmt der Store mit einem Schnappschuss, ohne das Ereignisprotokoll zu leeren. Es läuft nie mehr als eine Nachberechnung; Lücken, die währenddessen anfallen, rechnet die Schleife danach nach. Nach `stop()` oder dem Zerstören wird ein laufendes Ergebnis verworfen.
 - Beim Übernehmen setzt die Schleife `savedAt` des Zustands im Speicher auf den Zeitpunkt, zu dem der Lauf angefragt wurde. Ein `start()` nach `stop()` rechnet so nur die noch offene Zeit nach; die Platte behält den alten Stand, der beim nächsten Laden vollständig nachrechnet.
 - Zusammenfassungen, die noch nicht verworfen sind, führt die Schleife zu einer zusammen (`mergeCatchUpSummaries`).
-- Bekannte Einschränkungen: Ein Worker, der nie antwortet, hat keine Zeitgrenze; die Sperre bleibt dann bis `stop()` bestehen. Der Fallback im Hauptthread rechnet ohne Zwischenpausen und blockiert die Seite für die Dauer (der Prototyp wartete je Block); er ist der seltene Fall ohne Worker.
+- Scheitert eine Nachberechnung auch im Hauptthread (die Domänenfunktion wirft), endet der Lauf ohne Übernahme, die Sperre löst sich, offene Lücken werden verworfen, und `GameLoopService` setzt das Signal `catchUpFailed` (verwerfen mit `dismissCatchUpFailure()`).
+- Zusammenfassung und Fehlersignal gehören zum Lauf, nicht zum Spiel: `newGame()` und `replace()` des Stores verwerfen sie nicht; das übernimmt die Facade bei Neues Spiel und Import (`dismissCatchUpSummary()`, `dismissCatchUpFailure()`). Auch `pause()` bleibt über `stop()` und `start()` hinweg bestehen.
+- Bekannte Einschränkungen: Ein Worker, der nie antwortet, hat keine Zeitgrenze; die Sperre bleibt dann bis `stop()` bestehen. Der Fallback im Hauptthread rechnet ohne Zwischenpausen und blockiert die Seite für die Dauer (der Prototyp wartete je Block); er ist der seltene Fall ohne Worker. Scheitert die Nachberechnung, geht die Offline-Zeit verloren, sobald wieder gespeichert wird; die UI kann es über das Signal `catchUpFailed` melden.
 
 ## Konsequenzen
 
