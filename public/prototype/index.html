@@ -308,6 +308,7 @@
   .units::-webkit-scrollbar { display: none; }
   .unit { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 10px; background: var(--panel-2); border-radius: 18px; padding: 7px 7px 7px 8px; }
   .unit[hidden] { display: none; }
+  .seg[hidden] { display: none; }
   .unit__icon { width: 42px; height: 42px; border-radius: 50%; background: var(--panel-3); display: grid; place-items: center; }
   .unit__name { font-weight: 900; font-size: 14.5px; white-space: nowrap; }
   .unit__name .num { font-weight: 800; color: var(--cyan); margin-left: 5px; }
@@ -671,23 +672,24 @@
 const CFG = {
   dt: 0.25,                                   // TEC-03
   start: { vorrat: 50, eier: 10, fress: 5 },  // P1-STA-01
+  // Balancing-Paket nach Simulation (Spezifikation noch nicht angepasst): Kette, Geißeln, Kropf und Stellengröße
   units: [                                    // P1-KET-01; dat: Dativ Plural
-    { name: 'Fressling',   plural: 'Fresslinge',    dat: 'Fresslingen',    short: 'F.',  icon: 'fress', cost: 10,  req: 0,   prod: 0 },
-    { name: 'Brutling',    plural: 'Brutlinge',     dat: 'Brutlingen',     short: 'B.',  icon: 'brut',  cost: 500, req: 10,  prod: 2 },
-    { name: 'Eiträgerin',  plural: 'Eiträgerinnen', dat: 'Eiträgerinnen',  short: 'Et.', icon: 'etr',   cost: 2e4, req: 100, prod: 3 },
-    { name: 'Gelege',      plural: 'Gelege',        dat: 'Gelegen',        short: 'G.',  icon: 'gel',   cost: 1e6, req: 1e3, prod: 4 },
-    { name: 'Brutklumpen', plural: 'Brutklumpen',   dat: 'Brutklumpen',    short: 'Bk.', icon: 'bkl',   cost: 5e7, req: 1e4, prod: 5 },
-    { name: 'Urnest',      plural: 'Urnester',      dat: 'Urnestern',      short: 'U.',  icon: 'urn',   cost: 2e9, req: 1e5, prod: 6 },
+    { name: 'Fressling',   plural: 'Fresslinge',    dat: 'Fresslingen',    short: 'F.',  icon: 'fress', cost: 10,    req: 0,    prod: 0 },
+    { name: 'Brutling',    plural: 'Brutlinge',     dat: 'Brutlingen',     short: 'B.',  icon: 'brut',  cost: 1.5e5, req: 10,   prod: 0.6 },
+    { name: 'Eiträgerin',  plural: 'Eiträgerinnen', dat: 'Eiträgerinnen',  short: 'Et.', icon: 'etr',   cost: 6e6,   req: 30,   prod: 0.9 },
+    { name: 'Gelege',      plural: 'Gelege',        dat: 'Gelegen',        short: 'G.',  icon: 'gel',   cost: 3e8,   req: 100,  prod: 1.2 },
+    { name: 'Brutklumpen', plural: 'Brutklumpen',   dat: 'Brutklumpen',    short: 'Bk.', icon: 'bkl',   cost: 1.5e10, req: 300, prod: 1.5 },
+    { name: 'Urnest',      plural: 'Urnester',      dat: 'Urnestern',      short: 'U.',  icon: 'urn',   cost: 6e11,  req: 1000, prod: 1.8 },
   ],
   upgrades: {                                 // P1-AUS-01: Wirkung base·factor^l, Kosten cost·growth^l
     herd:  { name: 'Brutherd',  base: 1,    factor: 1.7, cost: 30,  growth: 3 },
     verd:  { name: 'Verdauung', base: 1,    factor: 1.5, cost: 300, growth: 5 },
-    geis:  { name: 'Geißeln',   base: 50,   factor: 1.8, cost: 125, growth: 2.2 },
-    kropf: { name: 'Kropf',     base: 2000, factor: 1.5, cost: 80,  growth: 1.55 },
+    geis:  { name: 'Geißeln',   base: 50,   factor: 1.8, cost: 1000, growth: 2.05 },
+    kropf: { name: 'Kropf',     base: 2000, factor: 1.5, cost: 80,  growth: 2.2 },
   },
   // P1-AUS-05: Erzeugungs-Ausbau für Fresslinge bis Gelege, bezahlt mit der erzeugenden Stufe.
-  // Wirkung (1 + w·l) × Grundwert, Kosten ⌈a·k^l⌉ Einheiten
-  chainUp: { w: 1, a: 1, k: 2 },
+  // Wirkung (1 + w·l) × Grundwert, Kosten ⌈a·k^l⌉ Einheiten. Im Balancing-Paket abgeschaltet
+  chainUp: { enabled: false, w: 1, a: 1, k: 2 },
   reach: { base: 140, step: 70, every: 3 },   // P1-AUS-03
   travel: { base: 20, ref: 50 },              // P1-REI-02: v = base · (1 + log10(T / ref))
   zones: [                                    // P1-KAR-01
@@ -697,7 +699,9 @@ const CFG = {
     { name: 'Flachwasser',    threshold: 1e6 },
   ],
   map: {
-    baseSize: 5000, sizeGrowth: 60,           // P1-STE-02
+    // P1-STE-02 als Rampe: Basisgröße 5.000 · (Antrieb / 50)^ramp beim Entstehen, mindestens mit der
+    // Zugangsschwelle der Zone; die Zielstelle behält die Basisgröße 5.000 · 60³
+    baseSize: 5000, ramp: 1.1, goalBase: 5000 * 60 ** 3,
     randMin: 0.75, randMax: 1.25, startRand: 0.6,
     zoneRadius: 400,                          // [offen] P1-KAR-05: Zonenfläche als Kreis um den Ursprung
     minDist: 20,                              // [offen] P1-KAR-05: Vorschlag Mindestabstand
@@ -731,7 +735,7 @@ const CFG = {
   saveEvery: 10,                              // ALL-OFF-01
 };
 const SAVE_KEY = 'idleswarm-prototyp';
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 const HIST_LEN = Math.round(CFG.finds.avgWindow / CFG.dt);
 
 /* =====================================================================
@@ -758,7 +762,7 @@ const CHAIN_UPS = 4;
 const chainCost = (l) => Math.ceil(CFG.chainUp.a * CFG.chainUp.k ** l - 1e-9);
 const chainFactor = (l) => 1 + CFG.chainUp.w * l;
 // Erzeugung je Einheit der Stufe k (k ≥ 1) mit Erzeugungs-Ausbau, ohne Boni
-const prodOf = (s, k) => CFG.units[k].prod * (k - 1 < CHAIN_UPS ? chainFactor(s.chainRanks[k - 1]) : 1);
+const prodOf = (s, k) => CFG.units[k].prod * (CFG.chainUp.enabled && k - 1 < CHAIN_UPS ? chainFactor(s.chainRanks[k - 1]) : 1);
 const chainLocked = (s, i) => s.chainRanks[i] === 0 && s.units[i + 1] < 1;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -801,7 +805,9 @@ const randF = (s) => CFG.map.randMin + rnd(s) * (CFG.map.randMax - CFG.map.randM
 
 function makeSite(s, type, zone, x, y, rf) {
   const T = CFG.siteTypes[type];
-  const size = CFG.map.baseSize * CFG.map.sizeGrowth ** zone * T.factor * rf;
+  const ref = Math.max(CFG.zones[zone].threshold, upEff('geis', s.ranks.geis)) / CFG.upgrades.geis.base;
+  const base = T.goal ? CFG.map.goalBase : CFG.map.baseSize * ref ** CFG.map.ramp;
+  const size = base * T.factor * rf;
   return { id: s.nextId++, type, zone, x, y, size, stock: size, born: s.t, dead: false, goneAt: null, known: false, shape: Math.floor(rnd(s) * 1e6) };
 }
 function makeFind(s, zone) {
@@ -1133,6 +1139,7 @@ function buyUpgrade(s, key) {
 }
 // P1-AUS-05: verbraucht Einheiten der erzeugenden Stufe; Keimzellen gelten nur für P1-AUS-01
 function buyChainUp(s, i) {
+  if (!CFG.chainUp.enabled) return false;
   const c = chainCost(s.chainRanks[i]);
   if (s.units[i + 1] < c) return false;
   s.units[i + 1] -= c;
@@ -1676,7 +1683,8 @@ function renderSwarm() {
 const KX = 380;                                  // Lage des Ketten-Neurons
 const NEURON_SCALE = .85;
 const NEURON_TOP = -210, NEURON_BOTTOM = 236;     // senkrechte Ausdehnung beider Neuronen mit Beschriftungen
-const NEURON_AREA = [-110, KX + 110, NEURON_TOP - 20, NEURON_BOTTOM + 20]; // Bereich, dessen Punkte sich in die Mitte holen lassen
+const NEURON_RIGHT = CFG.chainUp.enabled ? KX : 0;  // Mitte des rechten Neurons; ohne Erzeugungs-Ausbau nur der Schwarm
+const NEURON_AREA = [-110, NEURON_RIGHT + 110, NEURON_TOP - 20, NEURON_BOTTOM + 20]; // Bereich, dessen Punkte sich in die Mitte holen lassen
 const SOMA = 'M38.1 -8C37.2 0.5 36.2 7.8 32.3 15.5C28.4 23.1 22.7 34.4 14.9 37.9C7.1 41.4 -6.1 39.9 -14.5 36.6C-22.9 33.2 -30.5 25.2 -35.5 17.8C-40.5 10.4 -45.3 0.1 -44.7 -8C-44 -16.1 -36.8 -24 -31.6 -31C-26.5 -38 -21.5 -45.7 -13.6 -50C-5.7 -54.2 7.3 -59.1 15.8 -56.7C24.4 -54.3 34.1 -43.6 37.8 -35.5C41.5 -27.3 39 -16.5 38.1 -8Z';
 const DENDS = {
   herd:  { p0: [-26, -40], c: [-96, -62], p1: [-118, -138], label: [-118, -182] },
@@ -1740,7 +1748,7 @@ function costLabel(key) {
   const P = CFG.units[i + 1];
   return chainLocked(S, i) ? `ab 1 ${P.name}` : unitsLabel(P, chainCost(S.chainRanks[i]));
 }
-const ALL_UPS = [...UP_KEYS, ...CHAIN_KEYS];
+const ALL_UPS = CFG.chainUp.enabled ? [...UP_KEYS, ...CHAIN_KEYS] : UP_KEYS;
 function renderNeuron() {
   const r = S.ranks;
   const key = ALL_UPS.map((k) => upRank(k) + (canAfford(k) ? 'y' : 'n') + costLabel(k)).join('|') + selUp;
@@ -1772,7 +1780,12 @@ function renderNeuron() {
   h += nodeSvg('geis', GEIS_AT[0], GEIS_AT[1], l, canAfford('geis'), selUp === 'geis');
   h += `<text class="n-name n-name--l" x="34" y="214">${CFG.upgrades.geis.name}</text><text class="n-cost n-cost--l${canAfford('geis') ? '' : ' n-cost--poor'}" x="34" y="229">${costLabel('geis')}</text>`;
   h += somaSvg(0, 'pink', 'schwarm');
-  // Ketten-Neuron mit Axon und Synapse am Schwarm-Neuron
+  if (CFG.chainUp.enabled) h += chainNeuronSvg();
+  $('neuronG').innerHTML = h;
+}
+// Ketten-Neuron mit Axon und Synapse am Schwarm-Neuron
+function chainNeuronSvg() {
+  let h = '';
   const ax = `M${KX - 56} 2Q200 62 82 42`;
   h += `<path class="cdend cdend--glow" d="${ax}"/><path class="cdend kaxon" d="${ax}"/><path class="sig sig--out" d="${ax}"/><circle cx="78" cy="40" r="11" class="syn"/><circle cx="78" cy="40" r="5" class="syn__in"/>`;
   h += '<text class="n-mile n-mile--sub syn__lab" x="196" y="74">Synapse</text>';
@@ -1785,10 +1798,10 @@ function renderNeuron() {
   });
   h += somaSvg(KX, 'orange', 'kette');
   h += `<text class="n-name kn__title" x="${KX}" y="-112">Kette</text>`;
-  $('neuronG').innerHTML = h;
+  return h;
 }
 function renderNeuronOrganelles() {
-  const R = lcg(99), dx = KX / 2;
+  const R = lcg(99), dx = NEURON_RIGHT / 2;
   let h = '';
   const spots = [[-150, -260, 46], [170, -300, 34], [-180, 200, 52], [160, 140, 40], [-60, 330, 60], [200, 330, 30], [-210, -60, 26], [210, -40, 28], [40, 560, 44], [-190, 520, 34], [190, 640, 50]];
   for (const [x, y, w] of spots) {
@@ -2800,6 +2813,7 @@ window.addEventListener('pagehide', save);
 /* ---------- Start ---------- */
 (async function init() {
   buildUnits();
+  $('grpSeg').hidden = !CFG.chainUp.enabled;
   renderNeuronOrganelles();
   app.style.setProperty('--nsc', NEURON_SCALE);
   applyCanvas(true);
