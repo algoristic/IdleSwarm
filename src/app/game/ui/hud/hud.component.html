@@ -1,0 +1,52 @@
+@let _hud = hud();
+
+<div class="hud__pills grid gap-1.5">
+  <app-pill
+    label="Vorrat"
+    i18n-label="@@uiGame-hud-food-label"
+    tone="lime"
+    [extra]="'/ ' + (_hud.capacity | formatNumber)"
+    [barFraction]="_hud.foodFill"
+    [barOver]="_hud.foodOver"
+    data-testid="game.hud.food"
+  >
+    <span data-testid="game.hud.food.value">{{ _hud.food | formatInteger }}</span>
+  </app-pill>
+  <app-pill
+    label="Eier"
+    i18n-label="@@uiGame-hud-eggs-label"
+    tone="yellow"
+    data-testid="game.hud.eggs"
+  >
+    <span data-testid="game.hud.eggs.value">{{ _hud.eggs | formatInteger }}</span>
+    <span appPillSub data-testid="game.hud.eggs.rate" i18n="@@uiGame-hud-eggs-rate"
+      >+{{ _hud.eggRate | formatNumber }} pro s</span
+    >
+  </app-pill>
+  <app-pill
+    label="Ernte"
+    i18n-label="@@uiGame-hud-harvest-label"
+    tone="orange"
+    data-testid="game.hud.harvest"
+  >
+    <span data-testid="game.hud.harvest.value">{{ _hud.harvestRate | formatNumber }}</span>
+    <span appPillSub data-testid="game.hud.harvest.note">
+      @switch (_hud.harvestNote.kind) {
+        @case ('travelling') {
+          <ng-container i18n="@@uiGame-hud-harvest-travelling">unterwegs</ng-container>
+        }
+        @case ('throttled') {
+          <ng-container i18n="@@uiGame-hud-harvest-throttled"
+            >Drossel
+            <b class="font-black text-accent-orange"
+              >−{{ _hud.harvestNote.percent | formatInteger }} %</b
+            ></ng-container
+          >
+        }
+        @case ('perSecond') {
+          <ng-container i18n="@@uiGame-hud-harvest-perSecond">pro Sekunde</ng-container>
+        }
+      }
+    </span>
+  </app-pill>
+</div>

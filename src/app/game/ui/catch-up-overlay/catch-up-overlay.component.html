@@ -1,0 +1,11 @@
+@let percent = overlay().percent;
+
+<span role="status" data-testid="game.catchUp.text">
+  @if (percent === null) {
+    <ng-container i18n="@@uiGame-catchUpOverlay-running">Nachberechnung …</ng-container>
+  } @else {
+    <ng-container i18n="@@uiGame-catchUpOverlay-progress"
+      >Nachberechnung … {{ percent | formatInteger }} %</ng-container
+    >
+  }
+</span>

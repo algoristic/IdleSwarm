@@ -1,0 +1,14 @@
+<app-dialog-frame [open]="facade.menuOpen()" [label]="label" (closed)="close()">
+  <h2 appDialogTitle data-testid="game.menu.title" i18n="@@featureGame-dialogMenu-title">Menü</h2>
+  <div appDialogActions>
+    <button
+      appButton
+      type="button"
+      data-testid="game.menu.close"
+      i18n="@@featureGame-dialogMenu-close"
+      (click)="close()"
+    >
+      Schließen
+    </button>
+  </div>
+</app-dialog-frame>

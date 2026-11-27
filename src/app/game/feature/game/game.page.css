@@ -1,0 +1,22 @@
+.game__hud {
+  top: calc(var(--spacing) * 3 + env(safe-area-inset-top));
+}
+
+.game__context,
+.game__menu {
+  top: calc(var(--spacing) * 20 + env(safe-area-inset-top));
+}
+
+.game__chips {
+  top: calc(var(--spacing) * 32.5 + env(safe-area-inset-top));
+}
+
+.game__views {
+  top: calc(var(--spacing) * 33.5 + env(safe-area-inset-top));
+}
+
+@media (width >= 40rem) {
+  .game {
+    height: min(calc(var(--spacing) * 225), 96dvh);
+  }
+}

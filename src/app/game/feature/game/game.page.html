@@ -1,0 +1,55 @@
+@let view = facade.view();
+@let _context = context();
+
+<div
+  class="game relative isolate h-dvh w-full max-w-md overflow-clip bg-canvas select-none sm:rounded-4xl sm:shadow-frame"
+  [attr.data-view]="activeView()"
+  data-testid="game.frame"
+>
+  <app-hud class="game__hud absolute inset-x-3 z-5" [hud]="view.hud" />
+
+  @switch (_context.view) {
+    @case ('swarm') {
+      <app-swarm-context
+        class="game__context absolute right-14.5 left-3 z-5"
+        [context]="_context.swarm"
+        data-testid="game.ctx.swarm"
+      />
+    }
+    @case ('map') {
+      <app-map-context
+        class="game__context absolute right-14.5 left-3 z-5"
+        [context]="_context.map"
+        data-testid="game.ctx.map"
+      />
+    }
+    @case ('upgrades') {
+      <app-upgrades-context
+        class="game__context absolute right-14.5 left-3 z-5"
+        [context]="_context.upgrades"
+        data-testid="game.ctx.upgrades"
+      />
+    }
+  }
+
+  <app-menu-button class="game__menu absolute right-3 z-5" (clicked)="onOpenMenu()" />
+  <app-chips class="game__chips absolute right-16 left-3 z-5" [chips]="view.chips" />
+  <app-view-nav class="game__views absolute right-3 z-5" />
+
+  <app-toast-stack>
+    @for (toast of facade.toasts(); track toast.id) {
+      <app-game-toast
+        [toast]="toast"
+        [config]="facade.config"
+        (expired)="onToastExpired(toast.id)"
+      />
+    }
+  </app-toast-stack>
+
+  <router-outlet />
+
+  @if (view.catchUp; as catchUp) {
+    <app-catch-up-overlay class="absolute inset-0 z-12" [overlay]="catchUp" />
+  }
+  <app-dialog-menu />
+</div>

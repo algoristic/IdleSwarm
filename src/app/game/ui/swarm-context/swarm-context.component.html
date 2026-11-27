@@ -1,0 +1,62 @@
+@let _context = context();
+@let place = _context.place;
+@let tag = _context.tag;
+
+@switch (place.kind) {
+  @case ('travelling') {
+    <app-progress-ring [fraction]="place.progress" tone="cyan" />
+    <span class="min-w-0 flex-1 truncate" data-testid="game.ctx.swarm.text">
+      <ng-container i18n="@@uiGame-swarmContext-travelling"
+        ><b class="font-black">Unterwegs</b>
+        <span class="ms-1 text-xs font-semibold text-fg-muted tabular-nums"
+          >· {{ destinationName() }} in {{ place.remaining | formatTime }}</span
+        ></ng-container
+      >
+    </span>
+  }
+  @case ('site') {
+    <app-progress-ring [fraction]="place.fill" tone="lime" />
+    <span class="min-w-0 flex-1 truncate" data-testid="game.ctx.swarm.text">
+      <b class="font-black">{{ siteTypeNames[place.siteType] }}</b>
+      <span class="ms-1 text-xs font-semibold text-fg-muted tabular-nums">
+        @switch (place.note.kind) {
+          @case ('dried') {
+            <ng-container i18n="@@uiGame-swarmContext-site-dried">· versiegt</ng-container>
+          }
+          @case ('average') {
+            <ng-container i18n="@@uiGame-swarmContext-site-average"
+              >· Ø {{ place.note.rate | formatNumber }}/s</ng-container
+            >
+          }
+          @case ('emptyIn') {
+            <ng-container i18n="@@uiGame-swarmContext-site-emptyIn"
+              >· leer in {{ place.note.seconds | formatTime }}</ng-container
+            >
+          }
+          @case ('noHarvest') {
+            <ng-container i18n="@@uiGame-swarmContext-site-noHarvest">· keine Ernte</ng-container>
+          }
+        }
+      </span>
+    </span>
+  }
+  @case ('none') {
+    <app-progress-ring [fraction]="0" />
+    <span class="min-w-0 flex-1 truncate" data-testid="game.ctx.swarm.text">
+      <ng-container i18n="@@uiGame-swarmContext-none"
+        ><b class="font-black">An keiner Stelle</b>
+        <span class="ms-1 text-xs font-semibold text-fg-muted">· keine Ernte</span></ng-container
+      >
+    </span>
+  }
+}
+@switch (tag.kind) {
+  @case ('mark') {
+    <span appTag tone="gold" data-testid="game.ctx.swarm.tag">★ {{ markName() }}</span>
+  }
+  @case ('alternative') {
+    <span appTag tone="teal" data-testid="game.ctx.swarm.tag"
+      >→ {{ siteTypeNames[tag.siteType] }}</span
+    >
+  }
+}

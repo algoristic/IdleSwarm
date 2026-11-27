@@ -1,0 +1,13 @@
+<app-bottom-sheet
+  [label]="label"
+  [collapsed]="collapsed()"
+  gripTestId="game.swarm.sheet.grip"
+  data-testid="game.swarm.sheet"
+  (changedCollapsed)="onChangedCollapsed($event)"
+>
+  <div class="mb-2.5 flex items-center justify-between gap-2">
+    <h2 class="text-lg font-black whitespace-nowrap" i18n="@@featureGame-swarm-sheet-title">
+      Kette
+    </h2>
+  </div>
+</app-bottom-sheet>

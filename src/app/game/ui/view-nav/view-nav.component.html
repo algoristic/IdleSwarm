@@ -1,0 +1,68 @@
+<nav class="contents" aria-label="Ansicht" i18n-aria-label="@@uiGame-viewNav-label">
+  <a
+    class="grid size-10 place-items-center rounded-full bg-accent-cyan text-accent-cyan shadow-raised-cyan brightness-70 grayscale-75 transition duration-300 active:translate-y-0.75 aria-current:outline-2 aria-current:outline-offset-3 aria-current:outline-current aria-current:brightness-100 aria-current:grayscale-0"
+    routerLink="/umgebung"
+    routerLinkActive
+    ariaCurrentWhenActive="page"
+    aria-label="Umgebung"
+    i18n-aria-label="@@uiGame-viewNav-map"
+    data-testid="game.views.map"
+  >
+    <svg
+      class="stroke-canvas"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <circle class="fill-canvas" cx="12" cy="12" r="2.8" stroke="none" />
+      <circle cx="12" cy="12" r="6.5" stroke-dasharray="2 2.8" />
+      <circle cx="12" cy="12" r="10.2" />
+    </svg>
+  </a>
+  <a
+    class="grid size-10 place-items-center rounded-full bg-accent-orange text-accent-orange shadow-raised-orange brightness-70 grayscale-75 transition duration-300 active:translate-y-0.75 aria-current:outline-2 aria-current:outline-offset-3 aria-current:outline-current aria-current:brightness-100 aria-current:grayscale-0"
+    routerLink="/"
+    routerLinkActive
+    [routerLinkActiveOptions]="{ exact: true }"
+    ariaCurrentWhenActive="page"
+    aria-label="Schwarm"
+    i18n-aria-label="@@uiGame-viewNav-swarm"
+    data-testid="game.views.swarm"
+  >
+    <svg class="fill-canvas" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <ellipse cx="9" cy="10" rx="3.4" ry="2.5" />
+      <ellipse cx="15.5" cy="8" rx="3" ry="2.2" />
+      <ellipse cx="14" cy="15" rx="3.4" ry="2.5" />
+      <ellipse cx="7.5" cy="16" rx="2.6" ry="2" />
+    </svg>
+  </a>
+  <a
+    class="grid size-10 place-items-center rounded-full bg-accent-pink text-accent-pink shadow-raised-pink brightness-70 grayscale-75 transition duration-300 active:translate-y-0.75 aria-current:outline-2 aria-current:outline-offset-3 aria-current:outline-current aria-current:brightness-100 aria-current:grayscale-0"
+    routerLink="/ausbau"
+    routerLinkActive
+    ariaCurrentWhenActive="page"
+    aria-label="Ausbau"
+    i18n-aria-label="@@uiGame-viewNav-upgrades"
+    data-testid="game.views.upgrades"
+  >
+    <svg
+      class="stroke-fg"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <circle class="fill-fg" cx="12" cy="10" r="3.8" stroke="none" />
+      <path
+        d="M9.5 7.5L5 3M12 6.4V2M14.6 7.6L19 4M12 13.6V19M12 19l-3 3M12 19l3 3M8.5 11.5L3.5 13M15.5 11.5l5 1.5"
+      />
+    </svg>
+  </a>
+</nav>

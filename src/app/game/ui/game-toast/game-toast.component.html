@@ -1,0 +1,46 @@
+@let _toast = toast();
+@let message = _toast.message;
+
+<app-toast [attr.data-testid]="'game.toasts.' + message.kind" (expired)="onExpired()">
+  @switch (message.kind) {
+    @case ('welcome') {
+      <ng-container i18n="@@uiGame-gameToast-welcome"
+        >Kaufe <b class="font-black text-accent-yellow">Fresslinge</b> – sie fressen den Algenfilm.
+        Ist er leer, zieht der Schwarm weiter.</ng-container
+      >
+    }
+    @case ('saveReset') {
+      <ng-container i18n="@@uiGame-gameToast-saveReset"
+        >Der alte Spielstand passte nicht zu dieser Version und wurde zurückgesetzt.</ng-container
+      >
+    }
+    @case ('findCollected') {
+      <ng-container i18n="@@uiGame-gameToast-findCollected"
+        >Fundstück <b class="font-black text-accent-yellow">{{ findNames[message.findType] }}</b>:
+        {{ findDescription() }}</ng-container
+      >
+    }
+    @case ('zoneChanged') {
+      <ng-container i18n="@@uiGame-gameToast-zoneChanged"
+        >Der Schwarm sinkt in die Zone
+        <b class="font-black text-accent-yellow">{{ zoneNames[message.to] }}</b>.
+        {{ zoneNames[message.from] }} ist verlassen.</ng-container
+      >
+    }
+    @case ('travelAborted') {
+      <ng-container i18n="@@uiGame-gameToast-travelAborted"
+        >Das Reiseziel ist verschwunden. Der Schwarm treibt an keiner Stelle.</ng-container
+      >
+    }
+    @case ('unmarked') {
+      <ng-container i18n="@@uiGame-gameToast-unmarked"
+        >Markiertes Ziel ist nicht mehr ansteuerbar.</ng-container
+      >
+    }
+    @case ('noTarget') {
+      <ng-container i18n="@@uiGame-gameToast-noTarget"
+        >Kein ansteuerbares Ziel – der Schwarm bleibt.</ng-container
+      >
+    }
+  }
+</app-toast>

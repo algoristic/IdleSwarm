@@ -1,0 +1,53 @@
+@for (chip of chips(); track chip.id) {
+  @switch (chip.kind) {
+    @case ('zone') {
+      @if (chip.open) {
+        <span
+          class="rounded-lg bg-canvas px-2 py-1 text-xs font-black whitespace-nowrap text-accent-cyan tabular-nums"
+          data-testid="game.chips.zone"
+          i18n="@@uiGame-chips-zone-open"
+          >↓ Zone {{ chip.zone | formatInteger }} offen</span
+        >
+      } @else {
+        <span
+          class="inline-flex items-center gap-1 rounded-lg bg-canvas px-2 py-1 text-xs font-black whitespace-nowrap text-fg-muted tabular-nums"
+          data-testid="game.chips.zone"
+          i18n="@@uiGame-chips-zone-locked"
+          >↓ Zone {{ chip.zone | formatInteger }} ·
+          <svg width="8" height="9" viewBox="0 0 8 9" aria-hidden="true">
+            <rect x=".5" y="4" width="7" height="5" rx="1.2" fill="currentColor" />
+            <path
+              d="M2 4.2V3a2 2 0 0 1 4 0v1.2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+            />
+          </svg>
+          Antrieb {{ chip.threshold | formatNumber }}</span
+        >
+      }
+    }
+    @case ('buff') {
+      <span
+        class="rounded-lg bg-canvas px-2 py-1 text-xs font-black whitespace-nowrap text-accent-yellow tabular-nums"
+        [attr.data-testid]="'game.chips.' + chip.id"
+        >{{ findNames[chip.buff] }} {{ chip.remaining | formatTime }}</span
+      >
+    }
+    @case ('freeUpgrades') {
+      <span
+        class="rounded-lg bg-canvas px-2 py-1 text-xs font-black whitespace-nowrap text-accent-lime"
+        data-testid="game.chips.freeUpgrades"
+        >{{ findNames.germCell }} ×{{ chip.count | formatInteger }}</span
+      >
+    }
+    @case ('tempo') {
+      <span
+        class="rounded-lg bg-canvas px-2 py-1 text-xs font-black whitespace-nowrap text-accent-pink"
+        data-testid="game.chips.tempo"
+        i18n="@@uiGame-chips-tempo"
+        >Test {{ chip.tempo | formatNumber }}×</span
+      >
+    }
+  }
+}
