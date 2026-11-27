@@ -58,8 +58,8 @@ flowchart TD
   AP13 --> S2
   S2 --> AP14
 
-  class AP1,AP2,AP3,AP4a,AP4b,AP5 done
-  class AP3s,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
+  class AP1,AP2,AP3,AP4a,AP4b,AP5,AP6 done
+  class AP3s,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
   class S1,S2 user
 ```
 
@@ -76,7 +76,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | 4a | Store, Schleife, Spielstand | abgeschlossen |
 | 4b | Nachberechnung im Worker | abgeschlossen |
 | 5 | Gerüst, Dev-Build, shared/ui | abgeschlossen |
-| 6 | Asset-Bibliothek und Katalog | offen |
+| 6 | Asset-Bibliothek und Katalog | abgeschlossen |
 | – | Sichtung der Assets durch Marco | offen |
 | 7 | Ausbau-Ansicht | offen |
 | 8 | Dialoge | offen |
@@ -122,6 +122,11 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | Schrift auf Pink | dunkle Schrift `on-accent` statt Weiß (Kontrast ≥ 4,5:1) |
 | Inhalte des Gerüsts | HUD, Kontextzeilen, Chips, Toasts und Nachberechnungs-Overlay schon in AP 5 |
 | Menü bis AP 8 | Menüknopf öffnet einen Platzhalter-Dialog |
+| Farben der Illustrationen | Angular-freie TS-Palette `game/ui/art/art-palette.ts`, Werte 1:1 aus dem Prototyp; UI-Farben bleiben Tokens (ADR 0002) |
+| Darstellung der Schwarm-Szene | nur Canvas wie im Prototyp-Standard; die SVG-Formation mit CSS-Animationen wird nicht portiert; Hintergründe statisch |
+| Ablage reiner Zeichenfunktionen | Angular-frei als `game/ui/<ordner>/*.utils.ts` neben den Komponenten, gemeinsame in `game/ui/art` |
+| SVG-Teilkomponenten | Attributselektor `g[app-…]`; ESLint (`@angular-eslint/component-selector`) um `attribute` erweitert |
+| Katalog-E2E | `e2e/catalog.e2e.ts` nur gegen den Pages-Build (`E2E_BUILD_CONFIGURATION=pages`) |
 
 ## Domänenschnitt
 
@@ -186,6 +191,7 @@ Abhängigkeitsrichtung `dev → game → shared`, von ESLint erzwungen. `game` s
 
 - Alle visuellen Elemente 1:1 aus dem Prototyp als `game/ui`-Komponenten und Canvas-Renderer: Einheiten mit Bewegungen, Schwarm gesamt, Futterstellen in allen Zuständen, Fundstücke, Hintergründe je Zone und Ansicht, Reise-Drift, Neuronen und Knoten.
 - Katalog `/katalog` in `dev/feature`: Kategorien, Suche nach Name und Kategorie, Deep-Links je Eintrag, Regler für Zone, Anzahl, Zustand und Bewegung; zeigt auch `shared/ui`.
+- Umgesetzt als Palette und gemeinsame Zeichenhelfer in `game/ui/art` (ADR 0002), statische SVG-Komponenten `g[app-…]` in `game/ui/scene`, `map` und `neuron`, Canvas-Renderer `app-swarm-canvas` für Schwarm und Drift, Specs mit Werten aus dem Prototyp; Katalog mit `/katalog` und `/katalog/:entryId` (`catalogEntryGuard()`) in `dev`, E2E in `e2e/catalog.e2e.ts`.
 
 ### Sichtung der Assets durch Marco
 

@@ -26,8 +26,8 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 | Bereich (Regeldatei) | Pfade | Inhalt |
 | --- | --- | --- |
 | `shared` (`.claude/rules/shared.md`) | `src/app/shared/**` | Formatierung de-DE (`util/format.ts`) und ihre Pipes, Tokens in `src/styles.css`, generische UI-Elemente (`ui`) |
-| `game` (`.claude/rules/game.md`) | `src/app/game/**` | Domänenmodell, Spielstand v1, `GameConfig`, Zufall und `newGame`, Regeln und Zeitschritt, Golden Master (`domain`), Store, Schleife, Spielstand, Nachberechnung (`data-access`), Routen, Facade, Viewmodel und Seiten (`feature`), Präsentationskomponenten und Texte der Spieldaten (`ui`) |
-| `dev` (`.claude/rules/dev.md`) | `src/app/dev/**`, `src/app/dev-routes*.ts` | Dateiersetzung der Dev-Routen, Seiten des Dev-Builds |
+| `game` (`.claude/rules/game.md`) | `src/app/game/**` | Domänenmodell, Spielstand v1, `GameConfig`, Zufall und `newGame`, Regeln und Zeitschritt, Golden Master (`domain`), Store, Schleife, Spielstand, Nachberechnung (`data-access`), Routen, Facade, Viewmodel und Seiten (`feature`), Präsentationskomponenten, Asset-Bibliothek (`ui/art`, `scene`, `map`, `neuron`: Palette, Zeichenfunktionen, SVG-Komponenten, Canvas-Renderer) und Texte der Spieldaten (`ui`) |
+| `dev` (`.claude/rules/dev.md`) | `src/app/dev/**`, `src/app/dev-routes*.ts` | Dateiersetzung der Dev-Routen, Katalog (Routen, Einträge, Suche, Regler, Vorschauen, Katalog-E2E) |
 
 **Regeln, die überall gelten:**
 
@@ -362,5 +362,6 @@ Getestet werden die **wesentliche** Logik und die **wesentlichen** E2E-Abläufe;
 | Build (prüft Typen und Budgets) | `npm run build` |
 | Build mit Dev-Domäne wie GitHub Pages | `npm run build:pages` |
 | E2E (baut, dann Playwright; einmalig `npx playwright install chromium`) | `npm run e2e` |
+| E2E mit Katalog (nur gegen den Pages-Build) | `npm run build:pages && E2E_BUILD_CONFIGURATION=pages npx playwright test` |
 
 Vor dem Abschluss einer Aufgabe sind Lint, Format, Tests, Build und E2E grün (CI-Gate).

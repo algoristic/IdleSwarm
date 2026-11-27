@@ -15,6 +15,35 @@ Werkzeuge nur für den Dev-Build. Richtung `dev → game → shared` (ESLint, au
 - `production` ersetzt nichts; die Dev-Domäne fehlt dort ganz.
 - Im Dev-Build lädt der Router den Dev-Chunk bei der ersten Navigation, weil die Route `''` vor der Spielroute steht.
 
-## Seiten (`feature`)
+## Katalog
 
-- `devRoutes`: `katalog` → `CatalogPage` (`/katalog`), bisher nur ein Platzhalter mit Überschrift (`dev.catalog.title`). Der Katalog folgt in AP 6.
+Zeigt alle Assets aus `game/ui` (`.claude/rules/game.md`, Asset-Bibliothek) und die Elemente aus `shared/ui` mit echten Komponenten und Renderern.
+
+Routen und Seiten (`feature`):
+
+- `devRoutes`: `katalog` mit den Kindern `''` (`pathMatch: 'full'`) → `CatalogPage` und `:entryId` → `CatalogEntryPage` mit `canActivate: [catalogEntryGuard()]`.
+- `catalogEntryGuard()` (`state/dev.guards.ts`): unbekannte IDs leiten per `RedirectCommand` mit `replaceUrl` auf `/katalog`.
+- `CatalogPage`: Suche als Signal Form (`searchModel`/`searchForm`, `CatalogSearchModel` in `catalog.model.ts`) und Liste `app-catalog-list` der Treffer je Kategorie.
+- `CatalogEntryPage`: Eintrag aus `entryId`, Vorgänger und Nachfolger, Regler (`controlsModel` als `linkedSignal`, beim Eintragswechsel auf `CATALOG_DEFAULT_CONTROLS` zurück, ausgewertet mit `parseCatalogControls`) und die Vorschau nach `preview`. Liest `GAME_CONFIG` für Neuron und Meilensteine; lokaler Zustand für Dialog, Blatt, Toasts und Segment der `shared/ui`-Vorschau.
+
+Logik (`domain`):
+
+- `models/catalog.model.ts`: `CATALOG_CATEGORY_IDS` (`units`, `swarm`, `sites`, `finds`, `backdrops`, `travel`, `neuron`, `ui`), `CATALOG_ENTRY_IDS` (gleich den Pfaden der Deep-Links, z. B. `swarm-canvas`, `map-site`, `neuron-pair`, `pipes`), `CATALOG_CONTROL_IDS`, `CATALOG_PREVIEW_KINDS` (`art`, `map`, `neuron`, `shared`), `CatalogEntry`, `CatalogControlsModel` (Strings, `level` als Zahl), `CatalogControls` (ausgewertet).
+- `data/catalog.data.ts`: `CATALOG_ENTRIES` (Kategorie, Vorschau, Regler je Eintrag), `CATALOG_CHOICE_OPTIONS`, `CATALOG_LEVEL_MAX` = 18, `CATALOG_DEFAULT_CONTROLS`.
+- `catalog-logic.ts`: `isCatalogEntryId`, `catalogEntry`, `catalogNeighbours`, `normalizeQuery`, `searchCatalog` (Name oder Kategorie, ohne Groß- und Kleinschreibung), `unitsForLevel` (Einheiten je Stufe logarithmisch), `parseLevel` (begrenzt, sonst Standard), `parseCatalogControls` (unbekannte Werte → Standard).
+
+Regler: Stufe (Einheiten), Stellentyp, Hintergrund, Zone, Ferne, Richtung, Form-Seed, Füllstand, Kartenzone, Hervorhebung von Stelle und Fundstück, ausgetrocknet, hier, Ketten-Einheit, Zustand von Ausbau- und Ketten-Knoten, Rang, Ton der Soma, Ketten-Neuron, Bewegung.
+
+Bausteine (`ui`):
+
+- Vorschauen `app-catalog-art-preview` (Einheiten, Schwarm-Canvas an der Stelle und auf der Reise, Szene, Hintergründe), `app-catalog-map-preview`, `app-catalog-neuron-preview` (Beispiel-Viewmodels in `catalog-neuron-preview.utils.ts`), `app-catalog-shared-preview`.
+- `app-catalog-stage`: skaliert eine Vorschau fester Größe auf die verfügbare Breite (`ResizeObserver` über `DOCUMENT.defaultView`, Aufräumen über `DestroyRef`; `stageLayout` in `catalog-stage.utils.ts`).
+- `app-catalog-list`, `app-form-catalog-controls` (`controlsModel` per `model()`, Zeilen je Regler), `app-form-choice` (`FormValueControl<string>` über `app-segment`).
+- Texte in `ui/texts/catalog-texts.ts`: `CATALOG_CATEGORY_NAMES`, `CATALOG_ENTRY_NAMES`, `CATALOG_CONTROL_NAMES`, `CATALOG_OPTION_NAMES` (IDs `@@uiDev-catalogTexts-…`); Seitentexte `@@featureDev-…`.
+
+Test-IDs `dev.catalog.*`: `title`, `search`, `empty`, `category.<id>`, `entry.<id>`, `entry.title`, `entry.category`, `back`, `previous`, `next`, `preview` (mit `data-entry`), `controls`, `control.<id>` und `control.<id>.<option>`, `control.level.input|units`, dazu IDs der Vorschauen (z. B. `mapSite`, `unit.<id>`, `site.<type>`, `button.<variant>`, `tag.<tone>`, `segment.<id>`, `toast.show|item`, `dialog.open|close`, `sheet.toggle`, `pipes.numbers|times`).
+
+Tests:
+
+- `domain/catalog-logic.spec.ts`: eindeutige IDs, Erkennen der IDs, Nachbarn am Rand, Suche, Einheiten je Stufe, Begrenzen der Stufe, Auswerten der Regler.
+- `e2e/catalog.e2e.ts`: Kategorien, Suche, Eintrag per Link und Deep-Link, Regler ändert die Vorschau, Umleitung unbekannter IDs. Läuft nur mit `E2E_BUILD_CONFIGURATION=pages`, sonst übersprungen (der `production`-Build hat keinen Katalog). Die CI setzt den Wert aus `BUILD_CONFIGURATION` auf Job-Ebene; lokal `npm run build:pages && E2E_BUILD_CONFIGURATION=pages npx playwright test` (`npm run e2e` baut `production` und überspringt den Katalog).

@@ -5,7 +5,7 @@ paths:
 
 # game
 
-Das ganze Spiel. Bisher gibt es Domänenmodell, Spielwerte, Zufall, Startzustand, Regeln, Zeitschritt, Spielstand und Nachberechnung (`domain`), Store, Schleife, Speichern und Nachberechnung im Worker (`data-access`), Facade, Routen und das Seitengerüst mit HUD, Kontextzeile, Chips, Ansichtswahl, Menüknopf und Toasts (`feature`) sowie dessen Präsentationskomponenten und die Texte der Spieldaten (`ui`). Die Inhalte der Ansichten folgen (`docs/plan-angular-umbau.md`). Referenz für Regeln, Werte und Darstellung ist der eingefrorene Prototyp.
+Das ganze Spiel. Bisher gibt es Domänenmodell, Spielwerte, Zufall, Startzustand, Regeln, Zeitschritt, Spielstand und Nachberechnung (`domain`), Store, Schleife, Speichern und Nachberechnung im Worker (`data-access`), Facade, Routen und das Seitengerüst mit HUD, Kontextzeile, Chips, Ansichtswahl, Menüknopf und Toasts (`feature`) sowie dessen Präsentationskomponenten, die Asset-Bibliothek (Palette, Zeichenfunktionen, SVG-Komponenten und Canvas-Renderer in `ui/art`, `ui/scene`, `ui/map`, `ui/neuron`) und die Texte der Spieldaten (`ui`). Die Inhalte der Ansichten folgen (`docs/plan-angular-umbau.md`). Referenz für Regeln, Werte und Darstellung ist der eingefrorene Prototyp.
 
 ## Modelle (`domain/models`)
 
@@ -171,7 +171,62 @@ Präsentational, nur Inputs/Outputs; Viewmodel-Typen in `<component>.model.ts`, 
 - `app-game-toast` (`GameToast`, `GameToastMessage` als Codes): `toast`, `config` (für Fundbeschreibungen); Output `expired`. Färbt die Hervorhebungen selbst.
 - `app-catch-up-overlay` (`CatchUpOverlayView`: `percent` oder `null`).
 
-Test-IDs: `game.<bereich>.<element>`, z. B. `game.frame`, `game.hud.food.value`, `game.ctx.<view>`, `game.views.<view>`, `game.<view>.sheet` und `game.<view>.sheet.grip`, `game.menu.open|title|close`, `game.chips.<id>`, `game.toasts.<kind>`, `game.catchUp.text`.
+Test-IDs: `game.<bereich>.<element>`, z. B. `game.frame`, `game.hud.food.value`, `game.ctx.<view>`, `game.views.<view>`, `game.<view>.sheet` und `game.<view>.sheet.grip`, `game.menu.open|title|close`, `game.chips.<id>`, `game.toasts.<kind>`, `game.catchUp.text`, `game.swarm.canvas`, `game.neuron.<upgradeId>`, `game.neuron.flagella`, `game.neuron.chain.<key>`, `game.neuron.node.rank`, `game.neuron.chainNode.rank`, `game.neuron.label.name|cost`, `game.neuron.reach.<index>`.
+
+### Asset-Bibliothek (AP 6)
+
+Alle visuellen Elemente des Prototyps 1:1 (gleiche Pfade, `lcg`-Seeds, Farben, Kurven und Dauern), eingebunden im Dev-Katalog (`.claude/rules/dev.md`). Grundsätze:
+
+- Farben der Illustrationen nur aus `ui/art/art-palette.ts` (ADR 0002), gebunden per `[attr.fill]`/`[attr.stroke]`; Komponenten-CSS ohne Hex-Werte.
+- Reine Zeichenfunktionen (Formen, Geometrie, Formation, Kurven, Canvas-Zeichnen) sind Angular-freie `*.utils.ts` neben den Komponenten, gemeinsame in `ui/art`.
+- SVG-Teilkomponenten haben einen Attributselektor `g[app-…]` und werden als `<svg:g app-… />` in ein `<svg>` gesetzt. IDs von Gradienten und Clip-Pfaden sind je Instanz eindeutig (Modulzähler, z. B. `app-unit-sprite-<n>`).
+- Die Schwarm-Szene gibt es nur als Canvas wie im Prototyp-Standard (`applyCanvas(true)`); die SVG-Formation mit `.swim`, `.bob`, `.paddle` ist nicht portiert. CSS-Bewegung gibt es nur, wo der Prototyp im Standard SVG zeigt: Mini-Schwarm der Karte und Neuron.
+- Bewegung schaltet der Input `motion` (Standard `true`) ab; die CSS-Animationen entfallen zusätzlich bei `prefers-reduced-motion: reduce`. Der Canvas zeichnet ohne `motion` mit Zeit 0.
+- Hintergründe (Ferne, Dunst, Schwarm-Hintergrund) sind im Prototyp-Standard gerastert und stehen still; die Komponenten sind statisches SVG ohne Strahlen- und Teilchenbewegung.
+- Kein Messmodus (`STRESS` ist immer 1).
+
+### `ui/art`
+
+- `art-palette.ts`: `as const`-Objekte je Bereich, Werte 1:1 aus dem Prototyp: `UNIT_SPRITE_COLORS`, `SPARKLE_COLOR`, `LOCKED_UNIT_ICON_COLORS`, `ZONE_MOODS` (`deep`, `mid`, `light`, `shape`, `glow`, `kind` aus `ZONE_MOOD_KINDS`; Index 4 ist die Ferne hinter der letzten Zone), `SITE_COLORS`, `SITE_MOODS`, `SCENE_COLORS`, `SITE_ICON_COLORS`, `MAP_COLORS`, `SOMA_COLORS` (`SomaTone`), `NEURON_COLORS`.
+- `shape.utils.ts`: `lcg(seed): RandomSource` und `blobPath(r, seed, n?, jitter?, cx?, cy?)`.
+- `paddler.utils.ts`: `paddlerParams(index, minRadius, radiusRange): PaddlerParams` (Radius, Dauer, Richtung, Start, Rollen, Verzögerungen; Seed `index * 7919 + 13`), gemeinsam für Mini-Schwarm der Karte und Canvas.
+- `g[app-unit-sprite]` (`unit: UnitId`): Figur je Einheit, Clip-ID je Instanz. `UNIT_SPRITE_HALF_EXTENT` (halbe Kantenlänge je Einheit, Rastergröße im Canvas) und `CHAIN_ICON_SCALE` (`ChainIconUnit`: Fressling bis Gelege) in `unit-sprite.model.ts`.
+- `g[app-sparkle-sprite]`: Funkeln der Fundstücke.
+- `app-unit-icon` (`unit: UnitId | null`, `variant: 'list' | 'tab'`): eigenes `<svg>`; `null` zeigt das gesperrte Symbol mit „?“. Rahmen aus `unitIconFrame` (`unit-icon.utils.ts`).
+
+### `ui/scene`
+
+- Statische SVG-Teile: `g[app-far-mood]` (`mood`; Index über `farMoodIndex(zone, zoneCount)`), `g[app-zone-haze]` (`zone`), `g[app-scene-backdrop]` (`kind: SceneBackdropKind` = Stellentyp, `travel` oder `none`, `zone`), `g[app-scene-site]` (`type`, `shape`, `fillFraction`; Skala `sceneSiteScale` = 0,35 + 0,65·√Anteil). Geometrie in `mood.utils.ts` und `scene-site.utils.ts`, Typen in `models/scene.model.ts`.
+- `sceneBackdrop` mischt wie der Prototyp die Länge der deutschen Stellenschlüssel in den Seed (`PROTOTYPE_SITE_KEY_LENGTHS`: `algen` 5, `plankton` 8, `krebs` 5, `schnee` 6, `seegras` 7); nicht durch die englischen IDs ersetzen.
+- Drift: `driftItems(travel)` (`drift.utils.ts`, Seed 42; 70 Flocken oder 16 Striche, Kachel `STREAK_TILE` = 120), gruppiert in `swarm-drift.utils.ts` (`speckGroups`, `streakLines`).
+- `app-swarm-canvas`: Inputs `units` (Anzahl je Einheit in der Reihenfolge von `UNIT_IDS`), `travelAngle` (`number | null`; `null` = an einer Stelle), `motion`. Fläche `SWARM_CANVAS_BOX` (680 × 800 ab −340/−340).
+  - Lebenszyklus: `afterNextRender` startet; die Sprites kommen aus einem versteckten `<svg>` mit `g[app-unit-sprite]`, per `XMLSerializer` als SVG-Daten-URL in ein `Image` und von dort in ein Canvas gerastert (`spritePixels`, Pixelverhältnis höchstens 3). Die Frame-Kette läuft über `requestAnimationFrame` von `DOCUMENT.defaultView`; `DestroyRef` bricht sie ab und verwirft noch dekodierende Sprites.
+  - Formation (`swarm-formation.utils.ts`): `swarmFigureCounts` (Fresslinge bis 48, Brüter bis 8, höhere Stufen bis 4), `swarmFigures(units, travelling)` mit Goldenem Winkel; an der Stelle `bob`/`paddle`, unterwegs `bob`/`swim` gestaucht.
+  - Bewegung (`swarm-motion.utils.ts`): `cubicBezier`, `EASE_IN_OUT`, `EASE_OUT`, `alternate`, `paddleAngle`, `applyRoll`; Trek-Übergang `nextTrek`/`trekAngle` über `TREK_DURATION_MS` = 800 auf den auf 0,1° gerundeten Winkel; `flowRotation` dreht die Drift (Winkel + 90°). Das Zeichnen je Frame macht `drawSwarmFrame` (`swarm-draw.utils.ts`), die Drift als `Path2D` aus `buildSwarmDrift`.
+- Hinweis für AP 11: `travelAngle` je Reise fest übergeben. Ein Winkel, der sich ständig ändert, startet in jedem Frame einen neuen 800-ms-Übergang.
+- Noch nicht umgesetzt (AP 11): Rastern der Hintergründe ins Canvas, Lage im Ebenenstapel, Interpolation zwischen den Schritten, Übergänge und die Anbindung an Zustand und Ansicht.
+
+### `ui/map`
+
+- `map.model.ts`: `REACH_PX` = 252 (Kartenpixel je Reichweite), `MAP_SITE_ICON_RADIUS` je Stellentyp, `MAP_ZONES`/`MapZone` (`current`, `next`).
+- `g[app-map-site-icon]` (`type`, `shape`, `radius`): Symbol je Stellentyp, Geometrie aus `mapSiteIconGeometry` (`map-site-icon.utils.ts`, Union `MapSiteIconGeometry`).
+- `g[app-map-site]` (`type`, `shape`, `fillFraction`, `dead`, `zone`, `highlight: MapSiteHighlight` = `none` | `target` | `auto`, `here`): Füllstand über die Symbolgröße, ausgetrocknet `opacity-35`, nächste Zone blasser mit gestricheltem Ring, Ring für Ziel und Auto-Ziel; mit `here` ohne Symbol (das zeigt `g[app-map-current-site]`). Ringe und Radien in `map-site.utils.ts`.
+- `g[app-map-current-site]` (`type`, `shape`, `fillFraction`, `dead`): die Stelle, an der der Schwarm ist, vergrößert.
+- `g[app-map-find]` (`zone`, `highlight: MapFindHighlight` = `none` | `target`).
+- `g[app-map-swarm]` (`eaters`, `brooders`, `motion`): Mini-Schwarm mit CSS-Bewegung (`map-swarm__paddle`, `__roll`, `__swirl` in `map-swarm.component.css`); Anordnung aus `mapSwarmLayout` mit `paddlerParams`.
+- `g[app-map-water]`: Wasser mit drei Ringen aus `REACH_PX`.
+- Keine Test-IDs; Klickflächen sind vorbereitet (`cursor-pointer`, transparente Trefferkreise), Outputs gibt es noch nicht.
+- Noch nicht umgesetzt (AP 10): Reichweitenringe, Route, Abdunklung, Beschriftungen, Verschieben und Markieren.
+
+### `ui/neuron`
+
+- `neuron.model.ts`: `CHAIN_KEYS`/`ChainKey`, `SWARM_DENDRITE_IDS`, `NeuronSelection`, `UpgradeCostView` (`free`, `food`, `units`, `lockedUntil`), `UpgradeNodeView`, `ChainNodeView` (`locked`), `SwarmNeuronView`, `ChainNeuronView`, Geometrie- und Anzeigetypen (`DendriteGeometry`, `BeadView`, `MyelinView`, `ReachMilestoneView`, `NeuronOrganellesView`). Die Facade setzt die Viewmodels in AP 7 zusammen; die Komponenten bekommen nur Rohwerte.
+- `neuron.utils.ts`: `NEURON_VIEW_BOX` (`-500 -560 1700 1400`), `CHAIN_NEURON_X`, feste Pfade und Dendriten (`SWARM_DENDRITES`, `CHAIN_DENDRITES`), `beadPositions` (höchstens 5 und die nächste), `myelinStates` und `reachMilestones` (über `reach.every` aus `GameConfig`), `neuronOrganelles(showChain)` (Seed 99).
+- Komponenten: `g[app-neuron-backdrop]` (`showChain`), `g[app-neuron-soma]` (`tone: SomaTone`), `g[app-neuron-dendrite]` (`geometry`, `rank`, `tone`, `locked`, `motion`), `g[app-neuron-axon]` (`path`, `tone`, `motion`), `g[app-upgrade-node]` (`rank`, `affordable`, `selected`, `motion`), `g[app-chain-node]` (`unit`, `rank`, `affordable`, `locked`, `selected`, `motion`), `g[app-neuron-label]` (`position`, `name`, `cost`, `affordable`, `align`, `tone`), `g[app-swarm-neuron]` (`view`, `config`, `motion`), `g[app-chain-neuron]` (`view`, `motion`).
+- Texte: `@@uiGame-chainNeuron-synapse|title`, `@@uiGame-neuronLabel-cost-free|food|units|lockedUntil`, `@@uiGame-swarmNeuron-milestone-*`; Namen aus `UPGRADE_NAMES` und `UNIT_TEXTS`.
+- Bewegung (Signal auf Dendrit und Axon, Puls und Auswahl der Knoten) als CSS-Klassen `…--moving` nur mit `motion`, in den `.component.css` mit `prefers-reduced-motion`.
+- Eigenheiten des Prototyps, die bewusst 1:1 bleiben: Kosten am Ketten-Neuron stehen immer in der Kostenfarbe `chainCost`, auch wenn nicht bezahlbar (Reihenfolge der CSS-Regeln im Prototyp). Ränge zeigt die Pipe `formatInteger`.
+- Noch nicht umgesetzt (AP 7): Auswahl, Fokus, Verschieben, Tabs und Outputs.
 
 ## Texte (`ui/texts/game-texts.ts`)
 
@@ -195,4 +250,11 @@ Test-IDs: `game.<bereich>.<element>`, z. B. `game.frame`, `game.hud.food.value`,
 - `catch-up.service.spec.ts` und `catch-up-service.utils.spec.ts`: Worker-Protokoll, Fortschritt, Fallback im Hauptthread (kein Worker, Fehler, ungültige Antwort), Abbrechen; Type Guards.
 - `upgrade-logic.spec.ts`, `site-logic.spec.ts`, `travel-logic.spec.ts`, `harvest-logic.spec.ts`, `find-logic.spec.ts`, `zone-logic.spec.ts`: die Anzeigefunktionen aus AP 5.
 - `feature/state/game.utils.spec.ts`: `toastCandidates`, `advanceToastQueue` (höchstens zwei, nichts kehrt zurück), `toGameView` (Ernte unterwegs, Unterzeilen, Markierung vor Alternative, Reihenfolge der Chips, Fortschritt der Nachberechnung).
+- Asset-Bibliothek (AP 6): Die Erwartungswerte wurden einmal aus den Originalfunktionen des eingefrorenen Prototyps unter Node erzeugt (`STRESS` = 1); die Erzeugerskripte sind nicht im Repo.
+  - `ui/art/shape.utils.spec.ts`: Folgen von `lcg` und Pfade von `blobPath`.
+  - `ui/art/paddler.utils.spec.ts`: `paddlerParams` gegen `swarm.fixture.ts`.
+  - `ui/scene/scene-geometry.spec.ts` mit `scene-geometry.fixture.ts`: Markup von Ferne, Dunst, Schwarm-Hintergrund und Stelle als Länge, Hash und Anfang, dazu Drift und Skala der Stelle.
+  - `ui/scene/swarm-formation.utils.spec.ts`, `swarm-motion.utils.spec.ts`, `swarm-draw.utils.spec.ts` mit `swarm.fixture.ts`: Figurenzahl und Formation, Kurven und Trek-Übergang, aufgezeichnete Zeichenaufrufe je Frame, Drift und Rastern der Sprites.
+  - `ui/map/map-site-icon/map-site-icon.utils.spec.ts` und `ui/map/map-swarm/map-swarm.utils.spec.ts` mit je einer `*.fixture.ts`: Markup der Stellensymbole und des Mini-Schwarms.
+  - `ui/neuron/neuron.utils.spec.ts`: Perlen, Myelin, Meilensteine (mit `PROTOTYPE_GAME_CONFIG`) und Organellen mit Werten aus dem Prototyp im Spec.
 - `e2e/game.e2e.ts` (Desktop und Smartphone): HUD mit Werten und Willkommens-Toast, Wechsel der Ansichten mit URL und `aria-current`, Griff des Blatts, Menü öffnen und schließen.
