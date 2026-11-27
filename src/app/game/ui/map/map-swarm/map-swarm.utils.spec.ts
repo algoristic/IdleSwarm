@@ -1,6 +1,6 @@
-import { PROTOTYPE_PADDLER_PARAMS, PROTOTYPE_SWARM_MINI } from './map-swarm.fixture';
+import { PROTOTYPE_SWARM_MINI } from './map-swarm.fixture';
 import { MapSwarmLayout } from './map-swarm.model';
-import { mapSwarmLayout, paddlerParams } from './map-swarm.utils';
+import { mapSwarmLayout } from './map-swarm.utils';
 
 function toMarkup(layout: MapSwarmLayout): string {
   const brooders = layout.brooders
@@ -23,10 +23,4 @@ describe('mapSwarmLayout', () => {
       expect(toMarkup(mapSwarmLayout(eaters, brooders))).toBe(markup);
     },
   );
-});
-
-describe('paddlerParams', () => {
-  it.each(PROTOTYPE_PADDLER_PARAMS)('liefert die Bahn der Figur $i', ({ i, params }) => {
-    expect(paddlerParams(i, 2.5, 3)).toEqual(params);
-  });
 });

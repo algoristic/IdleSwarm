@@ -1,10 +1,9 @@
-import { lcg } from '../../art/shape.utils';
+import { paddlerParams } from '../../art/paddler.utils';
 import {
   MapSwarmBrooder,
   MapSwarmCounts,
   MapSwarmLayout,
   MapSwarmPaddler,
-  PaddlerParams,
 } from './map-swarm.model';
 
 const MAX_EATERS = 14;
@@ -51,16 +50,6 @@ export function mapSwarmLayout(eaters: number, brooders: number): MapSwarmLayout
   return { brooders: brooderFigures, eaters: eaterFigures };
 }
 
-export function paddlerParams(i: number, rMin: number, rVar: number): PaddlerParams {
-  const random = lcg(i * 7919 + 13);
-  const rr = rMin + random() * rVar;
-  const dur = 8 + random() * 8;
-  const rev = random() < 0.4;
-  const start = random() * 360;
-  const roll = 0.8 + random() * 0.6;
-  return { rr, dur, rev, start, roll, padDelay: random() * dur, rollDelay: random() };
-}
-
 export function paddlerFigure(
   x: number,
   y: number,
@@ -72,10 +61,10 @@ export function paddlerFigure(
   const p = paddlerParams(i, rMin, rVar);
   return {
     transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(p.start)})`,
-    reverse: p.rev,
-    paddleDuration: `${p.dur.toFixed(1)}s`,
-    paddleDelay: `-${p.padDelay.toFixed(1)}s`,
-    spriteTransform: `translate(${p.rr.toFixed(1)} 0) rotate(${p.rev ? -90 : 90}) scale(${scale})`,
+    reverse: p.reverse,
+    paddleDuration: `${p.duration.toFixed(1)}s`,
+    paddleDelay: `-${p.paddleDelay.toFixed(1)}s`,
+    spriteTransform: `translate(${p.radius.toFixed(1)} 0) rotate(${p.reverse ? -90 : 90}) scale(${scale})`,
     rollDuration: `${p.roll.toFixed(1)}s`,
     rollDelay: `-${p.rollDelay.toFixed(1)}s`,
   };

@@ -1,13 +1,3 @@
-export interface PaddlerParams {
-  rr: number;
-  dur: number;
-  rev: boolean;
-  start: number;
-  roll: number;
-  padDelay: number;
-  rollDelay: number;
-}
-
 export interface MapSwarmCounts {
   eaters: number;
   brooders: number;
