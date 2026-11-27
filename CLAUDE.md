@@ -25,8 +25,9 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 
 | Bereich (Regeldatei) | Pfade | Inhalt |
 | --- | --- | --- |
-| `shared` (`.claude/rules/shared.md`) | `src/app/shared/**` | Formatierung de-DE (`util/format.ts`) und ihre Pipes |
-| `game` (`.claude/rules/game.md`) | `src/app/game/**` | Domänenmodell, Spielstand v1, `GameConfig`, Zufall und `newGame`, Regeln und Zeitschritt, Golden Master (`domain`), Store, Schleife, Spielstand, Nachberechnung (`data-access`), Texte der Spieldaten (`ui/texts`) |
+| `shared` (`.claude/rules/shared.md`) | `src/app/shared/**` | Formatierung de-DE (`util/format.ts`) und ihre Pipes, Tokens in `src/styles.css`, generische UI-Elemente (`ui`) |
+| `game` (`.claude/rules/game.md`) | `src/app/game/**` | Domänenmodell, Spielstand v1, `GameConfig`, Zufall und `newGame`, Regeln und Zeitschritt, Golden Master (`domain`), Store, Schleife, Spielstand, Nachberechnung (`data-access`), Routen, Facade, Viewmodel und Seiten (`feature`), Präsentationskomponenten und Texte der Spieldaten (`ui`) |
+| `dev` (`.claude/rules/dev.md`) | `src/app/dev/**`, `src/app/dev-routes*.ts` | Dateiersetzung der Dev-Routen, Seiten des Dev-Builds |
 
 **Regeln, die überall gelten:**
 
@@ -42,6 +43,7 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 - **Exakte Versionen:** Jede Version in `package.json` ist exakt (`"4.3.5"`), nie `^`, `~`, `>=` oder `*`. Die `.npmrc` setzt `save-exact=true`; nach `npm i` trotzdem `package.json` prüfen. Updates sind bewusste Versionssprünge.
 - Node per `nvm use` (`.nvmrc`).
 - CI (`.github/workflows/ci.yml`) prüft Lint, Format, Unit-Tests mit Abdeckung, Build und E2E bei Pull Requests und Pushes auf `main`/`development`; ein Push auf `development` deployt auf GitHub Pages, ein Push auf `main` per SFTP auf den eigenen Server (beide Base-Href `/IdleSwarm/`, Apache-Konfiguration in `deploy/apache/.htaccess`).
+- Die Build-Konfiguration richtet sich nach dem Ziel: `production` (ohne Dev-Domäne) bei Push und manuellem Lauf auf `main` und bei Pull Requests nach `main`, sonst `pages` (Produktions-Build mit Dev-Domäne, `npm run build:pages`, Serve-Konfiguration `pages`). E2E läuft gegen genau diesen Build.
 
 ## 0. Umgang mit dieser Datei
 
@@ -356,6 +358,7 @@ Getestet werden die **wesentliche** Logik und die **wesentlichen** E2E-Abläufe;
 | Lint (und Fix) | `npm run lint` (`npm run lint -- --fix`) |
 | Format | `npm run format:check`, `npx prettier --write <dateien>` |
 | Build (prüft Typen und Budgets) | `npm run build` |
+| Build mit Dev-Domäne wie GitHub Pages | `npm run build:pages` |
 | E2E (baut, dann Playwright; einmalig `npx playwright install chromium`) | `npm run e2e` |
 
 Vor dem Abschluss einer Aufgabe sind Lint, Format, Tests, Build und E2E grün (CI-Gate).

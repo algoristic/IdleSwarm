@@ -58,8 +58,8 @@ flowchart TD
   AP13 --> S2
   S2 --> AP14
 
-  class AP1,AP2,AP3,AP4a,AP4b done
-  class AP3s,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
+  class AP1,AP2,AP3,AP4a,AP4b,AP5 done
+  class AP3s,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
   class S1,S2 user
 ```
 
@@ -75,7 +75,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | 3s | Headless-Simulation | offen |
 | 4a | Store, Schleife, Spielstand | abgeschlossen |
 | 4b | Nachberechnung im Worker | abgeschlossen |
-| 5 | Gerüst, Dev-Build, shared/ui | offen |
+| 5 | Gerüst, Dev-Build, shared/ui | abgeschlossen |
 | 6 | Asset-Bibliothek und Katalog | offen |
 | – | Sichtung der Assets durch Marco | offen |
 | 7 | Ausbau-Ansicht | offen |
@@ -117,6 +117,11 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | Speicherschlüssel | `idleswarm-save` |
 | Tests in AP 4 | gezielte Specs für Laden und Migration, Akkumulator, Schleife über ersetzte Tokens, Worker-Protokoll |
 | Nachberechnung | Store gesperrt (Aktionen `null`), kein Speichern während der Sperre; Lücken währenddessen werden nachgereicht; Zusammenfassungen werden zusammengeführt |
+| Dev-Build | eigene Build-Konfiguration `pages` (Produktions-Build mit Dev-Domäne) für GitHub Pages und die CI außer Ziel `main` |
+| Maße und Tokens | Maße aus dem Prototyp auf die Tailwind-Standardskala gerundet, keine eigenen Größen- oder Radius-Tokens; Farben und Schatten 1:1 als Tokens; Tailwind-Standardpalette geleert |
+| Schrift auf Pink | dunkle Schrift `on-accent` statt Weiß (Kontrast ≥ 4,5:1) |
+| Inhalte des Gerüsts | HUD, Kontextzeilen, Chips, Toasts und Nachberechnungs-Overlay schon in AP 5 |
+| Menü bis AP 8 | Menüknopf öffnet einen Platzhalter-Dialog |
 
 ## Domänenschnitt
 
@@ -175,6 +180,7 @@ Abhängigkeitsrichtung `dev → game → shared`, von ESLint erzwungen. `game` s
 - Generische UI-Elemente in `shared/ui` (Button, Segment, Pill, Tag, Bottom-Sheet mit Griff und Wischen, Toast, Dialograhmen).
 - Dev-Build: eigene Build-Konfiguration für GitHub Pages; `dev`-Routen per Dateiersetzung nur im Dev-Build; CI und Deploy anpassen.
 - E2E-Smoke: Start, Ansichten erreichbar.
+- Umgesetzt als `gameRoutes` mit `GamePage` (Gerüst, startet und stoppt die Schleife), `GameFacade` und `toGameView` in `game/feature`, Präsentationskomponenten in `game/ui` und Anzeigefunktionen in `domain` (z. B. `zone-logic`); Tokens in `src/styles.css`, UI-Elemente in `shared/ui`; Build-Konfiguration `pages` mit Dateiersetzung `dev-routes.ts` und Platzhalter `/katalog`; E2E in `e2e/game.e2e.ts`.
 
 ### AP 6 · Asset-Bibliothek und Katalog (groß)
 
