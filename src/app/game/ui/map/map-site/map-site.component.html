@@ -1,0 +1,18 @@
+@let _ring = ring();
+<svg:circle [attr.r]="hitRadius()" fill="transparent" />
+@if (zone() === 'next') {
+  <svg:g opacity=".7">
+    <g app-map-site-icon [type]="type()" [shape]="shape()" [radius]="iconRadius()" />
+  </svg:g>
+} @else if (!here()) {
+  <svg:g app-map-site-icon [type]="type()" [shape]="shape()" [radius]="iconRadius()" />
+}
+@if (_ring) {
+  <svg:circle
+    [attr.r]="_ring.radius"
+    fill="none"
+    [attr.stroke]="_ring.color"
+    [attr.stroke-width]="_ring.width"
+    [attr.stroke-dasharray]="_ring.dash"
+  />
+}

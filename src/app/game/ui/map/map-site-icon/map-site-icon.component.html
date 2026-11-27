@@ -1,0 +1,46 @@
+@let g = geometry();
+@if (g.type === 'algae') {
+  <svg:path
+    [attr.d]="g.path"
+    [attr.fill]="colors.algae.shadow"
+    [attr.transform]="g.shadowTransform"
+  />
+  <svg:path [attr.d]="g.path" [attr.fill]="colors.algae.body" />
+} @else if (g.type === 'plankton') {
+  <svg:circle [attr.r]="g.radius" [attr.fill]="colors.plankton.outer" />
+  <svg:circle [attr.r]="g.innerRadius" [attr.fill]="colors.plankton.inner" />
+  <svg:g [attr.fill]="colors.plankton.dots">
+    @for (dot of g.dots; track $index) {
+      <svg:circle [attr.cx]="dot.cx" [attr.cy]="dot.cy" [attr.r]="dot.r" />
+    }
+  </svg:g>
+} @else if (g.type === 'carcass') {
+  <svg:g [attr.transform]="g.transform">
+    <g [attr.stroke]="colors.carcass.legs" stroke-width="1.2" stroke-linecap="round" fill="none">
+      <path [attr.d]="carcassLegsPath" />
+      <path [attr.d]="carcassClawsPath" />
+    </g>
+    <path [attr.d]="g.bodyPath" [attr.fill]="colors.carcass.shadow" transform="translate(.6 .9)" />
+    <path [attr.d]="g.bodyPath" [attr.fill]="colors.carcass.body" />
+  </svg:g>
+} @else if (g.type === 'marineSnow') {
+  <svg:circle [attr.r]="g.radius" [attr.fill]="colors.marineSnow.body" />
+  <svg:g [attr.fill]="colors.marineSnow.flakes">
+    @for (flake of g.flakes; track $index) {
+      <svg:circle [attr.cx]="flake.cx" [attr.cy]="flake.cy" [attr.r]="flake.r" />
+    }
+  </svg:g>
+} @else {
+  <svg:ellipse
+    [attr.cy]="g.groundCy"
+    [attr.rx]="g.groundRx"
+    [attr.ry]="g.groundRy"
+    [attr.fill]="colors.seagrass.ground"
+  />
+  @for (blade of g.blades; track $index) {
+    <svg:path
+      [attr.d]="blade.d"
+      [attr.fill]="blade.odd ? colors.seagrass.bladeOdd : colors.seagrass.bladeEven"
+    />
+  }
+}

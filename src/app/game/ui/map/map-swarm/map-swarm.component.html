@@ -1,0 +1,27 @@
+@let _layout = layout();
+@let _motion = motion();
+<svg:g [class.map-swarm__swirl]="_motion">
+  @for (brooder of _layout.brooders; track $index) {
+    <svg:g app-unit-sprite [unit]="'brooder'" [attr.transform]="brooder.transform" />
+  }
+</svg:g>
+@for (eater of _layout.eaters; track $index) {
+  <svg:g [attr.transform]="eater.transform">
+    <g
+      [class.map-swarm__paddle]="_motion"
+      [class.map-swarm__paddle--rev]="_motion && eater.reverse"
+      [style.animation-duration]="eater.paddleDuration"
+      [style.animation-delay]="eater.paddleDelay"
+    >
+      <g [attr.transform]="eater.spriteTransform">
+        <g
+          app-unit-sprite
+          [unit]="'eater'"
+          [class.map-swarm__roll]="_motion"
+          [style.animation-duration]="eater.rollDuration"
+          [style.animation-delay]="eater.rollDelay"
+        ></g>
+      </g>
+    </g>
+  </svg:g>
+}

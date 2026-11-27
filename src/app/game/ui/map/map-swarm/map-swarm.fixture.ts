@@ -1,0 +1,99 @@
+import { PaddlerParams } from './map-swarm.model';
+
+export interface SwarmMiniCase {
+  eaters: number;
+  brooders: number;
+  markup: string;
+}
+
+export const PROTOTYPE_SWARM_MINI: SwarmMiniCase[] = [
+  { eaters: 0, brooders: 0, markup: '<g class="swirl swirl--map"></g>' },
+  { eaters: 0.5, brooders: 0, markup: '<g class="swirl swirl--map"></g>' },
+  {
+    eaters: 1,
+    brooders: 1,
+    markup:
+      '<g class="swirl swirl--map"><g transform="translate(7.0 0.0) rotate(0) scale(.42)"><use href="#brut"/></g></g><g transform="translate(10.6 0.0) rotate(346)"><g class="paddle" style="animation-duration:13.7s;animation-delay:-11.6s"><g transform="translate(2.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.4s;animation-delay:-0.6s"/></g></g></g>',
+  },
+  {
+    eaters: 2,
+    brooders: 5,
+    markup:
+      '<g class="swirl swirl--map"><g transform="translate(7.0 0.0) rotate(0) scale(.42)"><use href="#brut"/></g></g><g transform="translate(10.6 0.0) rotate(346)"><g class="paddle" style="animation-duration:13.7s;animation-delay:-11.6s"><g transform="translate(2.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.4s;animation-delay:-0.6s"/></g></g></g><g transform="translate(-9.2 8.4) rotate(5)"><g class="paddle" style="animation-duration:10.9s;animation-delay:-8.5s"><g transform="translate(2.7 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.2s"/></g></g></g>',
+  },
+  {
+    eaters: 5,
+    brooders: 9,
+    markup:
+      '<g class="swirl swirl--map"><g transform="translate(7.0 0.0) rotate(0) scale(.42)"><use href="#brut"/></g></g><g transform="translate(10.6 0.0) rotate(346)"><g class="paddle" style="animation-duration:13.7s;animation-delay:-11.6s"><g transform="translate(2.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.4s;animation-delay:-0.6s"/></g></g></g><g transform="translate(-9.2 8.4) rotate(5)"><g class="paddle" style="animation-duration:10.9s;animation-delay:-8.5s"><g transform="translate(2.7 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.2s"/></g></g></g><g transform="translate(1.2 -13.9) rotate(23)"><g class="paddle paddle--rev" style="animation-duration:8.0s;animation-delay:-5.8s"><g transform="translate(2.9 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.7s"/></g></g></g><g transform="translate(9.2 12.1) rotate(41)"><g class="paddle" style="animation-duration:13.2s;animation-delay:-8.7s"><g transform="translate(3.1 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.3s"/></g></g></g><g transform="translate(-16.0 -2.8) rotate(59)"><g class="paddle paddle--rev" style="animation-duration:10.4s;animation-delay:-6.2s"><g transform="translate(3.2 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.8s"/></g></g></g>',
+  },
+  {
+    eaters: 40,
+    brooders: 10,
+    markup:
+      '<g class="swirl swirl--map"><g transform="translate(7.0 0.0) rotate(0) scale(.42)"><use href="#brut"/></g><g transform="translate(-5.2 4.7) rotate(130) scale(.42)"><use href="#brut"/></g></g><g transform="translate(10.6 0.0) rotate(346)"><g class="paddle" style="animation-duration:13.7s;animation-delay:-11.6s"><g transform="translate(2.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.4s;animation-delay:-0.6s"/></g></g></g><g transform="translate(-9.2 8.4) rotate(5)"><g class="paddle" style="animation-duration:10.9s;animation-delay:-8.5s"><g transform="translate(2.7 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.2s"/></g></g></g><g transform="translate(1.2 -13.9) rotate(23)"><g class="paddle paddle--rev" style="animation-duration:8.0s;animation-delay:-5.8s"><g transform="translate(2.9 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.7s"/></g></g></g><g transform="translate(9.2 12.1) rotate(41)"><g class="paddle" style="animation-duration:13.2s;animation-delay:-8.7s"><g transform="translate(3.1 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.3s"/></g></g></g><g transform="translate(-16.0 -2.8) rotate(59)"><g class="paddle paddle--rev" style="animation-duration:10.4s;animation-delay:-6.2s"><g transform="translate(3.2 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.8s"/></g></g></g><g transform="translate(14.6 -9.3) rotate(77)"><g class="paddle paddle--rev" style="animation-duration:15.6s;animation-delay:-8.3s"><g transform="translate(3.4 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.3s"/></g></g></g><g transform="translate(-4.7 17.5) rotate(95)"><g class="paddle" style="animation-duration:12.8s;animation-delay:-6.0s"><g transform="translate(3.6 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.9s"/></g></g></g><g transform="translate(-8.8 -16.9) rotate(113)"><g class="paddle paddle--rev" style="animation-duration:10.0s;animation-delay:-4.1s"><g transform="translate(3.8 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.4s"/></g></g></g><g transform="translate(18.6 6.8) rotate(132)"><g class="paddle" style="animation-duration:15.1s;animation-delay:-5.3s"><g transform="translate(4.0 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-1.0s"/></g></g></g><g transform="translate(-19.0 7.8) rotate(150)"><g class="paddle" style="animation-duration:12.3s;animation-delay:-3.5s"><g transform="translate(4.2 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.5s"/></g></g></g><g transform="translate(9.0 -19.3) rotate(168)"><g class="paddle paddle--rev" style="animation-duration:9.5s;animation-delay:-2.1s"><g transform="translate(4.4 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.1s"/></g></g></g><g transform="translate(6.6 20.9) rotate(186)"><g class="paddle" style="animation-duration:14.7s;animation-delay:-2.4s"><g transform="translate(4.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.2s;animation-delay:-0.6s"/></g></g></g>',
+  },
+  {
+    eaters: 1000,
+    brooders: 99,
+    markup:
+      '<g class="swirl swirl--map"><g transform="translate(7.0 0.0) rotate(0) scale(.42)"><use href="#brut"/></g><g transform="translate(-5.2 4.7) rotate(130) scale(.42)"><use href="#brut"/></g></g><g transform="translate(10.6 0.0) rotate(346)"><g class="paddle" style="animation-duration:13.7s;animation-delay:-11.6s"><g transform="translate(2.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.4s;animation-delay:-0.6s"/></g></g></g><g transform="translate(-9.2 8.4) rotate(5)"><g class="paddle" style="animation-duration:10.9s;animation-delay:-8.5s"><g transform="translate(2.7 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.2s"/></g></g></g><g transform="translate(1.2 -13.9) rotate(23)"><g class="paddle paddle--rev" style="animation-duration:8.0s;animation-delay:-5.8s"><g transform="translate(2.9 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.7s"/></g></g></g><g transform="translate(9.2 12.1) rotate(41)"><g class="paddle" style="animation-duration:13.2s;animation-delay:-8.7s"><g transform="translate(3.1 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.3s"/></g></g></g><g transform="translate(-16.0 -2.8) rotate(59)"><g class="paddle paddle--rev" style="animation-duration:10.4s;animation-delay:-6.2s"><g transform="translate(3.2 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.8s"/></g></g></g><g transform="translate(14.6 -9.3) rotate(77)"><g class="paddle paddle--rev" style="animation-duration:15.6s;animation-delay:-8.3s"><g transform="translate(3.4 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.3s"/></g></g></g><g transform="translate(-4.7 17.5) rotate(95)"><g class="paddle" style="animation-duration:12.8s;animation-delay:-6.0s"><g transform="translate(3.6 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.9s"/></g></g></g><g transform="translate(-8.8 -16.9) rotate(113)"><g class="paddle paddle--rev" style="animation-duration:10.0s;animation-delay:-4.1s"><g transform="translate(3.8 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.4s"/></g></g></g><g transform="translate(18.6 6.8) rotate(132)"><g class="paddle" style="animation-duration:15.1s;animation-delay:-5.3s"><g transform="translate(4.0 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-1.0s"/></g></g></g><g transform="translate(-19.0 7.8) rotate(150)"><g class="paddle" style="animation-duration:12.3s;animation-delay:-3.5s"><g transform="translate(4.2 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.5s"/></g></g></g><g transform="translate(9.0 -19.3) rotate(168)"><g class="paddle paddle--rev" style="animation-duration:9.5s;animation-delay:-2.1s"><g transform="translate(4.4 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.1s"/></g></g></g><g transform="translate(6.6 20.9) rotate(186)"><g class="paddle" style="animation-duration:14.7s;animation-delay:-2.4s"><g transform="translate(4.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.2s;animation-delay:-0.6s"/></g></g></g><g transform="translate(-19.5 -11.3) rotate(204)"><g class="paddle" style="animation-duration:11.9s;animation-delay:-1.2s"><g transform="translate(4.7 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.2s;animation-delay:-0.2s"/></g></g></g><g transform="translate(22.7 -5.0) rotate(222)"><g class="paddle paddle--rev" style="animation-duration:9.0s;animation-delay:-0.3s"><g transform="translate(4.9 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.2s;animation-delay:-0.7s"/></g></g></g>',
+  },
+  {
+    eaters: 1000000,
+    brooders: 10000,
+    markup:
+      '<g class="swirl swirl--map"><g transform="translate(7.0 0.0) rotate(0) scale(.42)"><use href="#brut"/></g><g transform="translate(-5.2 4.7) rotate(130) scale(.42)"><use href="#brut"/></g><g transform="translate(0.6 -7.0) rotate(260) scale(.42)"><use href="#brut"/></g></g><g transform="translate(10.6 0.0) rotate(346)"><g class="paddle" style="animation-duration:13.7s;animation-delay:-11.6s"><g transform="translate(2.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.4s;animation-delay:-0.6s"/></g></g></g><g transform="translate(-9.2 8.4) rotate(5)"><g class="paddle" style="animation-duration:10.9s;animation-delay:-8.5s"><g transform="translate(2.7 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.2s"/></g></g></g><g transform="translate(1.2 -13.9) rotate(23)"><g class="paddle paddle--rev" style="animation-duration:8.0s;animation-delay:-5.8s"><g transform="translate(2.9 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.7s"/></g></g></g><g transform="translate(9.2 12.1) rotate(41)"><g class="paddle" style="animation-duration:13.2s;animation-delay:-8.7s"><g transform="translate(3.1 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.3s"/></g></g></g><g transform="translate(-16.0 -2.8) rotate(59)"><g class="paddle paddle--rev" style="animation-duration:10.4s;animation-delay:-6.2s"><g transform="translate(3.2 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.8s"/></g></g></g><g transform="translate(14.6 -9.3) rotate(77)"><g class="paddle paddle--rev" style="animation-duration:15.6s;animation-delay:-8.3s"><g transform="translate(3.4 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.3s"/></g></g></g><g transform="translate(-4.7 17.5) rotate(95)"><g class="paddle" style="animation-duration:12.8s;animation-delay:-6.0s"><g transform="translate(3.6 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.9s"/></g></g></g><g transform="translate(-8.8 -16.9) rotate(113)"><g class="paddle paddle--rev" style="animation-duration:10.0s;animation-delay:-4.1s"><g transform="translate(3.8 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.4s"/></g></g></g><g transform="translate(18.6 6.8) rotate(132)"><g class="paddle" style="animation-duration:15.1s;animation-delay:-5.3s"><g transform="translate(4.0 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-1.0s"/></g></g></g><g transform="translate(-19.0 7.8) rotate(150)"><g class="paddle" style="animation-duration:12.3s;animation-delay:-3.5s"><g transform="translate(4.2 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.5s"/></g></g></g><g transform="translate(9.0 -19.3) rotate(168)"><g class="paddle paddle--rev" style="animation-duration:9.5s;animation-delay:-2.1s"><g transform="translate(4.4 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.3s;animation-delay:-0.1s"/></g></g></g><g transform="translate(6.6 20.9) rotate(186)"><g class="paddle" style="animation-duration:14.7s;animation-delay:-2.4s"><g transform="translate(4.5 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.2s;animation-delay:-0.6s"/></g></g></g><g transform="translate(-19.5 -11.3) rotate(204)"><g class="paddle" style="animation-duration:11.9s;animation-delay:-1.2s"><g transform="translate(4.7 0) rotate(90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.2s;animation-delay:-0.2s"/></g></g></g><g transform="translate(22.7 -5.0) rotate(222)"><g class="paddle paddle--rev" style="animation-duration:9.0s;animation-delay:-0.3s"><g transform="translate(4.9 0) rotate(-90) scale(0.55)"><use href="#fress" class="roll" style="animation-duration:1.2s;animation-delay:-0.7s"/></g></g></g>',
+  },
+];
+
+export const PROTOTYPE_PADDLER_PARAMS: { i: number; params: PaddlerParams }[] = [
+  {
+    i: 0,
+    params: {
+      rr: 2.500305227004276,
+      dur: 13.679929965808922,
+      rev: false,
+      start: 346.48261739544813,
+      roll: 1.3555844517942375,
+      padDelay: 11.579642413808305,
+      rollDelay: 0.6115800106074475,
+    },
+  },
+  {
+    i: 1,
+    params: {
+      rr: 2.686236281587031,
+      dur: 10.861884410364446,
+      rev: false,
+      start: 4.624709882423943,
+      roll: 1.3458362919705327,
+      padDelay: 8.518606142723115,
+      rollDelay: 0.15789581291181576,
+    },
+  },
+  {
+    i: 2,
+    params: {
+      rr: 2.8721673361697864,
+      dur: 8.043838854919969,
+      rev: true,
+      start: 22.766802537037808,
+      roll: 1.3360881321468279,
+      padDelay: 5.808154284031293,
+      rollDelay: 0.7042116156818453,
+    },
+  },
+  {
+    i: 13,
+    params: {
+      rr: 4.917408936580093,
+      dur: 9.045337759931886,
+      rev: true,
+      start: 222.3298217377903,
+      roll: 1.2288583740860768,
+      padDelay: 0.3421339284424935,
+      rollDelay: 0.7136854433582028,
+    },
+  },
+];
