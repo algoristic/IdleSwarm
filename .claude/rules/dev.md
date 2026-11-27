@@ -11,9 +11,9 @@ Werkzeuge nur für den Dev-Build. Richtung `dev → game → shared` (ESLint, au
 ## Dateiersetzung (App-Wurzel)
 
 - `src/app/dev-routes.ts` exportiert `appDevRoutes = []`; `app.routes.ts` setzt sie vor die Spielroute.
-- Die Build-Konfigurationen `development` (`npm start`) und `pages` (GitHub Pages, `npm run build:pages`) ersetzen die Datei per `fileReplacements` durch `src/app/dev-routes.dev.ts`: eine lazy Route `path: ''` auf `@app/dev/feature/dev.routes` (`devRoutes`).
+- Die Build-Konfigurationen `development` (`npm start`) und `pages` (GitHub Pages, `npm run build:pages`) ersetzen die Datei per `fileReplacements` durch `src/app/dev-routes.dev.ts`: eine lazy Route `path: 'katalog'` auf `@app/dev/feature/dev.routes` (`devRoutes`).
 - `production` ersetzt nichts; die Dev-Domäne fehlt dort ganz.
-- Im Dev-Build lädt der Router den Dev-Chunk bei der ersten Navigation, weil die Route `''` vor der Spielroute steht.
+- Der Router lädt den Dev-Chunk erst bei der Navigation nach `/katalog`. Eine lazy Route `''` vor der Spielroute verhinderte, dass `/` die Spielroute erreicht (das Spiel blieb im Dev-Build leer); deshalb liegt die Dev-Route unter `katalog`.
 
 ## Katalog
 
@@ -21,7 +21,7 @@ Zeigt alle Assets aus `game/ui` (`.claude/rules/game.md`, Asset-Bibliothek) und 
 
 Routen und Seiten (`feature`):
 
-- `devRoutes`: `katalog` mit den Kindern `''` (`pathMatch: 'full'`) → `CatalogPage` und `:entryId` → `CatalogEntryPage` mit `canActivate: [catalogEntryGuard()]`.
+- `devRoutes` (relativ zu `katalog`): `''` (`pathMatch: 'full'`) → `CatalogPage` und `:entryId` → `CatalogEntryPage` mit `canActivate: [catalogEntryGuard()]`.
 - `catalogEntryGuard()` (`state/dev.guards.ts`): unbekannte IDs leiten per `RedirectCommand` mit `replaceUrl` auf `/katalog`.
 - `CatalogPage`: Suche als Signal Form (`searchModel`/`searchForm`, `CatalogSearchModel` in `catalog.model.ts`) und Liste `app-catalog-list` der Treffer je Kategorie.
 - `CatalogEntryPage`: Eintrag aus `entryId`, Vorgänger und Nachfolger, Regler (`controlsModel` als `linkedSignal`, beim Eintragswechsel auf `CATALOG_DEFAULT_CONTROLS` zurück, ausgewertet mit `parseCatalogControls`) und die Vorschau nach `preview`. Lokaler Zustand für Dialog, Blatt, Toasts und Segment der `shared/ui`-Vorschau; wie `controlsModel` ein `linkedSignal` mit dem Eintrag als `source`, damit er beim Wechsel von `:entryId` (die Seite wird wiederverwendet) zurückgesetzt wird.
