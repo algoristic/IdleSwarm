@@ -1,0 +1,57 @@
+@let c = colors;
+@let _organelles = organelles();
+
+<svg:filter [attr.id]="filterId" x="-50%" y="-50%" width="200%" height="200%">
+  <feGaussianBlur stdDeviation="7" />
+</svg:filter>
+<svg:rect x="-500" y="-560" width="1700" height="1400" [attr.fill]="c.background.base" />
+@for (x of haloCenters; track x) {
+  <svg:g [attr.transform]="'translate(' + x + ' -8)'">
+    @for (r of haloRadii; track r; let i = $index) {
+      <circle [attr.r]="r" [attr.fill]="c.background.halos[i]" />
+    }
+  </svg:g>
+}
+<svg:g [attr.filter]="filterUrl">
+  @for (o of _organelles.organelles; track $index) {
+    <g [attr.transform]="o.transform">
+      <rect
+        [attr.x]="o.x"
+        [attr.y]="o.y"
+        [attr.width]="o.width"
+        [attr.height]="o.height"
+        [attr.rx]="o.rx"
+        [attr.fill]="c.organelle.body"
+      />
+      <rect
+        [attr.x]="o.midX"
+        [attr.y]="o.midY"
+        [attr.width]="o.midWidth"
+        [attr.height]="o.midHeight"
+        [attr.rx]="o.midRx"
+        [attr.fill]="c.organelle.mid"
+      />
+      <path
+        [attr.d]="o.wave"
+        fill="none"
+        [attr.stroke]="c.organelle.inner"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+    </g>
+  }
+  <g [attr.fill]="c.organelle.speck">
+    @for (s of _organelles.specks; track $index) {
+      <circle [attr.cx]="s.cx" [attr.cy]="s.cy" [attr.r]="s.r" />
+    }
+  </g>
+</svg:g>
+@for (d of twigPaths; track d) {
+  <svg:path
+    [attr.d]="d"
+    fill="none"
+    [attr.stroke]="c.twig.stroke"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+}

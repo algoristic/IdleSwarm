@@ -1,0 +1,15 @@
+.neuron-axon__signal--moving {
+  animation: neuron-axon-signal 1.4s linear infinite;
+}
+
+@keyframes neuron-axon-signal {
+  to {
+    stroke-dashoffset: -26;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neuron-axon__signal--moving {
+    animation: none;
+  }
+}

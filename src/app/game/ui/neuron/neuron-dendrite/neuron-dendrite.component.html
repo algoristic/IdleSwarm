@@ -1,0 +1,50 @@
+@let c = colors();
+@let b = beadColors;
+@let d = path();
+@let _locked = locked();
+
+<svg:path
+  [attr.d]="d"
+  fill="none"
+  [attr.stroke]="c.glow"
+  stroke-width="30"
+  stroke-linecap="round"
+/>
+<svg:path
+  [attr.d]="d"
+  fill="none"
+  [attr.stroke]="_locked ? lockedColor : c.stroke"
+  stroke-width="11"
+  stroke-linecap="round"
+  [attr.stroke-dasharray]="_locked ? '2 9' : null"
+/>
+@if (!_locked) {
+  <svg:path
+    [attr.d]="d"
+    fill="none"
+    [attr.stroke]="c.core"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
+  <svg:path
+    class="neuron-dendrite__signal"
+    [class.neuron-dendrite__signal--moving]="motion()"
+    [attr.d]="d"
+    fill="none"
+    [attr.stroke]="signalColor"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-dasharray="2 24"
+  />
+  @for (bead of beads(); track $index) {
+    <svg:circle
+      [attr.cx]="bead.cx"
+      [attr.cy]="bead.cy"
+      r="4.6"
+      [attr.fill]="bead.next ? b.next : b.fill"
+      [attr.stroke]="bead.next ? b.nextStroke : null"
+      [attr.stroke-width]="bead.next ? 1.8 : null"
+      [attr.stroke-dasharray]="bead.next ? '2.4 2' : null"
+    />
+  }
+}

@@ -1,0 +1,15 @@
+.neuron-dendrite__signal--moving {
+  animation: neuron-dendrite-signal 1.4s linear infinite;
+}
+
+@keyframes neuron-dendrite-signal {
+  to {
+    stroke-dashoffset: 26;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neuron-dendrite__signal--moving {
+    animation: none;
+  }
+}

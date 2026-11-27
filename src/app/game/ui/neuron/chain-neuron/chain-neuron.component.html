@@ -1,0 +1,76 @@
+@let c = colors;
+@let _view = view();
+@let _motion = motion();
+
+<svg:g app-neuron-axon [path]="axonPath" tone="chain" [motion]="_motion" />
+<svg:circle
+  cx="78"
+  cy="40"
+  r="11"
+  [attr.fill]="c.synapse.fill"
+  [attr.stroke]="c.synapse.stroke"
+  stroke-width="6"
+/>
+<svg:circle cx="78" cy="40" r="5" [attr.fill]="c.synapse.inner" />
+<svg:text
+  x="196"
+  y="74"
+  [attr.fill]="c.label.mileSub"
+  font-size="10"
+  font-weight="600"
+  text-anchor="middle"
+  paint-order="stroke"
+  [attr.stroke]="c.label.outline"
+  stroke-width="3"
+  i18n="@@uiGame-chainNeuron-synapse"
+>
+  Synapse
+</svg:text>
+@for (key of keys; track key) {
+  @let d = dendrites[key];
+  @let node = _view.nodes[key];
+  <svg:g
+    app-neuron-dendrite
+    [geometry]="d"
+    [rank]="node.rank"
+    tone="chain"
+    [locked]="node.locked"
+    [motion]="_motion"
+  />
+  <svg:g
+    app-chain-node
+    [attr.transform]="'translate(' + d.p1[0] + ' ' + d.p1[1] + ')'"
+    [attr.data-testid]="'game.neuron.chain.' + key"
+    [unit]="key"
+    [rank]="node.rank"
+    [affordable]="node.affordable"
+    [locked]="node.locked"
+    [selected]="_view.selected === key"
+    [motion]="_motion"
+  />
+  <svg:g
+    app-neuron-label
+    [position]="d.label"
+    [name]="unitTexts[key].plural"
+    [cost]="node.cost"
+    [affordable]="node.affordable"
+    tone="chain"
+  />
+}
+<svg:g app-neuron-soma tone="orange" [attr.transform]="somaTransform" />
+<svg:text
+  class="uppercase"
+  [attr.x]="neuronX"
+  y="-112"
+  [attr.fill]="c.label.chainTitle"
+  font-size="12.5"
+  font-weight="800"
+  letter-spacing=".06em"
+  text-anchor="middle"
+  paint-order="stroke"
+  [attr.stroke]="c.label.outline"
+  stroke-width="4"
+  i18n="@@uiGame-chainNeuron-title"
+>
+  Kette
+</svg:text>

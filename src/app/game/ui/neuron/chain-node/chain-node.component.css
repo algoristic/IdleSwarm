@@ -1,0 +1,40 @@
+.chain-node__selection,
+.chain-node__pulse {
+  transform-origin: 0 0;
+}
+
+.chain-node__selection--moving {
+  animation: chain-node-swirl 12s linear infinite;
+}
+
+.chain-node__pulse {
+  stroke-width: 3;
+}
+
+.chain-node__pulse--moving {
+  animation: chain-node-pulse 2.2s ease-out infinite;
+}
+
+@keyframes chain-node-swirl {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chain-node-pulse {
+  from {
+    transform: scale(1);
+    stroke-width: 3;
+  }
+  to {
+    transform: scale(1.7);
+    stroke-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chain-node__selection--moving,
+  .chain-node__pulse--moving {
+    animation: none;
+  }
+}

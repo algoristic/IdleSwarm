@@ -1,0 +1,44 @@
+.upgrade-node__selection,
+.upgrade-node__pulse {
+  transform-origin: 0 0;
+}
+
+.upgrade-node__selection--moving {
+  animation: upgrade-node-swirl 12s linear infinite;
+}
+
+.upgrade-node__pulse {
+  stroke-width: 3;
+}
+
+.upgrade-node__pulse--moving {
+  animation: upgrade-node-pulse 2.2s ease-out infinite;
+}
+
+@keyframes upgrade-node-swirl {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes upgrade-node-pulse {
+  from {
+    transform: scale(1);
+    stroke-width: 3;
+  }
+  to {
+    transform: scale(1.7);
+    stroke-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upgrade-node__selection--moving,
+  .upgrade-node__pulse--moving {
+    animation: none;
+  }
+
+  .upgrade-node__pulse {
+    stroke-width: 0;
+  }
+}

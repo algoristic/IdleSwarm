@@ -1,0 +1,27 @@
+@let s = styles();
+@let d = path();
+
+<svg:path
+  [attr.d]="d"
+  fill="none"
+  [attr.stroke]="s.glow"
+  [attr.stroke-width]="s.glowWidth"
+  stroke-linecap="round"
+/>
+<svg:path
+  [attr.d]="d"
+  fill="none"
+  [attr.stroke]="s.stroke"
+  stroke-width="8"
+  stroke-linecap="round"
+/>
+<svg:path
+  class="neuron-axon__signal"
+  [class.neuron-axon__signal--moving]="motion()"
+  [attr.d]="d"
+  fill="none"
+  [attr.stroke]="signalColor"
+  stroke-width="4"
+  stroke-linecap="round"
+  stroke-dasharray="2 24"
+/>

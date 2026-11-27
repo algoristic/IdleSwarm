@@ -1,0 +1,54 @@
+@let c = colors;
+@let p = position();
+@let _cost = cost();
+
+<svg:text
+  class="uppercase"
+  [attr.x]="p[0]"
+  [attr.y]="p[1]"
+  [attr.fill]="c.name"
+  font-size="12.5"
+  font-weight="800"
+  letter-spacing=".06em"
+  [attr.text-anchor]="align()"
+  paint-order="stroke"
+  [attr.stroke]="c.outline"
+  stroke-width="4"
+  data-testid="game.neuron.label.name"
+>
+  {{ name() }}
+</svg:text>
+<svg:text
+  class="tabular-nums"
+  [attr.x]="p[0]"
+  [attr.y]="costY()"
+  [attr.fill]="costColor()"
+  font-size="11.5"
+  font-weight="700"
+  [attr.text-anchor]="align()"
+  paint-order="stroke"
+  [attr.stroke]="c.outline"
+  stroke-width="4"
+  data-testid="game.neuron.label.cost"
+>
+  @switch (_cost.kind) {
+    @case ('free') {
+      <ng-container i18n="@@uiGame-neuronLabel-cost-free">Gratis</ng-container>
+    }
+    @case ('food') {
+      <ng-container i18n="@@uiGame-neuronLabel-cost-food">
+        {{ _cost.amount | formatNumber }} Vorrat
+      </ng-container>
+    }
+    @case ('units') {
+      <ng-container i18n="@@uiGame-neuronLabel-cost-units">
+        {{ _cost.amount | formatNumber }} {{ unitName() }}
+      </ng-container>
+    }
+    @case ('lockedUntil') {
+      <ng-container i18n="@@uiGame-neuronLabel-cost-lockedUntil">
+        ab 1 {{ unitTexts[_cost.unit].name }}
+      </ng-container>
+    }
+  }
+</svg:text>
