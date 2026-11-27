@@ -12,7 +12,7 @@ export interface Point {
 
 export interface Mark {
   kind: TargetKind;
-  id: number;
+  targetId: number;
 }
 
 export interface GameStats {
