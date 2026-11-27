@@ -1,0 +1,11 @@
+@for (button of buttons(); track button.id) {
+  <button
+    type="button"
+    [class]="button.classes"
+    [attr.aria-pressed]="button.pressed"
+    [attr.data-testid]="button.testId"
+    (click)="onSelect(button.id)"
+  >
+    {{ button.label }}
+  </button>
+}

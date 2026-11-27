@@ -1,1 +1,117 @@
 @import 'tailwindcss';
+
+@custom-variant aria-current (&[aria-current]:not([aria-current='false']));
+
+:root {
+  --bg: #05061a;
+  --canvas: #0c0f33;
+  --panel: #171d58;
+  --panel-2: #212a72;
+  --panel-3: #2c368a;
+  --panel-neuron: #24104f;
+  --fg: #f6f4ff;
+  --fg-muted: #a7aee8;
+  --fg-subtle: #8890d0;
+  --on-accent: #1a1440;
+  --accent-cyan: #3ee6e0;
+  --accent-pink: #ff4f8b;
+  --accent-yellow: #ffd23f;
+  --accent-orange: #ff8a3d;
+  --accent-lime: #8cf25a;
+  --accent-violet: #9b6bff;
+  --warn: #ffa3c2;
+  --warn-surface: #3a1f5e;
+  --grip: #434676;
+  --grip-hover: #6a74c8;
+  --shade-deep: #080a26;
+  --shade-panel-3: #10164a;
+  --shade-warn: #1d0f33;
+  --shade-yellow: #c99700;
+  --shade-pink: #b52a5e;
+  --shade-orange: #b9561a;
+  --shade-cyan: #1a9a96;
+}
+
+@theme {
+  --color-*: initial;
+
+  --font-sans:
+    'Avenir Next', 'Montserrat', 'Nunito', 'Futura', 'Century Gothic', system-ui, -apple-system,
+    'Segoe UI', Roboto, sans-serif;
+
+  --ease-glide: cubic-bezier(0.62, 0, 0.22, 1);
+
+  --animate-toast: toast 4.2s ease forwards;
+
+  @keyframes toast {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    8%,
+    85% {
+      opacity: 1;
+      transform: none;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-panel-3: var(--panel-3);
+  --color-panel-neuron: var(--panel-neuron);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-on-accent: var(--on-accent);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-lime: var(--accent-lime);
+  --color-accent-violet: var(--accent-violet);
+  --color-warn: var(--warn);
+  --color-warn-surface: var(--warn-surface);
+  --color-grip: var(--grip);
+  --color-grip-hover: var(--grip-hover);
+
+  --shadow-raised: 0 4px 0 var(--shade-deep);
+  --shadow-raised-pink: 0 4px 0 var(--shade-pink);
+  --shadow-raised-orange: 0 4px 0 var(--shade-orange);
+  --shadow-raised-cyan: 0 4px 0 var(--shade-cyan);
+  --shadow-btn: 0 3px 0 var(--shade-panel-3);
+  --shadow-btn-warn: 0 3px 0 var(--shade-warn);
+  --shadow-btn-gold: 0 3px 0 var(--shade-yellow);
+  --shadow-sheet: 0 -6px 0 var(--shade-deep);
+  --shadow-card: 0 6px 0 var(--shade-deep);
+  --shadow-toast: 0 4px 0 var(--bg);
+  --shadow-frame: 0 30px 80px rgb(0 0 0 / 0.7);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    overscroll-behavior: none;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:disabled,
+  button[aria-disabled='true'] {
+    cursor: default;
+  }
+}

@@ -1,0 +1,7 @@
+:host(.bottom-sheet--collapsed) {
+  transform: translateY(calc(100% - var(--spacing) * 7.5 - env(safe-area-inset-bottom)));
+}
+
+.bottom-sheet__body {
+  padding-bottom: calc(var(--spacing) * 3.5 + env(safe-area-inset-bottom));
+}

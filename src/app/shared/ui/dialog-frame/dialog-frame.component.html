@@ -1,0 +1,10 @@
+<dialog
+  #dialog
+  class="inset-x-3 top-auto bottom-3 mx-auto max-h-6/7 w-auto max-w-md overflow-y-auto overscroll-contain rounded-3xl bg-panel text-fg shadow-card backdrop:bg-bg/78"
+  [attr.aria-label]="label()"
+  (close)="onClose()"
+>
+  <div class="px-4 pt-4.5 pb-4">
+    <ng-content />
+  </div>
+</dialog>

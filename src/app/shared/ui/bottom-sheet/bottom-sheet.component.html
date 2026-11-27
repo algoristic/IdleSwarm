@@ -1,0 +1,19 @@
+<div class="bottom-sheet__body px-3.5 pt-4">
+  <button
+    type="button"
+    class="group relative -mt-3.5 mb-1 block h-6.5 w-full touch-none"
+    [attr.aria-expanded]="!collapsed()"
+    [attr.aria-label]="gripLabel()"
+    [attr.data-testid]="gripTestId()"
+    (pointerdown)="onGripPointerDown($event)"
+    (pointerup)="onGripPointerUp($event)"
+    (pointercancel)="onGripPointerCancel()"
+    (keydown.enter)="onGripKey($event)"
+    (keydown.space)="onGripKey($event)"
+  >
+    <span
+      class="absolute top-2.5 left-1/2 -ml-4.5 h-1.25 w-9 rounded-full bg-fg-muted transition-colors duration-200 group-aria-expanded:bg-grip group-aria-expanded:group-hover:bg-grip-hover group-aria-expanded:group-focus-visible:bg-grip-hover"
+    ></span>
+  </button>
+  <ng-content />
+</div>
