@@ -1,7 +1,7 @@
 import { UnitId } from '../../../domain/models/unit.model';
 import { PaddlerParams } from '../../art/paddler.utils';
 
-export interface BobFigure {
+interface BobFigure {
   kind: 'bob';
   unit: UnitId;
   x: number;
@@ -12,7 +12,7 @@ export interface BobFigure {
   delay: number;
 }
 
-export interface PaddleFigure extends PaddlerParams {
+interface PaddleFigure extends PaddlerParams {
   kind: 'paddle';
   unit: 'eater';
   x: number;
@@ -21,7 +21,7 @@ export interface PaddleFigure extends PaddlerParams {
   index: number;
 }
 
-export interface SwimFigure {
+interface SwimFigure {
   kind: 'swim';
   unit: 'eater';
   x: number;
@@ -65,12 +65,12 @@ export interface StreakLine {
   segments: readonly StreakSegment[];
 }
 
-export interface SpeckPath {
+interface SpeckPath {
   color: string;
   path: Path2D;
 }
 
-export interface StreakPath {
+interface StreakPath {
   color: string;
   width: number;
   opacity: number;

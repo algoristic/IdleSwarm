@@ -7,7 +7,7 @@ export function mapSiteFill(fillFraction: number, dead: boolean): number {
   return dead ? 0 : Math.max(0, fillFraction);
 }
 
-export function mapSiteFillScale(fill: number): number {
+function mapSiteFillScale(fill: number): number {
   return 0.55 + 0.45 * Math.sqrt(fill);
 }
 

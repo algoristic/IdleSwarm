@@ -2,7 +2,8 @@ import { SiteTypeId } from '../../../domain/models/site.model';
 import { RandomSource, blobPath, lcg } from '../../art/shape.utils';
 import { MapSiteIconBlade, MapSiteIconDot, MapSiteIconGeometry } from './map-site-icon.model';
 
-export const CARCASS_LEGS_PATH = 'M-3 3l-3 4M0 3.6l-1 4.6M3 3l3 4M-3-3l-3-4M0-3.6l-1-4.6M3-3l3-4';
+export const CARCASS_ICON_LEGS_PATH =
+  'M-3 3l-3 4M0 3.6l-1 4.6M3 3l3 4M-3-3l-3-4M0-3.6l-1-4.6M3-3l3-4';
 export const CARCASS_CLAWS_PATH = 'M5.4-1.5q3.5-2 4.5-5M5.4 1.5q3.5 2 4.5 5';
 
 export function mapSiteIconGeometry(

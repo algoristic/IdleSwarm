@@ -1,4 +1,4 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -11,7 +11,7 @@ import {
   parseCatalogControls,
 } from '../../domain/catalog-logic';
 import { CATALOG_DEFAULT_CONTROLS } from '../../domain/data/catalog.data';
-import { CatalogControlsModel } from '../../domain/models/catalog.model';
+import { CatalogControlsModel, CatalogEntry } from '../../domain/models/catalog.model';
 import { CatalogArtPreviewComponent } from '../../ui/catalog-art-preview/catalog-art-preview.component';
 import { CatalogMapPreviewComponent } from '../../ui/catalog-map-preview/catalog-map-preview.component';
 import { CatalogNeuronPreviewComponent } from '../../ui/catalog-neuron-preview/catalog-neuron-preview.component';
@@ -47,16 +47,19 @@ export class CatalogEntryPage {
   });
   neighbours = computed(() => catalogNeighbours(this.entry().id));
 
-  controlsModel = linkedSignal<CatalogControlsModel>(() => {
-    this.entry();
-    return { ...CATALOG_DEFAULT_CONTROLS };
+  controlsModel = linkedSignal<CatalogEntry, CatalogControlsModel>({
+    source: this.entry,
+    computation: () => ({ ...CATALOG_DEFAULT_CONTROLS }),
   });
   controls = computed(() => parseCatalogControls(this.controlsModel()));
 
-  dialogOpen = signal(false);
-  sheetCollapsed = signal(false);
-  toasts = signal<readonly number[]>([]);
-  segmentChoice = signal('one');
+  dialogOpen = linkedSignal({ source: this.entry, computation: () => false });
+  sheetCollapsed = linkedSignal({ source: this.entry, computation: () => false });
+  toasts = linkedSignal<CatalogEntry, readonly number[]>({
+    source: this.entry,
+    computation: () => [],
+  });
+  segmentChoice = linkedSignal({ source: this.entry, computation: () => 'one' });
   #nextToastId = 1;
 
   onOpenDialog(): void {

@@ -1,21 +1,28 @@
 import { Component, computed, input } from '@angular/core';
 
 import { GameConfig } from '@app/game/domain/models/game-config.model';
-import { NEURON_COLORS } from '@app/game/ui/art/art-palette';
+import { NEURON_COLORS, SomaTone } from '@app/game/ui/art/art-palette';
 import { ChainNeuronComponent } from '@app/game/ui/neuron/chain-neuron/chain-neuron.component';
 import { ChainNodeComponent } from '@app/game/ui/neuron/chain-node/chain-node.component';
 import { NeuronBackdropComponent } from '@app/game/ui/neuron/neuron-backdrop/neuron-backdrop.component';
 import { NeuronSomaComponent } from '@app/game/ui/neuron/neuron-soma/neuron-soma.component';
+import { ChainKey } from '@app/game/ui/neuron/neuron.model';
 import { NEURON_VIEW_BOX } from '@app/game/ui/neuron/neuron.utils';
 import { SwarmNeuronComponent } from '@app/game/ui/neuron/swarm-neuron/swarm-neuron.component';
 import { UpgradeNodeComponent } from '@app/game/ui/neuron/upgrade-node/upgrade-node.component';
 
+import { CatalogChoice } from '../../domain/data/catalog.data';
 import { CatalogControls, CatalogEntryId } from '../../domain/models/catalog.model';
 import {
   sampleChainNeuronView,
   sampleChainNodeView,
   sampleSwarmNeuronView,
 } from './catalog-neuron-preview.utils';
+
+// Jeder Wert der game-Typen braucht eine Option im Katalog; die Gegenrichtung prüfen die Input-Bindungen.
+type UncoveredOption =
+  Exclude<SomaTone, CatalogChoice<'tone'>> | Exclude<ChainKey, CatalogChoice<'chainUnit'>>;
+const _OPTIONS_COVER_GAME: [UncoveredOption] extends [never] ? true : never = true;
 
 @Component({
   selector: 'app-catalog-neuron-preview',

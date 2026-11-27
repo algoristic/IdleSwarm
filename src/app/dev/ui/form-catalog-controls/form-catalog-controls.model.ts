@@ -11,7 +11,7 @@ export interface CatalogControlRow {
   choice: CatalogChoiceRow | null;
 }
 
-export interface CatalogChoiceRow {
+interface CatalogChoiceRow {
   field: FieldTree<string>;
   options: readonly SegmentOption[];
 }

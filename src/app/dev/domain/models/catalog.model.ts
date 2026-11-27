@@ -1,4 +1,4 @@
-import { SiteTypeId } from '@app/game/domain/models/site.model';
+import type { CatalogChoice } from '../data/catalog.data';
 
 export const CATALOG_CATEGORY_IDS = [
   'units',
@@ -89,35 +89,26 @@ export interface CatalogGroup {
 
 export type CatalogControlsModel = Record<CatalogChoiceControlId, string> & { level: number };
 
-export type CatalogBackdrop = SiteTypeId | 'travel' | 'none';
-export type CatalogMapZone = 'current' | 'next';
-export type CatalogSiteHighlight = 'none' | 'target' | 'auto';
-export type CatalogFindHighlight = 'none' | 'target';
-export type CatalogChainUnit = 'eater' | 'brooder' | 'eggBearer' | 'clutch';
-export type CatalogUpgradeState = 'affordable' | 'poor' | 'selected';
-export type CatalogChainState = CatalogUpgradeState | 'locked';
-export type CatalogSomaTone = 'pink' | 'orange';
-
 export interface CatalogControls {
   level: number;
   units: readonly number[];
-  site: SiteTypeId;
-  backdrop: CatalogBackdrop;
+  site: CatalogChoice<'site'>;
+  backdrop: CatalogChoice<'backdrop'>;
   zone: number;
   mood: number;
   direction: number;
   shape: number;
   fill: number;
-  mapZone: CatalogMapZone;
-  siteHighlight: CatalogSiteHighlight;
-  findHighlight: CatalogFindHighlight;
+  mapZone: CatalogChoice<'mapZone'>;
+  siteHighlight: CatalogChoice<'siteHighlight'>;
+  findHighlight: CatalogChoice<'findHighlight'>;
   dead: boolean;
   here: boolean;
-  chainUnit: CatalogChainUnit;
-  upgradeState: CatalogUpgradeState;
-  chainState: CatalogChainState;
+  chainUnit: CatalogChoice<'chainUnit'>;
+  upgradeState: CatalogChoice<'upgradeState'>;
+  chainState: CatalogChoice<'chainState'>;
   rank: number;
-  tone: CatalogSomaTone;
+  tone: CatalogChoice<'tone'>;
   showChain: boolean;
   motion: boolean;
 }

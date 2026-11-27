@@ -32,12 +32,7 @@ export function farMoodIndex(zone: number, zoneCount: number): number {
   return zone + 1 < zoneCount ? next : LAST_MOOD;
 }
 
-export function moodRays(
-  random: RandomSource,
-  count: number,
-  spread: number,
-  length: number,
-): string[] {
+function moodRays(random: RandomSource, count: number, spread: number, length: number): string[] {
   const rays: string[] = [];
   for (let i = 0; i < count; i++) {
     const x = (random() - 0.5) * spread;
@@ -90,7 +85,7 @@ export function moodShapes(mood: Readonly<ZoneMood>, random: RandomSource): Mood
   return { paths, circles };
 }
 
-export function moodSpecks(
+function moodSpecks(
   random: RandomSource,
   count: number,
   area: number,

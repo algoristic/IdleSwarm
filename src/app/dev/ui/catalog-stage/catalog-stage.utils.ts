@@ -1,4 +1,4 @@
-export interface StageLayout {
+interface StageLayout {
   scale: number;
   height: number;
   transform: string;

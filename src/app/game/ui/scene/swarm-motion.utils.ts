@@ -60,7 +60,7 @@ export function trekAngle(trek: TrekTransition, now: number): number {
   );
 }
 
-export function trekTarget(travelAngle: number | null): number {
+function trekTarget(travelAngle: number | null): number {
   return travelAngle === null ? 0 : +travelAngle.toFixed(1);
 }
 

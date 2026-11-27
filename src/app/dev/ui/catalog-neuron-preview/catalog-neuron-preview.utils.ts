@@ -10,7 +10,7 @@ import {
   UpgradeNodeView,
 } from '@app/game/ui/neuron/neuron.model';
 
-import { CatalogChainState, CatalogUpgradeState } from '../../domain/models/catalog.model';
+import { CatalogChoice } from '../../domain/data/catalog.data';
 
 const FOOD_COSTS: Readonly<Record<UpgradeId, number>> = {
   hearth: 120,
@@ -26,13 +26,16 @@ const CHAIN_COST_AMOUNTS: Readonly<Record<ChainKey, number>> = {
   clutch: 1200,
 };
 
-function upgradeCost(id: UpgradeId, state: CatalogUpgradeState): UpgradeCostView {
+function upgradeCost(id: UpgradeId, state: CatalogChoice<'upgradeState'>): UpgradeCostView {
   return id === 'crop' && state !== 'poor'
     ? { kind: 'free' }
     : { kind: 'food', amount: FOOD_COSTS[id] };
 }
 
-export function sampleSwarmNeuronView(rank: number, state: CatalogUpgradeState): SwarmNeuronView {
+export function sampleSwarmNeuronView(
+  rank: number,
+  state: CatalogChoice<'upgradeState'>,
+): SwarmNeuronView {
   const nodes = Object.fromEntries(
     UPGRADE_IDS.map((id): [UpgradeId, UpgradeNodeView] => [
       id,
@@ -45,7 +48,7 @@ export function sampleSwarmNeuronView(rank: number, state: CatalogUpgradeState):
 export function sampleChainNodeView(
   key: ChainKey,
   rank: number,
-  state: CatalogChainState,
+  state: CatalogChoice<'chainState'>,
 ): ChainNodeView {
   const next = UNIT_IDS[UNIT_IDS.indexOf(key) + 1];
   const locked = state === 'locked';
@@ -59,7 +62,10 @@ export function sampleChainNodeView(
   };
 }
 
-export function sampleChainNeuronView(rank: number, state: CatalogChainState): ChainNeuronView {
+export function sampleChainNeuronView(
+  rank: number,
+  state: CatalogChoice<'chainState'>,
+): ChainNeuronView {
   const nodes = Object.fromEntries(
     CHAIN_KEYS.map((key): [ChainKey, ChainNodeView] => [
       key,

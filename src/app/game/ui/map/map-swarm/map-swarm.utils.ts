@@ -12,7 +12,7 @@ const EATER_SCALE = 0.55;
 const PADDLE_RADIUS_MIN = 2.5;
 const PADDLE_RADIUS_RANGE = 3;
 
-export function mapSwarmCounts(eaters: number, brooders: number): MapSwarmCounts {
+function mapSwarmCounts(eaters: number, brooders: number): MapSwarmCounts {
   return {
     eaters: Math.min(
       MAX_EATERS,
@@ -50,7 +50,7 @@ export function mapSwarmLayout(eaters: number, brooders: number): MapSwarmLayout
   return { brooders: brooderFigures, eaters: eaterFigures };
 }
 
-export function paddlerFigure(
+function paddlerFigure(
   x: number,
   y: number,
   scale: number,

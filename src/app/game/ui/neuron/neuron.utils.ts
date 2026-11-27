@@ -61,7 +61,7 @@ const ORGANELLE_SPOTS = [
   [190, 640, 50],
 ] as const;
 
-export function quadraticPoint(
+function quadraticPoint(
   p0: NeuronPoint,
   c: NeuronPoint,
   p1: NeuronPoint,

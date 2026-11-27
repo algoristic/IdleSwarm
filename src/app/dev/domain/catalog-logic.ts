@@ -2,6 +2,7 @@ import { UNIT_IDS } from '@app/game/domain/models/unit.model';
 
 import {
   CATALOG_CHOICE_OPTIONS,
+  CatalogChoice,
   CATALOG_DEFAULT_CONTROLS,
   CATALOG_ENTRIES,
   CATALOG_LEVEL_MAX,
@@ -18,7 +19,7 @@ import {
   CatalogGroup,
 } from './models/catalog.model';
 
-export interface CatalogNeighbours {
+interface CatalogNeighbours {
   previous: CatalogEntryId | null;
   next: CatalogEntryId | null;
 }
@@ -40,7 +41,7 @@ export function catalogNeighbours(id: CatalogEntryId): CatalogNeighbours {
   };
 }
 
-export function normalizeQuery(query: string): string {
+function normalizeQuery(query: string): string {
   return query.trim().toLowerCase();
 }
 
@@ -74,9 +75,12 @@ export function parseLevel(value: number): number {
   return Math.min(CATALOG_LEVEL_MAX, Math.max(0, Math.round(value)));
 }
 
-function choice<T extends string>(model: CatalogControlsModel, id: CatalogChoiceControlId): T {
-  const value = model[id];
-  return (CATALOG_CHOICE_OPTIONS[id].includes(value) ? value : CATALOG_DEFAULT_CONTROLS[id]) as T;
+function choice<K extends CatalogChoiceControlId>(
+  model: CatalogControlsModel,
+  id: K,
+): CatalogChoice<K> {
+  const options: readonly CatalogChoice<K>[] = CATALOG_CHOICE_OPTIONS[id];
+  return options.find((option) => option === model[id]) ?? CATALOG_DEFAULT_CONTROLS[id];
 }
 
 const numberChoice = (model: CatalogControlsModel, id: CatalogChoiceControlId): number =>

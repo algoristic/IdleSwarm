@@ -1,11 +1,7 @@
 import { SITE_TYPE_IDS } from '@app/game/domain/models/site.model';
 import { ZONE_IDS } from '@app/game/domain/models/zone.model';
 
-import {
-  CatalogChoiceControlId,
-  CatalogControlsModel,
-  CatalogEntry,
-} from '../models/catalog.model';
+import { CatalogChoiceControlId, CatalogEntry } from '../models/catalog.model';
 
 export const CATALOG_ENTRIES: readonly CatalogEntry[] = [
   { id: 'unit-sprite', category: 'units', preview: 'art', controls: [] },
@@ -87,7 +83,7 @@ export const CATALOG_ENTRIES: readonly CatalogEntry[] = [
 
 const indexOptions = (count: number): string[] => Array.from({ length: count }, (_, i) => `${i}`);
 
-export const CATALOG_CHOICE_OPTIONS: Readonly<Record<CatalogChoiceControlId, readonly string[]>> = {
+export const CATALOG_CHOICE_OPTIONS = {
   site: SITE_TYPE_IDS,
   backdrop: [...SITE_TYPE_IDS, 'travel', 'none'],
   zone: indexOptions(ZONE_IDS.length),
@@ -107,11 +103,18 @@ export const CATALOG_CHOICE_OPTIONS: Readonly<Record<CatalogChoiceControlId, rea
   tone: ['pink', 'orange'],
   showChain: ['off', 'on'],
   motion: ['on', 'off'],
+} as const satisfies Readonly<Record<CatalogChoiceControlId, readonly string[]>>;
+
+export type CatalogChoice<K extends CatalogChoiceControlId> =
+  (typeof CATALOG_CHOICE_OPTIONS)[K][number];
+
+export type CatalogDefaultControls = { [K in CatalogChoiceControlId]: CatalogChoice<K> } & {
+  level: number;
 };
 
 export const CATALOG_LEVEL_MAX = 18;
 
-export const CATALOG_DEFAULT_CONTROLS: Readonly<CatalogControlsModel> = {
+export const CATALOG_DEFAULT_CONTROLS: Readonly<CatalogDefaultControls> = {
   level: 7,
   site: 'algae',
   backdrop: 'algae',

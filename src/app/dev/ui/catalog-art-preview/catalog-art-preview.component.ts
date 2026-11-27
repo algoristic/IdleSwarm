@@ -7,6 +7,7 @@ import { UnitIconComponent } from '@app/game/ui/art/unit-icon/unit-icon.componen
 import { UnitSpriteComponent } from '@app/game/ui/art/unit-sprite/unit-sprite.component';
 import { UNIT_SPRITE_HALF_EXTENT } from '@app/game/ui/art/unit-sprite/unit-sprite.model';
 import { FarMoodComponent } from '@app/game/ui/scene/far-mood/far-mood.component';
+import { SceneBackdropKind } from '@app/game/ui/scene/models/scene.model';
 import { farMoodIndex } from '@app/game/ui/scene/mood.utils';
 import { SceneBackdropComponent } from '@app/game/ui/scene/scene-backdrop/scene-backdrop.component';
 import { SceneSiteComponent } from '@app/game/ui/scene/scene-site/scene-site.component';
@@ -14,8 +15,13 @@ import { SwarmCanvasComponent } from '@app/game/ui/scene/swarm-canvas/swarm-canv
 import { ZoneHazeComponent } from '@app/game/ui/scene/zone-haze/zone-haze.component';
 import { UNIT_TEXTS } from '@app/game/ui/texts/game-texts';
 
+import { CatalogChoice } from '../../domain/data/catalog.data';
 import { CatalogControls, CatalogEntryId } from '../../domain/models/catalog.model';
 import { CatalogStageComponent } from '../catalog-stage/catalog-stage.component';
+
+// Jeder Wert der game-Typen braucht eine Option im Katalog; die Gegenrichtung prüfen die Input-Bindungen.
+type UncoveredOption = Exclude<SceneBackdropKind, CatalogChoice<'backdrop'>>;
+const _OPTIONS_COVER_GAME: [UncoveredOption] extends [never] ? true : never = true;
 
 @Component({
   selector: 'app-catalog-art-preview',

@@ -60,7 +60,7 @@ export interface BeadView {
   next: boolean;
 }
 
-export type MyelinState = 'off' | 'on' | 'next';
+type MyelinState = 'off' | 'on' | 'next';
 
 export interface MyelinView {
   y: number;
