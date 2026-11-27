@@ -22,6 +22,13 @@ jobs:
       cancel-in-progress: >-
         ${{ !(github.event_name == 'push' &&
         (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development')) }}
+    # Ziel `main` (Push, manueller Lauf, Pull Request) baut `production` ohne Dev-Domäne,
+    # alles andere `pages` mit Dev-Domäne wie GitHub Pages. Build und E2E nutzen denselben Wert.
+    env:
+      BUILD_CONFIGURATION: >-
+        ${{ ((github.event_name == 'pull_request' && github.base_ref == 'main') ||
+        (github.event_name != 'pull_request' && github.ref == 'refs/heads/main'))
+        && 'production' || 'pages' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -46,15 +53,8 @@ jobs:
       - name: Unit-Tests mit Abdeckung
         run: npm run test:coverage
 
-      # Ziel `main` (Push, manueller Lauf, Pull Request) baut `production` ohne Dev-Domäne,
-      # alles andere `pages` mit Dev-Domäne wie GitHub Pages.
       - name: Build
         run: npm run build -- --configuration "$BUILD_CONFIGURATION" --base-href /IdleSwarm/
-        env:
-          BUILD_CONFIGURATION: >-
-            ${{ ((github.event_name == 'pull_request' && github.base_ref == 'main') ||
-            (github.event_name != 'pull_request' && github.ref == 'refs/heads/main'))
-            && 'production' || 'pages' }}
 
       # GitHub Pages liefert für unbekannte Pfade 404.html aus; so greift das Angular-Routing.
       - name: SPA-Fallback anlegen
@@ -68,6 +68,7 @@ jobs:
         run: npx playwright test
         env:
           E2E_BASE_PATH: /IdleSwarm/
+          E2E_BUILD_CONFIGURATION: ${{ env.BUILD_CONFIGURATION }}
 
       - name: E2E-Report hochladen
         if: failure()

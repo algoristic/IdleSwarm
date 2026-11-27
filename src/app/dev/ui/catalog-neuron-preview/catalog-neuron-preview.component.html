@@ -1,0 +1,67 @@
+@let c = controls();
+
+@switch (entry()) {
+  @case ('neuron-backdrop') {
+    <svg class="block h-auto w-full" [attr.viewBox]="fullViewBox" aria-hidden="true">
+      <svg:g app-neuron-backdrop [showChain]="c.showChain" />
+    </svg>
+  }
+  @case ('neuron-soma') {
+    <div class="mx-auto max-w-sm">
+      <svg class="block h-auto w-full rounded-2xl" [attr.viewBox]="somaViewBox" aria-hidden="true">
+        <svg:rect x="-100" y="-100" width="200" height="200" [attr.fill]="background" />
+        <svg:g app-neuron-soma [tone]="c.tone" />
+      </svg>
+    </div>
+  }
+  @case ('upgrade-node') {
+    <div class="mx-auto max-w-sm">
+      <svg class="block h-auto w-full rounded-2xl" [attr.viewBox]="nodeViewBox" aria-hidden="true">
+        <svg:rect x="-48" y="-48" width="96" height="96" [attr.fill]="background" />
+        <svg:g
+          app-upgrade-node
+          [rank]="c.rank"
+          [affordable]="c.upgradeState !== 'poor'"
+          [selected]="c.upgradeState === 'selected'"
+          [motion]="c.motion"
+        />
+      </svg>
+    </div>
+  }
+  @case ('chain-node') {
+    @let node = chainNode();
+    <div class="mx-auto max-w-sm">
+      <svg class="block h-auto w-full rounded-2xl" [attr.viewBox]="nodeViewBox" aria-hidden="true">
+        <svg:rect x="-48" y="-48" width="96" height="96" [attr.fill]="background" />
+        <svg:g
+          app-chain-node
+          [unit]="c.chainUnit"
+          [rank]="node.rank"
+          [affordable]="node.affordable"
+          [locked]="node.locked"
+          [selected]="c.chainState === 'selected'"
+          [motion]="c.motion"
+        />
+      </svg>
+    </div>
+  }
+  @case ('swarm-neuron') {
+    <svg class="block h-auto w-full" [attr.viewBox]="swarmViewBox" aria-hidden="true">
+      <svg:g app-neuron-backdrop [showChain]="false" />
+      <svg:g app-swarm-neuron [view]="swarmView()" [config]="config()" [motion]="c.motion" />
+    </svg>
+  }
+  @case ('chain-neuron') {
+    <svg class="block h-auto w-full" [attr.viewBox]="chainViewBox" aria-hidden="true">
+      <svg:g app-neuron-backdrop [showChain]="true" />
+      <svg:g app-chain-neuron [view]="chainView()" [motion]="c.motion" />
+    </svg>
+  }
+  @case ('neuron-pair') {
+    <svg class="block h-auto w-full" [attr.viewBox]="pairViewBox" aria-hidden="true">
+      <svg:g app-neuron-backdrop [showChain]="true" />
+      <svg:g app-swarm-neuron [view]="swarmView()" [config]="config()" [motion]="c.motion" />
+      <svg:g app-chain-neuron [view]="chainView()" [motion]="c.motion" />
+    </svg>
+  }
+}

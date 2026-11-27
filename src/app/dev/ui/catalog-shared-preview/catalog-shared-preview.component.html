@@ -1,0 +1,218 @@
+@let _toasts = toasts();
+
+@switch (entry()) {
+  @case ('button') {
+    <div class="grid gap-3 rounded-2xl bg-panel p-4 sm:grid-cols-3">
+      @for (variant of buttonVariants; track variant) {
+        <button
+          type="button"
+          appButton
+          [variant]="variant"
+          [attr.data-testid]="'dev.catalog.button.' + variant"
+        >
+          {{ buttonLabel }} · {{ variant }}
+        </button>
+      }
+      @for (variant of buttonVariants; track variant) {
+        <button type="button" appButton [variant]="variant" disabled>
+          {{ buttonLabel }} · {{ variant }} ·
+          <ng-container i18n="@@uiDev-catalogSharedPreview-disabled">gesperrt</ng-container>
+        </button>
+      }
+    </div>
+  }
+  @case ('tag') {
+    <div class="grid gap-3 rounded-2xl bg-panel p-4">
+      @for (tone of tagTones; track tone) {
+        <div class="flex items-center gap-2" [attr.data-testid]="'dev.catalog.tag.' + tone">
+          <span appTag [tone]="tone">{{ tagLabel }} · {{ tone }}</span>
+          <span appTag [tone]="tone">{{ longTagLabel }}</span>
+        </div>
+      }
+    </div>
+  }
+  @case ('segment') {
+    <div class="grid gap-3 rounded-2xl bg-panel p-4">
+      <app-segment
+        class="w-max"
+        [options]="segmentOptions"
+        [selected]="segmentChoice()"
+        [label]="segmentLabel"
+        (selectedOption)="onSelectSegment($event)"
+      />
+      <app-segment
+        class="w-max"
+        size="compact"
+        [options]="segmentOptions"
+        [selected]="segmentChoice()"
+        [label]="segmentLabel"
+        (selectedOption)="onSelectSegment($event)"
+      />
+    </div>
+  }
+  @case ('pill') {
+    <div class="grid grid-cols-3 gap-1.5 rounded-2xl bg-canvas p-3">
+      <app-pill
+        [label]="pillLabels.food"
+        tone="lime"
+        [extra]="foodExtra"
+        [barFraction]="controls().fill"
+        [barOver]="over()"
+      >
+        {{ 1234567 | formatNumber }}
+      </app-pill>
+      <app-pill [label]="pillLabels.eggs" tone="yellow">
+        {{ 4321 | formatNumber }}
+        <span appPillSub>+{{ 12.5 | formatNumber }}/s</span>
+      </app-pill>
+      <app-pill [label]="pillLabels.harvest" tone="orange">
+        {{ 87.6 | formatNumber }}
+        <span appPillSub i18n="@@uiDev-catalogSharedPreview-pill-sub">gedrosselt</span>
+      </app-pill>
+    </div>
+  }
+  @case ('bottom-sheet') {
+    <div class="grid gap-3">
+      <button
+        type="button"
+        appButton
+        data-testid="dev.catalog.sheet.toggle"
+        (click)="onChangedSheetCollapsed(!sheetCollapsed())"
+        i18n="@@uiDev-catalogSharedPreview-sheet-toggle"
+      >
+        Blatt umklappen
+      </button>
+      <div class="relative h-80 overflow-hidden rounded-2xl bg-canvas">
+        <app-bottom-sheet
+          [label]="sheetLabel"
+          [collapsed]="sheetCollapsed()"
+          gripTestId="dev.catalog.sheet.grip"
+          (changedCollapsed)="onChangedSheetCollapsed($event)"
+        >
+          <h2 class="mb-2 text-lg font-black">{{ sheetLabel }}</h2>
+          <p class="pb-24 text-fg-muted" i18n="@@uiDev-catalogSharedPreview-sheet-text">
+            Inhalt des Blatts. Der Griff klappt es per Antippen oder Wischen um.
+          </p>
+        </app-bottom-sheet>
+      </div>
+      <div class="relative h-80 overflow-hidden rounded-2xl bg-canvas">
+        <app-bottom-sheet [label]="sheetLabel" [collapsed]="sheetCollapsed()" tone="neuron">
+          <h2 class="mb-2 text-lg font-black" i18n="@@uiDev-catalogSharedPreview-sheet-neuron">
+            Ton Neuron
+          </h2>
+          <p class="pb-24 text-fg-muted" i18n="@@uiDev-catalogSharedPreview-sheet-neuronText">
+            Dasselbe Blatt im Ton des Neurons.
+          </p>
+        </app-bottom-sheet>
+      </div>
+    </div>
+  }
+  @case ('toast') {
+    <div class="grid gap-3">
+      <button
+        type="button"
+        appButton
+        data-testid="dev.catalog.toast.show"
+        (click)="onShowToast()"
+        i18n="@@uiDev-catalogSharedPreview-toast-show"
+      >
+        Toast zeigen
+      </button>
+      <div class="relative h-40 overflow-hidden rounded-2xl bg-canvas pt-4">
+        <app-toast-stack>
+          @for (id of _toasts; track id) {
+            <app-toast data-testid="dev.catalog.toast.item" (expired)="onExpiredToast(id)">
+              <ng-container i18n="@@uiDev-catalogSharedPreview-toast-text">
+                Toast Nummer <b class="text-accent-yellow">{{ id | formatInteger }}</b>
+              </ng-container>
+            </app-toast>
+          }
+        </app-toast-stack>
+      </div>
+    </div>
+  }
+  @case ('dialog-frame') {
+    <button
+      type="button"
+      appButton
+      variant="gold"
+      class="w-full"
+      data-testid="dev.catalog.dialog.open"
+      (click)="onOpenDialog()"
+      i18n="@@uiDev-catalogSharedPreview-dialog-open"
+    >
+      Dialog öffnen
+    </button>
+    <app-dialog-frame [open]="dialogOpen()" [label]="dialogLabel" (closed)="onCloseDialog()">
+      <h2 appDialogTitle>{{ dialogLabel }}</h2>
+      <p appDialogText i18n="@@uiDev-catalogSharedPreview-dialog-text">
+        Ein Text im Dialog mit <b class="text-accent-yellow">Hervorhebung</b>.
+      </p>
+      <h3 appDialogHeading i18n="@@uiDev-catalogSharedPreview-dialog-heading">Abschnitt</h3>
+      <p appDialogText i18n="@@uiDev-catalogSharedPreview-dialog-more">
+        Klick auf den Hintergrund oder Escape schließt den Dialog.
+      </p>
+      <div appDialogActions [columns]="2">
+        <button
+          type="button"
+          appButton
+          variant="warn"
+          data-testid="dev.catalog.dialog.close"
+          (click)="onCloseDialog()"
+          i18n="@@uiDev-catalogSharedPreview-dialog-cancel"
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          appButton
+          variant="gold"
+          (click)="onCloseDialog()"
+          i18n="@@uiDev-catalogSharedPreview-dialog-confirm"
+        >
+          Bestätigen
+        </button>
+      </div>
+    </app-dialog-frame>
+  }
+  @case ('pipes') {
+    <div class="grid gap-4 rounded-2xl bg-panel p-4 sm:grid-cols-2">
+      <table class="w-full text-left tabular-nums" data-testid="dev.catalog.pipes.numbers">
+        <thead class="text-xs text-fg-muted">
+          <tr>
+            <th i18n="@@uiDev-catalogSharedPreview-pipes-value">Wert</th>
+            <th>formatNumber</th>
+            <th>formatInteger</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (n of sampleNumbers; track $index) {
+            <tr>
+              <td class="text-fg-subtle">{{ n }}</td>
+              <td>{{ n | formatNumber }}</td>
+              <td>{{ n | formatInteger }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <table class="w-full text-left tabular-nums" data-testid="dev.catalog.pipes.times">
+        <thead class="text-xs text-fg-muted">
+          <tr>
+            <th i18n="@@uiDev-catalogSharedPreview-pipes-seconds">Sekunden</th>
+            <th>formatTime</th>
+            <th>formatDuration</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of sampleSeconds; track $index) {
+            <tr>
+              <td class="text-fg-subtle">{{ s }}</td>
+              <td>{{ s | formatTime }}</td>
+              <td>{{ s | formatDuration }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

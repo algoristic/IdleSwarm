@@ -1,0 +1,43 @@
+<div class="grid gap-3">
+  @for (row of rows(); track row.id) {
+    <div class="grid min-w-0 gap-1" [attr.data-testid]="row.testId">
+      @if (row.choice; as choice) {
+        <span class="text-xs font-extrabold tracking-wide text-fg-muted uppercase">
+          {{ row.label }}
+        </span>
+        <app-form-choice
+          [formField]="choice.field"
+          [options]="choice.options"
+          [label]="row.label"
+        />
+      } @else {
+        <label
+          class="text-xs font-extrabold tracking-wide text-fg-muted uppercase"
+          for="dev-catalog-level"
+        >
+          {{ row.label }}
+        </label>
+        <input
+          id="dev-catalog-level"
+          type="range"
+          step="1"
+          class="w-full accent-accent-cyan"
+          data-testid="dev.catalog.control.level.input"
+          [formField]="controlsForm.level"
+        />
+        <p
+          class="text-xs text-fg-subtle tabular-nums"
+          data-testid="dev.catalog.control.level.units"
+        >
+          @for (entry of units(); track entry.unit) {
+            <span class="mr-2 inline-block">
+              {{ entry.count | formatInteger }} {{ unitTexts[entry.unit].abbreviation }}
+            </span>
+          } @empty {
+            <span i18n="@@uiDev-formCatalogControls-noUnits">keine Einheiten</span>
+          }
+        </p>
+      }
+    </div>
+  }
+</div>

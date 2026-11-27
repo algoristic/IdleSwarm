@@ -1,0 +1,69 @@
+@let c = controls();
+
+@switch (entry()) {
+  @case ('map-site-icon') {
+    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      @for (icon of icons; track icon.type) {
+        <li class="rounded-2xl bg-canvas p-3" [attr.data-testid]="'dev.catalog.site.' + icon.type">
+          <svg class="block h-auto w-full" [attr.viewBox]="iconViewBox" aria-hidden="true">
+            <svg:g app-map-site-icon [type]="icon.type" [shape]="c.shape" [radius]="icon.radius" />
+          </svg>
+          <p class="mt-2 text-center text-xs font-extrabold text-fg-muted">{{ icon.name }}</p>
+        </li>
+      }
+    </ul>
+  }
+  @case ('map-water') {
+    <svg class="block h-auto w-full" [attr.viewBox]="waterViewBox" aria-hidden="true">
+      <svg:g [attr.transform]="farTransform"><g app-far-mood [mood]="mood()" /></svg:g>
+      <svg:g app-map-water />
+    </svg>
+  }
+  @default {
+    <div class="mx-auto max-w-md">
+      <svg
+        class="block h-auto w-full rounded-2xl"
+        [attr.viewBox]="entry() === 'map-swarm' ? swarmViewBox : itemViewBox"
+        aria-hidden="true"
+      >
+        <svg:g transform="scale(.12)"><g app-far-mood [mood]="1" /></svg:g>
+        <svg:g app-map-water />
+        @switch (entry()) {
+          @case ('map-site') {
+            <svg:g
+              app-map-site
+              data-testid="dev.catalog.mapSite"
+              [type]="c.site"
+              [shape]="c.shape"
+              [fillFraction]="c.fill"
+              [dead]="c.dead"
+              [zone]="c.mapZone"
+              [highlight]="c.siteHighlight"
+              [here]="c.here"
+            />
+          }
+          @case ('map-current-site') {
+            <svg:g
+              app-map-current-site
+              [type]="c.site"
+              [shape]="c.shape"
+              [fillFraction]="c.fill"
+              [dead]="c.dead"
+            />
+          }
+          @case ('map-find') {
+            <svg:g app-map-find [zone]="c.mapZone" [highlight]="c.findHighlight" />
+          }
+          @case ('map-swarm') {
+            <svg:g
+              app-map-swarm
+              [eaters]="c.units[0]"
+              [brooders]="c.units[1]"
+              [motion]="c.motion"
+            />
+          }
+        }
+      </svg>
+    </div>
+  }
+}

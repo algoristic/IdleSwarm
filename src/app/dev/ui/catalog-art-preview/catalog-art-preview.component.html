@@ -1,0 +1,114 @@
+@let c = controls();
+
+@switch (entry()) {
+  @case ('unit-sprite') {
+    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      @for (sprite of sprites; track sprite.unit) {
+        <li
+          class="rounded-2xl bg-canvas p-3"
+          [attr.data-testid]="'dev.catalog.unit.' + sprite.unit"
+        >
+          <svg class="block h-auto w-full" [attr.viewBox]="sprite.viewBox" aria-hidden="true">
+            <svg:g app-unit-sprite [unit]="sprite.unit" />
+          </svg>
+          <p class="mt-2 text-center text-xs font-extrabold text-fg-muted">{{ sprite.name }}</p>
+        </li>
+      }
+    </ul>
+  }
+  @case ('unit-icon') {
+    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      @for (sprite of sprites; track sprite.unit) {
+        <li class="rounded-2xl bg-panel p-3" [attr.data-testid]="'dev.catalog.unit.' + sprite.unit">
+          <app-catalog-stage [width]="80" [height]="40" [maxScale]="3">
+            <div class="flex h-10 items-center justify-around">
+              <app-unit-icon [unit]="sprite.unit" variant="list" />
+              <app-unit-icon [unit]="sprite.unit" variant="tab" />
+            </div>
+          </app-catalog-stage>
+          <p class="mt-2 text-center text-xs font-extrabold text-fg-muted">{{ sprite.name }}</p>
+        </li>
+      }
+      <li class="rounded-2xl bg-panel p-3" data-testid="dev.catalog.unit.locked">
+        <app-catalog-stage [width]="80" [height]="40" [maxScale]="3">
+          <div class="flex h-10 items-center justify-around">
+            <app-unit-icon [unit]="null" />
+          </div>
+        </app-catalog-stage>
+        <p
+          class="mt-2 text-center text-xs font-extrabold text-fg-muted"
+          i18n="@@uiDev-catalogArtPreview-locked"
+        >
+          gesperrt
+        </p>
+      </li>
+    </ul>
+  }
+  @case ('sparkle-sprite') {
+    <div class="mx-auto max-w-xs rounded-2xl bg-canvas p-6">
+      <svg class="block h-auto w-full" [attr.viewBox]="sparkleViewBox" aria-hidden="true">
+        <svg:g app-sparkle-sprite />
+      </svg>
+    </div>
+  }
+  @case ('swarm-canvas') {
+    <app-catalog-stage [width]="600" [height]="600" [maxScale]="1.5">
+      <div class="absolute -top-37.5 -left-37.5 size-225">
+        <svg
+          class="absolute inset-0 block size-full"
+          [attr.viewBox]="sceneViewBox"
+          aria-hidden="true"
+        >
+          <svg:g app-scene-backdrop [kind]="c.site" [zone]="c.zone" />
+          <svg:g app-scene-site [type]="c.site" [shape]="shape" [fillFraction]="1" />
+        </svg>
+        <app-swarm-canvas
+          class="absolute top-27.5 left-27.5"
+          [units]="c.units"
+          [motion]="c.motion"
+        />
+      </div>
+    </app-catalog-stage>
+  }
+  @case ('swarm-travel') {
+    <app-catalog-stage [width]="600" [height]="600" [maxScale]="1.5">
+      <div class="absolute -top-37.5 -left-37.5 size-225">
+        <svg
+          class="absolute inset-0 block size-full"
+          [attr.viewBox]="sceneViewBox"
+          aria-hidden="true"
+        >
+          <svg:g app-scene-backdrop kind="travel" [zone]="c.zone" />
+        </svg>
+        <app-swarm-canvas
+          class="absolute top-27.5 left-27.5"
+          [units]="c.units"
+          [travelAngle]="c.direction"
+          [motion]="c.motion"
+        />
+      </div>
+    </app-catalog-stage>
+  }
+  @case ('scene-site') {
+    <svg class="block h-auto w-full" [attr.viewBox]="sceneViewBox" aria-hidden="true">
+      <svg:g app-scene-backdrop [kind]="c.site" [zone]="0" />
+      <svg:g app-scene-site [type]="c.site" [shape]="c.shape" [fillFraction]="c.fill" />
+    </svg>
+  }
+  @case ('far-mood') {
+    <svg class="block h-auto w-full" [attr.viewBox]="farViewBox" aria-hidden="true">
+      <svg:g app-far-mood [mood]="c.mood" />
+    </svg>
+  }
+  @case ('zone-haze') {
+    <svg class="block h-auto w-full" [attr.viewBox]="farViewBox" aria-hidden="true">
+      <svg:g app-far-mood [mood]="hazeMood()" />
+      <svg:g app-zone-haze [zone]="c.zone" />
+    </svg>
+  }
+  @case ('scene-backdrop') {
+    <svg class="block h-auto w-full" [attr.viewBox]="sceneViewBox" aria-hidden="true">
+      <svg:g app-scene-backdrop [kind]="c.backdrop" [zone]="c.zone" />
+    </svg>
+  }
+}

@@ -1,0 +1,9 @@
+@let _layout = layout();
+<div
+  class="absolute top-0 left-0 origin-top-left"
+  [style.width.px]="width()"
+  [style.height.px]="height()"
+  [style.transform]="_layout.transform"
+>
+  <ng-content />
+</div>
