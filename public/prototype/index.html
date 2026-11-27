@@ -125,7 +125,6 @@
   .drift--fast { animation: driftFast 2.4s linear infinite; }
   @keyframes drift { to { transform: translate(14px, -22px); } }
   @keyframes driftFast { from { transform: translate(0, -60px); } to { transform: translate(0, 60px); } }
-  .site-scale { transition: transform 1.2s ease; }
   /* Wanderung: die alte Stelle zieht nach hinten weg, die neue kommt von vorn */
   .site-out { animation: siteOut 1.6s var(--ease) forwards; }
   .site-in { animation: siteIn 1.4s var(--ease) both; }
@@ -512,6 +511,7 @@
       <g id="mainTrek" class="trek"><g id="mainSwarm"></g></g>
     </svg>
     <canvas class="cv-el" id="cvMain" style="left:-550px;top:-550px;width:1100px;height:1100px"></canvas>
+    <canvas class="cv-el" id="cvSite" style="left:-550px;top:-550px;width:1100px;height:1100px"></canvas>
     <canvas class="cv-el" id="cvLive" style="left:-340px;top:-340px;width:680px;height:800px"></canvas>
   </div>
 
@@ -1280,7 +1280,7 @@ function renderMap(d) {
   const mt = markTarget(s, d);
   let h = '';
   // Wasser: einzige Transparenz, dahinter liegt die Stimmung der nächsten Zone
-  h += `<circle r="${REACH_PX}" fill="#22308a" fill-opacity=".4"/><circle r="${REACH_PX * .68}" fill="#26359a" fill-opacity=".22"/><circle r="${REACH_PX * .34}" fill="#2a3aa6" fill-opacity=".22"/>`;
+  const water = `<circle r="${REACH_PX}" fill="#22308a" fill-opacity=".4"/><circle r="${REACH_PX * .68}" fill="#26359a" fill-opacity=".22"/><circle r="${REACH_PX * .34}" fill="#2a3aa6" fill-opacity=".22"/>`;
 
   // Nächste Zone: keine Vorschau. Ihre Stellen und ihr Fundstück erscheinen erst, wenn sie erreichbar ist.
   const nz = s.zone + 1 < CFG.zones.length ? s.zone + 1 : null;
@@ -1357,26 +1357,43 @@ function renderMap(d) {
   if (s.travel) rt = { x: s.travel.tx, y: s.travel.ty };
   else if (mt) rt = mt.obj;
   else if (auto) { rt = auto.site; rtAuto = true; }
-  if (rt) {
-    const p = P(rt), L = Math.hypot(p.x, p.y);
-    if (L > 30) {
-      const ux = p.x / L, uy = p.y / L;
-      only += `<path class="route${rtAuto ? ' route--auto' : ''}" d="M${(ux * 26).toFixed(1)} ${(uy * 26).toFixed(1)}L${(p.x - ux * 24).toFixed(1)} ${(p.y - uy * 24).toFixed(1)}"/>`;
-    }
-  }
+  if (rt) only += `<path class="route${rtAuto ? ' route--auto' : ''}"/>`;
   // Aktuelle Stelle unter dem Schwarm
   const cur = currentSite(s);
-  if (cur) {
-    const frac = Math.max(0, cur.stock / cur.size);
-    only += `<g transform="scale(${(1.25 * (0.55 + 0.45 * Math.sqrt(frac))).toFixed(2)})">${siteIcon(cur, ICON_R[cur.type])}</g>`;
-  }
+  if (cur) only += `<g class="map-cur">${siteIcon(cur, ICON_R[cur.type])}</g>`;
   const curLabel = cur ? `<text class="m-label" y="${ICON_R[cur.type] * 1.3 + 17}">${CFG.siteTypes[cur.type].name}</text><text class="m-meta" y="${ICON_R[cur.type] * 1.3 + 29}">hier · ${fmt(avail(cur))} Bestand</text>` : '';
 
   // Der Schwarm liegt in einer eigenen Ebene, die nur bei neuer Figurenzahl neu gezeichnet wird, damit seine Animationen weiterlaufen
-  $('mapLow').innerHTML = h + `<g class="map-only">${only}</g>`;
+  $('mapLow').innerHTML = water + `<g class="map-world">${h}</g><g class="map-only">${only}</g>`;
   const mini = swarmMini();
   if (mini !== mapSwarmHtml) $('mapSwarm').innerHTML = mapSwarmHtml = mini;
-  $('mapHigh').innerHTML = `<g class="map-only">${curLabel}</g>` + labels;
+  $('mapHigh').innerHTML = `<g class="map-only">${curLabel}</g><g class="map-world">${labels}</g>`;
+  mapAnchor = { x: s.pos.x, y: s.pos.y, k, rt: rt && { x: rt.x, y: rt.y }, route: $('mapLow').querySelector('.route'), cur: $('mapLow').querySelector('.map-cur'), world: document.querySelectorAll('#mapSvg .map-world') };
+  mapFollowKey = '';
+}
+// Die Simulation rückt in festen Schritten vor (TEC-03). Damit die Umgebung beim Reisen gleitet, statt viermal pro
+// Sekunde zu springen, verschiebt jeder Frame die Stellen um den Weg, den der Schwarm seit dem letzten Schritt zurücklegt.
+let mapAnchor = null, mapFollowKey = '';
+function swarmPosAhead(s, d, ahead) {
+  const tr = s.travel;
+  if (!tr || tr.dist <= 0) return s.pos;
+  const f = Math.min(tr.dist, tr.done + d.speed * ahead) / tr.dist;
+  return { x: tr.x0 + (tr.tx - tr.x0) * f, y: tr.y0 + (tr.ty - tr.y0) * f };
+}
+function mapFollow(d) {
+  const a = mapAnchor;
+  if (!a) return;
+  const cur = a.cur && currentSite(S);
+  if (cur) a.cur.setAttribute('transform', `scale(${(1.25 * (0.55 + 0.45 * Math.sqrt(shownFrac(cur)))).toFixed(4)})`);
+  const v = swarmPosAhead(S, d, acc);
+  const key = `${((a.x - v.x) * a.k).toFixed(2)} ${((a.y - v.y) * a.k).toFixed(2)}`;
+  if (key === mapFollowKey) return;
+  mapFollowKey = key;
+  for (const g of a.world) g.setAttribute('transform', `translate(${key})`);
+  if (!a.route) return;
+  const px = (a.rt.x - v.x) * a.k, py = (a.rt.y - v.y) * a.k, L = Math.hypot(px, py);
+  const ux = px / L, uy = py / L;
+  a.route.setAttribute('d', L > 30 ? `M${(ux * 26).toFixed(1)} ${(uy * 26).toFixed(1)}L${(px - ux * 24).toFixed(1)} ${(py - uy * 24).toFixed(1)}` : '');
 }
 let miniCache = { key: '', html: '' }, mapSwarmHtml = null;
 function swarmMini() {
@@ -1578,9 +1595,27 @@ function renderMainSite() {
     $('mainFlow').setAttribute('transform', tr ? `rotate(${(lastAngle + 90).toFixed(1)})` : '');
     cv.flowRot = tr ? lastAngle + 90 : 0;
   }
-  const sc = $('siteScale');
-  if (sc && site) sc.setAttribute('transform', `scale(${(0.35 + 0.65 * Math.sqrt(Math.max(0, site.stock / site.size))).toFixed(3)})`);
-  if (CANVAS) cvRasterMain(key + (sc && site ? '|' + Math.round(100 * Math.sqrt(Math.max(0, site.stock / site.size))) : ''));
+  if (CANVAS) cvRasterMain(key);
+}
+// Wie die Reise (TEC-03): Zwischen zwei Schritten gleitet der Bestand der aktuellen Stelle vom vorigen zum letzten Wert
+let stockPrev = null;
+function noteStock() {
+  const c = currentSite(S);
+  stockPrev = c ? { id: c.id, stock: c.stock, t: S.t } : null;
+}
+function shownFrac(site) {
+  if (site.dead) return 0;
+  let st = site.stock;
+  const p = stockPrev;
+  if (p && p.id === site.id && Math.abs(S.t - p.t - CFG.dt) < 1e-6) st = p.stock + (st - p.stock) * Math.min(1, acc / CFG.dt);
+  return Math.max(0, st / site.size);
+}
+function siteFollow() {
+  const site = currentSite(S);
+  if (!site) return;
+  const sc = (0.35 + 0.65 * Math.sqrt(shownFrac(site))).toFixed(4);
+  if (CANVAS) $('cvSite').style.transform = `scale(${sc})`;
+  else $('siteScale')?.setAttribute('transform', `scale(${sc})`);
 }
 let swarmKey = '';
 function renderSwarm() {
@@ -1956,12 +1991,12 @@ function renderHud(d) {
     const tr = s.travel, obj = tr.kind === 'site' ? getSite(s, tr.id) : getFind(s, tr.id);
     const nm = obj ? (tr.kind === 'site' ? CFG.siteTypes[obj.type].name : CFG.finds.types[obj.type].name) : '';
     ring.setAttribute('stroke', '#3ee6e0');
-    ring.setAttribute('stroke-dasharray', `${(tr.dist > 0 ? (tr.done / tr.dist) * 100 : 100).toFixed(1)} 100`);
+    ring.setAttribute('stroke-dasharray', `${(tr.dist > 0 ? (Math.min(tr.dist, tr.done + d.speed * acc) / tr.dist) * 100 : 100).toFixed(1)} 100`);
     $('ctxMainText').innerHTML = `<b>Unterwegs</b> <span class="sub num">· ${nm} in ${fmtTime((tr.dist - tr.done) / d.speed)}</span>`;
   } else if (cur) {
     const T = CFG.siteTypes[cur.type];
     ring.setAttribute('stroke', '#8cf25a');
-    ring.setAttribute('stroke-dasharray', `${(Math.max(0, cur.stock / cur.size) * 100).toFixed(1)} 100`);
+    ring.setAttribute('stroke-dasharray', `${(shownFrac(cur) * 100).toFixed(1)} 100`);
     let sub;
     if (cur.dead) sub = 'versiegt';
     else if (s.lastH > 0) sub = T.goal ? `Ø ${fmt(s.lastH)}/s` : `leer in ${fmtTime(avail(cur) / s.lastH)}`;
@@ -2019,6 +2054,8 @@ function render(force) {
     renderFar();
     setPan(pan.x, pan.y);
   }
+  mapFollow(d);
+  siteFollow();
 }
 
 /* ---------- Ansichten und Verschieben ---------- */
@@ -2399,10 +2436,11 @@ function cvSvgImage(markup) {
 }
 // Rastert den Inhalt eines SVG im Ausschnitt vb mit k Pixeln je Einheit in ein sichtbares Canvas
 let cvTok = 0;
-function cvRaster(canvas, svg, vb, k) {
+function cvRaster(canvas, svg, vb, k, prep) {
   const tok = String(++cvTok), w = Math.round(vb[2] * k), h = Math.round(vb[3] * k);
   canvas.dataset.tok = tok;
   const c = svg.cloneNode(true);
+  if (prep) prep(c);
   c.setAttribute('viewBox', vb.join(' '));
   c.setAttribute('width', String(w));
   c.setAttribute('height', String(h));
@@ -2417,7 +2455,10 @@ function cvRaster(canvas, svg, vb, k) {
 function cvRasterMain(key) {
   if (key === cv.mainKey) return;
   cv.mainKey = key;
-  cvRaster($('cvMain'), document.querySelector('.layer--main > svg'), CV_MAIN, Math.min(devicePixelRatio || 1, 2.5));
+  // Hintergrund und Stelle getrennt: Die Stelle wird einmal in voller Größe gerastert und je Frame skaliert
+  const svg = document.querySelector('.layer--main > svg'), k = Math.min(devicePixelRatio || 1, 2.5);
+  cvRaster($('cvMain'), svg, CV_MAIN, k, (c) => c.querySelector('#mainSite').remove());
+  cvRaster($('cvSite'), svg, CV_MAIN, k, (c) => { c.querySelector('#mainBg').remove(); c.querySelector('#siteScale')?.removeAttribute('transform'); });
 }
 function cvBuildDrift(travel) {
   const groups = new Map();
@@ -2735,7 +2776,7 @@ function frame(now) {
     acc += el * speed;
     sinceSave += el;
     let n = 0;
-    while (acc >= CFG.dt && n < 2000) { step(S, liveLog); acc -= CFG.dt; n++; }
+    while (acc >= CFG.dt && n < 2000) { noteStock(); step(S, liveLog); acc -= CFG.dt; n++; }
     if (n >= 2000) acc = 0;
     if (S.ended && !S.endSeen) showEnd();
     if (sinceSave >= CFG.saveEvery) { sinceSave = 0; save(); }
