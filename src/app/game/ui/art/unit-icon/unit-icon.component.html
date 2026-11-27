@@ -1,0 +1,30 @@
+@let _frame = frame();
+@let _unit = unit();
+
+<svg
+  class="block"
+  [attr.width]="_frame.width"
+  [attr.height]="_frame.height"
+  [attr.viewBox]="_frame.viewBox"
+  aria-hidden="true"
+>
+  @if (_unit) {
+    <svg:g app-unit-sprite [unit]="_unit" [attr.transform]="_frame.transform" />
+  } @else {
+    <circle
+      r="9"
+      fill="none"
+      [attr.stroke]="lockedColors.ring"
+      stroke-width="2"
+      stroke-dasharray="2.4 2.6"
+    />
+    <text
+      y="3.6"
+      [attr.fill]="lockedColors.mark"
+      font-size="10"
+      font-weight="900"
+      text-anchor="middle"
+      [textContent]="lockedMark"
+    ></text>
+  }
+</svg>

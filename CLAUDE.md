@@ -58,7 +58,7 @@ Code wird zuerst nach Domäne, dann nach Schicht gruppiert: `src/app/<domain>/<l
 | Schicht | Enthält | darf abhängen von |
 | --- | --- | --- |
 | `feature` | Routen, Seiten, Smart Components, `state/` (Facade, Providers, Guards) | feature, ui, data-access, domain, util |
-| `ui` | Präsentationskomponenten (nur Inputs/Outputs), Pipes, Formular-Komponenten | ui, domain, util |
+| `ui` | Präsentationskomponenten (nur Inputs/Outputs), Pipes, Formular-Komponenten, reine Zeichenfunktionen (`*.utils.ts`) | ui, domain, util |
 | `data-access` | Stores, Persistenz (localStorage), Worker-Clients, Plattform-Tokens | data-access, domain, util |
 | `domain` | Modelle (Interfaces, `as const`-Listen), Fachdaten, reine Regeln und Formeln | domain, util |
 | `util` | generische Helfer ohne Fachwissen (Formatierung, Parser) | util |
@@ -98,7 +98,7 @@ Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln selbst.
     └── <domain>.model.ts           # Viewmodel-Typen
 ```
 
-**ui:** ein Ordner je Komponente oder Direktive, benannt nach dem, was sie zeigt (`item-card`, `status-badge`, `form-*`, `dialog-*`). Komponentenspezifische Typen liegen in `<component>.model.ts`, gemeinsame Typen eines `ui`-Ordners in `models/<name>.model.ts`. Pipes liegen unter `pipes/<name>/<name>.pipe.ts`. Eine `.css`-Datei gibt es nur für Sonderfälle (§4).
+**ui:** ein Ordner je Komponente oder Direktive, benannt nach dem, was sie zeigt (`item-card`, `status-badge`, `form-*`, `dialog-*`). Komponentenspezifische Typen liegen in `<component>.model.ts`, gemeinsame Typen eines `ui`-Ordners in `models/<name>.model.ts`. Pipes liegen unter `pipes/<name>/<name>.pipe.ts`. Reine, Angular-freie Zeichenfunktionen (Formen, Geometrie, Formation, Bewegungskurven, Canvas-Zeichnen) liegen als `<name>.utils.ts` neben den Komponenten, die sie nutzen, gemeinsame in `game/ui/art/`. Eine `.css`-Datei gibt es nur für Sonderfälle (§4).
 
 **data-access:**
 
@@ -117,6 +117,7 @@ Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln selbst.
 ### Namen und Metadaten
 
 - Geroutete Seiten heißen `<name>.page.{ts,html}` mit Klasse `<Name>Page` und Selektor `app-<name>-page`. Alle anderen Komponenten heißen `<name>.component.{ts,html}` mit Klasse `<Name>Component` und Selektor `app-<name>`. ESLint erzwingt die Suffixe.
+- SVG-Teilkomponenten, die innerhalb eines `<svg>` gezeichnet werden, haben einen Attributselektor auf dem SVG-Element (`g[app-<name>]`), weil Element-Hosts in SVG nicht gezeichnet werden; sonst gilt `app-<name>`.
 - Direktiven heißen `<name>.directive.ts` mit Klasse `<Name>Directive` und Attributselektor `app<Name>`.
 - Namen beschreiben, was eine Komponente zeigt. Ob sie smart oder präsentational ist, folgt aus ihrer Schicht. Nur zwei Rollen-Präfixe: `dialog-` und `form-`.
 - Standalone ist implizit, also kein `standalone: true`, keine NgModules.
@@ -229,6 +230,7 @@ Styling verwendet **Tailwind CSS v4** mit semantischen Tokens. `src/styles.css` 
 
 - **Templates verwenden Utility-Klassen**, Farben nur aus den Tokens (z. B. `bg-bg`, `text-fg`, `text-accent`). Abstände, Größen und Typografie aus der Tailwind-Skala.
 - **Keine Arbitrary Values** (`p-[13px]`, `bg-[#123456]`). Neue Farben sind neue Tokens in `src/styles.css`, mit Textkontrast ≥ 4,5:1.
+- **Ausnahme Illustrationen:** Farben von SVG-Kunst und Canvas kommen aus der Palette `game/ui/art/art-palette.ts` (ADR 0002), nicht aus Tokens. SVG-Templates binden sie per Attribut (`[attr.fill]`) aus Feldern oder `computed`.
 - Klassennamen immer vollständig schreiben. Tailwind findet Klassen durch Scannen der Quellen, also nicht aus Strings zusammensetzen (`'bg-' + x`). Varianten über Signal-Inputs und ein `computed`-Mapping mit vollständigen Klassennamen.
 - Zustände folgen ARIA-Attributen statt Klassen-Ternären: `aria-disabled:`, `aria-selected:`, `aria-current` über eine eigene Variante, `disabled:` bei nativen Elementen.
 - Zahlen (Mengen, Preise) bekommen `tabular-nums`.
