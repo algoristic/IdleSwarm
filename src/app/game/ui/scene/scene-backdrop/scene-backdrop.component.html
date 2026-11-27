@@ -1,0 +1,22 @@
+@let _scene = scene();
+@let c = _scene.colors;
+<svg:defs>
+  <radialGradient [attr.id]="gradientId" cy="30%" r="70%">
+    <stop offset="0" [attr.stop-color]="c.light" />
+    <stop offset=".5" [attr.stop-color]="c.mid" />
+    <stop offset="1" [attr.stop-color]="c.deep" />
+  </radialGradient>
+  <linearGradient [attr.id]="rayGradientId" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" [attr.stop-color]="c.glow" [attr.stop-opacity]="_scene.rayOpacity" />
+    <stop offset="1" [attr.stop-color]="c.glow" stop-opacity="0" />
+  </linearGradient>
+</svg:defs>
+<svg:rect x="-1000" y="-1000" width="2000" height="2000" [attr.fill]="fill" />
+@for (d of _scene.rays; track $index) {
+  <svg:path [attr.d]="d" [attr.fill]="rayFill" />
+}
+<svg:g [attr.fill]="c.light">
+  @for (speck of _scene.specks; track $index) {
+    <circle [attr.cx]="speck.cx" [attr.cy]="speck.cy" [attr.r]="speck.r" />
+  }
+</svg:g>

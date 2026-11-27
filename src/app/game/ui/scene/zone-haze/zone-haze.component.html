@@ -1,0 +1,11 @@
+@let _scene = scene();
+<svg:g [attr.fill]="_scene.color" opacity=".35">
+  @for (d of _scene.blobs; track $index) {
+    <path [attr.d]="d" />
+  }
+</svg:g>
+<svg:g [attr.fill]="speckColor">
+  @for (speck of _scene.specks; track $index) {
+    <circle [attr.cx]="speck.cx" [attr.cy]="speck.cy" [attr.r]="speck.r" />
+  }
+</svg:g>

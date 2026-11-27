@@ -1,0 +1,37 @@
+@let _site = site();
+@let c = _site.colors;
+<svg:g [attr.transform]="transform()">
+  <g [attr.fill]="c.shade" transform="translate(6 8)">
+    @for (d of _site.basePaths; track $index) {
+      <path [attr.d]="d" />
+    }
+  </g>
+  <g [attr.fill]="c.base">
+    @for (d of _site.basePaths; track $index) {
+      <path [attr.d]="d" />
+    }
+  </g>
+  <g [attr.fill]="c.mid">
+    @for (d of _site.midPaths; track $index) {
+      <path [attr.d]="d" />
+    }
+  </g>
+  <g [attr.fill]="c.top">
+    @for (d of _site.topPaths; track $index) {
+      <path [attr.d]="d" />
+    }
+  </g>
+  <g>
+    @for (dot of _site.dots; track $index) {
+      <circle [attr.cx]="dot.cx" [attr.cy]="dot.cy" [attr.r]="dot.r" [attr.fill]="dot.fill" />
+    }
+  </g>
+  @if (_site.legs) {
+    <g [attr.stroke]="legsColor" stroke-width="16" stroke-linecap="round" fill="none" opacity=".9">
+      <path [attr.d]="legsPath" />
+    </g>
+  }
+  @for (blade of _site.blades; track $index) {
+    <path [attr.d]="blade.d" [attr.fill]="blade.fill" opacity=".85" />
+  }
+</svg:g>
