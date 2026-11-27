@@ -1,4 +1,5 @@
 import { createFind } from './find-logic';
+import { harvestHistoryLength } from './harvest-logic';
 import { GameConfig } from './models/game-config.model';
 import { GameState, SAVE_VERSION } from './models/game-state.model';
 import { SITE_TYPE_IDS } from './models/site.model';
@@ -7,10 +8,6 @@ import { CHAIN_UPGRADE_COUNT, reachFor } from './upgrade-logic';
 
 const INITIALLY_UNLOCKED_UNITS = 2;
 const GOAL_SITE_RADIUS_SHARE = 0.8;
-
-export function harvestHistoryLength(config: GameConfig): number {
-  return Math.round(config.finds.averageWindow / config.dt);
-}
 
 export function newGame(config: GameConfig, seed: number, now: number): GameState {
   const zoneZeros = (): number[] => config.zones.map(() => 0);
