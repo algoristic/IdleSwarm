@@ -21,35 +21,57 @@ describe('BottomSheetComponent', () => {
     return grip;
   }
 
-  function swipe(grip: HTMLButtonElement, fromY: number, toY: number): void {
-    grip.dispatchEvent(pointer('pointerdown', fromY));
-    grip.dispatchEvent(pointer('pointerup', toY));
+  function press(grip: HTMLButtonElement, fromY: number, toY: number, button = 0): void {
+    grip.dispatchEvent(pointer('pointerdown', fromY, button));
+    grip.dispatchEvent(pointer('pointerup', toY, button));
+    if (button === 0) {
+      grip.dispatchEvent(new MouseEvent('click', { clientY: toY, detail: 1, bubbles: true }));
+    }
   }
 
-  function pointer(type: string, clientY: number): Event {
-    return Object.assign(new MouseEvent(type, { clientY, bubbles: true }), { pointerId: 1 });
+  function pointer(type: string, clientY: number, button: number): Event {
+    return Object.assign(new MouseEvent(type, { clientY, button, bubbles: true }), {
+      pointerId: 1,
+    });
   }
 
   it('klappt beim Antippen um', () => {
-    swipe(setUp(false), 100, 108);
+    press(setUp(false), 100, 108);
 
     expect(emitted).toEqual([true]);
   });
 
-  it('klappt beim Wischen nach unten ein und nach oben aus', () => {
+  it('klappt bei einem Klick ohne Zeigerereignisse um', () => {
+    const grip = setUp(true);
+
+    grip.click();
+
+    expect(emitted).toEqual([false]);
+  });
+
+  it('klappt beim Wischen genau einmal ein bzw. aus', () => {
     const grip = setUp(false);
 
-    swipe(grip, 100, 112);
-    swipe(grip, 100, 88);
+    press(grip, 100, 112);
+    press(grip, 100, 88);
 
     expect(emitted).toEqual([true, false]);
   });
 
-  it('klappt per Enter und Leertaste um', () => {
+  it('ignoriert andere Tasten als die Primärtaste', () => {
+    const grip = setUp(false);
+
+    press(grip, 100, 100, 2);
+    press(grip, 100, 130, 1);
+
+    expect(emitted).toEqual([]);
+  });
+
+  it('klappt per Tastatur über den nativen Klick um', () => {
     const grip = setUp(true);
 
-    grip.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    grip.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+    press(grip, 100, 70);
+    grip.dispatchEvent(new MouseEvent('click', { detail: 0, bubbles: true }));
 
     expect(emitted).toEqual([false, false]);
   });

@@ -39,7 +39,7 @@ Sie werden nicht stillschweigend „verbessert“; eine Änderung entscheidet de
 - Schattenfarben `--shade-*` gibt es nur als Rohvariablen; sie stecken in den Schatten `shadow-raised`, `shadow-raised-pink|orange|cyan`, `shadow-btn`, `shadow-btn-warn`, `shadow-btn-gold`, `shadow-sheet`, `shadow-card`, `shadow-toast`, `shadow-frame`.
 - Dazu `--font-sans` (Schriftstapel des Prototyps), `ease-glide` und `animate-toast` (4,2 s, Keyframes `toast`).
 - Die Standardpalette von Tailwind ist geleert (`--color-*: initial`): Es gibt nur die Token-Farben.
-- Komponenten-CSS liest die Rohvariablen (`var(--canvas)`), nicht `--color-*`: Wegen `inline` werden diese nicht ausgegeben.
+- Komponenten-CSS und Basis-Layer lesen die Rohvariablen (`var(--canvas)`), nicht `--color-*`: Wegen `inline` werden diese nur ausgegeben, wenn eine Utility sie benutzt.
 - Eigene Variante `aria-current:` (gesetzt und nicht `false`).
 - Basis-Layer: `body` (Hintergrund, Schrift, `text-sm`, `overscroll-behavior: none`) und `button` (erbt Schrift und Farbe, Zeiger; Standardzeiger bei `disabled`/`aria-disabled`).
 - Entscheidungen des Nutzers:
@@ -57,13 +57,13 @@ Rein präsentational; Zustand liegt beim Aufrufer. Varianten über `computed`-Ma
   - Kopf `tracking-wide`/`leading-none`, `extra` `tracking-normal`, Wert `leading-tight`: So passt der Kopf bei 390 px und die Höhe entspricht dem Prototyp.
 - `app-bottom-sheet` (`BottomSheetComponent`): `label` (`role="region"`), `collapsed` (Pflicht), `tone` `default` | `neuron`, `gripTestId`; Output `changedCollapsed(boolean)`.
   - Der Zustand liegt beim Aufrufer.
-  - Griff: Antippen (unter 12 px) klappt um, Wischen nach unten klappt ein, nach oben aus; Enter und Leertaste klappen um. `aria-expanded` und die Beschriftung „Blatt einklappen“/„Blatt ausklappen“ folgen dem Zustand.
+  - Griff: `click` klappt um (Antippen, Tastatur über die native Button-Semantik, Hilfstechnik). Wischen mit der Primärtaste (ab 12 px, Pointer-Capture) klappt nach unten ein, nach oben aus und unterdrückt den folgenden Klick derselben Geste; andere Tasten tun nichts. `aria-expanded` und die Beschriftung „Blatt einklappen“/„Blatt ausklappen“ folgen dem Zustand.
   - Eingeklappt bleibt der Griff sichtbar (`bottom-sheet--collapsed`, Safe Area unten).
 - `app-toast` (`ToastComponent`): Inhalt projiziert; Output `expired` bei `animationend` der eigenen Animation, kein Timer. `app-toast-stack` (`ToastStackComponent`) setzt die Toasts übereinander (`aria-live="polite"`).
-- `app-dialog-frame` (`DialogFrameComponent`): natives `<dialog>`, `open` (Pflicht) öffnet per `showModal()` in einem `afterRenderEffect` und schließt; `label`; Output `closed`. Klick auf den Hintergrund und Escape schließen wie im Prototyp; der Aufrufer setzt danach `open` zurück.
+- `app-dialog-frame` (`DialogFrameComponent`): natives `<dialog>`, `open` (Pflicht) öffnet per `showModal()` in einem `afterRenderEffect` und schließt; `label`; Output `closed`. Klick auf den Hintergrund (nur wenn auch das `pointerdown` dort begann, Ziehen aus dem Inhalt schließt nicht) und Escape schließen wie im Prototyp; der Aufrufer setzt danach `open` zurück.
   - Inhalt über Direktiven: `[appDialogTitle]`, `[appDialogHeading]`, `[appDialogText]`, `[appDialogActions]` (`columns` 1 | 2).
 - Hervorhebungen (`<b>`) in projiziertem Inhalt färbt der Aufrufer.
 
 ## Tests
 
-- `ui/bottom-sheet/bottom-sheet.component.spec.ts`: Antippen, Wischen, Tastatur, Beschriftung des Griffs.
+- `ui/bottom-sheet/bottom-sheet.component.spec.ts`: Antippen, Klick, Wischen (genau einmal), andere Tasten, Tastatur, Beschriftung des Griffs.

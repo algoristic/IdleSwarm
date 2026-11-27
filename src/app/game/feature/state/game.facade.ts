@@ -46,6 +46,11 @@ export class GameFacade {
     this.#loop.stop();
   }
 
+  leave(): void {
+    this.stop();
+    this.closeMenu();
+  }
+
   dismissToast(id: number): void {
     this.#toastQueue.update((queue) => removeToast(queue, id));
   }

@@ -96,8 +96,8 @@
 
 @layer base {
   body {
-    background-color: var(--color-bg);
-    color: var(--color-fg);
+    background-color: var(--bg);
+    color: var(--fg);
     font-size: var(--text-sm);
     line-height: var(--leading-snug);
     overscroll-behavior: none;

@@ -45,8 +45,22 @@ export class BottomSheetComponent {
   expandLabel = $localize`:@@uiShared-bottomSheet-expand:Blatt ausklappen`;
 
   #gesture: GripGesture | null = null;
+  #swiped = false;
+
+  onGripClick(event: MouseEvent): void {
+    if (this.#swiped && event.detail > 0) {
+      this.#swiped = false;
+      return;
+    }
+    this.#swiped = false;
+    this.changedCollapsed.emit(!this.collapsed());
+  }
 
   onGripPointerDown(event: PointerEvent): void {
+    this.#swiped = false;
+    if (event.button !== 0) {
+      return;
+    }
     this.#gesture = { pointerId: event.pointerId, startY: event.clientY };
     if (event.currentTarget instanceof Element) {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -60,15 +74,13 @@ export class BottomSheetComponent {
     }
     this.#gesture = null;
     const dy = event.clientY - gesture.startY;
-    this.changedCollapsed.emit(Math.abs(dy) < SWIPE_THRESHOLD_PX ? !this.collapsed() : dy > 0);
+    if (Math.abs(dy) >= SWIPE_THRESHOLD_PX) {
+      this.#swiped = true;
+      this.changedCollapsed.emit(dy > 0);
+    }
   }
 
   onGripPointerCancel(): void {
     this.#gesture = null;
-  }
-
-  onGripKey(event: Event): void {
-    event.preventDefault();
-    this.changedCollapsed.emit(!this.collapsed());
   }
 }

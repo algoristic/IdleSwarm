@@ -66,7 +66,7 @@ export class GamePage {
 
   constructor() {
     this.facade.start();
-    this.#destroyRef.onDestroy(() => this.facade.stop());
+    this.#destroyRef.onDestroy(() => this.facade.leave());
   }
 
   onOpenMenu(): void {

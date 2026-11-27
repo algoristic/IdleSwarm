@@ -135,7 +135,7 @@ Routen und Zustand:
 - `provideGameState()` = `GameFacade` und `provideGameLoopService()`. Der Zustand gehört zur Elternroute.
 - `GameFacade`:
   - `config` (`GAME_CONFIG`), `view` (`GameView`), `toasts`, `menuOpen`, `collapsedSheets` (eingeklappt je Ansicht, Start ausgeklappt).
-  - `start()`, `stop()`, `dismissToast(id)`, `openMenu()`, `closeMenu()`, `setSheetCollapsed(view, collapsed)`.
+  - `start()`, `stop()`, `leave()` (`stop()` und `closeMenu()`), `dismissToast(id)`, `openMenu()`, `closeMenu()`, `setSheetCollapsed(view, collapsed)`.
 - `game.utils.ts` (rein, ohne Angular):
   - `toGameView(config, state, tempo, catchUpProgress)`: `hud`, `swarm`, `map`, `upgrades` (je Kontextzeile), `chips`, `catchUp` (Overlay oder `null`). Unterwegs ist die Ernte 0.
   - Chips in fester Reihenfolge: nächste Zone, aktive Buffs, Freiausbauten, Tempo (nur ≠ 1).
@@ -145,7 +145,7 @@ Routen und Zustand:
 
 Seiten:
 
-- `GamePage` (Gerüst): startet die Schleife im Konstruktor und stoppt sie über `DestroyRef`. Navigation zwischen den Kindrouten startet nicht neu; Verlassen der Elternroute (z. B. `/katalog` im Dev-Build) speichert und stoppt, die Rückkehr rechnet die Zeit seit `savedAt` nach.
+- `GamePage` (Gerüst): startet die Schleife im Konstruktor und ruft über `DestroyRef` `leave()`. Facade-Zustand gehört zur Elternroute und überlebt die Seite; deshalb schließt das Verlassen das Menü (Toasts und eingeklappte Blätter bleiben). Navigation zwischen den Kindrouten startet nicht neu; Verlassen der Elternroute (z. B. `/katalog` im Dev-Build) speichert und stoppt, die Rückkehr rechnet die Zeit seit `savedAt` nach.
   - Aktive Ansicht per `toSignal` über `Router.events` (`NavigationEnd`) aus `data.view` des Kinds; `context` wählt die passende Kontextzeile.
   - Zeigt HUD, Kontextzeile, Menüknopf, Chips, Ansichtswahl, Toasts, `<router-outlet>`, das Nachberechnungs-Overlay (während `catchUpProgress`) und `DialogMenuComponent`.
   - Positionen mit Safe Area und die Rahmenhöhe ab `sm` in `game.page.css` (BEM `game__*`).
