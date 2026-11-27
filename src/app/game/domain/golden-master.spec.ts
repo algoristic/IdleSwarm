@@ -101,12 +101,12 @@ function replay(scenario: GoldenMasterScenario): void {
   const check = (stepIndex: number): void => {
     const checkpoint = checkpoints.get(stepIndex);
     if (checkpoint) {
-      expect(toCheckpoint(stepIndex, state), `Prüfpunkt nach ${stepIndex} Schritten`).toEqual(
+      expect(toCheckpoint(stepIndex, state), `Prüfpunkt nach ${stepIndex} Schritten`).toStrictEqual(
         checkpoint,
       );
     }
     const full = states.get(stepIndex);
-    if (full) expect(state, `Zustand nach ${stepIndex} Schritten`).toEqual(full);
+    if (full) expect(state, `Zustand nach ${stepIndex} Schritten`).toStrictEqual(full);
   };
 
   check(0);
