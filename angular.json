@@ -45,10 +45,37 @@
               ],
               "outputHashing": "all"
             },
+            "pages": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/app/dev-routes.ts",
+                  "with": "src/app/dev-routes.dev.ts"
+                }
+              ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/app/dev-routes.ts",
+                  "with": "src/app/dev-routes.dev.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -58,6 +85,9 @@
           "configurations": {
             "production": {
               "buildTarget": "idle-swarm:build:production"
+            },
+            "pages": {
+              "buildTarget": "idle-swarm:build:pages"
             },
             "development": {
               "buildTarget": "idle-swarm:build:development"

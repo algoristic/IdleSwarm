@@ -46,8 +46,15 @@ jobs:
       - name: Unit-Tests mit Abdeckung
         run: npm run test:coverage
 
+      # Ziel `main` (Push, manueller Lauf, Pull Request) baut `production` ohne Dev-Domäne,
+      # alles andere `pages` mit Dev-Domäne wie GitHub Pages.
       - name: Build
-        run: npm run build -- --base-href /IdleSwarm/
+        run: npm run build -- --configuration "$BUILD_CONFIGURATION" --base-href /IdleSwarm/
+        env:
+          BUILD_CONFIGURATION: >-
+            ${{ ((github.event_name == 'pull_request' && github.base_ref == 'main') ||
+            (github.event_name != 'pull_request' && github.ref == 'refs/heads/main'))
+            && 'production' || 'pages' }}
 
       # GitHub Pages liefert für unbekannte Pfade 404.html aus; so greift das Angular-Routing.
       - name: SPA-Fallback anlegen
