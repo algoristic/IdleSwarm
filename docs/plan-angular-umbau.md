@@ -58,8 +58,8 @@ flowchart TD
   AP13 --> S2
   S2 --> AP14
 
-  class AP1 done
-  class AP2,AP3,AP3s,AP4a,AP4b,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
+  class AP1,AP2 done
+  class AP3,AP3s,AP4a,AP4b,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
   class S1,S2 user
 ```
 
@@ -70,7 +70,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | AP | Titel | Status |
 | --- | --- | --- |
 | 1 | Formatierung, Regeln, CLAUDE.md | abgeschlossen |
-| 2 | Domänenmodell und GameConfig | offen |
+| 2 | Domänenmodell und GameConfig | abgeschlossen |
 | 3 | Regeln, Zeitschritt, Golden Master | offen |
 | 3s | Headless-Simulation | offen |
 | 4a | Store, Schleife, Spielstand | offen |
@@ -103,6 +103,12 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | Kalibrierung | Werte-Panel, Startpresets, Pacing-Anzeige (AP 12) und Headless-Simulation (AP 3s) |
 | Testing bis zur Abnahme | lose: Formatierung, Golden Master, E2E-Smoke; Abdeckungs-Untergrenze ausgesetzt, CLAUDE.md §10 mit Übergangshinweis; danach Testkonzept (AP 14) |
 | Domänenschnitt | `game`, `dev`, `shared` (siehe unten) |
+| Spielstand v1 | englische IDs und Feldnamen; persistiert und stabil, Umbenennen entscheidet Marco |
+| Reihenfolge der ID-Listen | wie im Prototyp; Zufall (`pickWeighted`) und Kette hängen davon ab |
+| Regeln der Logik | `GameConfig` als Parameter, keine globale Config; Zustand wird mutiert; Reihenfolge der Zufallszahlen und Gleitkomma-Operationen exakt wie im Prototyp; feste Längen aus der Config abgeleitet |
+| `newGame` | mit den nötigen Helfern in AP 2; `derive` bleibt AP 3, `discover` bekommt die Reichweite direkt |
+| Fundtexte | Platzhalter aus `GameConfig` |
+| Tests in AP 2 | Referenzwerte für `rng-logic`, Fixture der Startzustände von `newGame` aus dem Prototyp |
 
 ## Domänenschnitt
 
@@ -128,12 +134,14 @@ Abhängigkeitsrichtung `dev → game → shared`, von ESLint erzwungen. `game` s
 - `GameConfig` mit Standardwerten in `data/game-config.data.ts`; Einheiten, Ausbauten, Stellentypen und Fundstücke als `as const`-ID-Listen.
 - Namen und Texte aus `CFG` (`name`, `plural`, `dat`, `text`) wandern als `$localize`-Texte in den `feature`/`ui`-Layer.
 - Modelle `GameState`, `Site`, `Find`, `Travel`; Spielstand-Format ab Version 1 mit englischen Feldnamen.
-- `rng-logic.ts` (mulberry32, `pickWeighted`) und `newGame`.
+- `rng-logic.ts` (mulberry32, `pickWeighted`) und `newGame` mit den nötigen Helfern (`site-logic`, `find-logic`, `upgrade-logic`, `geometry-logic`); `derive` folgt in AP 3, `discover` bekommt die Reichweite direkt.
 
 ### AP 3 · Regeln, Zeitschritt, Golden Master (groß)
 
 - `step` aufgeteilt in `chain-logic`, `harvest-logic`, `site-logic`, `travel-logic`, `find-logic`; dazu `derive` und die Käufe (`buyUnit`, `buyUpgrade`, `buyChainUp`). Der Erzeugungs-Ausbau bleibt hinter `chainUp.enabled`.
 - Golden Master: Die Logik des Prototyps läuft mit festem Seed unter Node und erzeugt einen Snapshot; der Port muss ihn mit einer eingefrorenen Kopie der Prototyp-Werte genau treffen. Ändert sich später bewusst die Mechanik, wird der Test gelöscht statt angepasst.
+- Der Golden Master bildet den Prototyp-Spielstand (Version 3) auf `version: 1` ab, wie das Erzeugerskript der `newGame`-Fixture aus AP 2.
+- `pickWeighted` folgt der Reihenfolge der ID-Liste statt der Schlüsselreihenfolge des Gewichtsobjekts; bei den Standardwerten ist beides gleich.
 
 ### AP 3s · Headless-Simulation (klein)
 

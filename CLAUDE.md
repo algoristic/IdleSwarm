@@ -26,6 +26,7 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 | Bereich (Regeldatei) | Pfade | Inhalt |
 | --- | --- | --- |
 | `shared` (`.claude/rules/shared.md`) | `src/app/shared/**` | Formatierung de-DE (`util/format.ts`) und ihre Pipes |
+| `game` (`.claude/rules/game.md`) | `src/app/game/**` | Domänenmodell, Spielstand v1, `GameConfig`, Zufall und `newGame` (`domain`), Texte der Spieldaten (`ui/texts`) |
 
 **Regeln, die überall gelten:**
 
