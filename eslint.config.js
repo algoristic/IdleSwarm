@@ -48,8 +48,9 @@ const FORBIDDEN_DOMAINS = {
 };
 
 /**
- * Muster für Importe aus Domänen, die eine Domäne nicht verwenden darf. Relative Pfade in fremde
- * Domänen verbietet schon `CROSS_DOMAIN`.
+ * Muster für Importe aus Domänen, die eine Domäne nicht verwenden darf. Greift nur für den Alias
+ * (`@app/game/…`); relative Pfade in fremde Domänen meldet `CROSS_DOMAIN` nur, wenn sie in einen
+ * Schichtordner führen (`../../game/domain/…`, nicht `../../game/x`).
  *
  * @param {string} domain
  * @param {string[]} domains
@@ -57,6 +58,19 @@ const FORBIDDEN_DOMAINS = {
 const forbiddenDomains = (domain, domains) => ({
   regex: `^@app/(${domains.join('|')})(/|$)`,
   message: `Die Domäne ${domain} darf nicht von ${domains.join(', ')} abhängen (Richtung dev → game → shared, CLAUDE.md §1).`,
+});
+
+/**
+ * Dieselbe Richtungsregel für dynamische Importe (`import('@app/dev/…')`), die
+ * `no-restricted-imports` nicht prüft.
+ *
+ * @param {{ regex: string; message: string }} pattern
+ */
+const forbiddenDynamicImports = ({ regex, message }) => ({
+  'no-restricted-syntax': [
+    'error',
+    { selector: `ImportExpression[source.value=/${regex.replaceAll('/', '\\/')}/]`, message },
+  ],
 });
 
 /** @param {{ regex: string; message: string }[]} patterns */
@@ -72,9 +86,15 @@ const restrictImports = (patterns) => ({
 const importRules = () =>
   ['*', ...Object.keys(FORBIDDEN_DOMAINS)].flatMap((domain) => {
     const forbidden = FORBIDDEN_DOMAINS[domain];
-    const domainPatterns = forbidden ? [forbiddenDomains(domain, forbidden)] : [];
-    const domainBlocks = forbidden
-      ? [{ files: [`src/app/${domain}/**/*.ts`], rules: restrictImports(domainPatterns) }]
+    const direction = forbidden && forbiddenDomains(domain, forbidden);
+    const domainPatterns = direction ? [direction] : [];
+    const domainBlocks = direction
+      ? [
+          {
+            files: [`src/app/${domain}/**/*.ts`],
+            rules: { ...restrictImports(domainPatterns), ...forbiddenDynamicImports(direction) },
+          },
+        ]
       : [];
     const layerBlocks = Object.entries(LAYER_PATTERNS).map(([layer, layerPatterns]) => ({
       files: [`src/app/${domain}/${layer}/**/*.ts`],
