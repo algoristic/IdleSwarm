@@ -1,0 +1,11 @@
+<canvas
+  #canvas
+  class="block h-200 w-170"
+  aria-hidden="true"
+  data-testid="game.swarm.canvas"
+></canvas>
+<svg #spriteDefs class="hidden" aria-hidden="true">
+  @for (unit of unitIds; track unit) {
+    <svg:g app-unit-sprite [unit]="unit" [attr.data-unit]="unit" />
+  }
+</svg>
