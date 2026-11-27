@@ -29,6 +29,61 @@ const CROSS_DOMAIN = {
   message: 'Andere Domänen über den Alias @app/… importieren (CLAUDE.md §9).',
 };
 
+/** Schichtregeln (CLAUDE.md §1); Specs dürfen quer importieren. */
+const LAYER_PATTERNS = {
+  ui: [forbiddenLayers('ui', ['feature', 'data-access'])],
+  'data-access': [forbiddenLayers('data-access', ['feature', 'ui'])],
+  domain: [forbiddenLayers('domain', ['feature', 'ui', 'data-access']), FRAMEWORK_IMPORTS],
+  util: [forbiddenLayers('util', ['feature', 'ui', 'data-access', 'domain']), FRAMEWORK_IMPORTS],
+};
+
+/**
+ * Richtung dev → game → shared (CLAUDE.md §1); gilt auch für Specs.
+ *
+ * @type {Partial<Record<string, string[]>>}
+ */
+const FORBIDDEN_DOMAINS = {
+  shared: ['game', 'dev'],
+  game: ['dev'],
+};
+
+/**
+ * Muster für Importe aus Domänen, die eine Domäne nicht verwenden darf. Relative Pfade in fremde
+ * Domänen verbietet schon `CROSS_DOMAIN`.
+ *
+ * @param {string} domain
+ * @param {string[]} domains
+ */
+const forbiddenDomains = (domain, domains) => ({
+  regex: `^@app/(${domains.join('|')})(/|$)`,
+  message: `Die Domäne ${domain} darf nicht von ${domains.join(', ')} abhängen (Richtung dev → game → shared, CLAUDE.md §1).`,
+});
+
+/** @param {{ regex: string; message: string }[]} patterns */
+const restrictImports = (patterns) => ({
+  'no-restricted-imports': ['error', { patterns: [CROSS_DOMAIN, ...patterns] }],
+});
+
+/**
+ * Ein späterer Block ersetzt die Optionen von `no-restricted-imports`, statt sie zusammenzuführen.
+ * Darum erhält jede Kombination aus Domäne und Schicht ihr vollständiges Muster-Array; `*` steht für
+ * Domänen ohne Richtungsregel.
+ */
+const importRules = () =>
+  ['*', ...Object.keys(FORBIDDEN_DOMAINS)].flatMap((domain) => {
+    const forbidden = FORBIDDEN_DOMAINS[domain];
+    const domainPatterns = forbidden ? [forbiddenDomains(domain, forbidden)] : [];
+    const domainBlocks = forbidden
+      ? [{ files: [`src/app/${domain}/**/*.ts`], rules: restrictImports(domainPatterns) }]
+      : [];
+    const layerBlocks = Object.entries(LAYER_PATTERNS).map(([layer, layerPatterns]) => ({
+      files: [`src/app/${domain}/${layer}/**/*.ts`],
+      ignores: ['**/*.spec.ts'],
+      rules: restrictImports([...domainPatterns, ...layerPatterns]),
+    }));
+    return [...domainBlocks, ...layerBlocks];
+  });
+
 module.exports = defineConfig([
   globalIgnores(['dist/', 'coverage/', '.angular/', '.claude/']),
   {
@@ -68,62 +123,10 @@ module.exports = defineConfig([
           'newlines-between': 'always',
         },
       ],
-      'no-restricted-imports': ['error', { patterns: [CROSS_DOMAIN] }],
+      ...restrictImports([]),
     },
   },
-  // Schichtregeln (CLAUDE.md §1); Specs dürfen quer importieren.
-  {
-    files: ['src/app/*/ui/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        { patterns: [CROSS_DOMAIN, forbiddenLayers('ui', ['feature', 'data-access'])] },
-      ],
-    },
-  },
-  {
-    files: ['src/app/*/data-access/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        { patterns: [CROSS_DOMAIN, forbiddenLayers('data-access', ['feature', 'ui'])] },
-      ],
-    },
-  },
-  {
-    files: ['src/app/*/domain/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            CROSS_DOMAIN,
-            forbiddenLayers('domain', ['feature', 'ui', 'data-access']),
-            FRAMEWORK_IMPORTS,
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ['src/app/*/util/**/*.ts'],
-    ignores: ['**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            CROSS_DOMAIN,
-            forbiddenLayers('util', ['feature', 'ui', 'data-access', 'domain']),
-            FRAMEWORK_IMPORTS,
-          ],
-        },
-      ],
-    },
-  },
+  ...importRules(),
   {
     files: ['**/*.html'],
     extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
