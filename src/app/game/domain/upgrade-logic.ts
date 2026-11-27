@@ -1,6 +1,8 @@
 import { GameConfig } from './models/game-config.model';
 import { UpgradeId } from './models/upgrade.model';
 
+export const CHAIN_UPGRADE_COUNT = 4;
+
 export function upgradeEffect(config: GameConfig, id: UpgradeId, rank: number): number {
   return config.upgrades[id].base * config.upgrades[id].factor ** rank;
 }

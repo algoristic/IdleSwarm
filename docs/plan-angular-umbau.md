@@ -141,7 +141,7 @@ Abhängigkeitsrichtung `dev → game → shared`, von ESLint erzwungen. `game` s
 - `step` aufgeteilt in `chain-logic`, `harvest-logic`, `site-logic`, `travel-logic`, `find-logic`; dazu `derive` und die Käufe (`buyUnit`, `buyUpgrade`, `buyChainUp`). Der Erzeugungs-Ausbau bleibt hinter `chainUp.enabled`.
 - Golden Master: Die Logik des Prototyps läuft mit festem Seed unter Node und erzeugt einen Snapshot; der Port muss ihn mit einer eingefrorenen Kopie der Prototyp-Werte genau treffen. Ändert sich später bewusst die Mechanik, wird der Test gelöscht statt angepasst.
 - Der Golden Master bildet den Prototyp-Spielstand (Version 3) auf `version: 1` ab, wie das Erzeugerskript der `newGame`-Fixture aus AP 2.
-- `pickWeighted` folgt der Reihenfolge der ID-Liste statt der Schlüsselreihenfolge des Gewichtsobjekts; bei den Standardwerten ist beides gleich.
+- `pickWeighted` und die Startstellen in `newGame` (`map.initialSites`) folgen der Reihenfolge der ID-Liste statt der Schlüsselreihenfolge des Objekts; bei den Standardwerten ist beides gleich.
 
 ### AP 3s · Headless-Simulation (klein)
 

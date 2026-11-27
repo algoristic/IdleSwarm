@@ -3,7 +3,7 @@ import { GameConfig } from './models/game-config.model';
 import { GameState, SAVE_VERSION } from './models/game-state.model';
 import { SITE_TYPE_IDS } from './models/site.model';
 import { createSite, discover, placeInDisc, randomSizeFactor } from './site-logic';
-import { reachFor } from './upgrade-logic';
+import { CHAIN_UPGRADE_COUNT, reachFor } from './upgrade-logic';
 
 const INITIALLY_UNLOCKED_UNITS = 2;
 const GOAL_SITE_RADIUS_SHARE = 0.8;
@@ -24,7 +24,7 @@ export function newGame(config: GameConfig, seed: number, now: number): GameStat
     units: config.units.map((_, i) => (i === 0 ? config.start.eaters : 0)),
     unlocked: config.units.map((_, i) => i < INITIALLY_UNLOCKED_UNITS),
     upgradeRanks: { hearth: 0, digestion: 0, flagella: 0, crop: 0 },
-    chainRanks: config.units.slice(INITIALLY_UNLOCKED_UNITS).map(() => 0),
+    chainRanks: new Array<number>(CHAIN_UPGRADE_COUNT).fill(0),
     freeUpgrades: 0,
     zone: 0,
     position: { x: 0, y: 0 },

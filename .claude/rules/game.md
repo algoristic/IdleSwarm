@@ -30,7 +30,7 @@ Das vollständige Mapping ergibt sich aus Modellen und `new-game-logic.fixture.t
 ## Logik (`domain/*-logic.ts`)
 
 - `rng-logic.ts`: `nextRandom` (mulberry32, Zustand in `rngState`), `pickWeighted` über die Reihenfolge einer ID-Liste (nicht über die Schlüsselreihenfolge des Gewichtsobjekts).
-- `upgrade-logic.ts`: `upgradeEffect`, `reachFor`.
+- `upgrade-logic.ts`: `upgradeEffect`, `reachFor`, `CHAIN_UPGRADE_COUNT` (Zahl der Erzeugungs-Ausbauten, `CHAIN_UPS` im Prototyp; Länge von `chainRanks`).
 - `geometry-logic.ts`: `distance`.
 - `site-logic.ts`: `randomSizeFactor`, `createSite`, `placeInDisc`, `isZoneInRange`, `discover` (bekommt die Reichweite direkt).
 - `find-logic.ts`: `createFind`.
@@ -42,6 +42,7 @@ Regeln:
 - Der Zustand wird mutiert.
 - Reihenfolge der Zufallszahlen und der Gleitkomma-Operationen bleibt exakt wie im Prototyp (Golden Master in AP 3).
 - Feste Längen (Zonen, Einheiten, Verlauf der Ernte) werden aus der Config abgeleitet.
+- Wie `pickWeighted` platziert `newGame` die Startstellen (`map.initialSites`) in der Reihenfolge von `SITE_TYPE_IDS`, nicht in der Schlüsselreihenfolge des Objekts; bei den Standardwerten ist beides gleich.
 
 ## Texte (`ui/texts/game-texts.ts`)
 
