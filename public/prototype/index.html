@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#0c0f33">
 <title>IdleSwarm – Prototyp Winzlinge</title>
 <style>
-  /* Prototyp des Zeitalters Winzlinge nach Produktspezifikation v8 und Mockup 5d (deckend),
+  /* Prototyp des Zeitalters Winzlinge nach Mockup 5d (deckend); dokumentiert den aktuellen Stand des Spiels,
      Ausbau-Ansicht nach Mockup „Ausbau der Kette“, Variante C (zwei Neuronen).
-     Eine Datei ohne Framework und ohne externe Abhängigkeiten. Schwarm und Partikel zeichnet ein Canvas (7.2).
+     Eine Datei ohne Framework und ohne externe Abhängigkeiten. Schwarm und Partikel zeichnet ein Canvas.
      Mit ?messung in der Adresse: Messanzeige, Belastungsstufen, Messlauf und die SVG-Darstellung zum Vergleich. */
   :root {
     --night: #0c0f33;
@@ -672,7 +672,7 @@
 const CFG = {
   dt: 0.25,                                   // TEC-03
   start: { vorrat: 50, eier: 10, fress: 5 },  // P1-STA-01
-  // Balancing-Paket nach Simulation (Spezifikation noch nicht angepasst): Kette, Geißeln, Kropf und Stellengröße
+  // Balancing-Paket nach Simulation: Kette, Geißeln, Kropf und Stellengröße
   units: [                                    // P1-KET-01; dat: Dativ Plural
     { name: 'Fressling',   plural: 'Fresslinge',    dat: 'Fresslingen',    short: 'F.',  icon: 'fress', cost: 10,    req: 0,    prod: 0 },
     { name: 'Brutling',    plural: 'Brutlinge',     dat: 'Brutlingen',     short: 'B.',  icon: 'brut',  cost: 1.5e5, req: 10,   prod: 0.6 },
@@ -2403,7 +2403,7 @@ async function catchUp(seconds) {
 }
 function resetRenderCaches() { mainSiteKey = ''; swarmKey = ''; neuronKey = ''; farKey = ''; miniCache.key = ''; cv.mainKey = ''; }
 
-/* ---------- Canvas: Standard der Darstellung (Spezifikation 7.2), SVG nur noch zum Vergleich in der Messung ---------- */
+/* ---------- Canvas: Standard der Darstellung, SVG nur noch zum Vergleich in der Messung ---------- */
 // Gleiche Figuren und Bewegungen wie im SVG, aber je Frame per JS in ein Canvas gezeichnet; die Figuren sind
 // einmal gerasterte Bilder aus den SVG-Definitionen. Ferne, Dunst und Hintergrund der Stelle werden bei jeder
 // Änderung einmal zu Bildern gerastert (ohne ihre Strahlen und Schwebeteilchen zu bewegen).

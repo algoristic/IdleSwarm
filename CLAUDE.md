@@ -10,11 +10,11 @@
 
 ## Projektkontext
 
-Leere Angular-App (kein Backend, deutsche Oberfläche). Fachliche Dokumentation unter `docs/` und Architektur-Entscheidungen unter `docs/adr/` entstehen mit dem neuen Projekt.
+Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spiels (`public/prototype/index.html`). Architektur-Entscheidungen entstehen bei Bedarf unter `docs/adr/`.
 
+- **Der Code ist der aktuelle Stand.** Es gibt keine Produktspezifikation. In der aktuellen Phase dokumentiert der Prototyp den Status quo: Regeln, Spielwerte und Darstellung stehen dort, nicht in einem separaten Dokument.
+- Nächste Schritte werden im Gespräch mit Claude geplant. Nachfragen, bevor auf einem Punkt aufgebaut wird, der noch nicht entschieden ist.
 - Jede neue Laufzeitabhängigkeit braucht eine ADR.
-- Nachfragen, bevor auf einem Punkt aufgebaut wird, der nur „Vorschlag“ und nicht „entschieden“ ist.
-- Weicht die Umsetzung von der Spezifikation ab, wird die Spezifikation angepasst.
 
 **Regeldateien:** Was im Code existiert, wird je Bereich in pfadbezogenen Regeldateien `.claude/rules/<bereich>.md` beschrieben (Frontmatter `paths`). Claude Code lädt eine Regeldatei automatisch, sobald eine passende Datei gelesen oder bearbeitet wird.
 
@@ -323,8 +323,7 @@ export function provideItemsState(): (Provider | EnvironmentProviders)[] {
 - Formatieren macht Prettier (`.prettierrc`), nicht die Hand.
 - **Bezeichner sind Englisch, Kommentare Deutsch.** Texte für Nutzer sind deutsche i18n-Quelltexte.
 - **Möglichst keine Kommentare.** Was der Code tut und warum, zeigen Namen, Typen und kleine Funktionen. Kein JSDoc, keine Abschnittsbanner, kein auskommentierter Code, keine Kommentare, die den Code nacherzählen.
-  - Erlaubt sind vor allem Verweise auf die Produktspezifikation (`docs/produktspezifikation.md`), wo Regeln oder Spielwerte aus ihr umgesetzt werden: `// Spezifikation 4.6 Vorrat und Kapazität`. Abschnittsnummer und Überschrift, damit der Verweis nach Umnummerierungen auffindbar bleibt.
-  - Sonst nur in Ausnahmen, die sich im Code nicht ausdrücken lassen (z. B. Umgehung eines Framework-Fehlers), dann knapp und mit Verweis auf Issue oder ADR.
+  - Erlaubt nur in Ausnahmen, die sich im Code nicht ausdrücken lassen (z. B. Umgehung eines Framework-Fehlers), dann knapp und mit Verweis auf Issue oder ADR.
 
 ## 10. Testing
 
