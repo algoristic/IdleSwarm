@@ -1,7 +1,7 @@
 import { productionOf } from './chain-logic';
 import { averageHarvest } from './harvest-logic';
 import { DerivedValues } from './models/derived-values.model';
-import { Find, FIND_IDS } from './models/find.model';
+import { BUFF_IDS, BuffId, Find, FIND_IDS } from './models/find.model';
 import { GameConfig } from './models/game-config.model';
 import { GameEventHandler } from './models/game-event.model';
 import { GameState } from './models/game-state.model';
@@ -107,4 +107,8 @@ export function respawnFinds(config: GameConfig, state: GameState): void {
       if (zone >= state.zone) state.finds.push(createFind(config, state, zone));
     }
   }
+}
+
+export function activeBuffs(state: Pick<GameState, 'buffs'>): BuffId[] {
+  return BUFF_IDS.filter((id) => state.buffs[id] > 0);
 }

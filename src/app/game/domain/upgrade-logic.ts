@@ -1,6 +1,11 @@
 import { GameConfig } from './models/game-config.model';
 import { GameState } from './models/game-state.model';
-import { ChainUpgradePurchase, UpgradeId, UpgradePurchase } from './models/upgrade.model';
+import {
+  ChainUpgradePurchase,
+  UPGRADE_IDS,
+  UpgradeId,
+  UpgradePurchase,
+} from './models/upgrade.model';
 
 export const CHAIN_UPGRADE_COUNT = 4;
 
@@ -64,4 +69,38 @@ export function buyChainUpgrade(
   state.units[index + 1] -= cost;
   state.chainRanks[index]++;
   return 'paid';
+}
+
+export function canAffordUpgrade(
+  config: GameConfig,
+  state: Pick<GameState, 'freeUpgrades' | 'food' | 'upgradeRanks'>,
+  id: UpgradeId,
+): boolean {
+  return state.freeUpgrades > 0 || state.food >= upgradeCost(config, id, state.upgradeRanks[id]);
+}
+
+export function canAffordChainUpgrade(
+  config: GameConfig,
+  state: Pick<GameState, 'chainRanks' | 'units'>,
+  index: number,
+): boolean {
+  return (
+    !isChainUpgradeLocked(state, index) &&
+    state.units[index + 1] >= chainUpgradeCost(config, state.chainRanks[index])
+  );
+}
+
+export function upgradeCount(config: GameConfig): number {
+  return UPGRADE_IDS.length + (config.chainUpgrade.enabled ? CHAIN_UPGRADE_COUNT : 0);
+}
+
+export function affordableUpgradeCount(
+  config: GameConfig,
+  state: Pick<GameState, 'freeUpgrades' | 'food' | 'upgradeRanks' | 'chainRanks' | 'units'>,
+): number {
+  let count = UPGRADE_IDS.filter((id) => canAffordUpgrade(config, state, id)).length;
+  if (config.chainUpgrade.enabled)
+    for (let index = 0; index < CHAIN_UPGRADE_COUNT; index++)
+      if (canAffordChainUpgrade(config, state, index)) count++;
+  return count;
 }

@@ -254,3 +254,12 @@ export function spawnNewSites(
     spawnSite(config, state, next, derived.reach);
   }
 }
+
+export function siteFillShare(site: Pick<Site, 'dead' | 'stock' | 'size'>): number {
+  if (site.dead) return 0;
+  return Math.max(0, site.stock / site.size);
+}
+
+export function timeUntilEmpty(config: GameConfig, site: Site, harvestRate: number): number {
+  return availableFood(config, site) / harvestRate;
+}

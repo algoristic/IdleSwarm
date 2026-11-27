@@ -54,3 +54,11 @@ export function harvest(
   }
   return rate;
 }
+
+export function harvestThrottlePercent(food: number, capacity: number): number | null {
+  return food > capacity ? Math.max(1, Math.round(100 * (1 - capacity / food))) : null;
+}
+
+export function foodFillPercent(food: number, capacity: number): number {
+  return Math.min(100, (food / capacity) * 100);
+}

@@ -10,6 +10,7 @@ import {
   MarkResult,
   SiteAlternative,
   TargetKind,
+  Travel,
   TravelRate,
   TravelTarget,
 } from './models/travel.model';
@@ -225,4 +226,28 @@ export function requestLeave(state: GameState): boolean {
   if (!currentSite(state)) return false;
   state.leaveRequested = true;
   return true;
+}
+
+export function travelRemainingTime(
+  travel: Pick<Travel, 'distance' | 'covered'>,
+  speed: number,
+): number {
+  return (travel.distance - travel.covered) / speed;
+}
+
+export function travelProgress(travel: Pick<Travel, 'distance' | 'covered'>): number {
+  return travel.distance > 0 ? Math.min(travel.distance, travel.covered) / travel.distance : 1;
+}
+
+export function travelDestination(
+  state: Pick<GameState, 'travel' | 'sites' | 'finds'>,
+): TravelTarget | null {
+  const travel = state.travel;
+  if (!travel) return null;
+  if (travel.kind === 'site') {
+    const site = getSite(state, travel.targetId);
+    return site ? { kind: 'site', site } : null;
+  }
+  const find = getFind(state, travel.targetId);
+  return find ? { kind: 'find', find } : null;
 }
