@@ -26,7 +26,7 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 | Bereich (Regeldatei) | Pfade | Inhalt |
 | --- | --- | --- |
 | `shared` (`.claude/rules/shared.md`) | `src/app/shared/**` | Formatierung de-DE (`util/format.ts`) und ihre Pipes |
-| `game` (`.claude/rules/game.md`) | `src/app/game/**` | Domänenmodell, Spielstand v1, `GameConfig`, Zufall und `newGame` (`domain`), Texte der Spieldaten (`ui/texts`) |
+| `game` (`.claude/rules/game.md`) | `src/app/game/**` | Domänenmodell, Spielstand v1, `GameConfig`, Zufall und `newGame`, Regeln und Zeitschritt, Golden Master (`domain`), Texte der Spieldaten (`ui/texts`) |
 
 **Regeln, die überall gelten:**
 
@@ -38,6 +38,7 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 - Präfix für Komponenten und Direktiven ist `app`.
 - Prettier mit `printWidth` 100; `docs/`, `CLAUDE.md` und `.claude/` werden nicht formatiert.
 - Pfad-Alias `@app/*` → `src/app/*`.
+- `tools/` enthält Node-Skripte außerhalb der App, z. B. `tools/golden-master/generate.mjs`. Prettier formatiert sie, ESLint prüft nur `src/` und `e2e/`.
 - **Exakte Versionen:** Jede Version in `package.json` ist exakt (`"4.3.5"`), nie `^`, `~`, `>=` oder `*`. Die `.npmrc` setzt `save-exact=true`; nach `npm i` trotzdem `package.json` prüfen. Updates sind bewusste Versionssprünge.
 - Node per `nvm use` (`.nvmrc`).
 - CI (`.github/workflows/ci.yml`) prüft Lint, Format, Unit-Tests mit Abdeckung, Build und E2E bei Pull Requests und Pushes auf `main`/`development`; ein Push auf `development` deployt auf GitHub Pages, ein Push auf `main` per SFTP auf den eigenen Server (beide Base-Href `/IdleSwarm/`, Apache-Konfiguration in `deploy/apache/.htaccess`).

@@ -58,8 +58,8 @@ flowchart TD
   AP13 --> S2
   S2 --> AP14
 
-  class AP1,AP2 done
-  class AP3,AP3s,AP4a,AP4b,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
+  class AP1,AP2,AP3 done
+  class AP3s,AP4a,AP4b,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
   class S1,S2 user
 ```
 
@@ -71,7 +71,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | --- | --- | --- |
 | 1 | Formatierung, Regeln, CLAUDE.md | abgeschlossen |
 | 2 | Domänenmodell und GameConfig | abgeschlossen |
-| 3 | Regeln, Zeitschritt, Golden Master | offen |
+| 3 | Regeln, Zeitschritt, Golden Master | abgeschlossen |
 | 3s | Headless-Simulation | offen |
 | 4a | Store, Schleife, Spielstand | offen |
 | 4b | Nachberechnung im Worker | offen |
@@ -109,6 +109,10 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | `newGame` | mit den nötigen Helfern in AP 2; `derive` bleibt AP 3, `discover` bekommt die Reichweite direkt |
 | Fundtexte | Platzhalter aus `GameConfig` |
 | Tests in AP 2 | Referenzwerte für `rng-logic`, Fixture der Startzustände von `newGame` aus dem Prototyp |
+| Spieleraktionen | Markieren, Markierung lösen und Verlassen als Domänenfunktionen mit Ergebniscodes in AP 3 (`toggleMark`, `clearMark`, `requestLeave`) |
+| Ereignisse | `step` meldet `GameEvent`-Codes über einen optionalen Callback statt Texten |
+| Golden Master | aufgezeichnete Aktionen mit Ergebnissen, Ereignisse und Prüfpunkte je Szenario; Erzeugerskript unter `tools/golden-master/`; eingefrorene Config-Kopie `PROTOTYPE_GAME_CONFIG` |
+| Eigenheiten des Prototyps | bleiben 1:1; offen ist nur `spawnTimers` in der letzten Zone (entscheidet Marco) |
 
 ## Domänenschnitt
 
