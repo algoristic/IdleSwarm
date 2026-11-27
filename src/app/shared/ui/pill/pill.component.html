@@ -1,18 +1,18 @@
 @let percent = barPercent();
 
 <div
-  class="flex items-center gap-1.25 text-xs font-extrabold tracking-widest text-fg-muted uppercase"
+  class="flex items-center gap-1 text-xs leading-none font-extrabold tracking-wide text-fg-muted uppercase"
 >
   <i [class]="dotClasses()"></i>
   {{ label() }}
   @if (extra(); as extraText) {
     <em
-      class="ml-auto min-w-0 truncate text-xs tracking-wide text-fg-subtle tabular-nums not-italic normal-case"
+      class="ml-auto min-w-0 truncate text-xs tracking-normal text-fg-subtle tabular-nums not-italic normal-case"
       >{{ extraText }}</em
     >
   }
 </div>
-<div class="truncate text-lg font-black tabular-nums">
+<div class="truncate text-lg leading-tight font-black tabular-nums">
   <ng-content />
 </div>
 <div
