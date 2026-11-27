@@ -1,6 +1,14 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 
+import {
+  catchUpSteps,
+  mergeCatchUpSummaries,
+  needsCatchUp,
+  showsCatchUpSummary,
+} from '../../domain/catch-up-logic';
 import { advanceClock, isSaveDue } from '../../domain/loop-logic';
+import { CatchUpSummary } from '../../domain/models/catch-up.model';
+import { CatchUpService } from '../catch-up/catch-up.service';
 import { WALL_CLOCK_NOW } from '../game-save/game-save-service.tokens';
 import { GAME_CONFIG } from '../game-store/game-store-service.tokens';
 import { GameStoreService } from '../game-store/game-store.service';
@@ -14,8 +22,10 @@ export class GameLoopService {
   readonly #monotonicNow = inject(MONOTONIC_NOW);
   readonly #wallNow = inject(WALL_CLOCK_NOW);
   readonly #visibility = inject(PAGE_VISIBILITY);
+  readonly #catchUpService = inject(CatchUpService);
 
   readonly #tempo = signal(1);
+  readonly #catchUpSummary = signal<CatchUpSummary | null>(null);
   #running = false;
   #booted = false;
   #paused = false;
@@ -25,8 +35,13 @@ export class GameLoopService {
   #sinceSave = 0;
   #hiddenAt: number | null = null;
   #unregister: (() => void)[] = [];
+  #catchingUp = false;
+  #pendingCatchUpSeconds = 0;
+  #session = 0;
 
   tempo = this.#tempo.asReadonly();
+  catchUpSummary = this.#catchUpSummary.asReadonly();
+  catchUpProgress = this.#catchUpService.progress;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.stop());
@@ -34,6 +49,10 @@ export class GameLoopService {
 
   setTempo(tempo: number): void {
     this.#tempo.set(tempo);
+  }
+
+  dismissCatchUpSummary(): void {
+    this.#catchUpSummary.set(null);
   }
 
   start(): void {
@@ -56,6 +75,9 @@ export class GameLoopService {
     for (const unregister of this.#unregister) unregister();
     this.#unregister = [];
     this.#hiddenAt = null;
+    this.#session++;
+    this.#pendingCatchUpSeconds = 0;
+    this.#catchUpService.cancel();
     this.#store.save();
   }
 
@@ -69,7 +91,7 @@ export class GameLoopService {
   }
 
   readonly #frame = (now: number): void => {
-    if (!this.#paused) {
+    if (!this.#paused && !this.#catchingUp) {
       const clock = advanceClock(
         this.#config,
         this.#accumulator,
@@ -108,10 +130,44 @@ export class GameLoopService {
     if (this.#hiddenAt === null) return;
     const hiddenSeconds = (this.#wallNow() - this.#hiddenAt) / 1000;
     this.#hiddenAt = null;
-    this.#catchUp(hiddenSeconds);
+    if (needsCatchUp(hiddenSeconds)) this.#catchUp(hiddenSeconds);
   }
 
-  #catchUp(_seconds: number): void {
-    // Einhängestelle für die Nachberechnung (AP 4b)
+  #catchUp(seconds: number): void {
+    if (this.#catchingUp) {
+      this.#pendingCatchUpSeconds += seconds;
+      return;
+    }
+    if (catchUpSteps(this.#config, seconds) <= 0) return;
+    this.#pendingCatchUpSeconds = seconds;
+    this.#catchingUp = true;
+    this.#store.beginCatchUp();
+    void this.#drainCatchUps();
+  }
+
+  async #drainCatchUps(): Promise<void> {
+    try {
+      while (this.#running && this.#pendingCatchUpSeconds > 0) {
+        const seconds = this.#pendingCatchUpSeconds;
+        const session = this.#session;
+        const requestedAt = this.#wallNow();
+        this.#pendingCatchUpSeconds = 0;
+        const result = await this.#catchUpService.run(this.#config, this.#store.state(), seconds);
+        if (!result || session !== this.#session) continue;
+        this.#store.applyCatchUp({ ...result.state, savedAt: requestedAt });
+        if (result.summary) this.#showSummary(result.summary);
+      }
+    } finally {
+      this.#pendingCatchUpSeconds = 0;
+      this.#store.endCatchUp();
+      this.#catchingUp = false;
+      this.#last = this.#monotonicNow();
+    }
+  }
+
+  #showSummary(summary: CatchUpSummary): void {
+    const shown = this.#catchUpSummary();
+    const merged = shown ? mergeCatchUpSummaries(shown, summary) : summary;
+    if (showsCatchUpSummary(merged)) this.#catchUpSummary.set(merged);
   }
 }

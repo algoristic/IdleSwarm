@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal, untracked } from '@angular/core';
 
 import { buyAmount, buyUnit } from '../../domain/chain-logic';
 import { GameEvent } from '../../domain/models/game-event.model';
@@ -30,13 +30,15 @@ export class GameStoreService {
   readonly #state = signal<GameState>(structuredClone(this.#game));
   readonly #events = signal<readonly GameEventEntry[]>([]);
   readonly #loadOutcome = signal(this.#initial.outcome);
+  readonly #catchingUp = signal(false);
 
   state = this.#state.asReadonly();
   events = this.#events.asReadonly();
   loadOutcome = this.#loadOutcome.asReadonly();
+  catchingUp = this.#catchingUp.asReadonly();
 
   advance(steps: number): void {
-    if (steps <= 0) return;
+    if (steps <= 0 || this.#isLocked()) return;
     const events: GameEvent[] = [];
     const collect = (event: GameEvent): void => {
       events.push(event);
@@ -46,45 +48,62 @@ export class GameStoreService {
     this.#publish();
   }
 
-  replace(state: GameState): void {
+  replace(state: GameState): boolean {
+    if (this.#isLocked()) return false;
     this.#game = structuredClone(state);
     this.#events.set([]);
     this.#publish();
+    return true;
   }
 
-  newGame(): void {
-    this.replace(this.#saveService.createGame());
+  newGame(): boolean {
+    if (!this.replace(this.#saveService.createGame())) return false;
     this.save();
+    return true;
   }
 
   save(): void {
+    if (this.#isLocked()) return;
     this.#saveService.save(this.#game);
     this.#publish();
   }
 
-  buyUnit(unit: number, mode: BuyMode): boolean {
+  beginCatchUp(): void {
+    this.#catchingUp.set(true);
+  }
+
+  applyCatchUp(state: GameState): void {
+    this.#game = structuredClone(state);
+    this.#publish();
+  }
+
+  endCatchUp(): void {
+    this.#catchingUp.set(false);
+  }
+
+  buyUnit(unit: number, mode: BuyMode): boolean | null {
     return this.#act((game) =>
       buyUnit(this.#config, game, unit, buyAmount(this.#config, game, unit, mode)),
     );
   }
 
-  buyUpgrade(id: UpgradeId): UpgradePurchase {
+  buyUpgrade(id: UpgradeId): UpgradePurchase | null {
     return this.#act((game) => buyUpgrade(this.#config, game, id));
   }
 
-  buyChainUpgrade(index: number): ChainUpgradePurchase {
+  buyChainUpgrade(index: number): ChainUpgradePurchase | null {
     return this.#act((game) => buyChainUpgrade(this.#config, game, index));
   }
 
-  toggleMark(kind: TargetKind, targetId: number): MarkResult {
+  toggleMark(kind: TargetKind, targetId: number): MarkResult | null {
     return this.#act((game) => toggleMark(this.#config, game, kind, targetId));
   }
 
-  clearMark(): boolean {
+  clearMark(): boolean | null {
     return this.#act((game) => clearMark(game));
   }
 
-  requestLeave(): boolean {
+  requestLeave(): boolean | null {
     return this.#act((game) => requestLeave(game));
   }
 
@@ -94,10 +113,15 @@ export class GameStoreService {
     });
   }
 
-  #act<T>(action: (game: GameState) => T): T {
+  #act<T>(action: (game: GameState) => T): T | null {
+    if (this.#isLocked()) return null;
     const result = action(this.#game);
     this.#publish();
     return result;
+  }
+
+  #isLocked(): boolean {
+    return untracked(this.#catchingUp);
   }
 
   #record(events: GameEvent[]): void {

@@ -1,8 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 
+import { catchUp } from '../../domain/catch-up-logic';
 import { newGame } from '../../domain/new-game-logic';
 import { PROTOTYPE_GAME_CONFIG } from '../../domain/prototype-game-config.fixture';
 import { serializeGame } from '../../domain/save-logic';
+import { CatchUpRequest, CatchUpWorker } from '../catch-up/catch-up-service.model';
+import { CATCH_UP_WORKER_FACTORY } from '../catch-up/catch-up-service.tokens';
 import { SaveStorage } from '../game-save/game-save-service.model';
 import { NEW_GAME_SEED, SAVE_STORAGE, WALL_CLOCK_NOW } from '../game-save/game-save-service.tokens';
 import { GAME_SAVE_KEY } from '../game-save/game-save.service';
@@ -63,6 +66,33 @@ class FakeVisibility implements PageVisibility {
   }
 }
 
+class FakeCatchUpWorker implements CatchUpWorker {
+  onmessage: ((event: MessageEvent<unknown>) => void) | null = null;
+  onerror: ((event: ErrorEvent) => void) | null = null;
+  onmessageerror: ((event: MessageEvent<unknown>) => void) | null = null;
+  request: CatchUpRequest | null = null;
+  terminated = false;
+
+  postMessage(message: CatchUpRequest): void {
+    this.request = structuredClone(message);
+  }
+
+  terminate(): void {
+    this.terminated = true;
+  }
+
+  respond(): void {
+    if (!this.request) return;
+    const { config, state, seconds } = this.request;
+    const summary = catchUp(config, state, seconds);
+    this.onmessage?.(new MessageEvent('message', { data: { type: 'done', state, summary } }));
+  }
+}
+
+function settle(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 class MemoryStorage implements SaveStorage {
   items = new Map<string, string>();
   writes = 0;
@@ -84,8 +114,12 @@ describe('GameLoopService', () => {
   let wallNow: number;
   let loop: GameLoopService;
   let store: GameStoreService;
+  let workers: FakeCatchUpWorker[];
+  let useWorker: boolean;
 
   beforeEach(() => {
+    workers = [];
+    useWorker = false;
     frames = new FakeFrames();
     visibility = new FakeVisibility();
     storage = new MemoryStorage();
@@ -106,8 +140,16 @@ describe('GameLoopService', () => {
         { provide: NEW_GAME_SEED, useValue: () => 4242 },
         { provide: PAGE_VISIBILITY, useValue: visibility },
         { provide: SAVE_STORAGE, useValue: storage },
+        { provide: CATCH_UP_WORKER_FACTORY, useValue: createWorker },
       ],
     });
+  }
+
+  function createWorker(): CatchUpWorker | null {
+    if (!useWorker) return null;
+    const worker = new FakeCatchUpWorker();
+    workers.push(worker);
+    return worker;
   }
 
   function restartWith(saved: string): void {
@@ -250,5 +292,168 @@ describe('GameLoopService', () => {
     frames.run(1250);
 
     expect(store.state().time).toBe(startTime + 0.25);
+  });
+  it('rechnet beim Start die Zeit seit dem Speichern nach und zeigt die Zusammenfassung', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
+    restartWith(serializeGame(saved));
+
+    loop.start();
+    expect(store.catchingUp()).toBe(true);
+    await settle();
+
+    expect(store.catchingUp()).toBe(false);
+    expect(store.state().time).toBe(saved.time + 100);
+    expect(loop.catchUpSummary()).toMatchObject({ seconds: 100, steps: 400, capped: false });
+    expect(storage.writes).toBe(0);
+
+    loop.dismissCatchUpSummary();
+    expect(loop.catchUpSummary()).toBeNull();
+  });
+
+  it('zeigt nach einer kurzen Nachberechnung keine Zusammenfassung', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 990_000);
+    restartWith(serializeGame(saved));
+
+    loop.start();
+    await settle();
+
+    expect(store.state().time).toBe(saved.time + 10);
+    expect(loop.catchUpSummary()).toBeNull();
+  });
+
+  it('sperrt während der Nachberechnung Aktionen, Speichern und Frames', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
+    useWorker = true;
+    restartWith(serializeGame(saved));
+
+    loop.start();
+    expect(workers.length).toBe(1);
+    expect(store.buyUnit(0, 'one')).toBeNull();
+    store.save();
+    frames.run(1500);
+    expect(storage.writes).toBe(0);
+    expect(store.state().time).toBe(saved.time);
+
+    workers[0].respond();
+    await settle();
+    expect(workers[0].terminated).toBe(true);
+    expect(store.state().time).toBe(saved.time + 100);
+
+    frames.run(1250);
+    expect(store.state().time).toBe(saved.time + 100.25);
+    expect(store.clearMark()).not.toBeNull();
+  });
+
+  it('rechnet beim Sichtbarwerden erst nach mehr als 2 s nach', async () => {
+    useWorker = true;
+    loop.start();
+    const startTime = store.state().time;
+
+    visibility.setHidden(true);
+    wallNow += 1000;
+    visibility.setHidden(false);
+    expect(workers.length).toBe(0);
+
+    visibility.setHidden(true);
+    wallNow += 3000;
+    visibility.setHidden(false);
+    expect(workers.length).toBe(1);
+    expect(workers[0].request?.seconds).toBe(3);
+
+    workers[0].respond();
+    await settle();
+    expect(store.state().time).toBe(startTime + 3);
+  });
+
+  it('arbeitet Lücken während einer Nachberechnung danach ab', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
+    useWorker = true;
+    restartWith(serializeGame(saved));
+    loop.start();
+
+    visibility.setHidden(true);
+    wallNow += 3000;
+    visibility.setHidden(false);
+    expect(workers.length).toBe(1);
+
+    workers[0].respond();
+    await settle();
+    expect(workers.length).toBe(2);
+    expect(workers[1].request?.seconds).toBe(3);
+    expect(store.catchingUp()).toBe(true);
+
+    workers[1].respond();
+    await settle();
+    expect(store.catchingUp()).toBe(false);
+    expect(store.state().time).toBe(saved.time + 103);
+    expect(loop.catchUpSummary()?.seconds).toBe(103);
+    expect(storage.writes).toBe(0);
+  });
+
+  it('verwirft nach stop() die laufende Nachberechnung und rechnet beim nächsten Start neu', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
+    useWorker = true;
+    restartWith(serializeGame(saved));
+    loop.start();
+
+    loop.stop();
+    expect(workers[0].terminated).toBe(true);
+    expect(storage.writes).toBe(0);
+    await settle();
+    expect(store.catchingUp()).toBe(false);
+    expect(store.state().time).toBe(saved.time);
+
+    loop.start();
+    expect(workers.length).toBe(2);
+    expect(workers[1].request?.seconds).toBe(100);
+  });
+  it('rechnet nach stop() und start() zwischen zwei Läufen nur die offene Zeit nach', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 900_000);
+    useWorker = true;
+    restartWith(serializeGame(saved));
+    loop.start();
+
+    visibility.setHidden(true);
+    wallNow += 3000;
+    visibility.setHidden(false);
+    workers[0].respond();
+    await settle();
+    expect(store.state().time).toBe(saved.time + 100);
+    expect(workers.length).toBe(2);
+
+    loop.stop();
+    await settle();
+    loop.start();
+    expect(workers.length).toBe(3);
+    expect(workers[2].request?.seconds).toBe(3);
+
+    workers[2].respond();
+    await settle();
+    expect(store.state().time).toBe(saved.time + 103);
+  });
+
+  it('fasst die Nachberechnungen bis zum Verwerfen zusammen', async () => {
+    const saved = newGame(PROTOTYPE_GAME_CONFIG, 7, 1_000_000 - 3_600_000);
+    useWorker = true;
+    restartWith(serializeGame(saved));
+    loop.start();
+
+    visibility.setHidden(true);
+    wallNow += 90_000;
+    visibility.setHidden(false);
+    workers[0].respond();
+    await settle();
+    workers[1].respond();
+    await settle();
+
+    expect(loop.catchUpSummary()).toMatchObject({ seconds: 3690, steps: 14760 });
+
+    loop.dismissCatchUpSummary();
+    visibility.setHidden(true);
+    wallNow += 30_000;
+    visibility.setHidden(false);
+    workers[2].respond();
+    await settle();
+    expect(loop.catchUpSummary()).toBeNull();
   });
 });

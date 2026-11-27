@@ -134,6 +134,51 @@ describe('GameStoreService', () => {
     store.advance(1);
     expect(store.events()[0].id).toBe(lastId + 1);
   });
+
+  it('sperrt während der Nachberechnung Aktionen und Speichern', () => {
+    const written: string[] = [];
+    const store = createStore(null, {
+      getItem: () => null,
+      setItem: (_key, value) => written.push(value),
+    });
+    const before = store.state();
+
+    store.beginCatchUp();
+
+    expect(store.catchingUp()).toBe(true);
+    expect(store.buyUnit(0, 'one')).toBeNull();
+    expect(store.toggleMark('site', before.sites[0].id)).toBeNull();
+    expect(store.clearMark()).toBeNull();
+    expect(store.newGame()).toBe(false);
+    store.advance(4);
+    store.save();
+    expect(written).toEqual([]);
+    expect(store.state()).toBe(before);
+
+    store.endCatchUp();
+
+    expect(store.catchingUp()).toBe(false);
+    expect(store.clearMark()).toBe(false);
+    store.save();
+    expect(written.length).toBe(1);
+  });
+
+  it('übernimmt das Ergebnis der Nachberechnung, ohne das Protokoll zu leeren', () => {
+    const store = createStore(null);
+    addEmptySites(store, 1000, 2);
+    store.advance(1);
+    const log = store.events();
+    const result = store.state();
+    result.food = 4711;
+
+    store.beginCatchUp();
+    store.applyCatchUp(result);
+    store.endCatchUp();
+
+    expect(store.state()).toEqual(result);
+    expect(store.state()).not.toBe(result);
+    expect(store.events()).toBe(log);
+  });
 });
 
 function addEmptySites(store: GameStoreService, firstId: number, count: number): void {

@@ -15,7 +15,17 @@ Die Regeln in `game/domain` mutieren einen `GameState` (Golden Master, exakte Re
 - Ereignisse aus `step` landen in einem Protokoll (Signal `events`) mit fortlaufender ID je Ereignis (`{ id, event }`), höchstens die letzten 50. Ein neues Array entsteht nur bei neuen Ereignissen. Verbraucher merken sich die zuletzt gesehene ID; so geht bei zusammengefassten Frames nichts verloren. Ein neues Spiel oder ein Import leert das Protokoll, die IDs zählen weiter.
 - `GameLoopService` (`game/data-access/game-loop`) treibt die Schleife über `requestAnimationFrame` mit dem festen `dt`-Akkumulator aus der Domäne (`advanceClock`, `isSaveDue`) und einem Tempo-Signal.
 - `GameSaveService` (`game/data-access/game-save`) liest und schreibt den Spielstand unter `idleswarm-save` (`parseSave`, `serializeGame`).
-- Plattformzugriffe liegen hinter Tokens mit Root-Default: `GAME_CONFIG`, `SAVE_STORAGE`, `WALL_CLOCK_NOW`, `NEW_GAME_SEED`, `FRAME_SCHEDULER`, `MONOTONIC_NOW`, `PAGE_VISIBILITY`.
+- Plattformzugriffe liegen hinter Tokens mit Root-Default: `GAME_CONFIG`, `SAVE_STORAGE`, `WALL_CLOCK_NOW`, `NEW_GAME_SEED`, `FRAME_SCHEDULER`, `MONOTONIC_NOW`, `PAGE_VISIBILITY`, `CATCH_UP_WORKER_FACTORY`.
+
+### Nachberechnung
+
+- Die Offline-Nachberechnung (`catchUp` aus der Domäne) läuft im Web Worker `game/data-access/catch-up/catch-up.worker.ts`, der nur Domänencode importiert. `CatchUpService` schickt Config, Schnappschuss und Sekunden, empfängt Fortschritt je Block und das Ergebnis und beendet den Worker danach.
+- Gibt es keinen Worker oder schlägt er fehl (Fabrik `null`, Fehler, ungültige Antwort), rechnet der Service dieselbe Domänenfunktion auf einer Kopie im Hauptthread nach.
+- `GameLoopService` startet die Nachberechnung beim Start mit geladenem Spielstand, bei `start()` nach `stop()` und beim Sichtbarwerden nach mehr als 2 s. Für die Dauer hält er die Frames an und der Store ist gesperrt: Aktionen liefern `null`, `advance`, `replace` und `newGame` wirken nicht, `save()` schreibt nicht. So bleibt der alte Stand mit altem `savedAt` gespeichert, und wer die Seite währenddessen schließt, bekommt die Zeit beim nächsten Laden nachberechnet.
+- Das Ergebnis übernimmt der Store mit einem Schnappschuss, ohne das Ereignisprotokoll zu leeren. Es läuft nie mehr als eine Nachberechnung; Lücken, die währenddessen anfallen, rechnet die Schleife danach nach. Nach `stop()` oder dem Zerstören wird ein laufendes Ergebnis verworfen.
+- Beim Übernehmen setzt die Schleife `savedAt` des Zustands im Speicher auf den Zeitpunkt, zu dem der Lauf angefragt wurde. Ein `start()` nach `stop()` rechnet so nur die noch offene Zeit nach; die Platte behält den alten Stand, der beim nächsten Laden vollständig nachrechnet.
+- Zusammenfassungen, die noch nicht verworfen sind, führt die Schleife zu einer zusammen (`mergeCatchUpSummaries`).
+- Bekannte Einschränkungen: Ein Worker, der nie antwortet, hat keine Zeitgrenze; die Sperre bleibt dann bis `stop()` bestehen. Der Fallback im Hauptthread rechnet ohne Zwischenpausen und blockiert die Seite für die Dauer (der Prototyp wartete je Block); er ist der seltene Fall ohne Worker.
 
 ## Konsequenzen
 

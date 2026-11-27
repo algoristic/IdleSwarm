@@ -1,6 +1,7 @@
 import {
   catchUp,
   catchUpSteps,
+  mergeCatchUpSummaries,
   needsCatchUp,
   showsCatchUpProgress,
   showsCatchUpSummary,
@@ -82,6 +83,58 @@ describe('catchUp', () => {
     expect(arrivals).toBeGreaterThan(0);
     expect(driedSites + finds.length).toBeGreaterThan(0);
     expect(summary).toMatchObject({ arrivals, driedSites, zones, finds });
+  });
+});
+
+describe('mergeCatchUpSummaries', () => {
+  it('adds the totals and keeps the first eaters and the last food', () => {
+    const merged = mergeCatchUpSummaries(
+      {
+        seconds: 3600,
+        simulatedSeconds: 3600,
+        capped: false,
+        steps: 14400,
+        harvested: 500,
+        food: 40,
+        arrivals: 3,
+        zones: [1],
+        driedSites: 2,
+        idleTime: 12,
+        finds: ['feedingFrenzy'],
+        eatersBefore: 5,
+        eatersAfter: 9,
+      },
+      {
+        seconds: 90.5,
+        simulatedSeconds: 90,
+        capped: true,
+        steps: 360,
+        harvested: 20,
+        food: 55,
+        arrivals: 1,
+        zones: [2],
+        driedSites: 0,
+        idleTime: 3,
+        finds: ['tailwind'],
+        eatersBefore: 9,
+        eatersAfter: 11,
+      },
+    );
+    expect(merged).toEqual({
+      seconds: 3690.5,
+      simulatedSeconds: 3690,
+      capped: true,
+      steps: 14760,
+      harvested: 520,
+      food: 55,
+      arrivals: 4,
+      zones: [1, 2],
+      driedSites: 2,
+      idleTime: 15,
+      finds: ['feedingFrenzy', 'tailwind'],
+      eatersBefore: 5,
+      eatersAfter: 11,
+    });
   });
 });
 

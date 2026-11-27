@@ -67,3 +67,21 @@ export function catchUp(
     eatersAfter: state.units[0],
   };
 }
+
+export function mergeCatchUpSummaries(a: CatchUpSummary, b: CatchUpSummary): CatchUpSummary {
+  return {
+    seconds: a.seconds + b.seconds,
+    simulatedSeconds: a.simulatedSeconds + b.simulatedSeconds,
+    capped: a.capped || b.capped,
+    steps: a.steps + b.steps,
+    harvested: a.harvested + b.harvested,
+    food: b.food,
+    arrivals: a.arrivals + b.arrivals,
+    zones: [...a.zones, ...b.zones],
+    driedSites: a.driedSites + b.driedSites,
+    idleTime: a.idleTime + b.idleTime,
+    finds: [...a.finds, ...b.finds],
+    eatersBefore: a.eatersBefore,
+    eatersAfter: b.eatersAfter,
+  };
+}
