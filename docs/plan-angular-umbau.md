@@ -58,7 +58,8 @@ flowchart TD
   AP13 --> S2
   S2 --> AP14
 
-  class AP1,AP2,AP3,AP3s,AP4a,AP4b,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
+  class AP1 done
+  class AP2,AP3,AP3s,AP4a,AP4b,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
   class S1,S2 user
 ```
 
@@ -68,7 +69,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 
 | AP | Titel | Status |
 | --- | --- | --- |
-| 1 | Formatierung, Regeln, CLAUDE.md | offen |
+| 1 | Formatierung, Regeln, CLAUDE.md | abgeschlossen |
 | 2 | Domänenmodell und GameConfig | offen |
 | 3 | Regeln, Zeitschritt, Golden Master | offen |
 | 3s | Headless-Simulation | offen |

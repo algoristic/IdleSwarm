@@ -12,7 +12,8 @@
 
 Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spiels (`public/prototype/index.html`). Architektur-Entscheidungen entstehen bei Bedarf unter `docs/adr/`.
 
-- **Der Code ist der aktuelle Stand.** Es gibt keine Produktspezifikation. In der aktuellen Phase dokumentiert der Prototyp den Status quo: Regeln, Spielwerte und Darstellung stehen dort, nicht in einem separaten Dokument.
+- **Der Code ist der aktuelle Stand.** Es gibt keine Produktspezifikation. Während des Umbaus dokumentiert der Prototyp den Status quo: Regeln, Spielwerte und Darstellung stehen dort, nicht in einem separaten Dokument.
+- **Der Prototyp ist eingefroren.** Seit Beginn des Umbaus wird er nicht mehr geändert. Er bleibt die Referenz für Regeln, Spielwerte und Darstellung, bis AP 13 ihn entfernt. Der Umbauplan mit Status steht in `docs/plan-angular-umbau.md`.
 - Nächste Schritte werden im Gespräch mit Claude geplant. Nachfragen, bevor auf einem Punkt aufgebaut wird, der noch nicht entschieden ist.
 - Jede neue Laufzeitabhängigkeit braucht eine ADR.
 
@@ -24,6 +25,7 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 
 | Bereich (Regeldatei) | Pfade | Inhalt |
 | --- | --- | --- |
+| `shared` (`.claude/rules/shared.md`) | `src/app/shared/**` | Formatierung de-DE (`util/format.ts`) und ihre Pipes |
 
 **Regeln, die überall gelten:**
 
@@ -57,7 +59,7 @@ Code wird zuerst nach Domäne, dann nach Schicht gruppiert: `src/app/<domain>/<l
 | `domain` | Modelle (Interfaces, `as const`-Listen), Fachdaten, reine Regeln und Formeln | domain, util |
 | `util` | generische Helfer ohne Fachwissen (Formatierung, Parser) | util |
 
-ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.config.js`; Specs sind ausgenommen). Passt eine Abhängigkeit nicht, wandert der Code in die richtige Schicht, statt quer zu importieren oder die Regel abzuschalten.
+ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.config.js`; die Schichtregeln nehmen Specs aus, die Domänenrichtung unten nicht). Passt eine Abhängigkeit nicht, wandert der Code in die richtige Schicht, statt quer zu importieren oder die Regel abzuschalten.
 
 - **Angular-freie Schichten:** `domain` und `util` importieren nichts aus `@angular/*` oder `rxjs`. So läuft der Code in Vitest unter Node und in Web Workern.
 - **Smart und präsentational:** `feature` enthält Seiten und Komponenten, die eine Facade injizieren. Alles Präsentationale liegt in `ui`, auch wenn nur eine Seite es nutzt.
@@ -68,8 +70,11 @@ ESLint erzwingt diese Regeln (`no-restricted-imports` je Schicht in `eslint.conf
 
 | Domäne | Inhalt |
 | --- | --- |
-| `game` | Das ganze Spiel: Regeln, Spielwerte und Zeitschritt (`domain`, eine `*-logic.ts` je Thema: Kette, Ernte, Stellen, Reise, Fundstücke), Zustand, Spielschleife und Spielstand (`data-access`), Facade und Spielseite mit den Ansichten Umgebung, Schwarm und Ausbau (`feature`, `ui`) |
-| `shared` | Domänenübergreifendes ohne Fachwissen: Zahlenformatierung de-DE (`util`), Pipes (`ui/pipes`) |
+| `game` | Das ganze Spiel: Regeln, Spielwerte und Zeitschritt (`domain`, eine `*-logic.ts` je Thema: Kette, Ernte, Stellen, Reise, Fundstücke), Zustand, Spielschleife und Spielstand (`data-access`), Facade und Spielseite mit den Ansichten Umgebung, Schwarm und Ausbau (`feature`, `ui` in Unterordnern, z. B. `scene`, `map`, `neuron`, `hud`, `chain`) |
+| `dev` | Nur im Dev-Build: Katalog, Kalibrierwerkzeuge, Schaltfläche fürs Testtempo; entfällt im Produktiv-Build per Dateiersetzung |
+| `shared` | Domänenübergreifendes ohne Fachwissen: Zahlen- und Zeitformatierung de-DE (`util`), Pipes (`ui/pipes`) und generische UI-Elemente wie Button, Segment, Pill, Tag, Bottom-Sheet, Toast und Dialograhmen (`ui`) |
+
+Die Abhängigkeitsrichtung ist `dev → game → shared`: `shared` importiert weder `game` noch `dev`, `game` nicht `dev`. ESLint erzwingt sie, auch in Specs.
 
 Jede Fachdomäne definiert ihren Teil des Zustands und ihre Regeln selbst.
 
@@ -244,6 +249,7 @@ Die Quellsprache ist **Deutsch**. Texte entstehen mit `@angular/localize`.
 - Mehrzahl über ICU (`{count, plural, =1 {Eintrag} other {Einträge}}`).
 - Die Logik in `domain` kennt keine Texte, nur IDs und Codes. Die Abbildung Code → Text steht im `feature`- oder `ui`-Layer, typisiert als `Record<Code, string>`.
 - Zahlen formatiert `shared/util` (de-DE), nicht `Intl` mit der Laufzeit-Locale.
+- Kürzel und Einheiten des festen de-DE-Formats (`Tsd.`, `Mio.` …, `∞`, `–`, `s`, `min`, `h`) stehen fest in `shared/util` und sind keine `$localize`-Texte.
 
 ## 6. State: Signals und Facades
 
@@ -329,7 +335,9 @@ export function provideItemsState(): (Provider | EnvironmentProviders)[] {
 
 Getestet werden die **wesentliche** Logik und die **wesentlichen** E2E-Abläufe; Hauptziel ist, unbeabsichtigte Regressionen zu vermeiden, nicht Vollständigkeit.
 
-- **Vitest** für die wesentlichen Regeln in den `domain`-Schichten und `util`. CI erzwingt dort eine Untergrenze von 70 % Abdeckung (`vitest-base.config.mts`); sie ist ein Sicherheitsnetz, kein Ziel. Specs liegen neben dem Code (`<name>.spec.ts`).
+**Übergang:** Bis zur Kalibrierung und Abnahme durch den Nutzer (`docs/plan-angular-umbau.md`) wird lose getestet: Formatierung (`shared/util`), Golden Master der Spielregeln, E2E-Smoke. Die Abdeckung wird gemessen, die Untergrenze ist ausgesetzt. Danach legt AP 14 ein Testkonzept fest und führt die Untergrenze wieder ein.
+
+- **Vitest** für die wesentlichen Regeln in den `domain`-Schichten und `util`. Die Abdeckung wird gemessen (`vitest-base.config.mts`); eine Untergrenze ist ein Sicherheitsnetz, kein Ziel. Specs liegen neben dem Code (`<name>.spec.ts`).
 - **UI:** Komponententests nur für Komponenten und Seiten mit eigener Logik, die brechen kann (z. B. Formular-Parsing). Rein darstellende Komponenten deckt der E2E-Smoke ab. Erwartete Werte nicht aus dem Code unter Test ableiten.
 - **E2E:** Playwright-Smoke für Desktop und Smartphone (`e2e/*.e2e.ts`) gegen den Produktions-Build (`e2e/serve.mjs`); nur wesentliche Abläufe, nur auf Test-IDs und Rollen warten, keine festen Wartezeiten.
 - Plattformzugriffe in Tests über die Tokens aus §7 ersetzen, Zeit über Fake-Timer bzw. Parameter.
