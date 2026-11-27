@@ -58,8 +58,8 @@ flowchart TD
   AP13 --> S2
   S2 --> AP14
 
-  class AP1,AP2,AP3 done
-  class AP3s,AP4a,AP4b,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
+  class AP1,AP2,AP3,AP4a,AP4b done
+  class AP3s,AP5,AP6,AP7,AP8,AP9,AP10,AP11,AP12,AP13,AP14 open
   class S1,S2 user
 ```
 
@@ -73,8 +73,8 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | 2 | Domänenmodell und GameConfig | abgeschlossen |
 | 3 | Regeln, Zeitschritt, Golden Master | abgeschlossen |
 | 3s | Headless-Simulation | offen |
-| 4a | Store, Schleife, Spielstand | offen |
-| 4b | Nachberechnung im Worker | offen |
+| 4a | Store, Schleife, Spielstand | abgeschlossen |
+| 4b | Nachberechnung im Worker | abgeschlossen |
 | 5 | Gerüst, Dev-Build, shared/ui | offen |
 | 6 | Asset-Bibliothek und Katalog | offen |
 | – | Sichtung der Assets durch Marco | offen |
@@ -113,6 +113,10 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | Ereignisse | `step` meldet `GameEvent`-Codes über einen optionalen Callback statt Texten |
 | Golden Master | aufgezeichnete Aktionen mit Ergebnissen, Ereignisse und Prüfpunkte je Szenario; Erzeugerskript unter `tools/golden-master/`; eingefrorene Config-Kopie `PROTOTYPE_GAME_CONFIG` |
 | Eigenheiten des Prototyps | bleiben 1:1; offen ist nur `spawnTimers` in der letzten Zone (entscheidet Marco) |
+| Store | `GameStoreService` hält den Zustand privat; Schnappschuss per `structuredClone` je Frame mit Schritt, je Aktion und je Speichern (ADR 0001) |
+| Speicherschlüssel | `idleswarm-save` |
+| Tests in AP 4 | gezielte Specs für Laden und Migration, Akkumulator, Schleife über ersetzte Tokens, Worker-Protokoll |
+| Nachberechnung | Store gesperrt (Aktionen `null`), kein Speichern während der Sperre; Lücken währenddessen werden nachgereicht; Zusammenfassungen werden zusammengeführt |
 
 ## Domänenschnitt
 
@@ -157,10 +161,12 @@ Abhängigkeitsrichtung `dev → game → shared`, von ESLint erzwungen. `game` s
 - Store mit Signals; die Domäne arbeitet mutierend auf einem internen Zustand, der Store gibt pro Frame einen neuen Signalwert aus (ADR).
 - Spielschleife über rAF mit festem `dt`-Akkumulator und Tempo-Schnittstelle; Speichern alle 10 s und bei `pagehide`/`visibilitychange`; Laden und Migration.
 - Tokens für `localStorage`, `requestAnimationFrame`, `Date.now`, `performance.now`, Sichtbarkeit und `GameConfig`.
+- Umgesetzt als `GameStoreService`, `GameSaveService` und `GameLoopService` in `game/data-access`, Domänenteil in `save-logic`, `loop-logic`; Entscheidung zum Schnappschuss in ADR 0001.
 
 ### AP 4b · Nachberechnung im Worker (mittel)
 
 - Offline-Nachberechnung bis 24 h im Web Worker: Protokoll mit Type Guards, Worker-Client in `data-access`, Fortschritt, Ereignisprotokoll für die Zusammenfassung.
+- Umgesetzt als `catchUp` in `catch-up-logic` und `CatchUpService` mit `catch-up.worker.ts` (`tsconfig.worker.json`); ohne Worker rechnet derselbe Code im Hauptthread.
 
 ### AP 5 · Gerüst, Dev-Build, shared/ui (mittel)
 
