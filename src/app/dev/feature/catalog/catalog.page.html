@@ -1,33 +1,62 @@
-<h1
-  class="text-2xl font-semibold"
-  i18n="@@featureDev-catalog-title"
-  data-testid="dev.catalog.title"
->
-  Katalog
-</h1>
-<form class="mt-3 mb-5" role="search" [formRoot]="searchForm">
-  <label
-    class="mb-1 block text-xs font-extrabold tracking-wide text-fg-muted uppercase"
-    for="dev-catalog-search"
-    i18n="@@featureDev-catalog-search-label"
+@let _menuOpen = menuOpen();
+
+<header class="sticky top-0 z-30 flex items-center bg-bg p-3 lg:hidden">
+  <button
+    type="button"
+    class="rounded-xl bg-panel px-3 py-2 text-xs font-extrabold shadow-raised"
+    aria-controls="dev-catalog-sidebar"
+    data-testid="dev.catalog.menu"
+    i18n="@@featureDev-catalog-menu-open"
+    [attr.aria-expanded]="_menuOpen"
+    (click)="onOpenMenu()"
   >
-    Suche
-  </label>
-  <input
-    id="dev-catalog-search"
-    type="search"
-    autocomplete="off"
-    class="w-full rounded-2xl bg-canvas px-3.5 py-2.5 text-fg placeholder:text-fg-subtle"
-    data-testid="dev.catalog.search"
-    [placeholder]="searchPlaceholder"
-    [formField]="searchForm.query"
-  />
-</form>
-@let _groups = groups();
-@if (_groups.length > 0) {
-  <app-catalog-list [groups]="_groups" />
-} @else {
-  <p class="text-fg-muted" data-testid="dev.catalog.empty" i18n="@@featureDev-catalog-empty">
-    Keine Treffer
-  </p>
+    Einträge
+  </button>
+</header>
+@if (_menuOpen) {
+  <button
+    type="button"
+    class="fixed inset-0 z-30 bg-bg/70 lg:hidden"
+    data-testid="dev.catalog.menu.close"
+    [attr.aria-label]="closeMenuLabel"
+    (click)="onCloseMenu()"
+  ></button>
 }
+<nav id="dev-catalog-sidebar" data-testid="dev.catalog.sidebar" [class]="sidebarClasses()">
+  <h1
+    class="px-3 text-2xl font-semibold"
+    i18n="@@featureDev-catalog-title"
+    data-testid="dev.catalog.title"
+  >
+    Katalog
+  </h1>
+  <form class="mt-3 mb-4" role="search" [formRoot]="searchForm">
+    <label
+      class="mb-1 block px-3 text-xs font-extrabold tracking-wide text-fg-muted uppercase"
+      for="dev-catalog-search"
+      i18n="@@featureDev-catalog-search-label"
+    >
+      Suche
+    </label>
+    <input
+      id="dev-catalog-search"
+      type="search"
+      autocomplete="off"
+      class="w-full rounded-2xl bg-canvas px-3.5 py-2.5 text-fg placeholder:text-fg-subtle"
+      data-testid="dev.catalog.search"
+      [placeholder]="searchPlaceholder"
+      [formField]="searchForm.query"
+    />
+  </form>
+  @let _groups = groups();
+  @if (_groups.length > 0) {
+    <app-catalog-list [groups]="_groups" (selectedEntry)="onCloseMenu()" />
+  } @else {
+    <p class="px-3 text-fg-muted" data-testid="dev.catalog.empty" i18n="@@featureDev-catalog-empty">
+      Keine Treffer
+    </p>
+  }
+</nav>
+<main class="min-w-0 flex-1">
+  <router-outlet />
+</main>

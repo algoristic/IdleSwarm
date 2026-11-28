@@ -36,6 +36,7 @@ export const CATALOG_ENTRY_NAMES: Readonly<Record<CatalogEntryId, string>> = {
   'zone-haze': $localize`:@@uiDev-catalogTexts-entry-zoneHaze:Dunst der Zone`,
   'scene-backdrop': $localize`:@@uiDev-catalogTexts-entry-sceneBackdrop:Hintergrund der Szene`,
   'map-water': $localize`:@@uiDev-catalogTexts-entry-mapWater:Wasser der Karte`,
+  'backdrop-stack': $localize`:@@uiDev-catalogTexts-entry-backdropStack:Ebenenstapel`,
   'swarm-travel': $localize`:@@uiDev-catalogTexts-entry-swarmTravel:Schwarm auf Reise mit Drift`,
   'neuron-backdrop': $localize`:@@uiDev-catalogTexts-entry-neuronBackdrop:Hintergrund des Neurons`,
   'neuron-soma': $localize`:@@uiDev-catalogTexts-entry-neuronSoma:Zellkörper`,
@@ -75,6 +76,7 @@ export const CATALOG_CONTROL_NAMES: Readonly<Record<CatalogControlId, string>> =
   tone: $localize`:@@uiDev-catalogTexts-control-tone:Ton`,
   showChain: $localize`:@@uiDev-catalogTexts-control-showChain:Kette sichtbar`,
   motion: $localize`:@@uiDev-catalogTexts-control-motion:Bewegung`,
+  blur: $localize`:@@uiDev-catalogTexts-control-blur:Weichzeichner`,
 };
 
 const on = $localize`:@@uiDev-catalogTexts-option-on:an`;
@@ -155,4 +157,5 @@ export const CATALOG_OPTION_NAMES: Readonly<
   },
   showChain: toggle,
   motion: toggle,
+  blur: toggle,
 };

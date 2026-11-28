@@ -1,0 +1,72 @@
+@let c = controls();
+@let _layers = layers();
+@let _layerClasses = layerClasses();
+
+<div
+  class="mx-auto max-w-160 cursor-grab touch-none overflow-hidden rounded-2xl select-none active:cursor-grabbing"
+  data-testid="dev.catalog.parallax.frame"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp()"
+  (pointercancel)="onPointerUp()"
+>
+  <app-catalog-stage [width]="frame" [height]="frame" [maxScale]="1">
+    <div
+      data-testid="dev.catalog.parallax.far"
+      [class]="_layerClasses"
+      [style.transform]="_layers.far.transform"
+      [style.filter]="_layers.far.filter"
+    >
+      <svg
+        class="absolute -top-250 -left-250 block size-500"
+        [attr.viewBox]="layerViewBox"
+        aria-hidden="true"
+      >
+        <svg:g app-far-mood [mood]="mood()" />
+      </svg>
+    </div>
+    <div
+      data-testid="dev.catalog.parallax.haze"
+      [class]="_layerClasses"
+      [style.transform]="_layers.haze.transform"
+      [style.filter]="_layers.haze.filter"
+    >
+      <svg
+        class="absolute -top-250 -left-250 block size-500"
+        [attr.viewBox]="layerViewBox"
+        aria-hidden="true"
+      >
+        <svg:g app-zone-haze [zone]="c.zone" />
+      </svg>
+    </div>
+    <div
+      data-testid="dev.catalog.parallax.map"
+      [class]="_layerClasses"
+      [style.transform]="_layers.map.transform"
+      [style.filter]="_layers.map.filter"
+    >
+      <svg
+        class="absolute -top-250 -left-250 block size-500"
+        [attr.viewBox]="layerViewBox"
+        aria-hidden="true"
+      >
+        <svg:g app-map-water />
+        @for (site of sites; track site.id) {
+          <svg:g [attr.transform]="site.transform">
+            <svg:g app-map-site [type]="site.type" [shape]="site.shape" />
+          </svg:g>
+        }
+        <svg:g app-map-current-site type="algae" [shape]="4242" />
+      </svg>
+    </div>
+  </app-catalog-stage>
+</div>
+<button
+  type="button"
+  class="mx-auto mt-3 block rounded-xl bg-panel px-3 py-2 text-xs font-extrabold shadow-raised"
+  data-testid="dev.catalog.parallax.reset"
+  i18n="@@uiDev-catalogParallaxPreview-reset"
+  (click)="onReset()"
+>
+  Mitte
+</button>

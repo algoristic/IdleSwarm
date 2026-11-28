@@ -34,6 +34,12 @@ export const CATALOG_ENTRIES: readonly CatalogEntry[] = [
   { id: 'scene-backdrop', category: 'backdrops', preview: 'art', controls: ['backdrop', 'zone'] },
   { id: 'map-water', category: 'backdrops', preview: 'map', controls: ['zone'] },
   {
+    id: 'backdrop-stack',
+    category: 'backdrops',
+    preview: 'parallax',
+    controls: ['zone', 'blur'],
+  },
+  {
     id: 'swarm-travel',
     category: 'travel',
     preview: 'art',
@@ -103,6 +109,7 @@ export const CATALOG_CHOICE_OPTIONS = {
   tone: ['pink', 'orange'],
   showChain: ['off', 'on'],
   motion: ['on', 'off'],
+  blur: ['on', 'off'],
 } as const satisfies Readonly<Record<CatalogChoiceControlId, readonly string[]>>;
 
 export type CatalogChoice<K extends CatalogChoiceControlId> =
@@ -135,4 +142,5 @@ export const CATALOG_DEFAULT_CONTROLS: Readonly<CatalogDefaultControls> = {
   tone: 'pink',
   showChain: 'on',
   motion: 'on',
+  blur: 'on',
 };

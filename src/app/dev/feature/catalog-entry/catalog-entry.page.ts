@@ -15,6 +15,7 @@ import { CatalogControlsModel, CatalogEntry } from '../../domain/models/catalog.
 import { CatalogArtPreviewComponent } from '../../ui/catalog-art-preview/catalog-art-preview.component';
 import { CatalogMapPreviewComponent } from '../../ui/catalog-map-preview/catalog-map-preview.component';
 import { CatalogNeuronPreviewComponent } from '../../ui/catalog-neuron-preview/catalog-neuron-preview.component';
+import { CatalogParallaxPreviewComponent } from '../../ui/catalog-parallax-preview/catalog-parallax-preview.component';
 import { CatalogSharedPreviewComponent } from '../../ui/catalog-shared-preview/catalog-shared-preview.component';
 import { FormCatalogControlsComponent } from '../../ui/form-catalog-controls/form-catalog-controls.component';
 import { CATALOG_CATEGORY_NAMES, CATALOG_ENTRY_NAMES } from '../../ui/texts/catalog-texts';
@@ -25,12 +26,13 @@ import { CATALOG_CATEGORY_NAMES, CATALOG_ENTRY_NAMES } from '../../ui/texts/cata
     CatalogArtPreviewComponent,
     CatalogMapPreviewComponent,
     CatalogNeuronPreviewComponent,
+    CatalogParallaxPreviewComponent,
     CatalogSharedPreviewComponent,
     FormCatalogControlsComponent,
     RouterLink,
   ],
   templateUrl: './catalog-entry.page.html',
-  host: { class: 'mx-auto block max-w-6xl p-4' },
+  host: { class: 'block p-4' },
 })
 export class CatalogEntryPage {
   config = inject(GAME_CONFIG);

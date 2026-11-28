@@ -112,5 +112,6 @@ export function parseCatalogControls(model: CatalogControlsModel): CatalogContro
     tone: choice(model, 'tone'),
     showChain: flagChoice(model, 'showChain'),
     motion: flagChoice(model, 'motion'),
+    blur: flagChoice(model, 'blur'),
   };
 }

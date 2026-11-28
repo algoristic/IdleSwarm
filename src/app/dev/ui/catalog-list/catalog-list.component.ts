@@ -1,18 +1,24 @@
-import { Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, input, output } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { CatalogGroup } from '../../domain/models/catalog.model';
+import { CatalogEntryId, CatalogGroup } from '../../domain/models/catalog.model';
 import { CATALOG_CATEGORY_NAMES, CATALOG_ENTRY_NAMES } from '../texts/catalog-texts';
 
 @Component({
   selector: 'app-catalog-list',
-  imports: [RouterLink],
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './catalog-list.component.html',
-  host: { class: 'grid gap-5' },
+  host: { class: 'grid gap-4' },
 })
 export class CatalogListComponent {
   groups = input.required<readonly CatalogGroup[]>();
 
   categoryNames = CATALOG_CATEGORY_NAMES;
   entryNames = CATALOG_ENTRY_NAMES;
+
+  selectedEntry = output<CatalogEntryId>();
+
+  onSelectEntry(entry: CatalogEntryId): void {
+    this.selectedEntry.emit(entry);
+  }
 }

@@ -27,6 +27,7 @@ export const CATALOG_ENTRY_IDS = [
   'zone-haze',
   'scene-backdrop',
   'map-water',
+  'backdrop-stack',
   'swarm-travel',
   'neuron-backdrop',
   'neuron-soma',
@@ -67,10 +68,11 @@ export const CATALOG_CONTROL_IDS = [
   'tone',
   'showChain',
   'motion',
+  'blur',
 ] as const;
 export type CatalogControlId = (typeof CATALOG_CONTROL_IDS)[number];
 
-export const CATALOG_PREVIEW_KINDS = ['art', 'map', 'neuron', 'shared'] as const;
+export const CATALOG_PREVIEW_KINDS = ['art', 'map', 'neuron', 'shared', 'parallax'] as const;
 export type CatalogPreviewKind = (typeof CATALOG_PREVIEW_KINDS)[number];
 
 export type CatalogChoiceControlId = Exclude<CatalogControlId, 'level'>;
@@ -111,4 +113,5 @@ export interface CatalogControls {
   tone: CatalogChoice<'tone'>;
   showChain: boolean;
   motion: boolean;
+  blur: boolean;
 }

@@ -74,12 +74,15 @@ describe('catalog-logic', () => {
       site: 'seagrass',
       zone: '9',
       motion: 'off',
+      blur: 'off',
     });
     expect(controls.fill).toBe(0.25);
     expect(controls.dead).toBe(true);
     expect(controls.site).toBe('seagrass');
     expect(controls.zone).toBe(0);
     expect(controls.motion).toBe(false);
+    expect(controls.blur).toBe(false);
+    expect(parseCatalogControls(CATALOG_DEFAULT_CONTROLS).blur).toBe(true);
     expect(controls.units).toEqual(unitsForLevel(7));
   });
 });
