@@ -8,7 +8,6 @@ import {
   DIATOM,
   DINOFLAGELLATE,
   HELIOZOAN,
-  PARAMECIUM,
   PRISM,
   SPIRAL,
   STENTOR,
@@ -27,7 +26,6 @@ export class EaterDesignComponent {
   motion = input(true);
 
   colors = EATER_DESIGN_COLORS;
-  paramecium = PARAMECIUM;
   bacillus = BACILLUS;
   dinoflagellate = DINOFLAGELLATE;
   heliozoan = HELIOZOAN;
@@ -39,8 +37,6 @@ export class EaterDesignComponent {
   splines3 = easeSplines(3);
   delay = (nextInstance * 1.37) % 6;
   begin = offset(this.delay);
-  vacuoles = PARAMECIUM.vacuoles.map((v) => ({ ...v, begin: offset(this.delay + v.delay) }));
-  foods = PARAMECIUM.foods.map((f) => ({ ...f, begin: offset(this.delay + f.delay) }));
   rays = HELIOZOAN.rays.map((ray) => ({ ...ray, begin: offset(this.delay + ray.delay) }));
   segments = SPIRAL.segments.map((s) => ({ ...s, begin: offset(this.delay + s.delay) }));
   particles = SPIRAL.particles.map((p) => ({ ...p, begin: offset(this.delay + p.delay) }));

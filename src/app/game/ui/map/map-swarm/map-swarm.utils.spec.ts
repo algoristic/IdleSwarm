@@ -1,57 +1,74 @@
-import { eaterPhaseOffset, eaterVariantFor } from '../../art/unit-sprite/eater.utils';
+import { amoebaPhaseOffset, amoebaVariantFor } from '../../art/unit-sprite/amoeba.utils';
+import {
+  parameciumPhaseOffset,
+  parameciumVariantFor,
+} from '../../art/unit-sprite/paramecium.utils';
 import { PROTOTYPE_SWARM_MINI } from './map-swarm.fixture';
-import { MapSwarmLayout } from './map-swarm.model';
 import { mapSwarmLayout } from './map-swarm.utils';
 
-function toMarkup(layout: MapSwarmLayout): string {
-  const brooders = layout.brooders
-    .map((b) => `<g transform="${b.transform}"><use href="#brut"/></g>`)
-    .join('');
-  const eaters = layout.eaters.map((f) => `<g transform="${f.transform}"></g>`).join('');
-  return `<g class="swirl swirl--map">${brooders}</g>${eaters}`;
-}
-
-function withoutPaddling(markup: string): string {
-  return markup.replace(
-    /<g transform="(translate\([^)]*\)) rotate\([^)]*\)"><g class="paddle.*?<\/g><\/g><\/g>/g,
-    '<g transform="$1"></g>',
-  );
+function prototypePlaces(markup: string): { brooders: string[]; eaters: string[] } {
+  const swirlEnd = markup.indexOf('</g></g>') + 4;
+  const brooderPart = markup.includes('<use href="#brut"/>') ? markup.slice(0, swirlEnd) : '';
+  const places = (part: string, pattern: RegExp): string[] =>
+    [...part.matchAll(pattern)].map(([, place]) => `translate(${place})`);
+  return {
+    brooders: places(
+      brooderPart,
+      /<g transform="translate\(([^)]*)\) rotate\([^)]*\) scale\(\.42\)">/g,
+    ),
+    eaters: places(
+      markup,
+      /<g transform="translate\(([^)]*)\) rotate\([^)]*\)"><g class="paddle[ a-z-]*"/g,
+    ),
+  };
 }
 
 describe('mapSwarmLayout', () => {
   it.each(PROTOTYPE_SWARM_MINI)(
-    'ordnet $eaters Fresslinge und $brooders Brutlinge an den Plätzen des Prototyps an',
+    'setzt $eaters Fresslinge und $brooders Brutlinge an die Startplätze des Prototyps',
     ({ eaters, brooders, markup }) => {
-      expect(toMarkup(mapSwarmLayout(eaters, brooders))).toBe(withoutPaddling(markup));
+      const layout = mapSwarmLayout(eaters, brooders);
+      expect({
+        brooders: layout.brooders.map((b) => b.transform),
+        eaters: layout.eaters.map((e) => e.transform),
+      }).toEqual(prototypePlaces(markup));
     },
   );
 
-  it('gibt jedem Fressling die Variante seines Index', () => {
-    const { eaters } = mapSwarmLayout(14, 0);
-    expect(eaters.map((eater) => eater.variant)).toEqual(eaters.map((_, i) => eaterVariantFor(i)));
-    expect(new Set(eaters.map((eater) => eater.variant)).size).toBeGreaterThan(2);
+  it('gibt jeder Figur die Variante ihres Index', () => {
+    const { eaters, brooders } = mapSwarmLayout(14, 1000);
+    expect(eaters.map((e) => e.variant)).toEqual(eaters.map((_, i) => parameciumVariantFor(i)));
+    expect(brooders.map((b) => b.variant)).toEqual(brooders.map((_, i) => amoebaVariantFor(i)));
+    expect(new Set(eaters.map((e) => e.variant)).size).toBeGreaterThan(2);
   });
 
-  it('gibt jedem Fressling eine eigene Bahn mit negativem Start', () => {
+  it('lässt die Fresslinge auf eigenen Bahnen gleiten', () => {
     const { eaters } = mapSwarmLayout(14, 0);
-    expect(new Set(eaters.map((eater) => eater.crawl.translateValues)).size).toBe(eaters.length);
-    for (const eater of eaters) {
-      expect(eater.begin).toMatch(/^-\d+\.\d{2}s$/);
-      expect(eater.duration).toBe('72s');
-    }
-  });
-
-  it('lässt Verformung, Bahn und Licht im selben Takt laufen', () => {
-    const { eaters } = mapSwarmLayout(14, 0);
+    expect(new Set(eaters.map((e) => e.path)).size).toBe(eaters.length);
     eaters.forEach((eater, i) => {
-      expect(eater.phase).toBe(eaterPhaseOffset(i));
-      expect(eater.light).toEqual({
-        start: `translate(${eater.crawl.lightValues.split(';')[0]})`,
-        values: eater.crawl.lightValues,
-        keyTimes: eater.crawl.keyTimes,
-        keySplines: eater.crawl.keySplines,
-        duration: eater.duration,
-        begin: eater.begin,
+      expect(eater.phase).toBe(parameciumPhaseOffset(i));
+      expect(eater.begin).toMatch(/^-\d+\.\d{2}s$/);
+      expect(eater.path).toMatch(/^M0\.00 0\.00C.*Z$/);
+      expect(eater.light.calcMode).toBe('linear');
+      expect(eater.light.duration).toBe(eater.duration);
+      expect(eater.light.begin).toBe(eater.begin);
+    });
+  });
+
+  it('lässt die Brutlinge in der Mitte kriechen', () => {
+    const { brooders } = mapSwarmLayout(0, 1000);
+    expect(brooders).toHaveLength(3);
+    brooders.forEach((brooder, i) => {
+      expect(brooder.phase).toBe(amoebaPhaseOffset(i));
+      expect(brooder.duration).toBe('72s');
+      expect(brooder.light).toEqual({
+        start: `translate(${brooder.crawl.lightValues.split(';')[0]})`,
+        values: brooder.crawl.lightValues,
+        keyTimes: brooder.crawl.keyTimes,
+        keySplines: brooder.crawl.keySplines,
+        calcMode: 'spline',
+        duration: brooder.duration,
+        begin: brooder.begin,
       });
     });
   });

@@ -1,41 +1,77 @@
 @let _layout = layout();
 @let _motion = motion();
-<svg:g [class.map-swarm__swirl]="_motion">
-  @for (brooder of _layout.brooders; track $index) {
-    <svg:g app-unit-sprite [unit]="'brooder'" [attr.transform]="brooder.transform" />
-  }
-</svg:g>
-@for (eater of _layout.eaters; track $index) {
-  <svg:g [attr.transform]="eater.transform">
-    <g [attr.transform]="_motion ? null : eater.startTranslate">
+@for (brooder of _layout.brooders; track $index) {
+  <svg:g [attr.transform]="brooder.transform">
+    <g [attr.transform]="_motion ? null : brooder.startTranslate">
       @if (_motion) {
         <animateTransform
           attributeName="transform"
           type="translate"
           calcMode="spline"
           repeatCount="indefinite"
-          [attr.values]="eater.crawl.translateValues"
-          [attr.keyTimes]="eater.crawl.keyTimes"
-          [attr.keySplines]="eater.crawl.keySplines"
-          [attr.dur]="eater.duration"
-          [attr.begin]="eater.begin"
+          [attr.values]="brooder.crawl.translateValues"
+          [attr.keyTimes]="brooder.crawl.keyTimes"
+          [attr.keySplines]="brooder.crawl.keySplines"
+          [attr.dur]="brooder.duration"
+          [appSmilBegin]="brooder.begin"
         />
       }
-      <g [attr.transform]="_motion ? null : eater.startRotate">
+      <g [attr.transform]="_motion ? null : brooder.startRotate">
         @if (_motion) {
           <animateTransform
             attributeName="transform"
             type="rotate"
             calcMode="spline"
             repeatCount="indefinite"
-            [attr.values]="eater.crawl.rotateValues"
-            [attr.keyTimes]="eater.crawl.keyTimes"
-            [attr.keySplines]="eater.crawl.keySplines"
-            [attr.dur]="eater.duration"
-            [attr.begin]="eater.begin"
+            [attr.values]="brooder.crawl.rotateValues"
+            [attr.keyTimes]="brooder.crawl.keyTimes"
+            [attr.keySplines]="brooder.crawl.keySplines"
+            [attr.dur]="brooder.duration"
+            [appSmilBegin]="brooder.begin"
           />
         }
-        <g transform="scale(.55)">
+        <g transform="scale(.32)">
+          <g
+            app-unit-sprite
+            [unit]="'brooder'"
+            [variant]="brooder.variant"
+            detail="reduced"
+            [motion]="_motion"
+            [phase]="brooder.phase"
+            [light]="brooder.light"
+          ></g>
+        </g>
+      </g>
+    </g>
+  </svg:g>
+}
+@for (eater of _layout.eaters; track $index) {
+  <svg:g [attr.transform]="eater.transform">
+    <g [attr.transform]="_motion ? null : eater.startRotate">
+      @if (_motion) {
+        <animateMotion
+          rotate="auto"
+          repeatCount="indefinite"
+          [attr.path]="eater.path"
+          [attr.dur]="eater.duration"
+          [appSmilBegin]="eater.begin"
+        />
+      }
+      <g transform="scale(.5)">
+        <g>
+          @if (_motion) {
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              calcMode="spline"
+              repeatCount="indefinite"
+              [attr.values]="roll.wobble"
+              [attr.keyTimes]="roll.keyTimes"
+              [attr.keySplines]="roll.keySplines"
+              [attr.dur]="rollDuration"
+              [appSmilBegin]="eater.wobbleBegin"
+            />
+          }
           <g
             app-unit-sprite
             [unit]="'eater'"

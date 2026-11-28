@@ -3,7 +3,6 @@ import {
   DIATOM,
   DINOFLAGELLATE,
   HELIOZOAN,
-  PARAMECIUM,
   PRISM,
   SPIRAL,
   STENTOR,
@@ -16,8 +15,6 @@ function numbers(path: string): number[] {
 describe('Entwürfe', () => {
   it('bleiben in der Box des Fresslings', () => {
     const paths = [
-      PARAMECIUM.body,
-      PARAMECIUM.ciliaFrames,
       BACILLUS.body,
       BACILLUS.flagellaFrames,
       DINOFLAGELLATE.body,

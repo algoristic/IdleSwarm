@@ -1,5 +1,6 @@
 import { UNIT_SPRITE_COLORS } from '../art-palette';
-import { drawEater } from './eater-canvas.utils';
+import { drawAmoeba } from './amoeba-canvas.utils';
+import { AMOEBA_SCALE } from './amoeba.utils';
 
 class FakeContext {
   ops: string[] = [];
@@ -42,6 +43,10 @@ class FakeContext {
     this.#record('arc', x, y, r);
   }
 
+  scale(x: number, y: number): void {
+    this.#record('scale', x, y);
+  }
+
   translate(x: number, y: number): void {
     this.#record('translate', x, y);
   }
@@ -70,13 +75,13 @@ function draw(...args: [number, number, number, 'full' | 'reduced']): string[] {
 function drawTurned(turn: number, ...args: [number, number, number, 'full' | 'reduced']): string[] {
   const ctx = new FakeContext();
   ctx.turn = turn;
-  drawEater(ctx as unknown as CanvasRenderingContext2D, ...args);
+  drawAmoeba(ctx as unknown as CanvasRenderingContext2D, ...args);
   return ctx.ops;
 }
 
 const translates = (ops: string[]): string[] => ops.filter((op) => op.startsWith('translate'));
 
-const COLORS = UNIT_SPRITE_COLORS.eater;
+const COLORS = UNIT_SPRITE_COLORS.brooder;
 
 describe('drawEater', () => {
   it('zeichnet die Schichten wie das SVG', () => {
@@ -88,20 +93,28 @@ describe('drawEater', () => {
       `fill ${COLORS.body} 1`,
       `fill ${COLORS.inner} 1`,
     ]);
-    expect(fills).toContain(`fill ${COLORS.alga} 1`);
-    expect(fills.at(-2)).toBe(`fill ${COLORS.nucleus} 1`);
+    expect(fills[5]).toBe(`fill ${COLORS.nucleus} 1`);
+    expect(fills).toContain(`fill ${COLORS.egg} 1`);
+    expect(fills).toContain(`fill ${COLORS.eggHighlight} 1`);
     expect(fills.at(-1)).toBe(`fill ${COLORS.vacuole} 1`);
   });
 
-  it('lässt reduziert Leuchtsaum, Algen und Vakuole weg', () => {
+  it('lässt reduziert Leuchtsaum, Glanzpunkte und Vakuole weg', () => {
     const fills = draw(0, 0, 0, 'reduced').filter((op) => op.startsWith('fill'));
-    expect(fills).toEqual([
+    expect(fills.slice(0, 5)).toEqual([
       `fill ${COLORS.rim} 1`,
       `fill ${COLORS.shade} 1`,
       `fill ${COLORS.body} 1`,
       `fill ${COLORS.inner} 1`,
       `fill ${COLORS.nucleus} 1`,
     ]);
+    expect(new Set(fills.slice(5))).toEqual(new Set([`fill ${COLORS.egg} 1`]));
+  });
+
+  it('zeichnet auf die Größe des Brutlings skaliert', () => {
+    expect(draw(0, 0, 0, 'full')).toContain(
+      `scale ${AMOEBA_SCALE.toFixed(2)} ${AMOEBA_SCALE.toFixed(2)}`,
+    );
   });
 
   it('bewegt sich mit der Zeit und nach dem Versatz', () => {
@@ -118,7 +131,7 @@ describe('drawEater', () => {
     expect(translates(drawTurned(Math.PI / 2, 0, 0, 0, 'full'))[0]).toBe('translate -1.10 0.50');
   });
 
-  it('lässt Algen und Kern im Schub nach vorn strömen', () => {
+  it('lässt Kern und Eier im Schub nach vorn strömen', () => {
     expect(translates(draw(0, 0, 0, 'full'))).toContain('translate 0.00 0.00');
     expect(translates(draw(0, 3, 0, 'full'))).toContain('translate 0.80 0.00');
   });

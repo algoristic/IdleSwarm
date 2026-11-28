@@ -1,94 +1,123 @@
 @switch (unit()) {
   @case ('eater') {
     @let c = colors.eater;
-    @let g = eater();
+    @let g = paramecium();
     @let animated = motion();
     @let full = detail() === 'full';
-    @let _begin = begin();
+    @let begins = smilBegins();
     @let _light = light();
-    <svg:defs>
-      <path [attr.id]="shapeId" [attr.d]="g.body">
+    <svg:defs><path [attr.id]="shapeId" [attr.d]="g.body" /></svg:defs>
+    <svg:clipPath [attr.id]="clipId"><use [attr.href]="shapeHref" /></svg:clipPath>
+    <svg:g>
+      @if (animated) {
+        <animateTransform
+          attributeName="transform"
+          type="scale"
+          calcMode="spline"
+          repeatCount="indefinite"
+          [attr.values]="roll.width"
+          [attr.keyTimes]="roll.keyTimes"
+          [attr.keySplines]="roll.keySplines"
+          [attr.dur]="parameciumTiming.roll"
+          [appSmilBegin]="begins.roll"
+        />
+      }
+      @if (full) {
+        <use
+          [attr.href]="shapeHref"
+          [attr.fill]="c.glow"
+          [attr.stroke]="c.glow"
+          stroke-width="4"
+          stroke-linejoin="round"
+          opacity=".14"
+        />
+      }
+      <path
+        [attr.d]="g.ciliaPath"
+        fill="none"
+        [attr.stroke]="c.cilia"
+        [attr.stroke-width]="full ? 0.4 : 0.55"
+        stroke-linecap="round"
+      >
         @if (animated) {
           <animate
             attributeName="d"
-            [attr.dur]="eaterTiming.outline"
-            [attr.begin]="_begin"
+            [attr.dur]="parameciumTiming.cilia"
+            [appSmilBegin]="begins.cilia"
             repeatCount="indefinite"
-            [attr.values]="g.bodyFrames"
+            [attr.values]="g.ciliaFrames"
           />
         }
       </path>
-    </svg:defs>
-    <svg:clipPath [attr.id]="clipId"><use [attr.href]="shapeHref" /></svg:clipPath>
-    @if (full) {
-      <svg:use
-        [attr.href]="shapeHref"
-        [attr.fill]="c.glow"
-        [attr.stroke]="c.glow"
-        stroke-width="4"
-        stroke-linejoin="round"
-        opacity=".14"
-      />
-    }
-    <svg:use
-      [attr.href]="shapeHref"
-      [attr.fill]="c.rim"
-      [attr.stroke]="c.rim"
-      stroke-width="1.4"
-      stroke-linejoin="round"
-    />
-    <svg:g [attr.clip-path]="clipUrl">
-      <use [attr.href]="shapeHref" [attr.fill]="c.shade" />
       <use
         [attr.href]="shapeHref"
-        [attr.fill]="c.body"
-        [attr.transform]="_light ? _light.start : staticLight"
-      >
-        @if (animated && _light) {
-          <animateTransform
-            attributeName="transform"
-            type="translate"
-            calcMode="spline"
-            repeatCount="indefinite"
-            [attr.values]="_light.values"
-            [attr.keyTimes]="_light.keyTimes"
-            [attr.keySplines]="_light.keySplines"
-            [attr.dur]="_light.duration"
-            [attr.begin]="_light.begin"
+        [attr.fill]="c.rim"
+        [attr.stroke]="c.rim"
+        stroke-width="1.4"
+        stroke-linejoin="round"
+      />
+      <g [attr.clip-path]="clipUrl">
+        <use [attr.href]="shapeHref" [attr.fill]="c.shade" />
+        <use
+          [attr.href]="shapeHref"
+          [attr.fill]="c.body"
+          [attr.transform]="_light ? _light.start : staticLight"
+        >
+          @if (animated && _light) {
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              repeatCount="indefinite"
+              [attr.calcMode]="_light.calcMode"
+              [attr.values]="_light.values"
+              [attr.keyTimes]="_light.keyTimes"
+              [attr.keySplines]="_light.keySplines"
+              [attr.dur]="_light.duration"
+              [appSmilBegin]="_light.begin"
+            />
+          }
+        </use>
+        <path [attr.d]="g.inner" [attr.fill]="c.inner" />
+        <g>
+          @if (animated) {
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              calcMode="spline"
+              repeatCount="indefinite"
+              [attr.values]="roll.groove"
+              [attr.keyTimes]="roll.keyTimes"
+              [attr.keySplines]="roll.keySplines"
+              [attr.dur]="parameciumTiming.roll"
+              [appSmilBegin]="begins.roll"
+            />
+          }
+          <path [attr.d]="g.groove" [attr.fill]="c.groove" />
+          <circle [attr.cx]="g.mouth[0]" [attr.cy]="g.mouth[1]" r=".55" [attr.fill]="c.groove" />
+          <path
+            [attr.d]="g.gullet"
+            fill="none"
+            [attr.stroke]="c.groove"
+            stroke-width=".8"
+            stroke-linecap="round"
           />
-        }
-      </use>
-      <path [attr.d]="g.innerPath" [attr.fill]="c.inner">
-        @if (animated) {
-          <animate
-            attributeName="d"
-            [attr.dur]="eaterTiming.outline"
-            [attr.begin]="_begin"
-            repeatCount="indefinite"
-            [attr.values]="g.innerFrames"
-          />
-        }
-      </path>
-      <g>
-        @if (animated) {
-          <animateTransform
-            attributeName="transform"
-            type="translate"
-            calcMode="spline"
-            repeatCount="indefinite"
-            [attr.values]="flow.values"
-            [attr.keyTimes]="flow.keyTimes"
-            [attr.keySplines]="flow.keySplines"
-            [attr.dur]="eaterTiming.outline"
-            [attr.begin]="_begin"
-          />
-        }
+        </g>
         @if (full) {
-          @for (alga of g.algae; track alga.key) {
-            <g [attr.transform]="alga.transform">
-              @for (x of alga.cells; track x) {
-                <circle [attr.cx]="x" r=".55" [attr.fill]="c.alga" />
+          @for (food of foods(); track food.key) {
+            <g [attr.transform]="animated ? null : food.transform">
+              @if (animated) {
+                <animateTransform
+                  attributeName="transform"
+                  type="translate"
+                  calcMode="linear"
+                  repeatCount="indefinite"
+                  [attr.values]="g.cyclosisValues"
+                  [attr.keyTimes]="g.cyclosisKeyTimes"
+                  [attr.dur]="parameciumTiming.cyclosis"
+                  [appSmilBegin]="food.begin"
+                />
               }
+              <circle [attr.r]="food.r" [attr.fill]="c.food" />
             </g>
           }
         }
@@ -98,55 +127,188 @@
               <animateTransform
                 attributeName="transform"
                 type="translate"
-                [attr.dur]="eaterTiming.nucleus"
-                [attr.begin]="_begin"
-                repeatCount="indefinite"
                 calcMode="spline"
+                repeatCount="indefinite"
                 [attr.values]="g.nucleusPath.values"
                 [attr.keySplines]="g.nucleusPath.keySplines"
+                [attr.dur]="parameciumTiming.cyclosis"
+                [appSmilBegin]="begins.cyclosis"
               />
             }
-            <circle r="1.9" [attr.fill]="c.nucleus" />
+            <ellipse rx="2.4" ry="1.6" [attr.fill]="c.nucleus" />
+            <circle cx="1.7" cy="-1" r=".5" [attr.fill]="c.micronucleus" />
           </g>
         </g>
+        @if (full) {
+          @for (vacuole of vacuoles(); track vacuole.key) {
+            <g [attr.transform]="vacuole.transform">
+              <g>
+                @if (animated) {
+                  <animateTransform
+                    attributeName="transform"
+                    type="scale"
+                    calcMode="spline"
+                    repeatCount="indefinite"
+                    [attr.values]="vacuolePulse.values"
+                    [attr.keyTimes]="vacuolePulse.keyTimes"
+                    [attr.keySplines]="vacuolePulse.keySplines"
+                    [attr.dur]="parameciumTiming.vacuole"
+                    [appSmilBegin]="vacuole.begin"
+                  />
+                }
+                <path
+                  [attr.d]="canals"
+                  fill="none"
+                  [attr.stroke]="c.vacuole"
+                  stroke-width=".35"
+                  stroke-linecap="round"
+                />
+                <circle r=".6" [attr.fill]="c.vacuole" />
+              </g>
+            </g>
+          }
+        }
       </g>
-      @if (full) {
-        <g [attr.transform]="g.vacuoleTransform">
-          <g>
-            @if (animated) {
-              <animateTransform
-                attributeName="transform"
-                type="scale"
-                [attr.values]="vacuolePulse.values"
-                [attr.keyTimes]="vacuolePulse.keyTimes"
-                [attr.dur]="eaterTiming.vacuole"
-                [attr.begin]="_begin"
-                repeatCount="indefinite"
-                calcMode="spline"
-                [attr.keySplines]="vacuolePulse.keySplines"
-              />
-            }
-            <circle r=".9" [attr.fill]="c.vacuole" />
-          </g>
-        </g>
-      }
     </svg:g>
   }
   @case ('brooder') {
     @let c = colors.brooder;
-    <svg:clipPath [attr.id]="clipId"><circle r="15" /></svg:clipPath>
-    <svg:circle r="18.5" [attr.fill]="c.rim" />
-    <svg:circle r="15" [attr.fill]="c.body" />
-    <svg:g [attr.clip-path]="clipUrl">
-      <circle cx="2.2" cy="2.8" r="15" [attr.fill]="c.shade" />
-      <circle cx="3" cy="22" r="13" [attr.fill]="c.belly" />
+    @let g = amoeba();
+    @let animated = motion();
+    @let full = detail() === 'full';
+    @let begins = smilBegins();
+    @let _light = light();
+    <svg:g [attr.transform]="amoebaScale">
+      <svg:defs>
+        <path [attr.id]="shapeId" [attr.d]="g.body">
+          @if (animated) {
+            <animate
+              attributeName="d"
+              [attr.dur]="amoebaTiming.outline"
+              [appSmilBegin]="begins.outline"
+              repeatCount="indefinite"
+              [attr.values]="g.bodyFrames"
+            />
+          }
+        </path>
+      </svg:defs>
+      <svg:clipPath [attr.id]="clipId"><use [attr.href]="shapeHref" /></svg:clipPath>
+      @if (full) {
+        <svg:use
+          [attr.href]="shapeHref"
+          [attr.fill]="c.glow"
+          [attr.stroke]="c.glow"
+          [attr.stroke-width]="amoebaStroke.glow"
+          stroke-linejoin="round"
+          opacity=".14"
+        />
+      }
+      <svg:use
+        [attr.href]="shapeHref"
+        [attr.fill]="c.rim"
+        [attr.stroke]="c.rim"
+        [attr.stroke-width]="amoebaStroke.rim"
+        stroke-linejoin="round"
+      />
+      <svg:g [attr.clip-path]="clipUrl">
+        <use [attr.href]="shapeHref" [attr.fill]="c.shade" />
+        <use
+          [attr.href]="shapeHref"
+          [attr.fill]="c.body"
+          [attr.transform]="_light ? _light.start : staticLight"
+        >
+          @if (animated && _light) {
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              repeatCount="indefinite"
+              [attr.calcMode]="_light.calcMode"
+              [attr.values]="_light.values"
+              [attr.keyTimes]="_light.keyTimes"
+              [attr.keySplines]="_light.keySplines"
+              [attr.dur]="_light.duration"
+              [appSmilBegin]="_light.begin"
+            />
+          }
+        </use>
+        <path [attr.d]="g.innerPath" [attr.fill]="c.inner">
+          @if (animated) {
+            <animate
+              attributeName="d"
+              [attr.dur]="amoebaTiming.outline"
+              [appSmilBegin]="begins.outline"
+              repeatCount="indefinite"
+              [attr.values]="g.innerFrames"
+            />
+          }
+        </path>
+        <g>
+          @if (animated) {
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              calcMode="spline"
+              repeatCount="indefinite"
+              [attr.values]="flow.values"
+              [attr.keyTimes]="flow.keyTimes"
+              [attr.keySplines]="flow.keySplines"
+              [attr.dur]="amoebaTiming.outline"
+              [appSmilBegin]="begins.outline"
+            />
+          }
+          <g [attr.transform]="g.nucleusTransform">
+            <g>
+              @if (animated) {
+                <animateTransform
+                  attributeName="transform"
+                  type="translate"
+                  [attr.dur]="amoebaTiming.nucleus"
+                  [appSmilBegin]="begins.nucleus"
+                  repeatCount="indefinite"
+                  calcMode="spline"
+                  [attr.values]="g.nucleusPath.values"
+                  [attr.keySplines]="g.nucleusPath.keySplines"
+                />
+              }
+              <circle r="1.9" [attr.fill]="c.nucleus" />
+            </g>
+          </g>
+          @for (egg of g.eggs; track egg.key) {
+            <g [attr.transform]="egg.transform">
+              <circle [attr.r]="egg.r" [attr.fill]="c.egg" />
+              @if (full) {
+                <circle
+                  [attr.cx]="egg.highlight[0]"
+                  [attr.cy]="egg.highlight[1]"
+                  [attr.r]="egg.r * 0.32"
+                  [attr.fill]="c.eggHighlight"
+                />
+              }
+            </g>
+          }
+        </g>
+        @if (full) {
+          <g [attr.transform]="g.vacuoleTransform">
+            <g>
+              @if (animated) {
+                <animateTransform
+                  attributeName="transform"
+                  type="scale"
+                  [attr.values]="vacuolePulse.values"
+                  [attr.keyTimes]="vacuolePulse.keyTimes"
+                  [attr.dur]="amoebaTiming.vacuole"
+                  [appSmilBegin]="begins.vacuole"
+                  repeatCount="indefinite"
+                  calcMode="spline"
+                  [attr.keySplines]="vacuolePulse.keySplines"
+                />
+              }
+              <circle r=".9" [attr.fill]="c.vacuole" />
+            </g>
+          </g>
+        }
+      </svg:g>
     </svg:g>
-    <svg:circle cx="-4.5" cy="-3" r="3.6" [attr.fill]="c.egg" />
-    <svg:circle cx="-5.5" cy="-4" r="1.1" [attr.fill]="c.eggHighlight" />
-    <svg:circle cx="4.5" cy="-1.5" r="3.2" [attr.fill]="c.egg" />
-    <svg:circle cx="3.6" cy="-2.5" r="1" [attr.fill]="c.eggHighlight" />
-    <svg:circle cx="-.5" cy="5.5" r="3" [attr.fill]="c.egg" />
-    <svg:circle cx="-1.4" cy="4.6" r=".9" [attr.fill]="c.eggHighlight" />
   }
   @case ('eggBearer') {
     @let c = colors.eggBearer;

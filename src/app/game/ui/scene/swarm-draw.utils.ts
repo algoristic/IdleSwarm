@@ -1,4 +1,9 @@
 import { keyframeValue } from '../art/keyframes.utils';
+import {
+  PARAMECIUM_ROLL,
+  PARAMECIUM_TIMING,
+  PARAMECIUM_WOBBLE,
+} from '../art/unit-sprite/paramecium.utils';
 import { SwarmDrift, SwarmFigure, SwarmFrame } from './models/swarm.model';
 import { speckGroups, streakLines } from './swarm-drift.utils';
 import {
@@ -110,6 +115,14 @@ export function drawSwarmFrame(ctx: CanvasRenderingContext2D, frame: SwarmFrame)
       ctx.translate(f.x, f.y);
       ctx.translate(keyframeValue(f.crawl.x, t), keyframeValue(f.crawl.y, t));
       ctx.rotate(keyframeValue(f.crawl.rotation, t) * DEG);
+      ctx.scale(f.scale, f.scale);
+    } else if (f.kind === 'glide') {
+      const t = (time + f.offset) / f.swim.duration;
+      const wobble = keyframeValue(PARAMECIUM_ROLL, (time + f.offset) / PARAMECIUM_TIMING.roll);
+      ctx.translate(f.x, f.y);
+      ctx.translate(keyframeValue(f.swim.x, t), keyframeValue(f.swim.y, t));
+      ctx.rotate(keyframeValue(f.swim.rotation, t) * DEG);
+      ctx.translate(0, PARAMECIUM_WOBBLE * (2 * wobble - 1));
       ctx.scale(f.scale, f.scale);
     } else {
       const u = alternate(time, SWIM_DURATIONS[f.variant], f.delay);

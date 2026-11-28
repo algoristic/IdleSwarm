@@ -15,34 +15,33 @@
         </li>
       }
     </ul>
-    <h3
-      class="mt-6 mb-2 text-sm font-extrabold text-fg-muted"
-      i18n="@@uiDev-catalogArtPreview-eaterVariants"
-    >
-      Fressling-Varianten
-    </h3>
-    <ul class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-      @for (variant of eaterVariants; track variant) {
-        <li class="grid gap-2 rounded-2xl bg-canvas p-3">
-          @for (detail of eaterDetails; track detail) {
-            <svg
-              class="block h-auto w-full"
-              [attr.viewBox]="eaterViewBox"
-              aria-hidden="true"
-              [attr.data-testid]="'dev.catalog.eaterVariant.' + variant + '.' + detail"
-            >
-              <svg:g
-                app-unit-sprite
-                unit="eater"
-                [variant]="variant"
-                [detail]="detail"
-                [motion]="c.motion"
-              />
-            </svg>
-          }
-        </li>
-      }
-    </ul>
+    @for (group of unitVariants; track group.unit) {
+      <h3 class="mt-6 mb-2 text-sm font-extrabold text-fg-muted">{{ group.title }}</h3>
+      <ul class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        @for (variant of group.variants; track variant) {
+          <li class="grid gap-2 rounded-2xl bg-canvas p-3">
+            @for (detail of spriteDetails; track detail) {
+              <svg
+                class="block h-auto w-full"
+                [attr.viewBox]="group.viewBox"
+                aria-hidden="true"
+                [attr.data-testid]="
+                  'dev.catalog.unitVariant.' + group.unit + '.' + variant + '.' + detail
+                "
+              >
+                <svg:g
+                  app-unit-sprite
+                  [unit]="group.unit"
+                  [variant]="variant"
+                  [detail]="detail"
+                  [motion]="c.motion"
+                />
+              </svg>
+            }
+          </li>
+        }
+      </ul>
+    }
   }
   @case ('eater-designs') {
     @let deep = zoneDeep();

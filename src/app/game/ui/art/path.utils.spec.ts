@@ -1,5 +1,4 @@
 import {
-  ciliaFringe,
   easeSplines,
   loopFrames,
   outlineSamples,
@@ -39,12 +38,6 @@ describe('outlineSamples', () => {
         expect(point[0] * normal[0] + point[1] * normal[1]).toBeGreaterThan(0);
       }
     }
-  });
-
-  it('richtet Wimpern ohne Ausschlag entlang der Normalen aus', () => {
-    expect(ciliaFringe(outlineSamples(SQUARE, 1), 2, 0, 1, 0)).toBe(
-      'M4.00 0.00l2.00 0.00M0.00 -4.00l0.00 -2.00M-4.00 0.00l-2.00 0.00M0.00 4.00l0.00 2.00',
-    );
   });
 });
 

@@ -123,7 +123,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | Inhalte des Gerüsts | HUD, Kontextzeilen, Chips, Toasts und Nachberechnungs-Overlay schon in AP 5 |
 | Menü bis AP 8 | Menüknopf öffnet einen Platzhalter-Dialog |
 | Farben der Illustrationen | Angular-freie TS-Palette `game/ui/art/art-palette.ts`, Werte 1:1 aus dem Prototyp; UI-Farben bleiben Tokens (ADR 0002) |
-| Fressling als Amöbe | bewusste Abweichung vom Prototyp: 5 Varianten, im Canvas als Vektor animiert, auf der Karte reduziert, Icon und Kette Variante 0 (ADR 0003, entfällt in AP 13) |
+| Grafik des Prototyps | Platzhalter: Assets dürfen im Kurzgesagt-Stil neu gestaltet werden, Bedienelemente bleiben so nah wie möglich am Prototyp; bisher neu: Fressling als Pantoffeltierchen, Brutling als Amöbe (ADR 0003, entfällt in AP 13) |
 | Darstellung der Schwarm-Szene | nur Canvas wie im Prototyp-Standard; die SVG-Formation mit CSS-Animationen wird nicht portiert; Hintergründe statisch |
 | Ablage reiner Zeichenfunktionen | Angular-frei als `game/ui/<ordner>/*.utils.ts` neben den Komponenten, gemeinsame in `game/ui/art` |
 | SVG-Teilkomponenten | Attributselektor `g[app-…]`; ESLint (`@angular-eslint/component-selector`) um `attribute` erweitert |

@@ -1,5 +1,6 @@
 import { UnitId } from '../../../domain/models/unit.model';
-import { EaterCrawl } from '../../art/unit-sprite/eater.utils';
+import { AmoebaCrawl } from '../../art/unit-sprite/amoeba.utils';
+import { ParameciumSwim } from '../../art/unit-sprite/paramecium.utils';
 
 interface BobFigure {
   kind: 'bob';
@@ -14,12 +15,23 @@ interface BobFigure {
 
 interface CrawlFigure {
   kind: 'crawl';
+  unit: 'brooder';
+  x: number;
+  y: number;
+  scale: number;
+  index: number;
+  crawl: AmoebaCrawl;
+  offset: number;
+}
+
+interface GlideFigure {
+  kind: 'glide';
   unit: 'eater';
   x: number;
   y: number;
   scale: number;
   index: number;
-  crawl: EaterCrawl;
+  swim: ParameciumSwim;
   offset: number;
 }
 
@@ -35,7 +47,7 @@ interface SwimFigure {
   rollDelay: number;
 }
 
-export type SwarmFigure = BobFigure | CrawlFigure | SwimFigure;
+export type SwarmFigure = BobFigure | CrawlFigure | GlideFigure | SwimFigure;
 
 export interface TrekTransition {
   from: number;

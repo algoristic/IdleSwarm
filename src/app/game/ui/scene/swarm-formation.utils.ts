@@ -1,12 +1,14 @@
 import { UNIT_IDS } from '../../domain/models/unit.model';
-import { eaterCrawl, eaterPhaseOffset } from '../art/unit-sprite/eater.utils';
+import { amoebaCrawl, amoebaPhaseOffset } from '../art/unit-sprite/amoeba.utils';
+import { parameciumPhaseOffset, parameciumSwim } from '../art/unit-sprite/paramecium.utils';
 import { SwarmFigure } from './models/swarm.model';
 
 const GOLDEN_ANGLE = 2.39996;
 const BOB_SCALES = [0, 1, 1, 1, 0.9, 0.8];
-const EATER_SCALE = 1.35;
+const EATER_SCALE = 1.4;
 const EATER_SPACING = { site: 22, travel: 18 } as const;
-const CRAWL_STEP = 22;
+const SWIM = { ring: 66, speed: 11 } as const;
+const BROODER_CRAWL = { reach: 6, step: 4 } as const;
 
 export function swarmFigureCounts(units: readonly number[]): number[] {
   const eaters = units[0];
@@ -34,11 +36,31 @@ export function swarmFigures(units: readonly number[], travelling: boolean): Swa
     for (let i = 0; i < counts[k]; i++, slot++) {
       const a = slot * GOLDEN_ANGLE;
       const r = 18 + 22 * Math.sqrt(slot);
+      const x = Math.cos(a) * r * fx;
+      const y = Math.sin(a) * r * fy;
+      if (k === 1 && !travelling) {
+        figures.push({
+          kind: 'crawl',
+          unit: 'brooder',
+          x,
+          y,
+          scale: BOB_SCALES[k],
+          index: i,
+          crawl: amoebaCrawl(i, {
+            start: [x, y],
+            inner: Math.max(0, r - BROODER_CRAWL.reach),
+            outer: r + BROODER_CRAWL.reach,
+            step: BROODER_CRAWL.step,
+          }),
+          offset: amoebaPhaseOffset(i),
+        });
+        continue;
+      }
       figures.push({
         kind: 'bob',
         unit: UNIT_IDS[k],
-        x: Math.cos(a) * r * fx,
-        y: Math.sin(a) * r * fy,
+        x,
+        y,
         rotation: travelling ? 0 : Math.round(a * 57),
         scale: BOB_SCALES[k],
         variant: 1 + (slot % 3),
@@ -48,7 +70,7 @@ export function swarmFigures(units: readonly number[], travelling: boolean): Swa
   }
   const r0 = 30 + 22 * Math.sqrt(slot);
   const spacing = travelling ? EATER_SPACING.travel : EATER_SPACING.site;
-  const outer = Math.max(r0 + spacing * Math.sqrt(counts[0] + 1) + 10, r0 + 3 * CRAWL_STEP);
+  const outer = Math.max(r0 + spacing * Math.sqrt(counts[0] + 1) + 10, r0 + SWIM.ring);
   for (let i = 0; i < counts[0]; i++) {
     const a = i * GOLDEN_ANGLE;
     const r = r0 + spacing * Math.sqrt(i + 1);
@@ -57,14 +79,14 @@ export function swarmFigures(units: readonly number[], travelling: boolean): Swa
     const scale = +((0.95 + ((i * 37) % 25) / 100) * EATER_SCALE).toFixed(3);
     if (!travelling) {
       figures.push({
-        kind: 'crawl',
+        kind: 'glide',
         unit: 'eater',
         x,
         y,
         scale,
         index: i,
-        crawl: eaterCrawl(i, { start: [x, y], inner: r0, outer, step: CRAWL_STEP }),
-        offset: eaterPhaseOffset(i),
+        swim: parameciumSwim(i, { start: [x, y], inner: r0, outer, speed: SWIM.speed }),
+        offset: parameciumPhaseOffset(i),
       });
     } else {
       figures.push({

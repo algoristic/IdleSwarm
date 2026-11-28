@@ -11,8 +11,13 @@ import {
 } from '@angular/core';
 
 import { UNIT_IDS, UnitId } from '../../../domain/models/unit.model';
-import { drawEater } from '../../art/unit-sprite/eater-canvas.utils';
-import { eaterPhaseOffset, eaterVariantFor } from '../../art/unit-sprite/eater.utils';
+import { drawAmoeba } from '../../art/unit-sprite/amoeba-canvas.utils';
+import { amoebaPhaseOffset, amoebaVariantFor } from '../../art/unit-sprite/amoeba.utils';
+import { drawParamecium } from '../../art/unit-sprite/paramecium-canvas.utils';
+import {
+  parameciumPhaseOffset,
+  parameciumVariantFor,
+} from '../../art/unit-sprite/paramecium.utils';
 import { UnitSpriteComponent } from '../../art/unit-sprite/unit-sprite.component';
 import { UNIT_SPRITE_HALF_EXTENT } from '../../art/unit-sprite/unit-sprite.model';
 import { SwarmSprite, TrekTransition } from '../models/swarm.model';
@@ -44,7 +49,7 @@ export class SwarmCanvasComponent {
   travelAngle = input<number | null>(null);
   motion = input(true);
 
-  rasterUnits = UNIT_IDS.filter((unit) => unit !== 'eater');
+  rasterUnits = UNIT_IDS.filter((unit) => unit !== 'eater' && unit !== 'brooder');
 
   canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   spriteDefs = viewChild.required<ElementRef<SVGSVGElement>>('spriteDefs');
@@ -57,7 +62,18 @@ export class SwarmCanvasComponent {
     eater: {
       kind: 'animated',
       draw: (ctx, time, index) =>
-        drawEater(ctx, eaterVariantFor(index), time, eaterPhaseOffset(index), 'full'),
+        drawParamecium(
+          ctx,
+          parameciumVariantFor(index),
+          time,
+          parameciumPhaseOffset(index),
+          'full',
+        ),
+    },
+    brooder: {
+      kind: 'animated',
+      draw: (ctx, time, index) =>
+        drawAmoeba(ctx, amoebaVariantFor(index), time, amoebaPhaseOffset(index), 'full'),
     },
   };
   #trek: TrekTransition = { from: 0, to: 0, at: 0 };

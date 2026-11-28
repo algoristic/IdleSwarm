@@ -1,27 +1,32 @@
-import { EaterCrawl, EaterLight } from '../../art/unit-sprite/eater.utils';
+import { AmoebaCrawl } from '../../art/unit-sprite/amoeba.utils';
+import { SpriteLight } from '../../art/unit-sprite/figure.utils';
 
 export interface MapSwarmCounts {
   eaters: number;
   brooders: number;
 }
 
-export interface MapSwarmBrooder {
+interface MapSwarmFigure {
   transform: string;
-}
-
-export interface MapSwarmCrawler {
-  transform: string;
-  crawl: EaterCrawl;
   duration: string;
   begin: string;
   phase: number;
-  light: EaterLight;
-  startTranslate: string;
+  light: SpriteLight;
   startRotate: string;
   variant: number;
 }
 
+export interface MapSwarmCrawler extends MapSwarmFigure {
+  crawl: AmoebaCrawl;
+  startTranslate: string;
+}
+
+export interface MapSwarmGlider extends MapSwarmFigure {
+  path: string;
+  wobbleBegin: string;
+}
+
 export interface MapSwarmLayout {
-  brooders: MapSwarmBrooder[];
-  eaters: MapSwarmCrawler[];
+  brooders: MapSwarmCrawler[];
+  eaters: MapSwarmGlider[];
 }

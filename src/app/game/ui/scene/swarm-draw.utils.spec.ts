@@ -97,10 +97,10 @@ const SPRITE_UNITS: [UnitId, number][] = [
   ['broodClump', 37],
 ];
 
-function withoutEaters(ops: readonly string[]): string[] {
+function withoutUnits(ops: readonly string[], units: readonly UnitId[]): string[] {
   const result: string[] = [];
   for (const op of ops) {
-    if (op.startsWith('drawImage eater')) {
+    if (units.some((unit) => op.startsWith(`drawImage ${unit} `))) {
       let start = result.length - 1;
       while (!/^setTransform m\d+$/.test(result[start])) start--;
       result.splice(start);
@@ -136,13 +136,14 @@ describe('buildSwarmDrift', () => {
 
 describe('drawSwarmFrame', () => {
   it.each(SWARM_FIXTURE.draws)(
-    'zeichnet wie cvDraw ohne die Fresslinge ($units, Winkel $angle, Bewegung $motion)',
+    'zeichnet wie cvDraw ohne Fresslinge und kriechende Brutlinge ($units, Winkel $angle, Bewegung $motion)',
     ({ units, travelAngle, now, motion, trekAt, trek, ops }) => {
       const start = nextTrek({ from: 0, to: 0, at: 0 }, travelAngle, trekAt);
       expect(start).toEqual(trek);
+      const animated: UnitId[] = travelAngle === null ? ['eater', 'brooder'] : ['eater'];
       const sprites: Partial<Record<UnitId, SwarmSprite>> = {};
       for (const [unit, halfExtent] of SPRITE_UNITS) {
-        if (unit === 'eater') continue;
+        if (animated.includes(unit)) continue;
         sprites[unit] = { kind: 'raster', image: unit as unknown as CanvasImageSource, halfExtent };
       }
       const ctx = new FakeContext();
@@ -157,7 +158,7 @@ describe('drawSwarmFrame', () => {
         figures: swarmFigures(units, travelAngle !== null),
         sprites,
       });
-      expect(ctx.ops).toEqual(withoutEaters(ops));
+      expect(ctx.ops).toEqual(withoutUnits(ops, animated));
     },
   );
 });
@@ -215,36 +216,60 @@ describe('animierte Sprites', () => {
   });
 });
 
-describe('kriechende Fresslinge', () => {
-  function crawlOps(now: number, motion: boolean): string[] {
-    const ctx = new FakeContext();
-    drawSwarmFrame(ctx as unknown as CanvasRenderingContext2D, {
-      now,
-      motion,
-      pixelRatio: 1,
-      drift: null,
-      flowRotation: 0,
-      trek: { from: 0, to: 0, at: 0 },
-      swirl: true,
-      figures: swarmFigures([1, 0, 0, 0, 0, 0], false),
-      sprites: {
-        eater: {
-          kind: 'animated',
-          draw: (c) => void (c as unknown as FakeContext).ops.push('draw eater'),
-        },
+function figureOps(units: number[], unit: UnitId, now: number, motion: boolean): string[] {
+  const ctx = new FakeContext();
+  drawSwarmFrame(ctx as unknown as CanvasRenderingContext2D, {
+    now,
+    motion,
+    pixelRatio: 1,
+    drift: null,
+    flowRotation: 0,
+    trek: { from: 0, to: 0, at: 0 },
+    swirl: true,
+    figures: swarmFigures(units, false),
+    sprites: {
+      [unit]: {
+        kind: 'animated',
+        draw: (c: CanvasRenderingContext2D) => void (c as unknown as FakeContext).ops.push('draw'),
       },
-    });
-    return ctx.ops.slice(ctx.ops.lastIndexOf('setTransform m2') + 1);
-  }
+    },
+  });
+  return ctx.ops.slice(ctx.ops.lastIndexOf('setTransform m2') + 1);
+}
 
-  it('verschiebt und dreht die Figur entlang ihrer Bahn', () => {
-    const ops = crawlOps(3000, true);
-    expect(ops).toHaveLength(5);
+describe('gleitende Fresslinge', () => {
+  const glideOps = (now: number, motion: boolean): string[] =>
+    figureOps([1, 0, 0, 0, 0, 0], 'eater', now, motion);
+
+  it('verschiebt und dreht die Figur entlang ihrer Bahn und lässt sie seitlich pendeln', () => {
+    const ops = glideOps(3000, true);
+    expect(ops).toHaveLength(6);
     expect(ops[0]).toBe('translate 52 0');
     expect(ops[1]).toMatch(/^translate -?\d/);
     expect(ops[2]).toMatch(/^rotate -?\d/);
-    expect(ops[3]).toBe('scale 1.282 1.282');
-    expect(ops[4]).toBe('draw eater');
+    expect(ops[3]).toMatch(/^translate 0 -?\d/);
+    expect(ops[4]).toBe('scale 1.33 1.33');
+    expect(ops[5]).toBe('draw');
+  });
+
+  it('gleitet mit der Zeit weiter und steht ohne Bewegung still', () => {
+    expect(glideOps(3000, true)).not.toEqual(glideOps(0, true));
+    expect(glideOps(3000, false)).toEqual(glideOps(0, true));
+  });
+});
+
+describe('kriechende Brutlinge', () => {
+  const crawlOps = (now: number, motion: boolean): string[] =>
+    figureOps([0, 1, 0, 0, 0, 0], 'brooder', now, motion);
+
+  it('verschiebt und dreht die Figur um ihren Platz', () => {
+    const ops = crawlOps(3000, true);
+    expect(ops).toHaveLength(5);
+    expect(ops[0]).toBe('translate 18 0');
+    expect(ops[1]).toMatch(/^translate -?\d/);
+    expect(ops[2]).toMatch(/^rotate -?\d/);
+    expect(ops[3]).toBe('scale 1 1');
+    expect(ops[4]).toBe('draw');
   });
 
   it('kriecht mit der Zeit weiter und steht ohne Bewegung still', () => {

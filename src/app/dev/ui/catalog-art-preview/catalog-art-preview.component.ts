@@ -7,9 +7,13 @@ import { EaterDesignComponent } from '@app/game/ui/art/eater-design/eater-design
 import { EATER_DESIGN_IDS } from '@app/game/ui/art/eater-design/eater-design.model';
 import { SparkleSpriteComponent } from '@app/game/ui/art/sparkle-sprite/sparkle-sprite.component';
 import { UnitIconComponent } from '@app/game/ui/art/unit-icon/unit-icon.component';
-import { EATER_DETAILS, EATER_VARIANT_COUNT } from '@app/game/ui/art/unit-sprite/eater.utils';
+import { AMOEBA_VARIANT_COUNT } from '@app/game/ui/art/unit-sprite/amoeba.utils';
+import { PARAMECIUM_VARIANT_COUNT } from '@app/game/ui/art/unit-sprite/paramecium.utils';
 import { UnitSpriteComponent } from '@app/game/ui/art/unit-sprite/unit-sprite.component';
-import { UNIT_SPRITE_HALF_EXTENT } from '@app/game/ui/art/unit-sprite/unit-sprite.model';
+import {
+  SPRITE_DETAILS,
+  UNIT_SPRITE_HALF_EXTENT,
+} from '@app/game/ui/art/unit-sprite/unit-sprite.model';
 import { FarMoodComponent } from '@app/game/ui/scene/far-mood/far-mood.component';
 import { SceneBackdropKind } from '@app/game/ui/scene/models/scene.model';
 import { farMoodIndex } from '@app/game/ui/scene/mood.utils';
@@ -22,11 +26,14 @@ import { UNIT_TEXTS } from '@app/game/ui/texts/game-texts';
 import { CatalogChoice } from '../../domain/data/catalog.data';
 import { CatalogControls, CatalogEntryId } from '../../domain/models/catalog.model';
 import { CatalogStageComponent } from '../catalog-stage/catalog-stage.component';
-import { EATER_DESIGN_NAMES } from '../texts/catalog-texts';
+import { EATER_DESIGN_NAMES, UNIT_VARIANT_TITLES } from '../texts/catalog-texts';
 import { SWARM_PROBE_FIGURES } from './catalog-art-preview.utils';
 
 // Jeder Wert der game-Typen braucht eine Option im Katalog; die Gegenrichtung prüfen die Input-Bindungen.
 type UncoveredOption = Exclude<SceneBackdropKind, CatalogChoice<'backdrop'>>;
+const VARIANT_COUNTS = { eater: PARAMECIUM_VARIANT_COUNT, brooder: AMOEBA_VARIANT_COUNT } as const;
+const VARIANT_VIEW_BOXES = { eater: '-12 -12 24 24', brooder: '-35 -35 70 70' } as const;
+
 const _OPTIONS_COVER_GAME: [UncoveredOption] extends [never] ? true : never = true;
 
 @Component({
@@ -61,8 +68,13 @@ export class CatalogArtPreviewComponent {
   eaterViewBox = '-12 -12 24 24';
   swarmProbeViewBox = '-60 -36 120 72';
   swarmProbe = SWARM_PROBE_FIGURES;
-  eaterVariants = Array.from({ length: EATER_VARIANT_COUNT }, (_, i) => i);
-  eaterDetails = EATER_DETAILS;
+  unitVariants = (['eater', 'brooder'] as const).map((unit) => ({
+    unit,
+    title: UNIT_VARIANT_TITLES[unit],
+    variants: Array.from({ length: VARIANT_COUNTS[unit] }, (_, i) => i),
+    viewBox: VARIANT_VIEW_BOXES[unit],
+  }));
+  spriteDetails = SPRITE_DETAILS;
   eaterDesigns = EATER_DESIGN_IDS.map((design) => ({ design, name: EATER_DESIGN_NAMES[design] }));
 
   zoneDeep = computed(() => ZONE_MOODS[this.controls().zone]?.deep ?? ZONE_MOODS[0].deep);

@@ -1,16 +1,22 @@
-import { formatCoord, formatPoint } from '../../art/path.utils';
-import { eaterCrawl, eaterPhaseOffset, eaterVariantFor } from '../../art/unit-sprite/eater.utils';
+import { formatCoord, formatPoint, Point } from '../../art/path.utils';
 import {
-  MapSwarmBrooder,
-  MapSwarmCounts,
-  MapSwarmLayout,
-  MapSwarmCrawler,
-} from './map-swarm.model';
+  amoebaCrawl,
+  amoebaPhaseOffset,
+  amoebaVariantFor,
+} from '../../art/unit-sprite/amoeba.utils';
+import { smilBegin } from '../../art/unit-sprite/figure.utils';
+import {
+  PARAMECIUM_TIMING,
+  parameciumPhaseOffset,
+  parameciumSwim,
+  parameciumVariantFor,
+} from '../../art/unit-sprite/paramecium.utils';
+import { MapSwarmCounts, MapSwarmCrawler, MapSwarmGlider, MapSwarmLayout } from './map-swarm.model';
 
 const MAX_EATERS = 14;
 const MAX_BROODERS = 3;
-const CRAWL_INNER = 15;
-const CRAWL_STEP = 8;
+const SWIM = { inner: 15, ring: 24, speed: 5.5 } as const;
+const BROODER_CRAWL = { outer: 10, step: 3 } as const;
 
 function mapSwarmCounts(eaters: number, brooders: number): MapSwarmCounts {
   return {
@@ -23,32 +29,39 @@ function mapSwarmCounts(eaters: number, brooders: number): MapSwarmCounts {
   };
 }
 
+function placed([x, y]: Point): string {
+  return `translate(${x.toFixed(1)} ${y.toFixed(1)})`;
+}
+
 export function mapSwarmLayout(eaters: number, brooders: number): MapSwarmLayout {
   const counts = mapSwarmCounts(eaters, brooders);
-  const brooderFigures: MapSwarmBrooder[] = [];
+  const brooderFigures: MapSwarmCrawler[] = [];
   for (let i = 0; i < counts.brooders; i++) {
     const angle = i * 2.4;
-    brooderFigures.push({
-      transform: `translate(${(Math.cos(angle) * 7).toFixed(1)} ${(Math.sin(angle) * 7).toFixed(1)}) rotate(${i * 130}) scale(.42)`,
-    });
+    brooderFigures.push(crawlerFigure([Math.cos(angle) * 7, Math.sin(angle) * 7], i));
   }
-  const eaterFigures: MapSwarmCrawler[] = [];
-  const outer = Math.max(6 + 4.6 * Math.sqrt(counts.eaters + 1) + 4, CRAWL_INNER + 3 * CRAWL_STEP);
+  const eaterFigures: MapSwarmGlider[] = [];
+  const outer = Math.max(6 + 4.6 * Math.sqrt(counts.eaters + 1) + 4, SWIM.inner + SWIM.ring);
   for (let i = 0; i < counts.eaters; i++) {
     const angle = i * 2.39996;
     const radius = 6 + 4.6 * Math.sqrt(i + 1);
-    eaterFigures.push(crawlerFigure(Math.cos(angle) * radius, Math.sin(angle) * radius, i, outer));
+    eaterFigures.push(gliderFigure([Math.cos(angle) * radius, Math.sin(angle) * radius], i, outer));
   }
   return { brooders: brooderFigures, eaters: eaterFigures };
 }
 
-function crawlerFigure(x: number, y: number, i: number, outer: number): MapSwarmCrawler {
-  const crawl = eaterCrawl(i, { start: [x, y], inner: CRAWL_INNER, outer, step: CRAWL_STEP });
-  const phase = eaterPhaseOffset(i);
+function crawlerFigure(start: Point, i: number): MapSwarmCrawler {
+  const crawl = amoebaCrawl(i, {
+    start,
+    inner: 0,
+    outer: BROODER_CRAWL.outer,
+    step: BROODER_CRAWL.step,
+  });
+  const phase = amoebaPhaseOffset(i);
   const duration = `${crawl.duration}s`;
-  const begin = `-${phase.toFixed(2)}s`;
+  const begin = smilBegin(phase, crawl.duration);
   return {
-    transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`,
+    transform: placed(start),
     crawl,
     duration,
     begin,
@@ -58,11 +71,38 @@ function crawlerFigure(x: number, y: number, i: number, outer: number): MapSwarm
       values: crawl.lightValues,
       keyTimes: crawl.keyTimes,
       keySplines: crawl.keySplines,
+      calcMode: 'spline',
       duration,
       begin,
     },
     startTranslate: `translate(${formatPoint([crawl.x.values[0], crawl.y.values[0]])})`,
     startRotate: `rotate(${formatCoord(crawl.rotation.values[0])})`,
-    variant: eaterVariantFor(i),
+    variant: amoebaVariantFor(i),
+  };
+}
+
+function gliderFigure(start: Point, i: number, outer: number): MapSwarmGlider {
+  const swim = parameciumSwim(i, { start, inner: SWIM.inner, outer, speed: SWIM.speed });
+  const phase = parameciumPhaseOffset(i);
+  const duration = `${swim.duration}s`;
+  const begin = smilBegin(phase, swim.duration);
+  return {
+    transform: placed(start),
+    path: swim.path,
+    duration,
+    begin,
+    wobbleBegin: smilBegin(phase, PARAMECIUM_TIMING.roll),
+    phase,
+    light: {
+      start: `translate(${swim.lightValues.split(';')[0]})`,
+      values: swim.lightValues,
+      keyTimes: swim.lightKeyTimes,
+      keySplines: null,
+      calcMode: 'linear',
+      duration,
+      begin,
+    },
+    startRotate: `rotate(${formatCoord(swim.rotation.values[0])})`,
+    variant: parameciumVariantFor(i),
   };
 }

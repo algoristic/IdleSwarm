@@ -1,5 +1,4 @@
 export const EATER_DESIGN_IDS = [
-  'paramecium',
   'bacillus',
   'dinoflagellate',
   'heliozoan',

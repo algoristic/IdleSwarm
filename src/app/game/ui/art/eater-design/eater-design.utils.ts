@@ -1,19 +1,14 @@
 import {
-  ciliaFringe,
   formatCoord,
   formatPoint,
   loopFrames,
-  outlineSamples,
   Point,
   smoothPath,
-  wander,
   wavePath,
   WaveOptions,
 } from '../path.utils';
 import { blobPath, lcg } from '../shape.utils';
 import { Cycling, Placed, Ray } from './eater-design.model';
-
-const TAU = Math.PI * 2;
 
 function scatter(
   seed: number,
@@ -31,45 +26,6 @@ function scatter(
   }
   return placed;
 }
-
-const PARAMECIUM_OUTLINE: readonly Point[] = [
-  [10, 0.2],
-  [8.6, -2.8],
-  [4.5, -4.5],
-  [-1.5, -4.9],
-  [-6.8, -4.3],
-  [-9.6, -2],
-  [-10, 0.8],
-  [-8.4, 3.6],
-  [-4, 4.7],
-  [0.2, 3.7],
-  [3.8, 2.6],
-  [7.6, 2.8],
-];
-const PARAMECIUM_SAMPLES = outlineSamples(PARAMECIUM_OUTLINE, 3);
-const paramecumCilia = (phase: number): string =>
-  ciliaFringe(PARAMECIUM_SAMPLES, 1.7, 0.7, 4, phase);
-
-export const PARAMECIUM = {
-  body: smoothPath(PARAMECIUM_OUTLINE),
-  cilia: paramecumCilia(0),
-  ciliaFrames: loopFrames(8, paramecumCilia),
-  groove: 'M8.4 2.3C5.6 .6 2.2 .5 -.6 2.6C2.4 3.6 5.4 3.4 8.4 2.3Z',
-  gullet: 'M-.6 2.6C-1.6 1.9 -2.2 1.4 -2.7 .8',
-  cyclosis: 'M-6.5 0A6.2 2.6 0 1 0 5.9 0A6.2 2.6 0 1 0 -6.5 0Z',
-  canals: 'M0 -.6V-1.7M.57 -.19L1.62 -.53M.35 .49L1 1.38M-.35 .49L-1 1.38M-.57 -.19L-1.62 -.53',
-  vacuoles: [
-    { key: 0, transform: 'translate(5.2 -2.2)', r: 0.6, delay: 0 },
-    { key: 1, transform: 'translate(-6.6 1.4)', r: 0.6, delay: 1.2 },
-  ] satisfies Cycling[],
-  foods: [0, 1, 2, 3].map((key): Cycling => ({
-    key,
-    transform: `translate(${formatPoint([Math.cos((key * TAU) / 4) * 6.2 - 0.3, Math.sin((key * TAU) / 4) * 2.6])})`,
-    r: [0.9, 0.7, 1.05, 0.6][key],
-    delay: key * 2.5,
-  })),
-  nucleus: wander(23, 0.5, 5),
-};
 
 const BACILLUS_BODY = 'M-1.6 -3.3H6.3A3.3 3.3 0 0 1 6.3 3.3H-1.6A3.3 3.3 0 0 1 -1.6 -3.3Z';
 const BACILLUS_FLAGELLA = [-1.6, 0, 1.6].map((y, i): WaveOptions => ({

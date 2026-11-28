@@ -1,38 +1,36 @@
 import { keyframeValue } from '../keyframes.utils';
 import { smoothPath } from '../path.utils';
 import {
-  EATER_TIMING,
-  EATER_VARIANT_COUNT,
-  EATER_VARIANTS,
-  CrawlArea,
-  eaterCrawl,
-  eaterPhaseOffset,
-  eaterVariantFor,
-  worldLight,
-} from './eater.utils';
+  AMOEBA_TIMING,
+  AMOEBA_VARIANT_COUNT,
+  AMOEBA_VARIANTS,
+  amoebaCrawl,
+  amoebaPhaseOffset,
+  amoebaVariantFor,
+} from './amoeba.utils';
+import { WalkArea, worldLight } from './figure.utils';
 
 const GLOW = 2;
 
-describe('EATER_VARIANTS', () => {
+describe('AMOEBA_VARIANTS', () => {
   it('hat fünf verschiedene Varianten', () => {
-    expect(EATER_VARIANTS).toHaveLength(EATER_VARIANT_COUNT);
-    expect(new Set(EATER_VARIANTS.map((v) => v.body)).size).toBe(EATER_VARIANT_COUNT);
+    expect(AMOEBA_VARIANTS).toHaveLength(AMOEBA_VARIANT_COUNT);
+    expect(new Set(AMOEBA_VARIANTS.map((v) => v.body)).size).toBe(AMOEBA_VARIANT_COUNT);
   });
 
-  it('setzt jede Alge aus ein bis drei Kügelchen zusammen', () => {
-    for (const variant of EATER_VARIANTS) {
-      expect(variant.algae).toHaveLength(2);
-      for (const alga of variant.algae) {
-        expect(alga.cells.length).toBeGreaterThanOrEqual(1);
-        expect(alga.cells.length).toBeLessThanOrEqual(3);
+  it('trägt zwei bis drei Eier mit Glanzpunkt', () => {
+    for (const variant of AMOEBA_VARIANTS) {
+      expect(variant.eggs.length).toBeGreaterThanOrEqual(2);
+      expect(variant.eggs.length).toBeLessThanOrEqual(3);
+      for (const egg of variant.eggs) {
+        expect(egg.highlight).toEqual([-0.4 * egg.r, -0.4 * egg.r]);
       }
     }
-    const counts = EATER_VARIANTS.flatMap((v) => v.algae.map((a) => a.cells.length));
-    expect(new Set(counts).size).toBeGreaterThan(1);
+    expect(new Set(AMOEBA_VARIANTS.map((v) => v.eggs.length)).size).toBeGreaterThan(1);
   });
 
   it('bleibt mit Leuchtsaum in der Box ±12', () => {
-    for (const variant of EATER_VARIANTS) {
+    for (const variant of AMOEBA_VARIANTS) {
       for (let i = 0; i < 24; i++) {
         const phase = (i / 24) * Math.PI * 2;
         for (const [x, y] of variant.outline(phase)) {
@@ -43,7 +41,7 @@ describe('EATER_VARIANTS', () => {
   });
 
   it('behält in jedem Bild dieselben Befehle, damit d interpoliert', () => {
-    for (const variant of EATER_VARIANTS) {
+    for (const variant of AMOEBA_VARIANTS) {
       for (const frames of [variant.bodyFrames, variant.innerFrames]) {
         const commands = frames.split(';').map((frame) => frame.replace(/[^MCZ]/g, ''));
         expect(new Set(commands).size).toBe(1);
@@ -53,7 +51,7 @@ describe('EATER_VARIANTS', () => {
   });
 
   it('schiebt die Front nach +x vor und lässt den Rest folgen', () => {
-    for (const variant of EATER_VARIANTS) {
+    for (const variant of AMOEBA_VARIANTS) {
       for (let i = 0; i < 8; i++) {
         const points = variant.outline((i / 8) * Math.PI * 2);
         const front = Math.max(...points.map(([x]) => x));
@@ -71,7 +69,7 @@ describe('EATER_VARIANTS', () => {
       const ys = points.map(([, y]) => y);
       return (Math.max(...xs) - Math.min(...xs)) / (Math.max(...ys) - Math.min(...ys));
     };
-    for (const variant of EATER_VARIANTS) {
+    for (const variant of AMOEBA_VARIANTS) {
       expect(front(variant.outline(0))).toBeGreaterThan(front(variant.outline(Math.PI)));
       for (let i = 0; i < 8; i++) {
         expect(aspect(variant.outline((i / 8) * Math.PI * 2))).toBeGreaterThan(1);
@@ -80,7 +78,7 @@ describe('EATER_VARIANTS', () => {
   });
 
   it('führt den Kern im Takt der SVG-Animation zum Start zurück', () => {
-    for (const variant of EATER_VARIANTS) {
+    for (const variant of AMOEBA_VARIANTS) {
       const { values } = variant.nucleusX;
       expect(values[values.length - 1]).toBe(values[0]);
     }
@@ -89,21 +87,21 @@ describe('EATER_VARIANTS', () => {
 
 describe('Figuren', () => {
   it('ordnet jedem Index fest eine Variante und einen Versatz zu', () => {
-    const variants = Array.from({ length: 48 }, (_, i) => eaterVariantFor(i));
-    expect(variants).toEqual(Array.from({ length: 48 }, (_, i) => eaterVariantFor(i)));
+    const variants = Array.from({ length: 48 }, (_, i) => amoebaVariantFor(i));
+    expect(variants).toEqual(Array.from({ length: 48 }, (_, i) => amoebaVariantFor(i)));
     expect(new Set(variants)).toEqual(new Set([0, 1, 2, 3, 4]));
     for (let i = 0; i < 48; i++) {
-      expect(eaterPhaseOffset(i)).toBeGreaterThanOrEqual(0);
-      expect(eaterPhaseOffset(i)).toBeLessThan(EATER_TIMING.nucleus);
+      expect(amoebaPhaseOffset(i)).toBeGreaterThanOrEqual(0);
+      expect(amoebaPhaseOffset(i)).toBeLessThan(AMOEBA_TIMING.nucleus);
     }
   });
 });
 
-describe('eaterCrawl', () => {
+describe('amoebaCrawl', () => {
   const STEP = 16;
   const INNER = 40;
   const OUTER = 140;
-  const areaFor = (i: number): CrawlArea => {
+  const areaFor = (i: number): WalkArea => {
     const angle = i * 2.39996;
     return {
       start: [Math.cos(angle) * 80, Math.sin(angle) * 80],
@@ -112,11 +110,11 @@ describe('eaterCrawl', () => {
       step: STEP,
     };
   };
-  const crawls = Array.from({ length: 12 }, (_, i) => eaterCrawl(i, areaFor(i)));
+  const crawls = Array.from({ length: 12 }, (_, i) => amoebaCrawl(i, areaFor(i)));
 
   it('wandert in 12 Schüben zu 6 s und kehrt zum Platz zurück', () => {
     for (const { duration, x, y, rotation } of crawls) {
-      expect(duration).toBe(12 * EATER_TIMING.outline);
+      expect(duration).toBe(12 * AMOEBA_TIMING.outline);
       expect(x.values).toHaveLength(13);
       expect([x.values[0], y.values[0]]).toEqual([0, 0]);
       expect([x.values[12], y.values[12]]).toEqual([0, 0]);
@@ -162,11 +160,11 @@ describe('eaterCrawl', () => {
       const [x1, y1] = at(t + 0.05);
       return Math.hypot(x1 - x0, y1 - y0);
     };
-    expect(speed(EATER_TIMING.outline)).toBeLessThan(speed(EATER_TIMING.outline * 1.5) / 10);
+    expect(speed(AMOEBA_TIMING.outline)).toBeLessThan(speed(AMOEBA_TIMING.outline * 1.5) / 10);
   });
 
   it('ist je Index stabil und verschieden', () => {
-    expect(eaterCrawl(3, areaFor(3))).toEqual(crawls[3]);
+    expect(amoebaCrawl(3, areaFor(3))).toEqual(crawls[3]);
     expect(new Set(crawls.map((c) => c.translateValues)).size).toBe(crawls.length);
   });
 

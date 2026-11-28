@@ -162,8 +162,12 @@ export const CATALOG_OPTION_NAMES: Readonly<
   blur: toggle,
 };
 
+export const UNIT_VARIANT_TITLES = {
+  eater: $localize`:@@uiDev-catalogTexts-unitVariants-eater:Fressling-Varianten (Pantoffeltierchen)`,
+  brooder: $localize`:@@uiDev-catalogTexts-unitVariants-brooder:Brutling-Varianten (Amöbe)`,
+} as const;
+
 export const EATER_DESIGN_NAMES: Readonly<Record<EaterDesignId, string>> = {
-  paramecium: $localize`:@@uiDev-catalogTexts-eaterDesign-paramecium:Pantoffeltierchen`,
   bacillus: $localize`:@@uiDev-catalogTexts-eaterDesign-bacillus:Stäbchenbakterium`,
   dinoflagellate: $localize`:@@uiDev-catalogTexts-eaterDesign-dinoflagellate:Dinoflagellat`,
   heliozoan: $localize`:@@uiDev-catalogTexts-eaterDesign-heliozoan:Sonnentierchen`,

@@ -89,25 +89,6 @@ export function outlineSamples(points: readonly Point[], perSegment: number): Ou
   });
 }
 
-export function ciliaFringe(
-  samples: readonly OutlineSample[],
-  length: number,
-  tilt: number,
-  waves: number,
-  phase: number,
-): string {
-  return samples
-    .map(({ point, normal }, i) => {
-      const angle = tilt * Math.sin((waves * TAU * i) / samples.length - phase);
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      const dx = (normal[0] * cos - normal[1] * sin) * length;
-      const dy = (normal[0] * sin + normal[1] * cos) * length;
-      return `M${formatPoint(point)}l${formatCoord(dx)} ${formatCoord(dy)}`;
-    })
-    .join('');
-}
-
 export function wavePath(options: WaveOptions, phase: number): string {
   const { start, angle, length, amplitude, wavelength, bend = 0, steps = 16 } = options;
   const cos = Math.cos(angle);

@@ -1,4 +1,3 @@
-import { cubicBezier } from '../easing.utils';
 import { evenKeyTimes, Keyframes } from '../keyframes.utils';
 import {
   easeSplines,
@@ -12,38 +11,35 @@ import {
   Wander,
 } from '../path.utils';
 import { lcg } from '../shape.utils';
+import {
+  DEGREES,
+  figureRandom,
+  randomWalk,
+  SPRITE_EASE as EASE,
+  unwrap,
+  WalkArea,
+  worldLight,
+} from './figure.utils';
 
 const TAU = Math.PI * 2;
 const OUTLINE_POINTS = 36;
 const FRAMES = 8;
 const MAX_REACH = 9.6;
 const CRAWL_POINTS = 12;
-const CRAWL_TURN = (70 / 180) * Math.PI;
-const DEGREES = 180 / Math.PI;
-const LIGHT: Point = [-0.5, -1.1];
 const STRETCH = { long: 0.08, wide: 0.06 } as const;
 const INNER_FLOW = 0.8;
 
-export const EATER_VARIANT_COUNT = 5;
-export const EATER_TIMING = { outline: 6, nucleus: 8.5, vacuole: 3.8 } as const;
-export const EATER_DETAILS = ['full', 'reduced'] as const;
-export type EaterDetail = (typeof EATER_DETAILS)[number];
+export const AMOEBA_VARIANT_COUNT = 5;
+export const AMOEBA_SCALE = 3;
+export const AMOEBA_STROKE = { glow: 2.4, rim: 0.85 } as const;
+export const AMOEBA_TIMING = { outline: 6, nucleus: 8.5, vacuole: 3.8 } as const;
+export const AMOEBA_CRAWL = { turn: (35 / 180) * Math.PI } as const;
 
-const EASE = cubicBezier(0.45, 0, 0.55, 1);
-
-export const VACUOLE_PULSE: Keyframes = {
-  values: [1, 1.2, 0.3, 1],
-  keyTimes: [0, 0.6, 0.72, 1],
-  easing: EASE,
-};
-
-export const EATER_FLOW: Keyframes = {
+export const AMOEBA_FLOW: Keyframes = {
   values: [0, INNER_FLOW, 0],
   keyTimes: [0, 0.5, 1],
   easing: EASE,
 };
-
-export const EATER_LIGHT = `translate(${LIGHT.join(' ')})`;
 
 interface OutlineShape {
   base: number;
@@ -60,22 +56,15 @@ interface OutlineShape {
   wrinkleShift: number;
 }
 
-export interface EaterAlga {
+export interface AmoebaEgg {
   key: number;
   at: Point;
-  rotation: number;
+  r: number;
   transform: string;
-  cells: readonly number[];
+  highlight: Point;
 }
 
-export interface CrawlArea {
-  start: Point;
-  inner: number;
-  outer: number;
-  step: number;
-}
-
-export interface EaterCrawl {
+export interface AmoebaCrawl {
   duration: number;
   x: Keyframes;
   y: Keyframes;
@@ -87,16 +76,7 @@ export interface EaterCrawl {
   keySplines: string;
 }
 
-export interface EaterLight {
-  start: string;
-  values: string;
-  keyTimes: string;
-  keySplines: string;
-  duration: string;
-  begin: string;
-}
-
-export interface EaterVariant {
+export interface AmoebaVariant {
   outline: (phase: number) => Point[];
   inner: (phase: number) => Point[];
   body: string;
@@ -110,7 +90,7 @@ export interface EaterVariant {
   nucleusY: Keyframes;
   vacuole: Point;
   vacuoleTransform: string;
-  algae: readonly EaterAlga[];
+  eggs: readonly AmoebaEgg[];
 }
 
 function shapeRadius(shape: OutlineShape, scale: number) {
@@ -191,11 +171,13 @@ function variantShape(index: number): OutlineShape {
   };
 }
 
-function algaCells(count: number): number[] {
-  return Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * 1.05);
-}
+const EGG_SLOTS: readonly Point[] = [
+  [3, 1.9],
+  [-3.2, -1.9],
+  [2.3, -2.6],
+];
 
-function eaterVariant(index: number): EaterVariant {
+function amoebaVariant(index: number): AmoebaVariant {
   const shape = variantShape(index);
   const random = lcg(index * 7727 + 3);
   const rawOutline = (phase: number): Point[] =>
@@ -215,19 +197,16 @@ function eaterVariant(index: number): EaterVariant {
   const jitter = (range: number): number => (random() - 0.5) * 2 * range * spread;
   const nucleus: Point = [-0.5 + jitter(0.7), 0.3 + jitter(0.6)];
   const vacuole: Point = [-3.8 + jitter(0.5), (index % 2 === 0 ? 1.9 : -1.9) + jitter(0.4)];
-  const slots: Point[] = [
-    [1.6, 2],
-    [-3.6, -1.8],
-  ];
-  const algae = slots.map(([x, y], key): EaterAlga => {
-    const at: Point = [(x + jitter(0.5)) * fit, (index % 2 === 0 ? y : -y) * fit + jitter(0.4)];
-    const rotation = Math.round(jitter(90));
+  const eggCount = index === 0 ? 3 : 2 + Math.floor(random() * 2);
+  const eggs = EGG_SLOTS.slice(0, eggCount).map(([x, y], key): AmoebaEgg => {
+    const at: Point = [(x + jitter(0.4)) * fit, (index % 2 === 0 ? y : -y) * fit + jitter(0.3)];
+    const r = +(1.5 + (index === 0 ? 0.2 : random() * 0.4)).toFixed(2);
     return {
       key,
       at,
-      rotation,
-      transform: `translate(${formatPoint(at)}) rotate(${rotation})`,
-      cells: algaCells(1 + Math.floor(random() * 3)),
+      r,
+      transform: `translate(${formatPoint(at)})`,
+      highlight: [-0.4 * r, -0.4 * r],
     };
   });
   const nucleusPath = wander(61 + index * 13, 0.7, 5);
@@ -246,74 +225,28 @@ function eaterVariant(index: number): EaterVariant {
     nucleusY: { values: nucleusPath.points.map(([, y]) => y), keyTimes: times, easing: EASE },
     vacuole,
     vacuoleTransform: `translate(${formatPoint(vacuole)})`,
-    algae,
+    eggs,
   };
 }
 
-export const EATER_VARIANTS: readonly EaterVariant[] = Array.from(
-  { length: EATER_VARIANT_COUNT },
-  (_, i) => eaterVariant(i),
+export const AMOEBA_VARIANTS: readonly AmoebaVariant[] = Array.from(
+  { length: AMOEBA_VARIANT_COUNT },
+  (_, i) => amoebaVariant(i),
 );
 
-function figureRandom(seed: number): number {
-  const random = lcg(seed);
-  random();
-  return random();
+export function amoebaVariantFor(index: number): number {
+  return Math.floor(figureRandom(index * 7919 + 13) * AMOEBA_VARIANT_COUNT);
 }
 
-export function eaterVariantFor(index: number): number {
-  return Math.floor(figureRandom(index * 7919 + 13) * EATER_VARIANT_COUNT);
+export function amoebaPhaseOffset(index: number): number {
+  return figureRandom(index * 4241 + 7) * AMOEBA_TIMING.nucleus;
 }
 
-export function eaterPhaseOffset(index: number): number {
-  return figureRandom(index * 4241 + 7) * EATER_TIMING.nucleus;
-}
-
-export function worldLight(rotation: number): Point {
-  const turn = -rotation / DEGREES;
-  const [x, y] = LIGHT;
-  return [x * Math.cos(turn) - y * Math.sin(turn), x * Math.sin(turn) + y * Math.cos(turn)];
-}
-
-function unwrap(angle: number, previous: number): number {
-  return angle + Math.round((previous - angle) / 360) * 360;
-}
-
-function unwrapRadians(angle: number): number {
-  return angle - Math.round(angle / TAU) * TAU;
-}
-
-function clampToRing([x, y]: Point, inner: number, outer: number): Point {
-  const distance = Math.hypot(x, y);
-  if (distance === 0) return [inner, 0];
-  const factor = Math.min(outer, Math.max(inner, distance)) / distance;
-  return [x * factor, y * factor];
-}
-
-function crawlWalk(index: number, { start, inner, outer, step }: CrawlArea): Point[] {
-  const random = lcg(index * 3571 + 29);
-  random();
-  let direction = random() * TAU;
-  const walk: Point[] = [start];
-  for (let i = 0; i < CRAWL_POINTS; i++) {
-    const [x, y] = walk[i];
-    const home = Math.atan2(start[1] - y, start[0] - x);
-    const pull = i < CRAWL_POINTS / 2 ? 0 : (i - CRAWL_POINTS / 2 + 1) / (CRAWL_POINTS / 2);
-    direction += unwrapRadians(home - direction) * pull + (random() - 0.5) * 2 * CRAWL_TURN;
-    const length = step * (0.7 + random() * 0.6);
-    walk.push([x + Math.cos(direction) * length, y + Math.sin(direction) * length]);
-  }
-  const [gapX, gapY] = [walk[CRAWL_POINTS][0] - start[0], walk[CRAWL_POINTS][1] - start[1]];
-  return walk.map(([x, y], i): Point => {
-    if (i === 0 || i === CRAWL_POINTS) return [0, 0];
-    const share = i / CRAWL_POINTS;
-    const [cx, cy] = clampToRing([x - gapX * share, y - gapY * share], inner, outer);
-    return [cx - start[0], cy - start[1]];
-  });
-}
-
-export function eaterCrawl(index: number, area: CrawlArea): EaterCrawl {
-  const points = crawlWalk(index, area);
+export function amoebaCrawl(index: number, area: WalkArea): AmoebaCrawl {
+  const points = randomWalk(
+    { seed: index * 3571 + 29, points: CRAWL_POINTS, turn: AMOEBA_CRAWL.turn },
+    area,
+  );
   const directions: number[] = [];
   for (let i = 0; i < CRAWL_POINTS; i++) {
     const [x0, y0] = points[i];
@@ -330,7 +263,7 @@ export function eaterCrawl(index: number, area: CrawlArea): EaterCrawl {
   ];
   const times = evenKeyTimes(points.length);
   return {
-    duration: CRAWL_POINTS * EATER_TIMING.outline,
+    duration: CRAWL_POINTS * AMOEBA_TIMING.outline,
     x: { values: points.map(([x]) => x), keyTimes: times, easing: EASE },
     y: { values: points.map(([, y]) => y), keyTimes: times, easing: EASE },
     rotation: { values: rotations, keyTimes: times, easing: EASE },

@@ -88,11 +88,17 @@ test('klappt die Sidebar mobil ein und auf', async ({ page, isMobile }) => {
   await expect(page.getByTestId('dev.catalog.sidebar')).toBeHidden();
 });
 
-test('zeigt die Fressling-Varianten voll und reduziert und hält sie an', async ({ page }) => {
+test('zeigt die Varianten von Fressling und Brutling voll und reduziert und hält sie an', async ({
+  page,
+}) => {
   await page.goto('./katalog/unit-sprite');
-  for (const variant of [0, 1, 2, 3, 4]) {
-    for (const detail of ['full', 'reduced']) {
-      await expect(page.getByTestId(`dev.catalog.eaterVariant.${variant}.${detail}`)).toBeVisible();
+  for (const unit of ['eater', 'brooder']) {
+    for (const variant of [0, 1, 2, 3, 4]) {
+      for (const detail of ['full', 'reduced']) {
+        await expect(
+          page.getByTestId(`dev.catalog.unitVariant.${unit}.${variant}.${detail}`),
+        ).toBeVisible();
+      }
     }
   }
   const preview = page.getByTestId('dev.catalog.preview');
@@ -101,19 +107,20 @@ test('zeigt die Fressling-Varianten voll und reduziert und hält sie an', async 
   await expect(preview.locator('animate, animateTransform')).toHaveCount(0);
 });
 
-test('lässt die Fresslinge auf der Karte kriechen und hält sie an', async ({ page }) => {
+test('lässt Fresslinge auf der Karte gleiten und Brutlinge kriechen und hält sie an', async ({
+  page,
+}) => {
   await page.goto('./katalog/map-swarm');
   const preview = page.getByTestId('dev.catalog.preview');
-  await expect(preview.locator('animateTransform[type="translate"]').first()).toBeAttached();
+  await expect(preview.locator('animateMotion').first()).toBeAttached();
   await expect(preview.locator('animateTransform[type="rotate"]').first()).toBeAttached();
   await page.getByTestId('dev.catalog.control.motion.off').click();
-  await expect(preview.locator('animate, animateTransform')).toHaveCount(0);
+  await expect(preview.locator('animate, animateTransform, animateMotion')).toHaveCount(0);
 });
 
 test('zeigt alle Einheiten-Entwürfe und hält sie an', async ({ page }) => {
   await page.goto('./katalog/eater-designs');
   for (const design of [
-    'paramecium',
     'bacillus',
     'dinoflagellate',
     'heliozoan',
