@@ -23,6 +23,8 @@ export interface MapSwarmCrawler extends MapSwarmFigure {
 
 export interface MapSwarmGlider extends MapSwarmFigure {
   path: string;
+  keyPoints: string;
+  keyTimes: string;
   wobbleBegin: string;
 }
 

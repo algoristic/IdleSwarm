@@ -1,4 +1,3 @@
-import { keyframeValue } from '../keyframes.utils';
 import { worldLight } from './figure.utils';
 import {
   PARAMECIUM_TIMING,
@@ -129,36 +128,67 @@ describe('parameciumSwim', () => {
     }
   });
 
-  it('gleitet ohne Haken und braucht so lange, wie die Bahn lang ist', () => {
-    for (const { x, y, rotation, duration } of swims) {
+  it('gleitet ohne Haken, jede Figur in eigenem Tempo', () => {
+    const paces = swims.map(({ x, y, rotation, duration }) => {
       let length = 0;
       for (let k = 1; k < x.values.length; k++) {
         length += Math.hypot(x.values[k] - x.values[k - 1], y.values[k] - y.values[k - 1]);
-        expect(Math.abs(rotation.values[k] - rotation.values[k - 1])).toBeLessThan(25);
+        expect(Math.abs(rotation.values[k] - rotation.values[k - 1])).toBeLessThan(30);
       }
-      expect(Math.abs(duration - length / SPEED) / duration).toBeLessThan(0.1);
+      expect(length / duration).toBeGreaterThan(0.6 * SPEED);
+      expect(length / duration).toBeLessThan(1.6 * SPEED);
+      return length / duration;
+    });
+    expect(Math.max(...paces) / Math.min(...paces)).toBeGreaterThan(1.2);
+  });
+
+  it('zeigt mit dem Vorderende entlang der Bahn, auch beim Zurücksetzen', () => {
+    for (const { x, y, rotation } of swims) {
+      for (let k = 1; k < x.values.length - 1; k++) {
+        const dx = x.values[k + 1] - x.values[k - 1];
+        const dy = y.values[k + 1] - y.values[k - 1];
+        if (Math.hypot(dx, dy) < 1) continue;
+        const heading = Math.atan2(dy, dx);
+        const along = Math.cos(heading - (rotation.values[k] * Math.PI) / 180);
+        expect(Math.abs(along)).toBeGreaterThan(0.98);
+      }
     }
   });
 
-  it('zeigt mit dem Vorderende entlang der Bahn', () => {
-    for (const { x, y, rotation } of swims) {
-      for (let k = 1; k < x.values.length - 1; k++) {
-        const heading = Math.atan2(
-          y.values[k + 1] - y.values[k - 1],
-          x.values[k + 1] - x.values[k - 1],
-        );
-        expect(Math.cos(heading - (rotation.values[k] * Math.PI) / 180)).toBeCloseTo(1, 6);
+  it('setzt ein- bis zweimal je Runde kurz zurück', () => {
+    for (const { keyPoints, keyTimes } of swims) {
+      const points = keyPoints.split(';').map(Number);
+      const times = keyTimes.split(';').map(Number);
+      expect(points[0]).toBe(0);
+      expect(points.at(-1)).toBe(1);
+      expect(times[0]).toBe(0);
+      expect(times.at(-1)).toBe(1);
+      expect(times).toHaveLength(points.length);
+      const runs: number[] = [];
+      let run = 0;
+      for (let k = 1; k < points.length; k++) {
+        expect(points[k]).toBeGreaterThanOrEqual(0);
+        expect(points[k]).toBeLessThanOrEqual(1);
+        expect(times[k]).toBeGreaterThan(times[k - 1]);
+        const step = points[k] - points[k - 1];
+        if (step < 0 || (run > 0 && step === 0)) run -= step;
+        else if (run > 0) {
+          runs.push(run);
+          run = 0;
+        }
       }
+      expect(runs.length).toBeGreaterThanOrEqual(1);
+      expect(runs.length).toBeLessThanOrEqual(2);
+      runs.forEach((share) => expect(share).toBeLessThan(0.05));
     }
   });
 
   it('hält das Licht gegen die Drehung oben links', () => {
     for (const swim of swims) {
       const lights = swim.lightValues.split(';');
-      expect(lights).toHaveLength(swim.lightKeyTimes.split(';').length);
+      expect(lights).toHaveLength(swim.keyTimes.split(';').length);
       lights.forEach((value, k) => {
-        const t = k / (lights.length - 1);
-        const [lx, ly] = worldLight(keyframeValue(swim.rotation, t));
+        const [lx, ly] = worldLight(swim.rotation.values[k]);
         const [vx, vy] = value.split(' ').map(Number);
         expect(vx).toBeCloseTo(lx, 1);
         expect(vy).toBeCloseTo(ly, 1);

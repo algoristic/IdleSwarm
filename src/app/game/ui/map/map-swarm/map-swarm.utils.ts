@@ -89,6 +89,8 @@ function gliderFigure(start: Point, i: number, outer: number): MapSwarmGlider {
   return {
     transform: placed(start),
     path: swim.path,
+    keyPoints: swim.keyPoints,
+    keyTimes: swim.keyTimes,
     duration,
     begin,
     wobbleBegin: smilBegin(phase, PARAMECIUM_TIMING.roll),
@@ -96,7 +98,7 @@ function gliderFigure(start: Point, i: number, outer: number): MapSwarmGlider {
     light: {
       start: `translate(${swim.lightValues.split(';')[0]})`,
       values: swim.lightValues,
-      keyTimes: swim.lightKeyTimes,
+      keyTimes: swim.keyTimes,
       keySplines: null,
       calcMode: 'linear',
       duration,

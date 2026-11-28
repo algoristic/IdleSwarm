@@ -61,11 +61,12 @@ Beide Einheiten zeichnen vier Stellen: der Schwarm-Canvas (bis zu 48 Fresslinge 
   - Dichte, kurze Wimpern sind nach hinten geneigt; eine metachrone Welle läuft von vorn nach hinten (1,1 s), hinten sitzt ein längerer Wimpernschopf.
   - Im Inneren: Großkern und Kleinkern, 3–5 Nahrungsvakuolen auf der Zyklose (10 s), zwei pulsierende Vakuolen mit Sternkanälen.
   - Es rollt um die Längsachse (2,4 s): Die Rinne wandert, die Breite pulsiert, und der Weg pendelt seitlich als Schraubenbahn.
-  - **Umlaufbahn** (`parameciumSwim`): Es gleitet stetig auf einer glatten, geschlossenen Bahn um die Schwarmmitte.
-    - Die Richtung ist je Figur zufällig, der Radius schwingt mit drei Oberwellen innerhalb des Rings.
-    - Das Vorderende zeigt in Laufrichtung, die Geschwindigkeit ist konstant: an der Stelle 11, auf der Karte 5,5 Einheiten je Sekunde.
-    - Ein Zufallsweg wie bei der Amöbe ergab Haken, also abrupte Wendungen auf der Stelle.
-    - Auf der Karte läuft die Bahn über `animateMotion` mit `rotate="auto"`, im Canvas über dieselbe Bahn, gleichmäßig nach Bogenlänge abgetastet.
+  - **Umlaufbahn** (`parameciumSwim`): Es gleitet auf einer glatten, geschlossenen Bahn um die Schwarmmitte, die erst nach 2 oder 3 Umläufen schließt.
+    - Richtung und Umläufe sind je Figur zufällig. Der Radius schwingt mit drei Oberwellen, deren Ordnungen nicht im Umlauf aufgehen, über den ganzen Ring; die Winkelgeschwindigkeit schwankt. So kreuzen sich die Bahnen, die Figuren ziehen auseinander und finden sich wieder.
+    - Das Tempo wechselt: je Figur 0,75- bis 1,3-mal die Grundgeschwindigkeit (an der Stelle 11, auf der Karte 5,5 Einheiten je Sekunde), dazu sanftes Beschleunigen und Zögern um ±30 %.
+    - Ein- bis zweimal je Runde setzt es wie bei der Fluchtreaktion kurz zurück (0,8 s, 1,3 s Grundgeschwindigkeit weit), hält kurz an und schwimmt weiter; das Vorderende zeigt dabei weiter nach vorn.
+    - Ein Zufallsweg wie bei der Amöbe ergab Haken, also abrupte Wendungen auf der Stelle. Eine einzige Umlaufbahn mit gleichem Tempo wirkte choreografiert.
+    - Auf der Karte läuft die Bahn über `animateMotion` mit `rotate="auto"` und `keyPoints`, im Canvas über dieselbe Bahn, abgetastet nach dem Fortschritt.
   - Im Schwarm-Canvas ist es 1,4-mal so groß wie im Prototyp, mit größerem Abstand (22 an der Stelle, 18 unterwegs statt 17).
   - Auf der Reise schwimmt es im Pulk wie im Prototyp, das Vorderende zeigt nach vorn.
 - **Licht von oben links in jeder Lage:** Der Versatz der Aufhellung wird gegen die Drehung der Figur gedreht. Im Canvas geschieht das nach `ctx.getTransform()`, auf der Karte über die Lichtwerte der Bahn (`light`).

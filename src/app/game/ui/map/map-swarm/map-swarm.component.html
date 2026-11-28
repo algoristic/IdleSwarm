@@ -51,8 +51,11 @@
       @if (_motion) {
         <animateMotion
           rotate="auto"
+          calcMode="linear"
           repeatCount="indefinite"
           [attr.path]="eater.path"
+          [attr.keyPoints]="eater.keyPoints"
+          [attr.keyTimes]="eater.keyTimes"
           [attr.dur]="eater.duration"
           [appSmilBegin]="eater.begin"
         />
