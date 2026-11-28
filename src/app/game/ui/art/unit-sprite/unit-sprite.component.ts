@@ -45,7 +45,7 @@ export class UnitSpriteComponent {
     vacuole: seconds(AMOEBA_TIMING.vacuole),
   };
   parameciumTiming = {
-    cilia: seconds(PARAMECIUM_TIMING.cilia),
+    ripple: seconds(PARAMECIUM_TIMING.ripple),
     roll: seconds(PARAMECIUM_TIMING.roll),
     cyclosis: seconds(PARAMECIUM_TIMING.cyclosis),
     vacuole: seconds(PARAMECIUM_TIMING.vacuole),
@@ -78,7 +78,7 @@ export class UnitSpriteComponent {
       outline: smilBegin(phase, AMOEBA_TIMING.outline),
       nucleus: smilBegin(phase, AMOEBA_TIMING.nucleus),
       vacuole: smilBegin(phase, AMOEBA_TIMING.vacuole),
-      cilia: smilBegin(phase, PARAMECIUM_TIMING.cilia),
+      ripple: smilBegin(phase, PARAMECIUM_TIMING.ripple),
       roll: smilBegin(phase, PARAMECIUM_TIMING.roll),
       cyclosis: smilBegin(phase, PARAMECIUM_TIMING.cyclosis),
     };

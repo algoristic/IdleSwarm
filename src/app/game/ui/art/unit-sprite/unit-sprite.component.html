@@ -6,7 +6,19 @@
     @let full = detail() === 'full';
     @let begins = smilBegins();
     @let _light = light();
-    <svg:defs><path [attr.id]="shapeId" [attr.d]="g.body" /></svg:defs>
+    <svg:defs>
+      <path [attr.id]="shapeId" [attr.d]="g.body">
+        @if (animated) {
+          <animate
+            attributeName="d"
+            [attr.dur]="parameciumTiming.ripple"
+            [appSmilBegin]="begins.ripple"
+            repeatCount="indefinite"
+            [attr.values]="g.bodyFrames"
+          />
+        }
+      </path>
+    </svg:defs>
     <svg:clipPath [attr.id]="clipId"><use [attr.href]="shapeHref" /></svg:clipPath>
     <svg:g>
       @if (animated) {
@@ -42,8 +54,8 @@
         @if (animated) {
           <animate
             attributeName="d"
-            [attr.dur]="parameciumTiming.cilia"
-            [appSmilBegin]="begins.cilia"
+            [attr.dur]="parameciumTiming.ripple"
+            [appSmilBegin]="begins.ripple"
             repeatCount="indefinite"
             [attr.values]="g.ciliaFrames"
           />

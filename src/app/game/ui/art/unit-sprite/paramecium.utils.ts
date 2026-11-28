@@ -16,7 +16,8 @@ import { DEGREES, figureRandom, SPRITE_EASE, unwrap, worldLight } from './figure
 
 const TAU = Math.PI * 2;
 const OUTLINE_POINTS = 28;
-const CILIA_FRAMES = 8;
+const RIPPLE = { depth: 0.22, waves: 2, frames: 12, beats: 3 } as const;
+const CILIA_FRAMES = 8 * RIPPLE.beats;
 const CILIA = { length: 1.1, lean: 0.55, tilt: 0.5, waves: 3, tuftFrom: 0.93 } as const;
 const TUFT = { count: 5, length: 1.9, spread: 0.24, sway: 0.18 } as const;
 const CYCLOSIS_STOPS = 16;
@@ -37,7 +38,13 @@ const ESCAPE = { back: 0.8, pause: 0.6, ramp: 0.5, distance: 1.3 } as const;
 const LINEAR = (x: number): number => x;
 
 export const PARAMECIUM_VARIANT_COUNT = 5;
-export const PARAMECIUM_TIMING = { cilia: 1.1, roll: 2.4, cyclosis: 10, vacuole: 2.6 } as const;
+export const PARAMECIUM_TIMING = {
+  cilia: 1.1,
+  ripple: 1.1 * RIPPLE.beats,
+  roll: 2.4,
+  cyclosis: 10,
+  vacuole: 2.6,
+} as const;
 export const PARAMECIUM_WOBBLE = 1.2;
 
 export const PARAMECIUM_ROLL: Keyframes = {
@@ -61,6 +68,7 @@ interface ParameciumShape {
   groove: number;
   foods: number;
   ciliaShift: number;
+  rippleShift: number;
 }
 
 export interface ParameciumFood {
@@ -78,8 +86,9 @@ export interface ParameciumVacuole {
 
 export interface ParameciumVariant {
   length: number;
-  outline: readonly Point[];
+  outline: (phase: number) => readonly Point[];
   body: string;
+  bodyFrames: string;
   inner: string;
   innerPoints: readonly Point[];
   groove: string;
@@ -87,7 +96,7 @@ export interface ParameciumVariant {
   mouth: Point;
   gullet: string;
   gulletPoints: readonly Point[];
-  cilia: (phase: number) => readonly (readonly [Point, Point])[];
+  cilia: (phase: number, ripple: number) => readonly (readonly [Point, Point])[];
   ciliaPath: string;
   ciliaFrames: string;
   nucleus: Point;
@@ -128,6 +137,7 @@ const VARIANT_ZERO: ParameciumShape = {
   groove: 1.2,
   foods: 4,
   ciliaShift: 0,
+  rippleShift: 0,
 };
 
 function variantShape(index: number): ParameciumShape {
@@ -140,10 +150,14 @@ function variantShape(index: number): ParameciumShape {
     groove: 0.8 + random() * 0.7,
     foods: 3 + Math.floor(random() * 3),
     ciliaShift: random() * TAU,
+    rippleShift: random() * TAU,
   };
 }
 
-function outlineOf({ length, width, bend, groove }: ParameciumShape): Point[] {
+function outlineOf(
+  { length, width, bend, groove, rippleShift }: ParameciumShape,
+  phase: number,
+): Point[] {
   return Array.from({ length: OUTLINE_POINTS }, (_, i): Point => {
     const angle = (i / OUTLINE_POINTS) * TAU;
     const c = Math.cos(angle);
@@ -153,7 +167,11 @@ function outlineOf({ length, width, bend, groove }: ParameciumShape): Point[] {
     const profile = 0.82 + 0.5 * rear - 0.72 * rear ** 3;
     const notch = groove * Math.max(0, s) ** 2 * Math.exp(-(((c - 0.35) / 0.35) ** 2));
     const x = length * Math.sign(c) * Math.abs(c) ** blunt;
-    return [x, width * Math.sign(s) * Math.abs(s) ** 0.92 * profile - notch + bend * (1 - c * c)];
+    const ripple = RIPPLE.depth * s * Math.sin(RIPPLE.waves * TAU * rear - phase + rippleShift);
+    return [
+      x,
+      width * Math.sign(s) * Math.abs(s) ** 0.92 * profile - notch + bend * (1 - c * c) + ripple,
+    ];
   });
 }
 
@@ -164,11 +182,10 @@ function rearTangent({ normal }: OutlineSample): Point {
 
 function ciliaOf(
   shape: ParameciumShape,
-  samples: readonly OutlineSample[],
-): (phase: number) => (readonly [Point, Point])[] {
-  return (phase) => {
+): (phase: number, ripple: number) => (readonly [Point, Point])[] {
+  return (phase, ripple) => {
     const lines: (readonly [Point, Point])[] = [];
-    for (const sample of samples) {
+    for (const sample of outlineSamples(outlineOf(shape, ripple), 2)) {
       const [x, y] = sample.point;
       const along = (shape.length - x) / (2 * shape.length);
       if (along > CILIA.tuftFrom) continue;
@@ -203,8 +220,8 @@ function parameciumVariant(index: number): ParameciumVariant {
   const shape = variantShape(index);
   const random = lcg(index * 6151 + 19);
   const { length: a, width: b } = shape;
-  const outline = outlineOf(shape);
-  const innerPoints = outline.map(([x, y]): Point => [x * 0.76 - 0.5, y * 0.62 - 0.15]);
+  const outline = (phase: number): Point[] => outlineOf(shape, phase);
+  const innerPoints = outline(0).map(([x, y]): Point => [x * 0.76 - 0.5, y * 0.62 - 0.15]);
   const groovePoints: Point[] = [
     [a * 0.8, b * 0.36],
     [a * 0.46, b * 0.14],
@@ -214,7 +231,7 @@ function parameciumVariant(index: number): ParameciumVariant {
   ];
   const mouth: Point = [a * 0.02, b * 0.3];
   const gulletPoints: Point[] = [mouth, [-a * 0.12, b * 0.12], [-a * 0.2, -b * 0.02]];
-  const cilia = ciliaOf(shape, outlineSamples(outline, 2));
+  const cilia = ciliaOf(shape);
   const cyclosis = Array.from({ length: CYCLOSIS_STOPS + 1 }, (_, i): Point => {
     const angle = -((i % CYCLOSIS_STOPS) / CYCLOSIS_STOPS) * TAU + 0.9;
     return [-0.8 + Math.cos(angle) * a * 0.56, -0.25 + Math.sin(angle) * b * 0.42];
@@ -230,7 +247,8 @@ function parameciumVariant(index: number): ParameciumVariant {
   return {
     length: a,
     outline,
-    body: smoothPath(outline),
+    body: smoothPath(outline(0)),
+    bodyFrames: loopFrames(RIPPLE.frames, (phase) => smoothPath(outline(phase))),
     inner: smoothPath(innerPoints),
     innerPoints,
     groove: smoothPath(groovePoints),
@@ -239,8 +257,10 @@ function parameciumVariant(index: number): ParameciumVariant {
     gullet: smoothPath(gulletPoints, false),
     gulletPoints,
     cilia,
-    ciliaPath: ciliaPathOf(cilia(0)),
-    ciliaFrames: loopFrames(CILIA_FRAMES, (phase) => ciliaPathOf(cilia(phase))),
+    ciliaPath: ciliaPathOf(cilia(0, 0)),
+    ciliaFrames: loopFrames(CILIA_FRAMES, (phase) =>
+      ciliaPathOf(cilia(RIPPLE.beats * phase, phase)),
+    ),
     nucleus,
     nucleusTransform: `translate(${formatPoint(nucleus)})`,
     nucleusPath,

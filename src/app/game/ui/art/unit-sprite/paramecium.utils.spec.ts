@@ -29,8 +29,10 @@ describe('PARAMECIUM_VARIANTS', () => {
 
   it('bleibt mit Leuchtsaum und Wimpern in der Box ±12', () => {
     for (const variant of PARAMECIUM_VARIANTS) {
-      for (const [x, y] of variant.outline) {
-        expect(Math.max(Math.abs(x), Math.abs(y)) + GLOW).toBeLessThanOrEqual(12);
+      for (let k = 0; k < 12; k++) {
+        for (const [x, y] of variant.outline((k / 12) * Math.PI * 2)) {
+          expect(Math.max(Math.abs(x), Math.abs(y)) + GLOW).toBeLessThanOrEqual(12);
+        }
       }
       for (const frame of variant.ciliaFrames.split(';')) {
         for (const [x, y] of ends(frame)) {
@@ -41,7 +43,8 @@ describe('PARAMECIUM_VARIANTS', () => {
   });
 
   it('ist ein schlanker Pantoffel mit dem Vorderende bei +x', () => {
-    for (const { outline } of PARAMECIUM_VARIANTS) {
+    for (const variant of PARAMECIUM_VARIANTS) {
+      const outline = variant.outline(0);
       const xs = outline.map(([x]) => x);
       const ys = outline.map(([, y]) => y);
       const length = Math.max(...xs) - Math.min(...xs);
@@ -54,17 +57,49 @@ describe('PARAMECIUM_VARIANTS', () => {
   it('lässt die Wimpern im Takt schlagen und behält dieselben Befehle je Bild', () => {
     for (const variant of PARAMECIUM_VARIANTS) {
       const frames = variant.ciliaFrames.split(';');
-      expect(frames).toHaveLength(9);
-      expect(frames[8]).toBe(frames[0]);
+      expect(frames).toHaveLength(25);
+      expect(frames[24]).toBe(frames[0]);
       expect(frames[4]).not.toBe(frames[0]);
+      expect(frames[8]).not.toBe(frames[0]);
       expect(new Set(frames.map((f) => f.replace(/[^Ml]/g, ''))).size).toBe(1);
       expect(variant.ciliaPath).toBe(frames[0]);
     }
   });
 
+  it('wellt den Saum leicht an den Flanken nach hinten, die Enden bleiben', () => {
+    for (const variant of PARAMECIUM_VARIANTS) {
+      const frames = variant.bodyFrames.split(';');
+      expect(frames).toHaveLength(13);
+      expect(frames[12]).toBe(frames[0]);
+      expect(variant.body).toBe(frames[0]);
+      const rest = variant.outline(0);
+      const step = variant.outline(0.3);
+      const shifts = rest.map(([x, y], i) => Math.hypot(step[i][0] - x, step[i][1] - y));
+      expect(Math.max(...shifts)).toBeGreaterThan(0.01);
+      for (let k = 0; k < 12; k++) {
+        variant.outline((k / 12) * Math.PI * 2).forEach(([x, y], i) => {
+          expect(Math.hypot(x - rest[i][0], y - rest[i][1])).toBeLessThanOrEqual(0.44 + 1e-9);
+        });
+      }
+      expect(shifts[0]).toBeLessThan(1e-9);
+      expect(shifts[14]).toBeLessThan(1e-9);
+      const frameCount = 12;
+      const shapes = Array.from({ length: frameCount }, (_, k) =>
+        variant.outline((k / frameCount) * Math.PI * 2),
+      );
+      const mean = rest.map((_, i) => shapes.reduce((sum, o) => sum + o[i][1], 0) / frameCount);
+      const lift = (phase: number, i: number): number => variant.outline(phase)[i][1] - mean[i];
+      let travel = 0;
+      for (let i = 2; i < 13; i++) {
+        travel += (lift(0.05, i) - lift(0, i)) * (lift(0, i + 1) - lift(0, i - 1));
+      }
+      expect(travel).toBeLessThan(0);
+    }
+  });
+
   it('neigt die Wimpern nach hinten', () => {
     for (const variant of PARAMECIUM_VARIANTS) {
-      const lines = variant.cilia(0);
+      const lines = variant.cilia(0, 0);
       const rearward = lines.filter(([, [dx]]) => dx < 0).length;
       expect(rearward / lines.length).toBeGreaterThan(0.7);
     }

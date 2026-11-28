@@ -40,6 +40,8 @@ export function drawParamecium(
   const full = detail === 'full';
   const roll = keyframeValue(PARAMECIUM_ROLL, t / PARAMECIUM_TIMING.roll);
   const ciliaPhase = ((t / PARAMECIUM_TIMING.cilia) % 1) * TAU;
+  const ripplePhase = ((t / PARAMECIUM_TIMING.ripple) % 1) * TAU;
+  const outline = variant.outline(ripplePhase);
   const matrix = ctx.getTransform();
   const [lightX, lightY] = worldLight(Math.atan2(matrix.b, matrix.a) * DEGREES);
   ctx.save();
@@ -47,7 +49,7 @@ export function drawParamecium(
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   if (full) {
-    trace(ctx, variant.outline);
+    trace(ctx, outline);
     ctx.globalAlpha = 0.14;
     ctx.fillStyle = ctx.strokeStyle = COLORS.glow;
     ctx.lineWidth = 4;
@@ -56,14 +58,14 @@ export function drawParamecium(
     ctx.globalAlpha = 1;
   }
   ctx.beginPath();
-  for (const [[x, y], [dx, dy]] of variant.cilia(ciliaPhase)) {
+  for (const [[x, y], [dx, dy]] of variant.cilia(ciliaPhase, ripplePhase)) {
     ctx.moveTo(x, y);
     ctx.lineTo(x + dx, y + dy);
   }
   ctx.strokeStyle = COLORS.cilia;
   ctx.lineWidth = full ? 0.4 : 0.55;
   ctx.stroke();
-  trace(ctx, variant.outline);
+  trace(ctx, outline);
   ctx.fillStyle = ctx.strokeStyle = COLORS.rim;
   ctx.lineWidth = 1.4;
   ctx.fill();
@@ -73,7 +75,7 @@ export function drawParamecium(
   ctx.fill();
   ctx.translate(lightX, lightY);
   ctx.fillStyle = COLORS.body;
-  trace(ctx, variant.outline);
+  trace(ctx, outline);
   ctx.fill();
   ctx.translate(-lightX, -lightY);
   ctx.fillStyle = COLORS.inner;

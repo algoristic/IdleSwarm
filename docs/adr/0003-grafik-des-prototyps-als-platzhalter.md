@@ -59,6 +59,7 @@ Beide Einheiten zeichnen vier Stellen: der Schwarm-Canvas (bis zu 48 Fresslinge 
 - **Fressling als Pantoffeltierchen** (`unit-sprite/paramecium.utils.ts`, `drawParamecium`):
   - 5 Varianten (`PARAMECIUM_VARIANTS`): schlanker Pantoffel mit stumpfem Vorderende bei +x und spitzerem Hinterende. Die Mundrinne mit Zellmund liegt schräg vorn.
   - Dichte, kurze Wimpern sind nach hinten geneigt; eine metachrone Welle läuft von vorn nach hinten (1,1 s), hinten sitzt ein längerer Wimpernschopf.
+  - Der Saum wellt sich wie bei der Amöbe, aber viel schwächer: Eine flache Welle (Tiefe 0,22, etwa 5 % der Breite) läuft an den Flanken nach hinten (3,3 s, drei Wimpernschläge); die Wimpern sitzen auf dem bewegten Rand.
   - Im Inneren: Großkern und Kleinkern, 3–5 Nahrungsvakuolen auf der Zyklose (10 s), zwei pulsierende Vakuolen mit Sternkanälen.
   - Es rollt um die Längsachse (2,4 s): Die Rinne wandert, die Breite pulsiert, und der Weg pendelt seitlich als Schraubenbahn.
   - **Umlaufbahn** (`parameciumSwim`): Es gleitet auf einer glatten, geschlossenen Bahn um die Schwarmmitte, die erst nach 2 oder 3 Umläufen schließt.
