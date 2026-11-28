@@ -1,6 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
+import { catalogChildEntries } from '../../domain/catalog-logic';
 import { CatalogEntryId, CatalogGroup } from '../../domain/models/catalog.model';
 import { CATALOG_CATEGORY_NAMES, CATALOG_ENTRY_NAMES } from '../texts/catalog-texts';
 
@@ -15,6 +16,7 @@ export class CatalogListComponent {
 
   categoryNames = CATALOG_CATEGORY_NAMES;
   entryNames = CATALOG_ENTRY_NAMES;
+  nested = catalogChildEntries();
 
   selectedEntry = output<CatalogEntryId>();
 

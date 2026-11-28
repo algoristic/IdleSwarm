@@ -1,12 +1,11 @@
-import { SwarmDrift, SwarmFrame } from './models/swarm.model';
+import { keyframeValue } from '../art/keyframes.utils';
+import { SwarmDrift, SwarmFigure, SwarmFrame } from './models/swarm.model';
 import { speckGroups, streakLines } from './swarm-drift.utils';
 import {
   alternate,
-  applyRoll,
   BOB_DURATIONS,
   DEG,
   fraction,
-  paddleAngle,
   SWIM_DURATIONS,
   trekAngle,
 } from './swarm-motion.utils';
@@ -90,7 +89,10 @@ export function drawSwarmFrame(ctx: CanvasRenderingContext2D, frame: SwarmFrame)
   ctx.rotate(trekAngle(frame.trek, frame.now) * DEG);
   const trek = ctx.getTransform();
   const swirl = frame.swirl ? fraction(time / 140) * 360 * DEG : 0;
+  const counts: Partial<Record<SwarmFigure['unit'], number>> = {};
   for (const f of frame.figures) {
+    const index = counts[f.unit] ?? 0;
+    counts[f.unit] = index + 1;
     const sprite = frame.sprites[f.unit];
     if (!sprite) continue;
     ctx.setTransform(trek);
@@ -103,14 +105,12 @@ export function drawSwarmFrame(ctx: CanvasRenderingContext2D, frame: SwarmFrame)
       const b = 0.97 + 0.06 * u;
       ctx.translate(-3 + 6 * u, -2 + 4 * u);
       ctx.scale(b, b);
-    } else if (f.kind === 'paddle') {
-      const p = fraction((time + f.paddleDelay) / f.duration);
+    } else if (f.kind === 'crawl') {
+      const t = (time + f.offset) / f.crawl.duration;
       ctx.translate(f.x, f.y);
-      ctx.rotate((f.start + paddleAngle(f.reverse ? 1 - p : p)) * DEG);
-      ctx.translate(f.radius, 0);
-      ctx.rotate((f.reverse ? -90 : 90) * DEG);
+      ctx.translate(keyframeValue(f.crawl.x, t), keyframeValue(f.crawl.y, t));
+      ctx.rotate(keyframeValue(f.crawl.rotation, t) * DEG);
       ctx.scale(f.scale, f.scale);
-      applyRoll(ctx, time, f.roll, f.rollDelay);
     } else {
       const u = alternate(time, SWIM_DURATIONS[f.variant], f.delay);
       ctx.translate(f.x, f.y);
@@ -118,9 +118,12 @@ export function drawSwarmFrame(ctx: CanvasRenderingContext2D, frame: SwarmFrame)
       ctx.scale(f.scale, f.scale);
       ctx.translate(-2 + 5 * u, 1 - 2 * u);
       ctx.rotate((-6 + 13 * u) * DEG);
-      applyRoll(ctx, time, 1, f.rollDelay);
     }
-    const h = sprite.halfExtent;
-    ctx.drawImage(sprite.image, -h, -h, 2 * h, 2 * h);
+    if (sprite.kind === 'animated') {
+      sprite.draw(ctx, time, index);
+    } else {
+      const h = sprite.halfExtent;
+      ctx.drawImage(sprite.image, -h, -h, 2 * h, 2 * h);
+    }
   }
 }

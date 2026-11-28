@@ -7,20 +7,43 @@
 </svg:g>
 @for (eater of _layout.eaters; track $index) {
   <svg:g [attr.transform]="eater.transform">
-    <g
-      [class.map-swarm__paddle]="_motion"
-      [class.map-swarm__paddle--rev]="_motion && eater.reverse"
-      [style.animation-duration]="eater.paddleDuration"
-      [style.animation-delay]="eater.paddleDelay"
-    >
-      <g [attr.transform]="eater.spriteTransform">
-        <g
-          app-unit-sprite
-          [unit]="'eater'"
-          [class.map-swarm__roll]="_motion"
-          [style.animation-duration]="eater.rollDuration"
-          [style.animation-delay]="eater.rollDelay"
-        ></g>
+    <g [attr.transform]="_motion ? null : eater.startTranslate">
+      @if (_motion) {
+        <animateTransform
+          attributeName="transform"
+          type="translate"
+          calcMode="spline"
+          repeatCount="indefinite"
+          [attr.values]="eater.crawl.translateValues"
+          [attr.keyTimes]="eater.crawl.keyTimes"
+          [attr.keySplines]="eater.crawl.keySplines"
+          [attr.dur]="eater.duration"
+          [attr.begin]="eater.begin"
+        />
+      }
+      <g [attr.transform]="_motion ? null : eater.startRotate">
+        @if (_motion) {
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            calcMode="spline"
+            repeatCount="indefinite"
+            [attr.values]="eater.crawl.rotateValues"
+            [attr.keyTimes]="eater.crawl.keyTimes"
+            [attr.keySplines]="eater.crawl.keySplines"
+            [attr.dur]="eater.duration"
+            [attr.begin]="eater.begin"
+          />
+        }
+        <g transform="scale(.55)">
+          <g
+            app-unit-sprite
+            [unit]="'eater'"
+            [variant]="eater.variant"
+            detail="reduced"
+            [motion]="_motion"
+          ></g>
+        </g>
       </g>
     </g>
   </svg:g>

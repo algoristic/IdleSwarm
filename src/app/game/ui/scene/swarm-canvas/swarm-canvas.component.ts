@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 
 import { UNIT_IDS, UnitId } from '../../../domain/models/unit.model';
+import { drawEater } from '../../art/unit-sprite/eater-canvas.utils';
+import { eaterPhaseOffset, eaterVariantFor } from '../../art/unit-sprite/eater.utils';
 import { UnitSpriteComponent } from '../../art/unit-sprite/unit-sprite.component';
 import { UNIT_SPRITE_HALF_EXTENT } from '../../art/unit-sprite/unit-sprite.model';
 import { SwarmSprite, TrekTransition } from '../models/swarm.model';
@@ -42,7 +44,7 @@ export class SwarmCanvasComponent {
   travelAngle = input<number | null>(null);
   motion = input(true);
 
-  unitIds = UNIT_IDS;
+  rasterUnits = UNIT_IDS.filter((unit) => unit !== 'eater');
 
   canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   spriteDefs = viewChild.required<ElementRef<SVGSVGElement>>('spriteDefs');
@@ -51,7 +53,13 @@ export class SwarmCanvasComponent {
   #figures = computed(() => swarmFigures(this.units(), this.#travelling()));
   #drift = computed(() => buildSwarmDrift(this.#travelling()));
 
-  #sprites: Partial<Record<UnitId, SwarmSprite>> = {};
+  #sprites: Partial<Record<UnitId, SwarmSprite>> = {
+    eater: {
+      kind: 'animated',
+      draw: (ctx, time, index) =>
+        drawEater(ctx, eaterVariantFor(index), time, eaterPhaseOffset(index), 'full'),
+    },
+  };
   #trek: TrekTransition = { from: 0, to: 0, at: 0 };
   #view: DocumentView | null = null;
   #frameId: number | null = null;
@@ -104,7 +112,7 @@ export class SwarmCanvasComponent {
   #rasterSprites(view: DocumentView, k: number): void {
     const serializer = new view.XMLSerializer();
     const defs = this.spriteDefs().nativeElement;
-    for (const unit of UNIT_IDS) {
+    for (const unit of this.rasterUnits) {
       const element = defs.querySelector(`[data-unit="${unit}"]`);
       if (!element) continue;
       const halfExtent = UNIT_SPRITE_HALF_EXTENT[unit];
@@ -120,7 +128,7 @@ export class SwarmCanvasComponent {
           const sprite = this.#document.createElement('canvas');
           sprite.width = sprite.height = pixels;
           sprite.getContext('2d')?.drawImage(image, 0, 0, pixels, pixels);
-          this.#sprites[unit] = { image: sprite, halfExtent };
+          this.#sprites[unit] = { kind: 'raster', image: sprite, halfExtent };
         })
         .catch(() => undefined);
     }

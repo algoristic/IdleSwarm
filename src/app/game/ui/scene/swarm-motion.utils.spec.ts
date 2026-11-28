@@ -1,13 +1,10 @@
+import { cubicBezier } from '../art/easing.utils';
 import {
   alternate,
-  applyRoll,
-  cubicBezier,
   EASE_IN_OUT,
-  EASE_OUT,
   flowRotation,
   fraction,
   nextTrek,
-  paddleAngle,
   trekAngle,
 } from './swarm-motion.utils';
 import { SWARM_FIXTURE } from './swarm.fixture';
@@ -17,7 +14,6 @@ const XS = [0, 0.1, 0.25, 0.5, 0.73, 1];
 describe('Bewegungskurven', () => {
   it('cubicBezier', () => {
     expect(XS.map(EASE_IN_OUT)).toEqual(SWARM_FIXTURE.bezier.easeInOut);
-    expect(XS.map(EASE_OUT)).toEqual(SWARM_FIXTURE.bezier.easeOut);
     expect(XS.map(cubicBezier(0.62, 0, 0.22, 1))).toEqual(SWARM_FIXTURE.bezier.custom);
   });
 
@@ -28,22 +24,8 @@ describe('Bewegungskurven', () => {
     },
   );
 
-  it.each(SWARM_FIXTURE.paddle)('paddleAngle($p)', ({ p, value }) => {
-    expect(paddleAngle(p)).toBe(value);
-  });
-
   it.each(SWARM_FIXTURE.frac)('fraction($x)', ({ x, value }) => {
     expect(fraction(x)).toBe(value);
-  });
-
-  it.each(SWARM_FIXTURE.roll)('applyRoll($t, $duration, $delay)', ({ t, duration, delay, ops }) => {
-    const calls: string[] = [];
-    const ctx = {
-      rotate: (a: number): void => void calls.push(`rotate ${a}`),
-      scale: (x: number, y: number): void => void calls.push(`scale ${x} ${y}`),
-    };
-    applyRoll(ctx, t, duration, delay);
-    expect(calls).toEqual(ops);
   });
 });
 

@@ -1,16 +1,16 @@
-import { paddlerParams } from '../../art/paddler.utils';
+import { formatCoord, formatPoint } from '../../art/path.utils';
+import { eaterCrawl, eaterPhaseOffset, eaterVariantFor } from '../../art/unit-sprite/eater.utils';
 import {
   MapSwarmBrooder,
   MapSwarmCounts,
   MapSwarmLayout,
-  MapSwarmPaddler,
+  MapSwarmCrawler,
 } from './map-swarm.model';
 
 const MAX_EATERS = 14;
 const MAX_BROODERS = 3;
-const EATER_SCALE = 0.55;
-const PADDLE_RADIUS_MIN = 2.5;
-const PADDLE_RADIUS_RANGE = 3;
+const CRAWL_INNER = 15;
+const CRAWL_STEP = 8;
 
 function mapSwarmCounts(eaters: number, brooders: number): MapSwarmCounts {
   return {
@@ -32,40 +32,25 @@ export function mapSwarmLayout(eaters: number, brooders: number): MapSwarmLayout
       transform: `translate(${(Math.cos(angle) * 7).toFixed(1)} ${(Math.sin(angle) * 7).toFixed(1)}) rotate(${i * 130}) scale(.42)`,
     });
   }
-  const eaterFigures: MapSwarmPaddler[] = [];
+  const eaterFigures: MapSwarmCrawler[] = [];
+  const outer = Math.max(6 + 4.6 * Math.sqrt(counts.eaters + 1) + 4, CRAWL_INNER + 3 * CRAWL_STEP);
   for (let i = 0; i < counts.eaters; i++) {
     const angle = i * 2.39996;
     const radius = 6 + 4.6 * Math.sqrt(i + 1);
-    eaterFigures.push(
-      paddlerFigure(
-        Math.cos(angle) * radius,
-        Math.sin(angle) * radius,
-        EATER_SCALE,
-        i,
-        PADDLE_RADIUS_MIN,
-        PADDLE_RADIUS_RANGE,
-      ),
-    );
+    eaterFigures.push(crawlerFigure(Math.cos(angle) * radius, Math.sin(angle) * radius, i, outer));
   }
   return { brooders: brooderFigures, eaters: eaterFigures };
 }
 
-function paddlerFigure(
-  x: number,
-  y: number,
-  scale: number,
-  i: number,
-  rMin: number,
-  rVar: number,
-): MapSwarmPaddler {
-  const p = paddlerParams(i, rMin, rVar);
+function crawlerFigure(x: number, y: number, i: number, outer: number): MapSwarmCrawler {
+  const crawl = eaterCrawl(i, { start: [x, y], inner: CRAWL_INNER, outer, step: CRAWL_STEP });
   return {
-    transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.round(p.start)})`,
-    reverse: p.reverse,
-    paddleDuration: `${p.duration.toFixed(1)}s`,
-    paddleDelay: `-${p.paddleDelay.toFixed(1)}s`,
-    spriteTransform: `translate(${p.radius.toFixed(1)} 0) rotate(${p.reverse ? -90 : 90}) scale(${scale})`,
-    rollDuration: `${p.roll.toFixed(1)}s`,
-    rollDelay: `-${p.rollDelay.toFixed(1)}s`,
+    transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`,
+    crawl,
+    duration: `${crawl.duration}s`,
+    begin: `-${eaterPhaseOffset(i).toFixed(2)}s`,
+    startTranslate: `translate(${formatPoint([crawl.x.values[0], crawl.y.values[0]])})`,
+    startRotate: `rotate(${formatCoord(crawl.rotation.values[0])})`,
+    variant: eaterVariantFor(i),
   };
 }

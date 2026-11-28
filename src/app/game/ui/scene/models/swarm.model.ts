@@ -1,5 +1,5 @@
 import { UnitId } from '../../../domain/models/unit.model';
-import { PaddlerParams } from '../../art/paddler.utils';
+import { EaterCrawl } from '../../art/unit-sprite/eater.utils';
 
 interface BobFigure {
   kind: 'bob';
@@ -12,13 +12,15 @@ interface BobFigure {
   delay: number;
 }
 
-interface PaddleFigure extends PaddlerParams {
-  kind: 'paddle';
+interface CrawlFigure {
+  kind: 'crawl';
   unit: 'eater';
   x: number;
   y: number;
   scale: number;
   index: number;
+  crawl: EaterCrawl;
+  offset: number;
 }
 
 interface SwimFigure {
@@ -33,7 +35,7 @@ interface SwimFigure {
   rollDelay: number;
 }
 
-export type SwarmFigure = BobFigure | PaddleFigure | SwimFigure;
+export type SwarmFigure = BobFigure | CrawlFigure | SwimFigure;
 
 export interface TrekTransition {
   from: number;
@@ -80,10 +82,18 @@ interface StreakPath {
 export type SwarmDrift =
   { travel: false; groups: readonly SpeckPath[] } | { travel: true; groups: readonly StreakPath[] };
 
-export interface SwarmSprite {
+interface RasterSprite {
+  kind: 'raster';
   image: CanvasImageSource;
   halfExtent: number;
 }
+
+interface AnimatedSprite {
+  kind: 'animated';
+  draw: (ctx: CanvasRenderingContext2D, time: number, index: number) => void;
+}
+
+export type SwarmSprite = RasterSprite | AnimatedSprite;
 
 export interface SwarmFrame {
   now: number;

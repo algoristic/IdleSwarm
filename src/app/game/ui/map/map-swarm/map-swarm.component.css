@@ -1,49 +1,5 @@
-.map-swarm__paddle {
-  animation: map-swarm-paddle 10s infinite;
-}
-
-.map-swarm__paddle--rev {
-  animation-direction: reverse;
-}
-
-.map-swarm__roll {
-  animation: map-swarm-roll 1s ease-in-out infinite;
-}
-
 .map-swarm__swirl {
   animation: map-swarm-swirl 60s linear infinite;
-}
-
-@keyframes map-swarm-paddle {
-  0% {
-    transform: rotate(0deg);
-    animation-timing-function: ease-in-out;
-  }
-  64% {
-    transform: rotate(235deg);
-    animation-timing-function: ease-out;
-  }
-  69% {
-    transform: rotate(222deg);
-    animation-timing-function: ease-in-out;
-  }
-  75% {
-    transform: rotate(226deg);
-    animation-timing-function: ease-in-out;
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes map-swarm-roll {
-  0%,
-  100% {
-    transform: rotate(-3deg) scaleY(1);
-  }
-  50% {
-    transform: rotate(3deg) scaleY(0.74);
-  }
 }
 
 @keyframes map-swarm-swirl {
@@ -53,8 +9,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .map-swarm__paddle,
-  .map-swarm__roll,
   .map-swarm__swirl {
     animation: none;
   }

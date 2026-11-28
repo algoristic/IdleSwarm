@@ -14,6 +14,7 @@ Leere Angular-App (kein Backend, deutsche Oberfläche) und ein Prototyp des Spie
 
 - **Der Code ist der aktuelle Stand.** Es gibt keine Produktspezifikation. Während des Umbaus dokumentiert der Prototyp den Status quo: Regeln, Spielwerte und Darstellung stehen dort, nicht in einem separaten Dokument.
 - **Der Prototyp ist eingefroren.** Seit Beginn des Umbaus wird er nicht mehr geändert. Er bleibt die Referenz für Regeln, Spielwerte und Darstellung, bis AP 13 ihn entfernt. Der Umbauplan mit Status steht in `docs/plan-angular-umbau.md`.
+- **Bewusste Abweichungen vom Prototyp** bekommen eine ADR, die das festhält. AP 13 entfernt diese ADRs zusammen mit dem Prototyp.
 - Nächste Schritte werden im Gespräch mit Claude geplant. Nachfragen, bevor auf einem Punkt aufgebaut wird, der noch nicht entschieden ist.
 - Jede neue Laufzeitabhängigkeit braucht eine ADR.
 - Widersprechen sich diese Datei und der umgebende Code, nachfragen statt raten. Beim Bearbeiten bleibt eine Datei in sich einheitlich; nichts Unbeteiligtes umbauen. Vorhandene Dienste, Tokens, Pipes und Helfer wiederverwenden, bevor neue entstehen.

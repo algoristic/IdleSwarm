@@ -1,10 +1,20 @@
 import { SiteTypeId } from '../../domain/models/site.model';
 import { UnitId } from '../../domain/models/unit.model';
+import { EaterDesignId } from './eater-design/eater-design.model';
 
 type Colors = Readonly<Record<string, string>>;
 
 export const UNIT_SPRITE_COLORS = {
-  eater: { outline: '#6e2a12', body: '#ffb27a', shade: '#ff8a3d', mouth: '#6e2a12' },
+  eater: {
+    glow: '#c08cff',
+    rim: '#5b2a9c',
+    body: '#c9a6ff',
+    shade: '#a77ff0',
+    inner: '#9a68ea',
+    nucleus: '#4b1f8a',
+    vacuole: '#efe6ff',
+    alga: '#5fd06a',
+  },
   brooder: {
     rim: '#7a2560',
     body: '#ff9cc4',
@@ -33,14 +43,89 @@ export const UNIT_SPRITE_COLORS = {
   },
 } as const satisfies Readonly<Record<UnitId, Colors>>;
 
-export const AMOEBA_COLORS = {
-  rim: '#b8412a',
-  body: '#ff8f6b',
-  shade: '#ef6a4c',
-  nucleus: '#9c2f3c',
-  nucleolus: '#ffcf9e',
-  vacuole: '#ffd36b',
-} as const;
+export const EATER_DESIGN_COLORS = {
+  paramecium: {
+    glow: '#3ee6c0',
+    rim: '#137a6c',
+    body: '#4fe0b0',
+    shade: '#2bb894',
+    groove: '#16806f',
+    cilia: '#b4f7dc',
+    nucleus: '#0e5d57',
+    micronucleus: '#2a9a83',
+    vacuole: '#a6f2d6',
+    food: '#ffd23f',
+  },
+  bacillus: {
+    glow: '#ff4f8b',
+    rim: '#9e1f5a',
+    body: '#ff6fa8',
+    shade: '#e0458a',
+    flagellum: '#ffb0cf',
+    nucleoid: '#b22a6a',
+    strand: '#8a1a50',
+    ribosome: '#ffd0e2',
+  },
+  dinoflagellate: {
+    glow: '#3ee6e0',
+    rim: '#932c12',
+    body: '#ff8a3d',
+    plate: '#ff6a2a',
+    shade: '#e0521f',
+    suture: '#a8361a',
+    groove: '#7a2610',
+    flagellum: '#ffd0a8',
+  },
+  heliozoan: {
+    glow: '#ffd23f',
+    rim: '#c07a12',
+    body: '#ffc83a',
+    shade: '#f0a522',
+    ray: '#ffe98a',
+    granule: '#fff4b8',
+    bubble: '#ffe48a',
+    core: '#d9771a',
+  },
+  diatom: {
+    glow: '#8fd8ff',
+    rim: '#2a64a8',
+    body: '#7fc8f4',
+    shade: '#5aa6e0',
+    stria: '#3f82c8',
+    raphe: '#24589a',
+    chloroplast: '#e6aa2a',
+    chloroplastShade: '#c08418',
+    sheen: '#e6f7ff',
+  },
+  stentor: {
+    glow: '#6a8cff',
+    rim: '#26389a',
+    body: '#5a82ff',
+    shade: '#3f62dc',
+    stripe: '#3550c0',
+    peristome: '#22307e',
+    cilia: '#c9d8ff',
+    nucleus: '#1c2670',
+  },
+  spiral: {
+    glow: '#b6f23a',
+    rim: '#5a2a8c',
+    body: '#b6f23a',
+    shade: '#7cc42c',
+    lip: '#d4ff7a',
+    particle: '#f3ffe0',
+  },
+  prism: {
+    glow: '#ff4a5e',
+    rim: '#7a0f24',
+    light: '#ff8a96',
+    body: '#f0354e',
+    shade: '#c21d3a',
+    deep: '#8f1430',
+    edge: '#ffb3bb',
+    shard: '#ff6b7c',
+  },
+} as const satisfies Readonly<Record<EaterDesignId, Colors>>;
 
 export const SPARKLE_COLOR = '#ffe98a';
 

@@ -4,7 +4,14 @@ import { ZONE_IDS } from '@app/game/domain/models/zone.model';
 import { CatalogChoiceControlId, CatalogEntry } from '../models/catalog.model';
 
 export const CATALOG_ENTRIES: readonly CatalogEntry[] = [
-  { id: 'unit-sprite', category: 'units', preview: 'art', controls: [] },
+  { id: 'unit-sprite', category: 'units', preview: 'art', controls: ['motion'] },
+  {
+    id: 'eater-designs',
+    category: 'units',
+    preview: 'art',
+    controls: ['zone', 'motion'],
+    parent: 'unit-sprite',
+  },
   { id: 'unit-icon', category: 'units', preview: 'art', controls: [] },
   { id: 'sparkle-sprite', category: 'units', preview: 'art', controls: [] },
   {

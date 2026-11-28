@@ -8,6 +8,8 @@
         <li>
           <a
             class="block rounded-xl px-3 py-1.5 text-sm font-extrabold hover:bg-panel-2 focus-visible:bg-panel-2 aria-current:bg-panel-3 aria-current:text-accent-cyan"
+            [class.pl-7]="nested[entry]"
+            [class.text-xs]="nested[entry]"
             routerLinkActive
             ariaCurrentWhenActive="page"
             [routerLink]="['/katalog', entry]"

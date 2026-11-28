@@ -97,6 +97,29 @@ const SPRITE_UNITS: [UnitId, number][] = [
   ['broodClump', 37],
 ];
 
+function withoutRoll(ops: readonly string[]): string[] {
+  const result: string[] = [];
+  for (const op of ops) {
+    if (op.startsWith('drawImage eater')) result.splice(-2, 2);
+    result.push(op);
+  }
+  return result;
+}
+
+function withoutEaters(ops: readonly string[]): string[] {
+  const result: string[] = [];
+  for (const op of ops) {
+    if (op.startsWith('drawImage eater')) {
+      let start = result.length - 1;
+      while (!/^setTransform m\d+$/.test(result[start])) start--;
+      result.splice(start);
+    } else {
+      result.push(op);
+    }
+  }
+  return result;
+}
+
 beforeEach(() => {
   pathCount = 0;
   vi.stubGlobal('Path2D', FakePath);
@@ -122,13 +145,15 @@ describe('buildSwarmDrift', () => {
 
 describe('drawSwarmFrame', () => {
   it.each(SWARM_FIXTURE.draws)(
-    'zeichnet wie cvDraw ($units, Winkel $angle, Bewegung $motion)',
+    'zeichnet wie cvDraw, Fresslinge ohne Paddeln und Rollen ($units, Winkel $angle, Bewegung $motion)',
     ({ units, travelAngle, now, motion, trekAt, trek, ops }) => {
       const start = nextTrek({ from: 0, to: 0, at: 0 }, travelAngle, trekAt);
       expect(start).toEqual(trek);
       const sprites: Partial<Record<UnitId, SwarmSprite>> = {};
+      const atSite = travelAngle === null;
       for (const [unit, halfExtent] of SPRITE_UNITS) {
-        sprites[unit] = { image: unit as unknown as CanvasImageSource, halfExtent };
+        if (atSite && unit === 'eater') continue;
+        sprites[unit] = { kind: 'raster', image: unit as unknown as CanvasImageSource, halfExtent };
       }
       const ctx = new FakeContext();
       drawSwarmFrame(ctx as unknown as CanvasRenderingContext2D, {
@@ -142,9 +167,100 @@ describe('drawSwarmFrame', () => {
         figures: swarmFigures(units, travelAngle !== null),
         sprites,
       });
-      expect(ctx.ops).toEqual(ops);
+      expect(ctx.ops).toEqual(atSite ? withoutEaters(ops) : withoutRoll(ops));
     },
   );
+});
+
+describe('animierte Sprites', () => {
+  it('ruft sie nach denselben Transformationen mit Zeit und Index je Einheit auf', () => {
+    const units = [3, 1, 0, 0, 0, 0];
+    const figures = swarmFigures(units, false);
+    const frame = {
+      now: 2000,
+      motion: true,
+      pixelRatio: 1.5,
+      drift: null,
+      flowRotation: 0,
+      trek: { from: 0, to: 0, at: 0 },
+      swirl: true,
+      figures,
+    };
+    const raster = new FakeContext();
+    const rasterSprites: Partial<Record<UnitId, SwarmSprite>> = {};
+    for (const [unit, halfExtent] of SPRITE_UNITS) {
+      rasterSprites[unit] = {
+        kind: 'raster',
+        image: unit as unknown as CanvasImageSource,
+        halfExtent,
+      };
+    }
+    drawSwarmFrame(raster as unknown as CanvasRenderingContext2D, {
+      ...frame,
+      sprites: rasterSprites,
+    });
+
+    const animated = new FakeContext();
+    const calls: [number, number][] = [];
+    drawSwarmFrame(animated as unknown as CanvasRenderingContext2D, {
+      ...frame,
+      sprites: {
+        ...rasterSprites,
+        eater: {
+          kind: 'animated',
+          draw: (ctx, time, index) => {
+            calls.push([time, index]);
+            (ctx as unknown as FakeContext).ops.push(`drawImage eater -12 -12 24 24`);
+          },
+        },
+      },
+    });
+
+    expect(animated.ops).toEqual(raster.ops);
+    expect(calls).toEqual([
+      [2, 0],
+      [2, 1],
+      [2, 2],
+    ]);
+  });
+});
+
+describe('kriechende Fresslinge', () => {
+  function crawlOps(now: number, motion: boolean): string[] {
+    const ctx = new FakeContext();
+    drawSwarmFrame(ctx as unknown as CanvasRenderingContext2D, {
+      now,
+      motion,
+      pixelRatio: 1,
+      drift: null,
+      flowRotation: 0,
+      trek: { from: 0, to: 0, at: 0 },
+      swirl: true,
+      figures: swarmFigures([1, 0, 0, 0, 0, 0], false),
+      sprites: {
+        eater: {
+          kind: 'animated',
+          draw: (c) => void (c as unknown as FakeContext).ops.push('draw eater'),
+        },
+      },
+    });
+    return ctx.ops.slice(ctx.ops.lastIndexOf('setTransform m2') + 1);
+  }
+
+  it('verschiebt und dreht die Figur entlang ihrer Bahn', () => {
+    const ops = crawlOps(3000, true);
+    expect(ops).toHaveLength(5);
+    expect(ops[0]).toBe('translate 47 0');
+    expect(ops[1]).toMatch(/^translate -?\d/);
+    expect(ops[2]).toMatch(/^rotate -?\d/);
+    expect(ops[3]).toBe('scale 0.95 0.95');
+    expect(ops[4]).toBe('draw eater');
+  });
+
+  it('kriecht mit der Zeit weiter und steht ohne Bewegung still', () => {
+    expect(crawlOps(3000, true)).not.toEqual(crawlOps(0, true));
+    expect(crawlOps(3000, false)).toEqual(crawlOps(0, true));
+  });
 });
 
 describe('Sprites', () => {

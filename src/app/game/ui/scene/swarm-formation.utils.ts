@@ -1,9 +1,10 @@
 import { UNIT_IDS } from '../../domain/models/unit.model';
-import { paddlerParams } from '../art/paddler.utils';
+import { eaterCrawl, eaterPhaseOffset } from '../art/unit-sprite/eater.utils';
 import { SwarmFigure } from './models/swarm.model';
 
 const GOLDEN_ANGLE = 2.39996;
 const BOB_SCALES = [0, 1, 1, 1, 0.9, 0.8];
+const CRAWL_STEP = 16;
 
 export function swarmFigureCounts(units: readonly number[]): number[] {
   const eaters = units[0];
@@ -44,6 +45,7 @@ export function swarmFigures(units: readonly number[], travelling: boolean): Swa
     }
   }
   const r0 = 30 + 22 * Math.sqrt(slot);
+  const outer = Math.max(r0 + 17 * Math.sqrt(counts[0] + 1) + 10, r0 + 3 * CRAWL_STEP);
   for (let i = 0; i < counts[0]; i++) {
     const a = i * GOLDEN_ANGLE;
     const r = r0 + 17 * Math.sqrt(i + 1);
@@ -52,13 +54,14 @@ export function swarmFigures(units: readonly number[], travelling: boolean): Swa
     const scale = +(0.95 + ((i * 37) % 25) / 100).toFixed(2);
     if (!travelling) {
       figures.push({
-        kind: 'paddle',
+        kind: 'crawl',
         unit: 'eater',
         x,
         y,
         scale,
         index: i,
-        ...paddlerParams(i, 5, 8),
+        crawl: eaterCrawl(i, { start: [x, y], inner: r0, outer, step: CRAWL_STEP }),
+        offset: eaterPhaseOffset(i),
       });
     } else {
       figures.push({

@@ -41,6 +41,12 @@ export function catalogNeighbours(id: CatalogEntryId): CatalogNeighbours {
   };
 }
 
+export function catalogChildEntries(): Readonly<Record<CatalogEntryId, boolean>> {
+  return Object.fromEntries(
+    CATALOG_ENTRY_IDS.map((id) => [id, catalogEntry(id).parent !== undefined]),
+  ) as Record<CatalogEntryId, boolean>;
+}
+
 function normalizeQuery(query: string): string {
   return query.trim().toLowerCase();
 }

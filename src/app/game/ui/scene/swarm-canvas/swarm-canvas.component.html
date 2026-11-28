@@ -5,7 +5,7 @@
   data-testid="game.swarm.canvas"
 ></canvas>
 <svg #spriteDefs class="hidden" aria-hidden="true">
-  @for (unit of unitIds; track unit) {
+  @for (unit of rasterUnits; track unit) {
     <svg:g app-unit-sprite [unit]="unit" [attr.data-unit]="unit" />
   }
 </svg>

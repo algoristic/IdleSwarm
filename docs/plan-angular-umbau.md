@@ -123,6 +123,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | Inhalte des Gerüsts | HUD, Kontextzeilen, Chips, Toasts und Nachberechnungs-Overlay schon in AP 5 |
 | Menü bis AP 8 | Menüknopf öffnet einen Platzhalter-Dialog |
 | Farben der Illustrationen | Angular-freie TS-Palette `game/ui/art/art-palette.ts`, Werte 1:1 aus dem Prototyp; UI-Farben bleiben Tokens (ADR 0002) |
+| Fressling als Amöbe | bewusste Abweichung vom Prototyp: 5 Varianten, im Canvas als Vektor animiert, auf der Karte reduziert, Icon und Kette Variante 0 (ADR 0003, entfällt in AP 13) |
 | Darstellung der Schwarm-Szene | nur Canvas wie im Prototyp-Standard; die SVG-Formation mit CSS-Animationen wird nicht portiert; Hintergründe statisch |
 | Ablage reiner Zeichenfunktionen | Angular-frei als `game/ui/<ordner>/*.utils.ts` neben den Komponenten, gemeinsame in `game/ui/art` |
 | SVG-Teilkomponenten | Attributselektor `g[app-…]`; ESLint (`@angular-eslint/component-selector`) um `attribute` erweitert |
@@ -226,6 +227,7 @@ Marco sichtet den Katalog und passt Assets an, auch grundlegend (Schwarm in Schw
 
 - Abgleich der Mechanik, Leistung auf dem Smartphone, E2E-Smoke vervollständigen.
 - Prototyp entfernen; CLAUDE.md und Regeldateien beschreiben die App als Status quo.
+- ADRs, die Abweichungen vom Prototyp festhalten (derzeit ADR 0003), entfernen.
 
 ### Kalibrierung und Abnahme durch Marco
 

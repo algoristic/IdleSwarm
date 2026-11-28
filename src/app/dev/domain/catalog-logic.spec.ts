@@ -1,4 +1,5 @@
 import {
+  catalogChildEntries,
   catalogNeighbours,
   isCatalogEntryId,
   parseCatalogControls,
@@ -33,8 +34,13 @@ describe('catalog-logic', () => {
   });
 
   it('liefert Nachbarn am Rand ohne Vorgänger bzw. Nachfolger', () => {
-    expect(catalogNeighbours('unit-sprite')).toEqual({ previous: null, next: 'unit-icon' });
+    expect(catalogNeighbours('unit-sprite')).toEqual({ previous: null, next: 'eater-designs' });
     expect(catalogNeighbours('pipes')).toEqual({ previous: 'dialog-frame', next: null });
+  });
+
+  it('rückt nur die Einheiten-Entwürfe unter den Sprites ein', () => {
+    const nested = catalogChildEntries();
+    expect(CATALOG_ENTRY_IDS.filter((id) => nested[id])).toEqual(['eater-designs']);
   });
 
   it('zeigt ohne Suche alle Kategorien', () => {
