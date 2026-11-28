@@ -2,6 +2,9 @@ import { Component, computed, input } from '@angular/core';
 
 import { UNIT_IDS } from '@app/game/domain/models/unit.model';
 import { ZONE_IDS } from '@app/game/domain/models/zone.model';
+import { ZONE_MOODS } from '@app/game/ui/art/art-palette';
+import { EaterDesignComponent } from '@app/game/ui/art/eater-design/eater-design.component';
+import { EATER_DESIGN_IDS } from '@app/game/ui/art/eater-design/eater-design.model';
 import { SparkleSpriteComponent } from '@app/game/ui/art/sparkle-sprite/sparkle-sprite.component';
 import { UnitIconComponent } from '@app/game/ui/art/unit-icon/unit-icon.component';
 import { UnitSpriteComponent } from '@app/game/ui/art/unit-sprite/unit-sprite.component';
@@ -18,6 +21,8 @@ import { UNIT_TEXTS } from '@app/game/ui/texts/game-texts';
 import { CatalogChoice } from '../../domain/data/catalog.data';
 import { CatalogControls, CatalogEntryId } from '../../domain/models/catalog.model';
 import { CatalogStageComponent } from '../catalog-stage/catalog-stage.component';
+import { EATER_DESIGN_NAMES } from '../texts/catalog-texts';
+import { SWARM_PROBE_FIGURES } from './catalog-art-preview.utils';
 
 // Jeder Wert der game-Typen braucht eine Option im Katalog; die Gegenrichtung prüfen die Input-Bindungen.
 type UncoveredOption = Exclude<SceneBackdropKind, CatalogChoice<'backdrop'>>;
@@ -27,6 +32,7 @@ const _OPTIONS_COVER_GAME: [UncoveredOption] extends [never] ? true : never = tr
   selector: 'app-catalog-art-preview',
   imports: [
     CatalogStageComponent,
+    EaterDesignComponent,
     FarMoodComponent,
     SceneBackdropComponent,
     SceneSiteComponent,
@@ -51,6 +57,12 @@ export class CatalogArtPreviewComponent {
     return { unit, name: UNIT_TEXTS[unit].name, viewBox: `${-h} ${-h} ${2 * h} ${2 * h}` };
   });
   shape = 4242;
+  eaterViewBox = '-12 -12 24 24';
+  swarmProbeViewBox = '-60 -36 120 72';
+  swarmProbe = SWARM_PROBE_FIGURES;
+  eaterDesigns = EATER_DESIGN_IDS.map((design) => ({ design, name: EATER_DESIGN_NAMES[design] }));
+
+  zoneDeep = computed(() => ZONE_MOODS[this.controls().zone]?.deep ?? ZONE_MOODS[0].deep);
 
   hazeMood = computed(() => farMoodIndex(this.controls().zone, ZONE_IDS.length));
 }

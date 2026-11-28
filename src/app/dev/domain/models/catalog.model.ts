@@ -14,6 +14,7 @@ export type CatalogCategoryId = (typeof CATALOG_CATEGORY_IDS)[number];
 
 export const CATALOG_ENTRY_IDS = [
   'unit-sprite',
+  'eater-designs',
   'unit-icon',
   'sparkle-sprite',
   'swarm-canvas',

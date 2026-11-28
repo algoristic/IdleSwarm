@@ -33,6 +33,15 @@ export const UNIT_SPRITE_COLORS = {
   },
 } as const satisfies Readonly<Record<UnitId, Colors>>;
 
+export const AMOEBA_COLORS = {
+  rim: '#b8412a',
+  body: '#ff8f6b',
+  shade: '#ef6a4c',
+  nucleus: '#9c2f3c',
+  nucleolus: '#ffcf9e',
+  vacuole: '#ffd36b',
+} as const;
+
 export const SPARKLE_COLOR = '#ffe98a';
 
 export const LOCKED_UNIT_ICON_COLORS = { ring: '#5a64b8', mark: '#7c84c4' } as const;

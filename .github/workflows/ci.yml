@@ -47,6 +47,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Versionen und Komponenten-CSS prüfen
+        run: npm run check
+
+      - name: Eigene Lint-Regeln und Prüfungen testen
+        run: npm run test:tools
+
       - name: Formatierung prüfen
         run: npm run format:check
 

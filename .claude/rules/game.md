@@ -117,7 +117,7 @@ Nachberechnung:
 Worker-Build:
 
 - Worker heißen `*.worker.ts`; sie gehören zu `tsconfig.worker.json` (`lib` `webworker`, über `webWorkerTsConfig` in `angular.json`) und sind aus `tsconfig.app.json` ausgenommen.
-- `catch-up.worker.ts` importiert außer `domain` die Protokolldateien `catch-up-service.model.ts` und `catch-up-service.utils.ts` (CLAUDE.md §7). Diese beiden importieren nichts aus `@angular/*` oder `rxjs`.
+- `catch-up.worker.ts` importiert außer `domain` die Protokolldateien `catch-up-service.model.ts` und `catch-up-service.utils.ts` (`.claude/rules/state.md`). Diese beiden importieren nichts aus `@angular/*` oder `rxjs`.
 
 Bewusste Abweichungen und Einschränkungen gegenüber dem Prototyp:
 
@@ -187,10 +187,13 @@ Alle visuellen Elemente des Prototyps 1:1 (gleiche Pfade, `lcg`-Seeds, Farben, K
 
 ### `ui/art`
 
-- `art-palette.ts`: `as const`-Objekte je Bereich, Werte 1:1 aus dem Prototyp: `UNIT_SPRITE_COLORS`, `SPARKLE_COLOR`, `LOCKED_UNIT_ICON_COLORS`, `ZONE_MOODS` (`deep`, `mid`, `light`, `shape`, `glow`, `kind` aus `ZONE_MOOD_KINDS`; Index 4 ist die Ferne hinter der letzten Zone), `SITE_COLORS`, `SITE_MOODS`, `SCENE_COLORS`, `SITE_ICON_COLORS`, `MAP_COLORS`, `SOMA_COLORS` (`SomaTone`), `NEURON_COLORS`.
+- `art-palette.ts`: `as const`-Objekte je Bereich, Werte 1:1 aus dem Prototyp: `UNIT_SPRITE_COLORS`, `SPARKLE_COLOR`, `LOCKED_UNIT_ICON_COLORS`, `ZONE_MOODS` (`deep`, `mid`, `light`, `shape`, `glow`, `kind` aus `ZONE_MOOD_KINDS`; Index 4 ist die Ferne hinter der letzten Zone), `SITE_COLORS`, `SITE_MOODS`, `SCENE_COLORS`, `SITE_ICON_COLORS`, `MAP_COLORS`, `SOMA_COLORS` (`SomaTone`), `NEURON_COLORS`, dazu `AMOEBA_COLORS` für den Amöben-Entwurf (nicht aus dem Prototyp).
 - `shape.utils.ts`: `lcg(seed): RandomSource` und `blobPath(r, seed, n?, jitter?, cx?, cy?)`.
 - `paddler.utils.ts`: `paddlerParams(index, minRadius, radiusRange): PaddlerParams` (Radius, Dauer, Richtung, Start, Rollen, Verzögerungen; Seed `index * 7919 + 13`), gemeinsam für Mini-Schwarm der Karte und Canvas.
 - `g[app-unit-sprite]` (`unit: UnitId`): Figur je Einheit, Clip-ID je Instanz. `UNIT_SPRITE_HALF_EXTENT` (halbe Kantenlänge je Einheit, Rastergröße im Canvas) und `CHAIN_ICON_SCALE` (`ChainIconUnit`: Fressling bis Gelege) in `unit-sprite.model.ts`.
+- `g[app-eater-design]` (`design: EaterDesignId` aus `EATER_DESIGN_IDS` in `eater-design.model.ts`, bisher nur `amoeba`): Amöbe als Fressling-Entwurf im Kurzgesagt-Stil (Randring statt dunklem Umriss, versetzte Schattenseite per Clip, kein Glanzlicht, Zellkern und zwei Nahrungsbläschen), gleiche Ausrichtung (+x) und Größe wie der Fressling (`UNIT_SPRITE_HALF_EXTENT.eater`). Nur im Katalog (`eater-designs`); ersetzt den Fressling im Spiel noch nicht. IDs je Instanz (`app-eater-design-clip-<n>`, `app-eater-design-shape-<n>`).
+  - Bewegung (`motion`, Standard `false`): SMIL statt CSS, weil Safari `d` nicht per CSS animiert. Der Saum wellt sich über `<animate>` auf `d` eines Pfads in `<defs>`, den Randring, Körper, Schatten und Clip per `<use>` teilen (4 s); Zellkern und Bläschen wandern willkürlich über `<animateTransform>` mit Spline-Easing. Phasenversatz je Instanz über `begin` mit negativer Zeit. Ohne `motion` entfallen die Animationselemente.
+  - `eater-design.utils.ts`: `amoebaOutline(phase, amplitude)` (Saumwelle aus zwei Sinustermen, Amplitude 0 = ruhender Umriss), `outlineFrames(frames, shape)` (geschlossene `values`-Liste), `wander(seed, radius, stops)` (Zufallspunkte per `lcg` im Kreis, zurück zum Start, dazu `keySplines`); Spec daneben.
 - `g[app-sparkle-sprite]`: Funkeln der Fundstücke.
 - `app-unit-icon` (`unit: UnitId | null`, `variant: 'list' | 'tab'`): eigenes `<svg>`; `null` zeigt das gesperrte Symbol mit „?“. Rahmen aus `unitIconFrame` (`unit-icon.utils.ts`).
 

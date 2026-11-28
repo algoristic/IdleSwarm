@@ -48,7 +48,6 @@ export class CatalogParallaxPreviewComponent {
 
   pan = signal<ParallaxPan>({ x: 0, y: 0 });
   dragging = signal(false);
-  #dragStart: DragStart | null = null;
 
   mood = computed(() => farMoodIndex(this.controls().zone, ZONE_IDS.length));
   layers = computed(() => parallaxLayers(this.pan(), this.controls().blur));
@@ -57,6 +56,8 @@ export class CatalogParallaxPreviewComponent {
       ? 'absolute top-80 left-80 origin-top-left'
       : 'absolute top-80 left-80 origin-top-left transition duration-300 ease-out',
   );
+
+  #dragStart: DragStart | null = null;
 
   onPointerDown(event: PointerEvent): void {
     const target = event.currentTarget;

@@ -1,4 +1,5 @@
 import { ZONE_IDS } from '@app/game/domain/models/zone.model';
+import { EaterDesignId } from '@app/game/ui/art/eater-design/eater-design.model';
 import { SITE_TYPE_NAMES, UNIT_TEXTS, ZONE_NAMES } from '@app/game/ui/texts/game-texts';
 import { formatNumber } from '@app/shared/util/format';
 
@@ -23,6 +24,7 @@ export const CATALOG_CATEGORY_NAMES: Readonly<Record<CatalogCategoryId, string>>
 
 export const CATALOG_ENTRY_NAMES: Readonly<Record<CatalogEntryId, string>> = {
   'unit-sprite': $localize`:@@uiDev-catalogTexts-entry-unitSprite:Einheiten-Sprites`,
+  'eater-designs': $localize`:@@uiDev-catalogTexts-entry-eaterDesigns:Fressling-Entwürfe`,
   'unit-icon': $localize`:@@uiDev-catalogTexts-entry-unitIcon:Einheiten-Icons`,
   'sparkle-sprite': $localize`:@@uiDev-catalogTexts-entry-sparkleSprite:Funkeln`,
   'swarm-canvas': $localize`:@@uiDev-catalogTexts-entry-swarmCanvas:Schwarm gesamt an der Stelle`,
@@ -158,4 +160,8 @@ export const CATALOG_OPTION_NAMES: Readonly<
   showChain: toggle,
   motion: toggle,
   blur: toggle,
+};
+
+export const EATER_DESIGN_NAMES: Readonly<Record<EaterDesignId, string>> = {
+  amoeba: $localize`:@@uiDev-catalogTexts-eaterDesign-amoeba:Amöbe`,
 };

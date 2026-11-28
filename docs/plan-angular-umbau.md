@@ -101,7 +101,7 @@ Legende: grün = abgeschlossen, gelb = in Arbeit, blau = offen, violett gestrich
 | Reihenfolge der Oberfläche | Asset-Bibliothek und Katalog vor den Ansichten. Ausbau-Ansicht und Dialoge starten direkt nach AP 6; Schwarm- und Umgebungsansicht sowie Szene und Canvas warten auf die Sichtung |
 | Spielwerte | als Parameter `GameConfig` durch die Domäne, Standardwerte in `game/domain/data/game-config.data.ts` |
 | Kalibrierung | Werte-Panel, Startpresets, Pacing-Anzeige (AP 12) und Headless-Simulation (AP 3s) |
-| Testing bis zur Abnahme | lose: Formatierung, Golden Master, E2E-Smoke; Abdeckungs-Untergrenze ausgesetzt, CLAUDE.md §10 mit Übergangshinweis; danach Testkonzept (AP 14) |
+| Testing bis zur Abnahme | lose: Formatierung, Golden Master, E2E-Smoke; Abdeckungs-Untergrenze ausgesetzt, `.claude/rules/testing.md` mit Übergangshinweis; danach Testkonzept (AP 14) |
 | Domänenschnitt | `game`, `dev`, `shared` (siehe unten) |
 | Spielstand v1 | englische IDs und Feldnamen; persistiert und stabil, Umbenennen entscheidet Marco |
 | Reihenfolge der ID-Listen | wie im Prototyp; Zufall (`pickWeighted`) und Kette hängen davon ab |
@@ -234,4 +234,4 @@ Marco kalibriert das Pacing im Dev-Build und testet ausführlich, bis das Spiel 
 ### AP 14 · Testkonzept und Umsetzung (groß)
 
 - Testkonzept (ADR oder Dokument), das die Korrektheit des Status quo für Phase 1 absichert und vor Regressionen beim späteren Ausbau schützt.
-- Umsetzung: Regeltests je `*-logic.ts`, Szenario-Tests, E2E-Abläufe; Abdeckungs-Untergrenze wieder einführen; CLAUDE.md §10 überarbeiten.
+- Umsetzung: Regeltests je `*-logic.ts`, Szenario-Tests, E2E-Abläufe; Abdeckungs-Untergrenze wieder einführen; `.claude/rules/testing.md` überarbeiten.

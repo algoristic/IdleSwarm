@@ -9,6 +9,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
     "lint": "ng lint",
+    "test:tools": "node --test tools/eslint-rules/rules.spec.js tools/checks/checks.spec.mjs",
+    "check": "node tools/checks/exact-versions.mjs && node tools/checks/component-css.mjs",
     "test:coverage": "ng test --watch=false --coverage",
     "e2e": "ng build && playwright test",
     "format": "prettier --write .",

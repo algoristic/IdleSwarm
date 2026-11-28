@@ -16,6 +16,73 @@
       }
     </ul>
   }
+  @case ('eater-designs') {
+    @let deep = zoneDeep();
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <li class="rounded-2xl bg-panel p-3" data-testid="dev.catalog.eaterDesign.original">
+        <svg
+          class="block h-auto w-full rounded-xl"
+          [attr.viewBox]="eaterViewBox"
+          aria-hidden="true"
+        >
+          <svg:rect x="-12" y="-12" width="24" height="24" [attr.fill]="deep" />
+          <svg:g app-unit-sprite unit="eater" />
+        </svg>
+        <app-catalog-stage
+          class="mx-auto mt-2 max-w-30 rounded-xl"
+          [width]="120"
+          [height]="72"
+          [maxScale]="1"
+        >
+          <svg class="block size-full" [attr.viewBox]="swarmProbeViewBox" aria-hidden="true">
+            <svg:rect x="-60" y="-36" width="120" height="72" [attr.fill]="deep" />
+            @for (figure of swarmProbe; track figure.key) {
+              <svg:g [attr.transform]="figure.transform">
+                <svg:g app-unit-sprite unit="eater" />
+              </svg:g>
+            }
+          </svg>
+        </app-catalog-stage>
+        <p
+          class="mt-2 text-center text-xs font-extrabold text-fg-muted"
+          i18n="@@uiDev-catalogArtPreview-eaterOriginal"
+        >
+          Original
+        </p>
+      </li>
+      @for (item of eaterDesigns; track item.design) {
+        <li
+          class="rounded-2xl bg-panel p-3"
+          [attr.data-testid]="'dev.catalog.eaterDesign.' + item.design"
+        >
+          <svg
+            class="block h-auto w-full rounded-xl"
+            [attr.viewBox]="eaterViewBox"
+            aria-hidden="true"
+          >
+            <svg:rect x="-12" y="-12" width="24" height="24" [attr.fill]="deep" />
+            <svg:g app-eater-design [design]="item.design" [motion]="c.motion" />
+          </svg>
+          <app-catalog-stage
+            class="mx-auto mt-2 max-w-30 rounded-xl"
+            [width]="120"
+            [height]="72"
+            [maxScale]="1"
+          >
+            <svg class="block size-full" [attr.viewBox]="swarmProbeViewBox" aria-hidden="true">
+              <svg:rect x="-60" y="-36" width="120" height="72" [attr.fill]="deep" />
+              @for (figure of swarmProbe; track figure.key) {
+                <svg:g [attr.transform]="figure.transform">
+                  <svg:g app-eater-design [design]="item.design" [motion]="c.motion" />
+                </svg:g>
+              }
+            </svg>
+          </app-catalog-stage>
+          <p class="mt-2 text-center text-xs font-extrabold text-fg-muted">{{ item.name }}</p>
+        </li>
+      }
+    </ul>
+  }
   @case ('unit-icon') {
     <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
       @for (sprite of sprites; track sprite.unit) {

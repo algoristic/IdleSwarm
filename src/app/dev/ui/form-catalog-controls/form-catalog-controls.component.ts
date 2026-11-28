@@ -21,9 +21,9 @@ import { CatalogControlRow } from './form-catalog-controls.model';
 export class FormCatalogControlsComponent {
   controls = input.required<readonly CatalogControlId[]>();
 
-  unitTexts = UNIT_TEXTS;
-
   controlsModel = model.required<CatalogControlsModel>();
+
+  unitTexts = UNIT_TEXTS;
 
   controlsForm = form(this.controlsModel, (path) => {
     min(path.level, 0);
