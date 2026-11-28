@@ -8,6 +8,7 @@ class FakeContext {
   lineWidth = 1;
   lineJoin = '';
   globalAlpha = 1;
+  turn = 0;
 
   #record(op: string, ...args: number[]): void {
     this.ops.push([op, ...args.map((v) => v.toFixed(2))].join(' '));
@@ -45,6 +46,10 @@ class FakeContext {
     this.#record('translate', x, y);
   }
 
+  getTransform(): { a: number; b: number } {
+    return { a: Math.cos(this.turn), b: Math.sin(this.turn) };
+  }
+
   clip(): void {
     this.#record('clip');
   }
@@ -59,10 +64,17 @@ class FakeContext {
 }
 
 function draw(...args: [number, number, number, 'full' | 'reduced']): string[] {
+  return drawTurned(0, ...args);
+}
+
+function drawTurned(turn: number, ...args: [number, number, number, 'full' | 'reduced']): string[] {
   const ctx = new FakeContext();
+  ctx.turn = turn;
   drawEater(ctx as unknown as CanvasRenderingContext2D, ...args);
   return ctx.ops;
 }
+
+const translates = (ops: string[]): string[] => ops.filter((op) => op.startsWith('translate'));
 
 const COLORS = UNIT_SPRITE_COLORS.eater;
 
@@ -99,5 +111,15 @@ describe('drawEater', () => {
 
   it('zeichnet die Varianten verschieden', () => {
     expect(draw(1, 0, 0, 'full')).not.toEqual(draw(0, 0, 0, 'full'));
+  });
+
+  it('hält das Licht oben links, wie auch immer die Figur gedreht ist', () => {
+    expect(translates(draw(0, 0, 0, 'full'))[0]).toBe('translate -0.50 -1.10');
+    expect(translates(drawTurned(Math.PI / 2, 0, 0, 0, 'full'))[0]).toBe('translate -1.10 0.50');
+  });
+
+  it('lässt Algen und Kern im Schub nach vorn strömen', () => {
+    expect(translates(draw(0, 0, 0, 'full'))).toContain('translate 0.00 0.00');
+    expect(translates(draw(0, 3, 0, 'full'))).toContain('translate 0.80 0.00');
   });
 });

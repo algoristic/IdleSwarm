@@ -44,11 +44,23 @@ export function mapSwarmLayout(eaters: number, brooders: number): MapSwarmLayout
 
 function crawlerFigure(x: number, y: number, i: number, outer: number): MapSwarmCrawler {
   const crawl = eaterCrawl(i, { start: [x, y], inner: CRAWL_INNER, outer, step: CRAWL_STEP });
+  const phase = eaterPhaseOffset(i);
+  const duration = `${crawl.duration}s`;
+  const begin = `-${phase.toFixed(2)}s`;
   return {
     transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`,
     crawl,
-    duration: `${crawl.duration}s`,
-    begin: `-${eaterPhaseOffset(i).toFixed(2)}s`,
+    duration,
+    begin,
+    phase,
+    light: {
+      start: `translate(${crawl.lightValues.split(';')[0]})`,
+      values: crawl.lightValues,
+      keyTimes: crawl.keyTimes,
+      keySplines: crawl.keySplines,
+      duration,
+      begin,
+    },
     startTranslate: `translate(${formatPoint([crawl.x.values[0], crawl.y.values[0]])})`,
     startRotate: `rotate(${formatCoord(crawl.rotation.values[0])})`,
     variant: eaterVariantFor(i),

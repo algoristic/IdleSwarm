@@ -10,7 +10,7 @@ export const UNIT_SPRITE_HALF_EXTENT: Readonly<Record<UnitId, number>> = {
 };
 
 export const CHAIN_ICON_SCALE = {
-  eater: 1.15,
+  eater: 1.45,
   brooder: 0.66,
   eggBearer: 0.58,
   clutch: 0.46,

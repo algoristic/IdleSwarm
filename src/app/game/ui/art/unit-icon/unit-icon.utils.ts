@@ -3,7 +3,7 @@ import { CHAIN_ICON_SCALE, ChainIconUnit } from '../unit-sprite/unit-sprite.mode
 import { UnitIconFrame, UnitIconVariant } from './unit-icon.model';
 
 const LIST_VIEW_BOXES: Readonly<Record<UnitId, string>> = {
-  eater: '-12.5 -8.8 25 17.6',
+  eater: '-12 -12 24 24',
   brooder: '-19 -19 38 38',
   eggBearer: '-23 -18 46 36',
   clutch: '-28 -28 56 56',
@@ -29,7 +29,7 @@ export function unitIconFrame(unit: UnitId, variant: UnitIconVariant): UnitIconF
   }
   return {
     width: 34,
-    height: unit === 'eater' ? 24 : 34,
+    height: 34,
     viewBox: LIST_VIEW_BOXES[unit],
     transform: null,
   };

@@ -1,4 +1,4 @@
-import { eaterVariantFor } from '../../art/unit-sprite/eater.utils';
+import { eaterPhaseOffset, eaterVariantFor } from '../../art/unit-sprite/eater.utils';
 import { PROTOTYPE_SWARM_MINI } from './map-swarm.fixture';
 import { MapSwarmLayout } from './map-swarm.model';
 import { mapSwarmLayout } from './map-swarm.utils';
@@ -39,5 +39,20 @@ describe('mapSwarmLayout', () => {
       expect(eater.begin).toMatch(/^-\d+\.\d{2}s$/);
       expect(eater.duration).toBe('72s');
     }
+  });
+
+  it('lässt Verformung, Bahn und Licht im selben Takt laufen', () => {
+    const { eaters } = mapSwarmLayout(14, 0);
+    eaters.forEach((eater, i) => {
+      expect(eater.phase).toBe(eaterPhaseOffset(i));
+      expect(eater.light).toEqual({
+        start: `translate(${eater.crawl.lightValues.split(';')[0]})`,
+        values: eater.crawl.lightValues,
+        keyTimes: eater.crawl.keyTimes,
+        keySplines: eater.crawl.keySplines,
+        duration: eater.duration,
+        begin: eater.begin,
+      });
+    });
   });
 });

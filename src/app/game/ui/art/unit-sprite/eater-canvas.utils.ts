@@ -1,7 +1,14 @@
 import { UNIT_SPRITE_COLORS } from '../art-palette';
 import { keyframeValue } from '../keyframes.utils';
 import { Point, smoothSegments } from '../path.utils';
-import { EATER_TIMING, EATER_VARIANTS, EaterDetail, VACUOLE_PULSE } from './eater.utils';
+import {
+  EATER_FLOW,
+  EATER_TIMING,
+  EATER_VARIANTS,
+  EaterDetail,
+  VACUOLE_PULSE,
+  worldLight,
+} from './eater.utils';
 
 const TAU = Math.PI * 2;
 const COLORS = UNIT_SPRITE_COLORS.eater;
@@ -30,7 +37,10 @@ export function drawEater(
 ): void {
   const variant = EATER_VARIANTS[variantIndex % EATER_VARIANTS.length];
   const t = time + offset;
-  const phase = ((t / EATER_TIMING.outline) % 1) * TAU;
+  const cycle = t / EATER_TIMING.outline;
+  const phase = (cycle % 1) * TAU;
+  const matrix = ctx.getTransform();
+  const [lightX, lightY] = worldLight(Math.atan2(matrix.b, matrix.a) / (Math.PI / 180));
   const body = variant.outline(phase);
   const full = detail === 'full';
   ctx.save();
@@ -52,14 +62,16 @@ export function drawEater(
   ctx.clip();
   ctx.fillStyle = COLORS.shade;
   ctx.fill();
-  ctx.translate(-0.5, -1.1);
+  ctx.translate(lightX, lightY);
   ctx.fillStyle = COLORS.body;
   trace(ctx, body);
   ctx.fill();
-  ctx.translate(0.5, 1.1);
+  ctx.translate(-lightX, -lightY);
   ctx.fillStyle = COLORS.inner;
   trace(ctx, variant.inner(phase));
   ctx.fill();
+  const flow = keyframeValue(EATER_FLOW, cycle);
+  ctx.translate(flow, 0);
   if (full) {
     ctx.fillStyle = COLORS.alga;
     for (const alga of variant.algae) {
@@ -77,6 +89,7 @@ export function drawEater(
     variant.nucleus[1] + keyframeValue(variant.nucleusY, wanderAt),
     1.9,
   );
+  ctx.translate(-flow, 0);
   if (full) {
     const pulse = keyframeValue(VACUOLE_PULSE, t / EATER_TIMING.vacuole);
     ctx.fillStyle = COLORS.vacuole;

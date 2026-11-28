@@ -8,6 +8,7 @@ import {
   eaterCrawl,
   eaterPhaseOffset,
   eaterVariantFor,
+  worldLight,
 } from './eater.utils';
 
 const GLOW = 2;
@@ -48,6 +49,33 @@ describe('EATER_VARIANTS', () => {
         expect(new Set(commands).size).toBe(1);
       }
       expect(variant.body).toBe(smoothPath(variant.outline(0)));
+    }
+  });
+
+  it('schiebt die Front nach +x vor und lässt den Rest folgen', () => {
+    for (const variant of EATER_VARIANTS) {
+      for (let i = 0; i < 8; i++) {
+        const points = variant.outline((i / 8) * Math.PI * 2);
+        const front = Math.max(...points.map(([x]) => x));
+        const rear = -Math.min(...points.map(([x]) => x));
+        expect(front).toBeGreaterThan(rear);
+      }
+    }
+  });
+
+  it('greift in der Ruhe vor und zieht das Scheinfüßchen im Schub ein', () => {
+    const front = (points: readonly (readonly number[])[]): number =>
+      Math.max(...points.map(([x]) => x));
+    const aspect = (points: readonly (readonly number[])[]): number => {
+      const xs = points.map(([x]) => x);
+      const ys = points.map(([, y]) => y);
+      return (Math.max(...xs) - Math.min(...xs)) / (Math.max(...ys) - Math.min(...ys));
+    };
+    for (const variant of EATER_VARIANTS) {
+      expect(front(variant.outline(0))).toBeGreaterThan(front(variant.outline(Math.PI)));
+      for (let i = 0; i < 8; i++) {
+        expect(aspect(variant.outline((i / 8) * Math.PI * 2))).toBeGreaterThan(1);
+      }
     }
   });
 
@@ -142,11 +170,41 @@ describe('eaterCrawl', () => {
     expect(new Set(crawls.map((c) => c.translateValues)).size).toBe(crawls.length);
   });
 
+  it('dreht die Front in Laufrichtung', () => {
+    for (const { x, y, rotation } of crawls) {
+      const heading = Math.atan2(y.values[2] - y.values[1], x.values[2] - x.values[1]);
+      const before = Math.atan2(y.values[1] - y.values[0], x.values[1] - x.values[0]);
+      const turn = (rotation.values[1] * Math.PI) / 180;
+      const bisector = Math.atan2(
+        Math.sin(heading) + Math.sin(before),
+        Math.cos(heading) + Math.cos(before),
+      );
+      expect(Math.cos(turn - bisector)).toBeCloseTo(1, 6);
+    }
+  });
+
+  it('hält das Licht gegen die Drehung oben links', () => {
+    expect(worldLight(0)).toEqual([-0.5, -1.1]);
+    for (const crawl of crawls) {
+      crawl.lightValues.split(';').forEach((value, k) => {
+        const [lx, ly] = value.split(' ').map(Number);
+        const turn = (crawl.rotation.values[k] * Math.PI) / 180;
+        const world = [
+          lx * Math.cos(turn) - ly * Math.sin(turn),
+          lx * Math.sin(turn) + ly * Math.cos(turn),
+        ];
+        expect(world[0]).toBeCloseTo(-0.5, 1);
+        expect(world[1]).toBeCloseTo(-1.1, 1);
+      });
+    }
+  });
+
   it('liefert gleich viele SMIL-Werte wie Zeitmarken', () => {
     for (const crawl of crawls) {
       const count = crawl.keyTimes.split(';').length;
       expect(crawl.translateValues.split(';')).toHaveLength(count);
       expect(crawl.rotateValues.split(';')).toHaveLength(count);
+      expect(crawl.lightValues.split(';')).toHaveLength(count);
       expect(crawl.keySplines.split(';')).toHaveLength(count - 1);
     }
   });

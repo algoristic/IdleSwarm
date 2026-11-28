@@ -4,7 +4,9 @@ import { SwarmFigure } from './models/swarm.model';
 
 const GOLDEN_ANGLE = 2.39996;
 const BOB_SCALES = [0, 1, 1, 1, 0.9, 0.8];
-const CRAWL_STEP = 16;
+const EATER_SCALE = 1.35;
+const EATER_SPACING = { site: 22, travel: 18 } as const;
+const CRAWL_STEP = 22;
 
 export function swarmFigureCounts(units: readonly number[]): number[] {
   const eaters = units[0];
@@ -45,13 +47,14 @@ export function swarmFigures(units: readonly number[], travelling: boolean): Swa
     }
   }
   const r0 = 30 + 22 * Math.sqrt(slot);
-  const outer = Math.max(r0 + 17 * Math.sqrt(counts[0] + 1) + 10, r0 + 3 * CRAWL_STEP);
+  const spacing = travelling ? EATER_SPACING.travel : EATER_SPACING.site;
+  const outer = Math.max(r0 + spacing * Math.sqrt(counts[0] + 1) + 10, r0 + 3 * CRAWL_STEP);
   for (let i = 0; i < counts[0]; i++) {
     const a = i * GOLDEN_ANGLE;
-    const r = r0 + 17 * Math.sqrt(i + 1);
+    const r = r0 + spacing * Math.sqrt(i + 1);
     const x = Math.cos(a) * r * fx;
     const y = Math.sin(a) * r * fy;
-    const scale = +(0.95 + ((i * 37) % 25) / 100).toFixed(2);
+    const scale = +((0.95 + ((i * 37) % 25) / 100) * EATER_SCALE).toFixed(3);
     if (!travelling) {
       figures.push({
         kind: 'crawl',

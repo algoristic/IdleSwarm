@@ -1,4 +1,4 @@
-import { EaterCrawl } from '../../art/unit-sprite/eater.utils';
+import { EaterCrawl, EaterLight } from '../../art/unit-sprite/eater.utils';
 
 export interface MapSwarmCounts {
   eaters: number;
@@ -14,6 +14,8 @@ export interface MapSwarmCrawler {
   crawl: EaterCrawl;
   duration: string;
   begin: string;
+  phase: number;
+  light: EaterLight;
   startTranslate: string;
   startRotate: string;
   variant: number;

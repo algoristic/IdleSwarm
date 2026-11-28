@@ -20,6 +20,9 @@ const MAX_REACH = 9.6;
 const CRAWL_POINTS = 12;
 const CRAWL_TURN = (70 / 180) * Math.PI;
 const DEGREES = 180 / Math.PI;
+const LIGHT: Point = [-0.5, -1.1];
+const STRETCH = { long: 0.08, wide: 0.06 } as const;
+const INNER_FLOW = 0.8;
 
 export const EATER_VARIANT_COUNT = 5;
 export const EATER_TIMING = { outline: 6, nucleus: 8.5, vacuole: 3.8 } as const;
@@ -34,16 +37,27 @@ export const VACUOLE_PULSE: Keyframes = {
   easing: EASE,
 };
 
+export const EATER_FLOW: Keyframes = {
+  values: [0, INNER_FLOW, 0],
+  keyTimes: [0, 0.5, 1],
+  easing: EASE,
+};
+
+export const EATER_LIGHT = `translate(${LIGHT.join(' ')})`;
+
 interface OutlineShape {
   base: number;
-  lobes: number;
-  reach: number;
+  lead: number;
+  slant: number;
+  side: number;
+  sideAngle: number;
+  folds: number;
+  waves: number;
+  skew: number;
   bulge: number;
   bulgeAngle: number;
-  ripple: number;
-  rippleAngle: number;
-  waveShift: number;
-  secondShift: number;
+  wrinkle: number;
+  wrinkleShift: number;
 }
 
 export interface EaterAlga {
@@ -68,12 +82,21 @@ export interface EaterCrawl {
   rotation: Keyframes;
   translateValues: string;
   rotateValues: string;
+  lightValues: string;
   keyTimes: string;
   keySplines: string;
 }
 
+export interface EaterLight {
+  start: string;
+  values: string;
+  keyTimes: string;
+  keySplines: string;
+  duration: string;
+  begin: string;
+}
+
 export interface EaterVariant {
-  heading: number;
   outline: (phase: number) => Point[];
   inner: (phase: number) => Point[];
   body: string;
@@ -90,19 +113,36 @@ export interface EaterVariant {
   algae: readonly EaterAlga[];
 }
 
-function shapeRadius(shape: OutlineShape, base: number, lobes: number) {
+function shapeRadius(shape: OutlineShape, scale: number) {
   return (angle: number, phase: number): number => {
-    const reach = 0.55 + 0.45 * Math.cos(angle - shape.reach);
-    const wave = (0.5 + 0.5 * Math.sin(4 * angle - phase + shape.waveShift)) ** 4;
-    const second = (0.5 + 0.5 * Math.sin(3 * angle + shape.secondShift - 2 * phase)) ** 4;
+    const rear = (1 - Math.cos(angle)) / 2;
+    const front = Math.max(0, Math.cos(angle - shape.slant)) ** 3;
+    const lead = (0.5 + 0.5 * Math.cos(phase)) ** 1.5;
+    const probe =
+      Math.max(0, Math.cos(angle - shape.sideAngle)) ** 4 * (0.5 - 0.5 * Math.cos(phase));
+    const flank = 0.35 + 0.65 * Math.sin(angle) ** 2;
+    const fold =
+      (0.5 + 0.5 * Math.sin(shape.waves * Math.PI * rear - phase + shape.skew * Math.sin(angle))) **
+      4;
+    const wrinkle = rear ** 4 * Math.sin(7 * angle + shape.wrinkleShift);
     return (
-      base +
+      scale *
+        (shape.base +
+          shape.lead * front * (0.45 + 0.55 * lead) +
+          shape.side * probe +
+          shape.folds * flank * fold +
+          shape.wrinkle * wrinkle) +
       1.1 * Math.cos(angle) +
-      shape.bulge * Math.sin(angle - shape.bulgeAngle) +
-      shape.ripple * Math.cos(3 * angle + shape.rippleAngle) +
-      lobes * reach * (0.6 * wave + 0.4 * second)
+      shape.bulge * Math.sin(angle - shape.bulgeAngle)
     );
   };
+}
+
+function stretched(points: Point[], phase: number, shift = 0): Point[] {
+  const push = 0.5 - 0.5 * Math.cos(phase);
+  const long = 1 + STRETCH.long * push;
+  const wide = 1 - STRETCH.wide * push;
+  return points.map(([x, y]): Point => [x * long + shift * push, y * wide]);
 }
 
 function reachOf(outline: (phase: number) => Point[]): number {
@@ -113,48 +153,41 @@ function reachOf(outline: (phase: number) => Point[]): number {
   return reach;
 }
 
-function headingOf(outline: (phase: number) => Point[]): number {
-  let x = 0;
-  let y = 0;
-  for (let i = 0; i < 16; i++) {
-    for (const [px, py] of outline((i / 16) * TAU)) {
-      const weight = px * px + py * py;
-      x += px * weight;
-      y += py * weight;
-    }
-  }
-  return Math.atan2(y, x) * DEGREES;
-}
-
 function scaled(points: Point[], factor: number): Point[] {
   return points.map(([x, y]): Point => [x * factor, y * factor]);
 }
 
 const VARIANT_ZERO: OutlineShape = {
-  base: 4.9,
-  lobes: 4,
-  reach: 0.6,
-  bulge: 0.6,
+  base: 5,
+  lead: 3.4,
+  slant: -0.2,
+  side: 1.4,
+  sideAngle: 1.1,
+  folds: 2,
+  waves: 3,
+  skew: 0.9,
+  bulge: 0.5,
   bulgeAngle: 0.9,
-  ripple: 0.45,
-  rippleAngle: 1.3,
-  waveShift: 0,
-  secondShift: 1,
+  wrinkle: 0.35,
+  wrinkleShift: 0.4,
 };
 
 function variantShape(index: number): OutlineShape {
   if (index === 0) return VARIANT_ZERO;
   const random = lcg(index * 104729 + 17);
   return {
-    base: 4.6 + random() * 0.6,
-    lobes: 3.4 + random() * 1.2,
-    reach: (random() - 0.5) * 2,
-    bulge: 0.4 + random() * 0.5,
+    base: 4.7 + random() * 0.6,
+    lead: 2.8 + random() * 1.2,
+    slant: (random() - 0.5) * 0.7,
+    side: 0.8 + random() * 1.4,
+    sideAngle: (random() < 0.5 ? -1 : 1) * (0.7 + random() * 0.6),
+    folds: 1.6 + random() * 0.8,
+    waves: 2.6 + random() * 1,
+    skew: 0.5 + random() * 0.8,
+    bulge: 0.3 + random() * 0.4,
     bulgeAngle: random() * TAU,
-    ripple: 0.3 + random() * 0.3,
-    rippleAngle: random() * TAU,
-    waveShift: random() * TAU,
-    secondShift: random() * TAU,
+    wrinkle: 0.2 + random() * 0.25,
+    wrinkleShift: random() * TAU,
   };
 }
 
@@ -166,23 +199,21 @@ function eaterVariant(index: number): EaterVariant {
   const shape = variantShape(index);
   const random = lcg(index * 7727 + 3);
   const rawOutline = (phase: number): Point[] =>
-    radialPoints(OUTLINE_POINTS, shapeRadius(shape, shape.base, shape.lobes), phase, 0.86, [-1, 0]);
+    stretched(radialPoints(OUTLINE_POINTS, shapeRadius(shape, 1), phase, 0.86, [-1, 0]), phase);
   const fit = Math.min(1, MAX_REACH / reachOf(rawOutline));
   const outline = (phase: number): Point[] => scaled(rawOutline(phase), fit);
   const inner = (phase: number): Point[] =>
     scaled(
-      radialPoints(
-        OUTLINE_POINTS,
-        shapeRadius(shape, shape.base * 0.67, shape.lobes * 0.68),
-        phase - 0.5,
-        0.8,
-        [-1.5, 0.4],
+      stretched(
+        radialPoints(OUTLINE_POINTS, shapeRadius(shape, 0.67), phase - 0.5, 0.8, [-1.5, 0.4]),
+        phase,
+        INNER_FLOW,
       ),
       fit,
     );
   const spread = index === 0 ? 0 : 1;
   const jitter = (range: number): number => (random() - 0.5) * 2 * range * spread;
-  const nucleus: Point = [-1.2 + jitter(0.7), 0.4 + jitter(0.6)];
+  const nucleus: Point = [-0.5 + jitter(0.7), 0.3 + jitter(0.6)];
   const vacuole: Point = [-3.8 + jitter(0.5), (index % 2 === 0 ? 1.9 : -1.9) + jitter(0.4)];
   const slots: Point[] = [
     [1.6, 2],
@@ -202,7 +233,6 @@ function eaterVariant(index: number): EaterVariant {
   const nucleusPath = wander(61 + index * 13, 0.7, 5);
   const times = evenKeyTimes(nucleusPath.points.length);
   return {
-    heading: headingOf(outline),
     outline,
     inner,
     body: smoothPath(outline(0)),
@@ -237,6 +267,12 @@ export function eaterVariantFor(index: number): number {
 
 export function eaterPhaseOffset(index: number): number {
   return figureRandom(index * 4241 + 7) * EATER_TIMING.nucleus;
+}
+
+export function worldLight(rotation: number): Point {
+  const turn = -rotation / DEGREES;
+  const [x, y] = LIGHT;
+  return [x * Math.cos(turn) - y * Math.sin(turn), x * Math.sin(turn) + y * Math.cos(turn)];
 }
 
 function unwrap(angle: number, previous: number): number {
@@ -278,12 +314,11 @@ function crawlWalk(index: number, { start, inner, outer, step }: CrawlArea): Poi
 
 export function eaterCrawl(index: number, area: CrawlArea): EaterCrawl {
   const points = crawlWalk(index, area);
-  const offset = EATER_VARIANTS[eaterVariantFor(index)].heading;
   const directions: number[] = [];
   for (let i = 0; i < CRAWL_POINTS; i++) {
     const [x0, y0] = points[i];
     const [x1, y1] = points[i + 1];
-    const angle = Math.atan2(y1 - y0, x1 - x0) * DEGREES - offset;
+    const angle = Math.atan2(y1 - y0, x1 - x0) * DEGREES;
     directions.push(i === 0 ? angle : unwrap(angle, directions[i - 1]));
   }
   const turn = unwrap(directions[0], directions[CRAWL_POINTS - 1]) - directions[0];
@@ -301,6 +336,7 @@ export function eaterCrawl(index: number, area: CrawlArea): EaterCrawl {
     rotation: { values: rotations, keyTimes: times, easing: EASE },
     translateValues: points.map(formatPoint).join(';'),
     rotateValues: rotations.map(formatCoord).join(';'),
+    lightValues: rotations.map((angle) => formatPoint(worldLight(angle))).join(';'),
     keyTimes: times.map((t) => +t.toFixed(4)).join(';'),
     keySplines: easeSplines(CRAWL_POINTS),
   };

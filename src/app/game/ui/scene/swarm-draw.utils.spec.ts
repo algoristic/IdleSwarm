@@ -97,15 +97,6 @@ const SPRITE_UNITS: [UnitId, number][] = [
   ['broodClump', 37],
 ];
 
-function withoutRoll(ops: readonly string[]): string[] {
-  const result: string[] = [];
-  for (const op of ops) {
-    if (op.startsWith('drawImage eater')) result.splice(-2, 2);
-    result.push(op);
-  }
-  return result;
-}
-
 function withoutEaters(ops: readonly string[]): string[] {
   const result: string[] = [];
   for (const op of ops) {
@@ -145,14 +136,13 @@ describe('buildSwarmDrift', () => {
 
 describe('drawSwarmFrame', () => {
   it.each(SWARM_FIXTURE.draws)(
-    'zeichnet wie cvDraw, Fresslinge ohne Paddeln und Rollen ($units, Winkel $angle, Bewegung $motion)',
+    'zeichnet wie cvDraw ohne die Fresslinge ($units, Winkel $angle, Bewegung $motion)',
     ({ units, travelAngle, now, motion, trekAt, trek, ops }) => {
       const start = nextTrek({ from: 0, to: 0, at: 0 }, travelAngle, trekAt);
       expect(start).toEqual(trek);
       const sprites: Partial<Record<UnitId, SwarmSprite>> = {};
-      const atSite = travelAngle === null;
       for (const [unit, halfExtent] of SPRITE_UNITS) {
-        if (atSite && unit === 'eater') continue;
+        if (unit === 'eater') continue;
         sprites[unit] = { kind: 'raster', image: unit as unknown as CanvasImageSource, halfExtent };
       }
       const ctx = new FakeContext();
@@ -167,7 +157,7 @@ describe('drawSwarmFrame', () => {
         figures: swarmFigures(units, travelAngle !== null),
         sprites,
       });
-      expect(ctx.ops).toEqual(atSite ? withoutEaters(ops) : withoutRoll(ops));
+      expect(ctx.ops).toEqual(withoutEaters(ops));
     },
   );
 });
@@ -250,10 +240,10 @@ describe('kriechende Fresslinge', () => {
   it('verschiebt und dreht die Figur entlang ihrer Bahn', () => {
     const ops = crawlOps(3000, true);
     expect(ops).toHaveLength(5);
-    expect(ops[0]).toBe('translate 47 0');
+    expect(ops[0]).toBe('translate 52 0');
     expect(ops[1]).toMatch(/^translate -?\d/);
     expect(ops[2]).toMatch(/^rotate -?\d/);
-    expect(ops[3]).toBe('scale 0.95 0.95');
+    expect(ops[3]).toBe('scale 1.282 1.282');
     expect(ops[4]).toBe('draw eater');
   });
 

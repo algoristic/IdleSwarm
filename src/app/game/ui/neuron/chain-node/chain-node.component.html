@@ -32,7 +32,7 @@
   [attr.stroke-dasharray]="_locked ? '4 4' : null"
 />
 <svg:g [attr.transform]="iconTransform()" [attr.opacity]="_locked ? 0.35 : null">
-  <g app-unit-sprite [unit]="unit()"></g>
+  <g app-unit-sprite [unit]="unit()" [motion]="_motion"></g>
 </svg:g>
 <svg:g transform="translate(14.4 14.4)">
   <rect

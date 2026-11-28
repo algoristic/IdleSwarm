@@ -4,13 +4,15 @@
     @let g = eater();
     @let animated = motion();
     @let full = detail() === 'full';
+    @let _begin = begin();
+    @let _light = light();
     <svg:defs>
       <path [attr.id]="shapeId" [attr.d]="g.body">
         @if (animated) {
           <animate
             attributeName="d"
             [attr.dur]="eaterTiming.outline"
-            [attr.begin]="begin"
+            [attr.begin]="_begin"
             repeatCount="indefinite"
             [attr.values]="g.bodyFrames"
           />
@@ -37,42 +39,75 @@
     />
     <svg:g [attr.clip-path]="clipUrl">
       <use [attr.href]="shapeHref" [attr.fill]="c.shade" />
-      <use [attr.href]="shapeHref" [attr.fill]="c.body" transform="translate(-.5 -1.1)" />
+      <use
+        [attr.href]="shapeHref"
+        [attr.fill]="c.body"
+        [attr.transform]="_light ? _light.start : staticLight"
+      >
+        @if (animated && _light) {
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            calcMode="spline"
+            repeatCount="indefinite"
+            [attr.values]="_light.values"
+            [attr.keyTimes]="_light.keyTimes"
+            [attr.keySplines]="_light.keySplines"
+            [attr.dur]="_light.duration"
+            [attr.begin]="_light.begin"
+          />
+        }
+      </use>
       <path [attr.d]="g.innerPath" [attr.fill]="c.inner">
         @if (animated) {
           <animate
             attributeName="d"
             [attr.dur]="eaterTiming.outline"
-            [attr.begin]="begin"
+            [attr.begin]="_begin"
             repeatCount="indefinite"
             [attr.values]="g.innerFrames"
           />
         }
       </path>
-      @if (full) {
-        @for (alga of g.algae; track alga.key) {
-          <g [attr.transform]="alga.transform">
-            @for (x of alga.cells; track x) {
-              <circle [attr.cx]="x" r=".55" [attr.fill]="c.alga" />
-            }
-          </g>
+      <g>
+        @if (animated) {
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            calcMode="spline"
+            repeatCount="indefinite"
+            [attr.values]="flow.values"
+            [attr.keyTimes]="flow.keyTimes"
+            [attr.keySplines]="flow.keySplines"
+            [attr.dur]="eaterTiming.outline"
+            [attr.begin]="_begin"
+          />
         }
-      }
-      <g [attr.transform]="g.nucleusTransform">
-        <g>
-          @if (animated) {
-            <animateTransform
-              attributeName="transform"
-              type="translate"
-              [attr.dur]="eaterTiming.nucleus"
-              [attr.begin]="begin"
-              repeatCount="indefinite"
-              calcMode="spline"
-              [attr.values]="g.nucleusPath.values"
-              [attr.keySplines]="g.nucleusPath.keySplines"
-            />
+        @if (full) {
+          @for (alga of g.algae; track alga.key) {
+            <g [attr.transform]="alga.transform">
+              @for (x of alga.cells; track x) {
+                <circle [attr.cx]="x" r=".55" [attr.fill]="c.alga" />
+              }
+            </g>
           }
-          <circle r="1.9" [attr.fill]="c.nucleus" />
+        }
+        <g [attr.transform]="g.nucleusTransform">
+          <g>
+            @if (animated) {
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                [attr.dur]="eaterTiming.nucleus"
+                [attr.begin]="_begin"
+                repeatCount="indefinite"
+                calcMode="spline"
+                [attr.values]="g.nucleusPath.values"
+                [attr.keySplines]="g.nucleusPath.keySplines"
+              />
+            }
+            <circle r="1.9" [attr.fill]="c.nucleus" />
+          </g>
         </g>
       </g>
       @if (full) {
@@ -85,7 +120,7 @@
                 [attr.values]="vacuolePulse.values"
                 [attr.keyTimes]="vacuolePulse.keyTimes"
                 [attr.dur]="eaterTiming.vacuole"
-                [attr.begin]="begin"
+                [attr.begin]="_begin"
                 repeatCount="indefinite"
                 calcMode="spline"
                 [attr.keySplines]="vacuolePulse.keySplines"
