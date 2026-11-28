@@ -85,17 +85,6 @@ test('klappt die Sidebar mobil ein und auf', async ({ page, isMobile }) => {
   await expect(page.getByTestId('dev.catalog.sidebar')).toBeHidden();
 });
 
-test('zeigt das Original und die Amöbe und hält die Amöbe an', async ({ page }) => {
-  await page.goto('./katalog/eater-designs');
-  await expect(page.getByTestId('dev.catalog.eaterDesign.original')).toBeVisible();
-  await expect(page.getByTestId('dev.catalog.eaterDesign.amoeba')).toBeVisible();
-
-  const amoeba = page.getByTestId('dev.catalog.eaterDesign.amoeba');
-  await expect(amoeba.locator('animate').first()).toBeAttached();
-  await page.getByTestId('dev.catalog.control.motion.off').click();
-  await expect(amoeba.locator('animate, animateTransform')).toHaveCount(0);
-});
-
 test('ein Regler ändert die Vorschau', async ({ page }) => {
   await page.goto('./katalog/map-site');
   const site = page.getByTestId('dev.catalog.mapSite');

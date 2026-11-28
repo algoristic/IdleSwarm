@@ -33,7 +33,7 @@ describe('catalog-logic', () => {
   });
 
   it('liefert Nachbarn am Rand ohne Vorgänger bzw. Nachfolger', () => {
-    expect(catalogNeighbours('unit-sprite')).toEqual({ previous: null, next: 'eater-designs' });
+    expect(catalogNeighbours('unit-sprite')).toEqual({ previous: null, next: 'unit-icon' });
     expect(catalogNeighbours('pipes')).toEqual({ previous: 'dialog-frame', next: null });
   });
 
